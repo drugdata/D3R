@@ -1,18 +1,22 @@
 #! /usr/bin/env python
 
+import sys
 import os
 import argparse
 import psutil
 import logging
 
 from d3r.task import D3RTask
+from d3r.task import D3RParameters
+from d3r.task import BlastNFilterTask
+
 from lockfile.pidlockfile import PIDLockFile
 
 # create logger
 logger = logging.getLogger('d3r.celpprunner')
 LOG_FORMAT = "%(asctime)-15s %(levelname)s %(name)s %(message)s"
 
-def get_lock(theargs):
+def _get_lock(theargs):
    """Create lock file to prevent this process from running on same data
  
       This uses ``PIDLockFile`` to create a pid lock file in celppdir
@@ -49,13 +53,32 @@ def get_lock(theargs):
    lock.acquire(timeout=10)
    return lock
 
-def setup_logging(theargs):
+def _setup_logging(theargs):
    """Sets up the logging for application
       """
    theargs.logFormat = LOG_FORMAT
    logger.setLevel(theargs.logLevel)
-
    logging.basicConfig(format=theargs.logFormat)
+
+def _parse_arguments(desc,args):
+
+   parsed_arguments = D3RParameters()
+
+   parser = argparse.ArgumentParser(description=desc)
+   parser.add_argument("celppdir",help='Base celpp directory')
+   parser.add_argument("--stage", choices=['blast','dock','score'],
+                       required=True,help='Stage to run blast = '+
+     'blastnfilter (2), dock = fred & other docking algorithms (3), '+
+     'score = scoring (4)')
+   parser.add_argument("--email",help='Comma delimited list of email'+
+                       ' addresses to receive notifications')
+   parser.add_argument("--log", dest="logLevel", choices=['DEBUG',
+                       'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
+                       help="Set the logging level",
+                       default='WARNING')
+
+   return parser.parse_args(args,namespace=parsed_arguments)
+
 
 
 def main():
@@ -72,25 +95,21 @@ def main():
              upon startup to prevent duplicate invocation.
              """
 
-   parser = argparse.ArgumentParser(description=desc)
-   parser.add_argument("celppdir",help='Base celpp directory')
-   parser.add_argument("--stage", choices=['blast','dock','score'],
-                       required=True,help='Stage to run blast = '+
-     'blastnfilter (2), dock = fred & other docking algorithms (3), '+
-     'score = scoring (4)')  
-   parser.add_argument("--log", dest="logLevel", choices=['DEBUG', 
-                       'INFO', 'WARNING', 'ERROR', 'CRITICAL'], 
-                       help="Set the logging level",
-                       default='WARNING')
- 
-   theargs = parser.parse_args()
+   theargs = _parse_arguments(desc,sys.argv[1:]) 
 
-   setup_logging(theargs)
+   _setup_logging(theargs)
  
    # get the lock
-   lock = get_lock(theargs)
+   lock = _get_lock(theargs)
 
-     
+   
+
+   # perform processing
+   if theargs.stage == 'blast':
+       print "Blast stage"
+       task = BlastNFilterTask(theargs)
+
+   task.run()  
    # release lock
    lock.release()
 
