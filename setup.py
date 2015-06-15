@@ -15,11 +15,15 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read().replace('.. :changelog:', '')
 
 requirements = [
-    # TODO: put package requirements here
+    "argparse",
+    "lockfile",
+    "psutil"
 ]
 
 test_requirements = [
-    # TODO: put package test requirements here
+    "argparse",
+    "lockfile",
+    "psutil"
 ]
 
 setup(
