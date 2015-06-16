@@ -30,7 +30,7 @@ class TestD3rTask(unittest.TestCase):
         tempDir = tempfile.mkdtemp()
 
 	
-        self.assertIsNone(task._find_latest_year(tempDir))
+        self.assertEqual(task._find_latest_year(tempDir),None)
        
         os.mkdir(os.path.join(tempDir,"foo"))
         os.mkdir(os.path.join(tempDir,"2014"))
