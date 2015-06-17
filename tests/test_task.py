@@ -19,6 +19,7 @@ from d3r.task import D3RParameters
 from d3r.task import D3RTask
 from d3r.task import BlastNFilterTask
 
+
 class TestD3rTask(unittest.TestCase):
 
     def setUp(self):
@@ -79,9 +80,9 @@ class TestD3rTask(unittest.TestCase):
 
     def test_D3RTask(self):
         params = D3RParameters()
-        task = D3RTask('/path',params)
+        task = D3RTask('/path', params)
         self.assertEqual(task.get_name(), None)
-        self.assertEqual(task.get_path(),'/path')
+        self.assertEqual(task.get_path(), '/path')
         self.assertEqual(task.get_stage(), None)
         self.assertEqual(task.get_status(), D3RTask.UNKNOWN_STATUS)
         self.assertEqual(task.get_error(), None)
@@ -100,13 +101,12 @@ class TestD3rTask(unittest.TestCase):
 
     def test_BlastNFilterTask(self):
         params = D3RParameters()
-        blasttask = BlastNFilterTask('ha',params)
-        self.assertEqual(blasttask.get_name(),'blastnfilter')
-        self.assertEqual(blasttask.get_path(),'ha')
-        self.assertEqual(blasttask.get_stage(),2)
-        self.assertEqual(blasttask.get_status(),D3RTask.UNKNOWN_STATUS)
-        self.assertEqual(blasttask.get_error(),None)
-
+        blasttask = BlastNFilterTask('ha', params)
+        self.assertEqual(blasttask.get_name(), 'blastnfilter')
+        self.assertEqual(blasttask.get_path(), 'ha')
+        self.assertEqual(blasttask.get_stage(), 2)
+        self.assertEqual(blasttask.get_status(), D3RTask.UNKNOWN_STATUS)
+        self.assertEqual(blasttask.get_error(), None)
 
     def tearDown(self):
         pass
