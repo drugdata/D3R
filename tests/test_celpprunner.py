@@ -51,10 +51,23 @@ class TestCelppRunner(unittest.TestCase):
 
     def test_parse_arguments(self):
         theargs = ['--stage', 'blast', 'foo']
-
         result = celpprunner._parse_arguments('hi', theargs)
         self.assertEqual(result.stage, 'blast')
         self.assertEqual(result.celppdir, 'foo')
+        self.assertEqual(result.blastdir, None)
+        self.assertEqual(result.email,None)
+        self.assertEqual(result.logLevel, 'WARNING')
+
+        theargs = ['foo','--stage', 'dock', '--email', 'b@b.com,h@h',
+                   '--blastdir', 'b', '--log','ERROR']
+        result = celpprunner._parse_arguments('hi', theargs)
+        self.assertEqual(result.stage, 'dock')
+        self.assertEqual(result.celppdir, 'foo')
+        self.assertEqual(result.blastdir, 'b')
+        self.assertEqual(result.email, 'b@b.com,h@h')
+        self.assertEqual(result.logLevel, 'ERROR')
+
+        
 
     def tearDown(self):
         pass
