@@ -70,8 +70,7 @@ def _parse_arguments(desc, args):
 
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument("celppdir", help='Base celpp directory')
-    parser.add_argument("--blastdir",
-                        help='Directory containing blastdb')
+    parser.add_argument("--blastdir", help='Directory containing blastdb')
     parser.add_argument("--email",
                         help='Comma delimited list of email addresses')
 
@@ -109,16 +108,16 @@ def main():
     # get the lock
     lock = _get_lock(theargs)
 
-    latestWeekly = task.find_latest_weekly_dataset(theargs.celppdir)
- 
-    if latestWeekly == None:
+    latestWeekly = d3r.task.find_latest_weekly_dataset(theargs.celppdir)
+
+    if latestWeekly is None:
         logger.debug("No weekly dataset found")
         return
 
     # perform processing
     if theargs.stage == 'blast':
         print "Blast stage"
-        task = BlastNFilterTask(theargs,latestWeekly)
+        task = BlastNFilterTask(theargs, latestWeekly)
 
     if theargs.stage == 'dock':
         print "dock stage"
@@ -127,15 +126,15 @@ def main():
     if theargs.stage == 'score':
         print "score stage"
         return
-    
+
     if not task.can_run():
         logger.debug("Task " + task.get_name() + " cannot run ")
 
-    logger.debug("Running task " + task.get_name())   
+    logger.debug("Running task " + task.get_name())
     task.run()
     logger.debug("Task " + task.get_name() + " has finished running " +
                  " with status " + task.get_status())
-        
+
     # release lock
     lock.release()
 
