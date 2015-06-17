@@ -70,14 +70,16 @@ def _parse_arguments(desc, args):
 
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument("celppdir", help='Base celpp directory')
-    parser.add_argument("blastdir", help='Directory containing blastdb')
+    parser.add_argument("--blastdir",
+                        help='Directory containing blastdb')
+    parser.add_argument("--email",
+                        help='Comma delimited list of email addresses')
+
     parser.add_argument("--stage", choices=['blast', 'dock', 'score'],
                         required=True, help='Stage to run blast = ' +
                         'blastnfilter (2), dock = fred & other ' +
                         'docking algorithms (3), ' +
                         'score = scoring (4)')
-    parser.add_argument("--email", help='Comma delimited list of email' +
-                        ' addresses to receive notifications')
     parser.add_argument("--log", dest="logLevel", choices=['DEBUG',
                         'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
                         help="Set the logging level",
