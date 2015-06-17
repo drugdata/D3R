@@ -28,7 +28,7 @@ class D3RTask:
 
     def __init__(self, path, args):
         self._path = path
-        self._name = None        
+        self._name = None
         self._stage = None
         self._status = D3RTask.UNKNOWN_STATUS
         self._error = None
@@ -87,19 +87,19 @@ class D3RTask:
            If complete file exists under path then status is COMPLETE_STATUS
            If error file exists under path then status is ERROR_STATUS
            If start file exists under path then status is START_STATUS
-           else status is UNKNOWN_STATUS       
-           
+           else status is UNKNOWN_STATUS
            """
         pass
 
-
     def create_dir(self):
         """Creates directory for task.
-            
+
            Directory will be named stage.<stage>.<name>
            and located under get_path()
            """
-        return os.mkdir(os.path.join(self.get_path(), self.get_dir_name()))
+        return os.mkdir(os.path.join(self.get_path(),
+                        self.get_dir_name()))
+
 
 class DataImportTask(D3RTask):
     """Represents DataImport Task
@@ -132,11 +132,10 @@ class MakeBlastDBTask(D3RTask):
            If complete file exists under path then status is COMPLETE_STATUS
            If error file exists under path then status is ERROR_STATUS
            If start file exists under path then status is START_STATUS
-           else status is UNKNOWN_STATUS       
-           
+           else status is UNKNOWN_STATUS
            """
         pass
-     
+
 
 class BlastNFilterTask(D3RTask):
     """Performs Blast and filter of sequences
@@ -150,15 +149,14 @@ class BlastNFilterTask(D3RTask):
         self.set_status(D3RTask.UNKNOWN_STATUS)
 
     def can_run(self):
-        
-        # check blast 
-        makeblastdb = MakeBlastDBTask(self._path,self._args)
+        # check blast
+        makeblastdb = MakeBlastDBTask(self._path, self._args)
         makeblastdb.update_status_from_filesystem()
         if self.get_status() != D3RTask.COMPLETE_STATUS:
             return False
 
         # check data import
-        dataImport = DataImportTask(self._path,self._args)
+        dataImport = DataImportTask(self._path, self._args)
         dataImport.update_status_from_filesystem()
         if self.get_status() != D3RTask.COMPLETE_STATUS:
             return False
@@ -171,16 +169,17 @@ class BlastNFilterTask(D3RTask):
                          " task is complete")
             return False
 
-        if self.get_status() != D3R.NOTFOUND_STATUS:
-            logger.debug("Task was already attempted, but there was a problem")
-            return False 
+        if self.get_status() != D3RTask.NOTFOUND_STATUS:
+            logger.debug("Task was already attempted, but there was " +
+                         "a problem")
+            return False
 
         return True
 
     def run(self):
         """Runs blastnfilter task after verifying dataimport was good
 
-           First checks that stage.1.dataimport has correct data and 
+           First checks that stage.1.dataimport has correct data and
            that blast db is valid and that blastnfilter was not already
            run in any form.  If not method just returns doing nothing.
            Otherwise method invokes D3RTask.start then this method
@@ -194,18 +193,18 @@ class BlastNFilterTask(D3RTask):
             return
 
         self.start()
-        
+
         if not self.create_dir():
             logger.error("Unable to create directory")
             self.set_error("Unable to create directory")
-            self.end() 
+            self.end()
             return
 
         # Run the blastnfilter
         print "blastnfilter <> <>"
 
         # assess the result
-        self.end() 
+        self.end()
 
 
 def find_latest_year(celppdir):
