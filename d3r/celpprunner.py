@@ -6,6 +6,7 @@ import argparse
 import psutil
 import logging
 
+import d3r.task
 from d3r.task import D3RParameters
 from d3r.task import BlastNFilterTask
 from lockfile.pidlockfile import PIDLockFile
@@ -69,6 +70,7 @@ def _parse_arguments(desc, args):
 
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument("celppdir", help='Base celpp directory')
+    parser.add_argument("blastdir", help='Directory containing blastdb')
     parser.add_argument("--stage", choices=['blast', 'dock', 'score'],
                         required=True, help='Stage to run blast = ' +
                         'blastnfilter (2), dock = fred & other ' +
@@ -105,12 +107,33 @@ def main():
     # get the lock
     lock = _get_lock(theargs)
 
+    latestWeekly = task.find_latest_weekly_dataset(theargs.celppdir)
+ 
+    if latestWeekly == None:
+        logger.debug("No weekly dataset found")
+        return
+
     # perform processing
     if theargs.stage == 'blast':
         print "Blast stage"
-        task = BlastNFilterTask(theargs)
+        task = BlastNFilterTask(theargs,latestWeekly)
 
+    if theargs.stage == 'dock':
+        print "dock stage"
+        return
+
+    if theargs.stage == 'score':
+        print "score stage"
+        return
+    
+    if not task.can_run():
+        logger.debug("Task " + task.get_name() + " cannot run ")
+
+    logger.debug("Running task " + task.get_name())   
     task.run()
+    logger.debug("Task " + task.get_name() + " has finished running " +
+                 " with status " + task.get_status())
+        
     # release lock
     lock.release()
 
