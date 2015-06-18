@@ -83,7 +83,7 @@ class D3RTask:
         if self._name is None:
             return
 
-        return 'stage' + '.' + self._stage + '.' + self._name
+        return 'stage' + '.' + str(self._stage) + '.' + self._name
 
     def update_status_from_filesystem(self):
         """Updates status by querying filesystem.
@@ -111,8 +111,15 @@ class D3RTask:
             logger.warning("Dir name is null cannot create directory")
             return
 
-        return os.mkdir(os.path.join(self.get_path(),
-                        self.get_dir_name()))
+        thePath = os.path.join(self.get_path(),
+                               self.get_dir_name())
+        os.mkdir(thePath)
+
+        if not os.path.isdir(thePath):
+            logger.warning("Unable to create directory: " + thePath)
+            return
+
+        return thePath
 
 
 class DataImportTask(D3RTask):
