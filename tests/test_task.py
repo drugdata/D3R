@@ -99,6 +99,19 @@ class TestD3rTask(unittest.TestCase):
         self.assertEqual(task.get_status(), D3RTask.START_STATUS)
         self.assertEqual(task.get_error(), 'error')
 
+    def test_D3RTask_create_dir(self):
+        tempDir = tempfile.mkdtemp()
+        params = D3RParameters()
+        task = D3RTask(None, params)
+        self.assertEqual(task.create_dir(), None)
+        task.set_name('foo')
+        task.set_stage(1)
+        task.set_path(tempDir)
+        self.assertEqual(task.create_dir(),
+                         os.path.join(tempDir, 'stage.1.foo'))
+        os.rmdir(os.path.join(tempDir, 'stage.1.foo'))
+        os.rmdir(tempDir)
+
     def test_BlastNFilterTask(self):
         params = D3RParameters()
         blasttask = BlastNFilterTask('ha', params)
