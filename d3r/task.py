@@ -77,6 +77,12 @@ class D3RTask:
         """Gets directory name for task
 
            """
+        if self._stage is None:
+            return
+
+        if self._name is None:
+            return
+
         return 'stage' + '.' + self._stage + '.' + self._name
 
     def update_status_from_filesystem(self):
@@ -97,6 +103,14 @@ class D3RTask:
            Directory will be named stage.<stage>.<name>
            and located under get_path()
            """
+        if self.get_path() is None:
+            logger.warning("Path is null cannot create directory")
+            return
+
+        if self.get_dir_name() is None:
+            logger.warning("Dir name is null cannot create directory")
+            return
+
         return os.mkdir(os.path.join(self.get_path(),
                         self.get_dir_name()))
 
