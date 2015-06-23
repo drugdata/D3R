@@ -70,7 +70,9 @@ def _parse_arguments(desc, args):
 
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument("celppdir", help='Base celpp directory')
-    parser.add_argument("--blastdir", help='Directory containing blastdb')
+    parser.add_argument("--blastdir", help='Parent directory of ' +
+                        ' blastdb.  There should exist a "current" ' +
+                        ' symlink or folder that contains the db.')
     parser.add_argument("--email",
                         help='Comma delimited list of email addresses')
 
