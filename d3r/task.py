@@ -6,7 +6,6 @@ import re
 
 logger = logging.getLogger(__name__)
 
-
 class D3RParameters(object):
     """Holds parameters common to Tasks
 
@@ -34,6 +33,18 @@ class UnsetStageException(Exception):
 
 class UnsetBlastDirException(Exception):
     """Exception to denote blastdir in D3RParameters is unset
+    """
+    pass
+
+
+class TaskUnableToStartException(Exception):
+    """Exception to denote when task cannot start due to failure
+    """
+    pass
+
+
+class TaskFailedException(Exception):
+    """Exception to denote when a task failed
     """
     pass
 
@@ -70,6 +81,7 @@ class D3RTask(object):
         self._status = D3RTask.UNKNOWN_STATUS
         self._error = None
         self._args = args
+        self._can_run = False
 
     def get_args(self):
         return self._args
@@ -108,13 +120,18 @@ class D3RTask(object):
         self._error = error
 
     def start(self):
-        print "Task ", self._name, " is starting"
+        logger.info(self._name + ' task has started ')
+        
 
     def end(self):
-        print "Task ", self._name, " has finished"
+        logger.info(self._name + ' task has finished with status ' +
+                 self.get_status())
+        if not self._error is None:
+            logger.error(self._name + ' task failed with error ' +
+                         self.get_error())
 
     def run(self):
-        print "Running ", self._name
+        logger.info(self._name + ' task is running')
 
     def get_dir_name(self):
         """Gets directory name for task
@@ -145,7 +162,8 @@ class D3RTask(object):
         pathToCheck = os.path.join(self._path, self.get_dir_name())
 
         self.set_status(_get_status_of_task_in_dir(pathToCheck))
-
+        logger.debug(self.get_name() + ' task status set to ' +
+                     self.get_status())
         return self.get_status()
 
     def create_dir(self):
@@ -164,6 +182,9 @@ class D3RTask(object):
 
         thePath = os.path.join(self.get_path(),
                                self.get_dir_name())
+
+        logger.debug('Creating directory: ' + thePath)
+
         os.mkdir(thePath)
 
         if not os.path.isdir(thePath):
@@ -202,7 +223,7 @@ class MakeBlastDBTask(D3RTask):
            path to args.blastdir. stage is set to 1
 
         """
-        super(MakeBlastDBTask, self).__init__(path, args)
+        self.set_args(args)
         self.set_path(args.blastdir)
         self.set_name('makeblastdb')
         self.set_stage(1)
@@ -233,59 +254,68 @@ class BlastNFilterTask(D3RTask):
         self.set_status(D3RTask.UNKNOWN_STATUS)
 
     def can_run(self):
-        # check blast
+        self._can_run = False
+        # check blast 
         makeblastdb = MakeBlastDBTask(self._path, self._args)
         makeblastdb.update_status_from_filesystem()
-        if self.get_status() != D3RTask.COMPLETE_STATUS:
+        if makeblastdb.get_status() != D3RTask.COMPLETE_STATUS:
+            logger.info('Cannot run ' + self.get_name() + 'task ' +
+                        'because ' + makeblastdb.get_name() + 'task' +
+                        'has a status of ' + makeblastdb.get_status())
             return False
 
         # check data import
         dataImport = DataImportTask(self._path, self._args)
         dataImport.update_status_from_filesystem()
-        if self.get_status() != D3RTask.COMPLETE_STATUS:
+        if dataImport.get_status() != D3RTask.COMPLETE_STATUS:
+            logger.info('Cannot run ' + self.get_name() + 'task ' +
+                        'because ' + dataImport.get_name() + 'task' +
+                        'has a status of ' + dataImport.get_status())
             return False
 
         # check blast is not complete and does not exist
 
         self.update_status_from_filesystem()
         if self.get_status() == D3RTask.COMPLETE_STATUS:
-            logger.debug("No work needed " + self.get_name() +
-                         " task is complete")
+            logger.debug("No work needed for " + self.get_name() +
+                         " task")
             return False
 
         if self.get_status() != D3RTask.NOTFOUND_STATUS:
-            logger.debug("Task was already attempted, but there was " +
-                         "a problem")
+            logger.warning(self.get_name() + " task was already " + 
+                           "attempted, but there was a problem")
+            self.set_error(self.get_dir_name() + ' already exists and ' +
+                           'status is ' + self.get_status())
             return False
 
+        self._can_run = True
         return True
 
     def run(self):
         """Runs blastnfilter task after verifying dataimport was good
-
-           First checks that stage.1.dataimport has correct data and
-           that blast db is valid and that blastnfilter was not already
-           run in any form.  If not method just returns doing nothing.
+          
+           Method requires can_run() to be called before hand with
+           successful outcome
            Otherwise method invokes D3RTask.start then this method
            creates a directory and invokes blastnfilter script.  Upon
            completion results are analyzed and success or error status
            is set appropriately and D3RTask.end is invoked
            """
-        logger.debug("In BlastNFilter Task")
-
-        if not self.can_run():
+       
+        if self._can_run is False:
+            logger.info("Cannot run cause can_run flag was set to False") 
             return
-
+        
         self.start()
 
         if not self.create_dir():
-            logger.error("Unable to create directory")
-            self.set_error("Unable to create directory")
+            self.set_error('Unable to create directory')
             self.end()
             return
 
         # Run the blastnfilter
-        print "blastnfilter <> <>"
+        logger.info("Running blastnfilter")
+        print "Running blastnfilter <> <>"
 
         # assess the result
         self.end()
@@ -340,18 +370,17 @@ def find_latest_weekly_dataset(celppdir):
     if latestYear is None:
         return
 
-    celppdirWithYear = os.path.join(celppdir, latestYear)
 
     dirPattern = re.compile("^dataset.week.\d+$")
 
     latestEntry = None
     latestWeekNo = -1
     fullPath = None
-    for entry in os.listdir(celppdirWithYear):
+    for entry in os.listdir(latestYear):
         if re.match(dirPattern, entry):
             weekNo = re.sub("dataset.week.", "", entry)
             if weekNo > latestWeekNo:
-                fullPath = os.path.join(celppdirWithYear, entry)
+                fullPath = os.path.join(latestYear, entry)
                 if os.path.isdir(fullPath):
                     latestWeekNo = weekNo
                     latestEntry = fullPath
