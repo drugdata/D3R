@@ -252,6 +252,52 @@ class TestD3rTask(unittest.TestCase):
         self.assertEqual(task.get_dir_name(), 'current')
         self._try_update_status_from_filesystem(task)
 
+    def test_BlastNFilterTask_can_run(self):
+       tempDir = tempfile.mkdtemp()
+
+       try:
+           # try where makeblastdb is not complete
+           params = D3RParameters()
+           params.blastdir = tempDir
+           blastTask = BlastNFilterTask(tempDir, params)
+           self.assertEqual(blastTask.can_run(), False)
+
+           # try where data import is not complete
+           blastDb = MakeBlastDBTask(tempDir, params)
+           blastDb.create_dir()
+           completeFile = os.path.join(blastDb.get_path(),
+                                       blastDb.get_dir_name(),
+                                       D3RTask.COMPLETE_FILE)
+           open(completeFile, 'a').close()   
+           self.assertEqual(blastTask.can_run(), False)
+
+           # try where blast can run
+           dataImport = DataImportTask(tempDir, params)
+           dataImport.create_dir()
+           completeFile = os.path.join(dataImport.get_path(),
+                                       dataImport.get_dir_name(),
+                                       D3RTask.COMPLETE_FILE)
+           open(completeFile, 'a').close()
+           self.assertEqual(blastTask.can_run(), True)
+           
+
+           # try where blast exists
+           blastTask.create_dir()
+           self.assertEqual(blastTask.can_run(), False)
+           self.assertEqual(blastTask.get_error(), 
+                            'stage.2.blastnfilter already exists and' + 
+                            ' status is unknown')
+
+           # try where blast is complete
+           completeFile = os.path.join(blastTask.get_path(),
+                                       blastTask.get_dir_name(),
+                                       D3RTask.COMPLETE_FILE)
+           open(completeFile, 'a').close()
+           self.assertEqual(blastTask.can_run(), False)
+           
+           
+       finally:
+           shutil.rmtree(tempDir)
     def tearDown(self):
         pass
 
