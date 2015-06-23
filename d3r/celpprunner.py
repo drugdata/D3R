@@ -61,7 +61,7 @@ def _setup_logging(theargs):
     theargs.logFormat = LOG_FORMAT
     logger.setLevel(theargs.logLevel)
     logging.basicConfig(format=theargs.logFormat)
-
+    logging.getLogger('d3r.task').setLevel(theargs.logLevel)
 
 def _parse_arguments(desc, args):
     """Parses command line arguments
@@ -104,7 +104,12 @@ def main():
               """
 
     theargs = _parse_arguments(desc, sys.argv[1:])
-
+    try:
+        if os.path.basename(theargs.blastdir) is 'current':
+            theargs.blastdir = os.path.dirname(theargs.blastdir)
+    except AttributeError:
+        pass
+     
     _setup_logging(theargs)
 
     # get the lock
@@ -113,31 +118,30 @@ def main():
     latestWeekly = d3r.task.find_latest_weekly_dataset(theargs.celppdir)
 
     if latestWeekly is None:
-        logger.debug("No weekly dataset found")
+        logger.info("No weekly dataset found in path " +
+                     theargs.celppdir)
         return
+
+    logger.info("Starting " + theargs.stage + " stage")
 
     # perform processing
     if theargs.stage == 'blast':
-        print "Blast stage"
-        task = BlastNFilterTask(theargs, latestWeekly)
+        task = BlastNFilterTask(latestWeekly,theargs)
 
     if theargs.stage == 'dock':
-        print "dock stage"
-        return
+        raise NotImplementedError('uh oh dock is not implemented yet')
 
     if theargs.stage == 'score':
-        print "score stage"
-        return
-
-    if not task.can_run():
-        logger.debug("Task " + task.get_name() + " cannot run ")
-
-    logger.debug("Running task " + task.get_name())
-    task.run()
-    logger.debug("Task " + task.get_name() + " has finished running " +
-                 " with status " + task.get_status())
+        raise NotImplementedError('uh oh score is not implemented yet')
+ 
+    if task.can_run():
+        logger.info("Running task " + task.get_name())
+        task.run()
+        logger.debug("Task " + task.get_name() + " has finished running " +
+                     " with status " + task.get_status())
 
     # release lock
+    logger.debug('Releasing lock')
     lock.release()
 
 
