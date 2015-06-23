@@ -8,10 +8,37 @@ logger = logging.getLogger(__name__)
 
 
 class D3RParameters(object):
+    """Holds parameters common to Tasks
+
+    """
     pass
 
 
-class D3RTask:
+class UnsetPathException(Exception):
+    """Exception to denote path is unset
+    """
+    pass
+
+
+class UnsetNameException(Exception):
+    """Exception to denote name is unset
+    """
+    pass
+
+
+class UnsetStageException(Exception):
+    """Exception to denote stage is unset
+    """
+    pass
+
+
+class UnsetBlastDirException(Exception):
+    """Exception to denote blastdir in D3RParameters is unset
+    """
+    pass
+
+
+class D3RTask(object):
     """Represents a base Task that can be run.
 
     This is a base class from which other classes that actual do work
@@ -19,6 +46,11 @@ class D3RTask:
     stage, and status.  As well as a run() function.
 
     """
+    STAGE_DIRNAME_PREFIX = "stage"
+
+    START_FILE = "start"
+    ERROR_FILE = "error"
+    COMPLETE_FILE = "complete"
 
     START_STATUS = "start"
     COMPLETE_STATUS = "complete"
@@ -27,11 +59,22 @@ class D3RTask:
     ERROR_STATUS = "error"
 
     def __init__(self, path, args):
+        """Constructor
+
+        Creates a `D3RTask` with `D3RTask.UNKNOWN_STATUS` status
+        with `path` and `args` set to values passed in
+        """
         self._path = path
         self._name = None
         self._stage = None
         self._status = D3RTask.UNKNOWN_STATUS
         self._error = None
+        self._args = args
+
+    def get_args(self):
+        return self._args
+
+    def set_args(self, args):
         self._args = args
 
     def get_path(self):
@@ -78,12 +121,13 @@ class D3RTask:
 
            """
         if self._stage is None:
-            return
+            raise UnsetStageException('Stage must be set')
 
         if self._name is None:
-            return
+            raise UnsetNameException('Name must be set')
 
-        return 'stage' + '.' + str(self._stage) + '.' + self._name
+        return (D3RTask.STAGE_DIRNAME_PREFIX + "." + str(self._stage) +
+                "." + self._name)
 
     def update_status_from_filesystem(self):
         """Updates status by querying filesystem.
@@ -95,7 +139,14 @@ class D3RTask:
            If start file exists under path then status is START_STATUS
            else status is UNKNOWN_STATUS
            """
-        pass
+        if self._path is None:
+            raise UnsetPathException('Path must be set')
+
+        pathToCheck = os.path.join(self._path, self.get_dir_name())
+
+        self.set_status(_get_status_of_task_in_dir(pathToCheck))
+
+        return self.get_status()
 
     def create_dir(self):
         """Creates directory for task.
@@ -128,34 +179,46 @@ class DataImportTask(D3RTask):
        """
 
     def __init__(self, path, args):
-        D3RTask.__init__(self, path, args)
+        super(DataImportTask, self).__init__(path, args)
         self.set_name('dataimport')
         self.set_stage(1)
         self.set_status(D3RTask.UNKNOWN_STATUS)
 
 
 class MakeBlastDBTask(D3RTask):
-    """Represents creation of BlastDB
+    """Represents Blastable database
+
+       This object does not follow the standard D3RTask
+       structure.  This is because the blastable database
+       is created externally in a legacy structure.
 
        """
 
     def __init__(self, path, args):
-        D3RTask.__init__(self, path, args)
+        """Constructor
+
+           Constructor sets name to makeblastdb and ignores
+           path set in <path> variable and instead sets
+           path to args.blastdir. stage is set to 1
+
+        """
+        super(MakeBlastDBTask, self).__init__(path, args)
+        self.set_path(args.blastdir)
         self.set_name('makeblastdb')
-        self.set_stage(0)
+        self.set_stage(1)
         self.set_status(D3RTask.UNKNOWN_STATUS)
 
-    def update_status_from_filesystem(self):
-        """Updates status by querying filesystem.
+    def create_dir(self):
+        """Creates path set in get_path()
 
-           Sets status based on contents of path on filesystem.
-           If path does not exist then status is NOTFOUND_STATUS.
-           If complete file exists under path then status is COMPLETE_STATUS
-           If error file exists under path then status is ERROR_STATUS
-           If start file exists under path then status is START_STATUS
-           else status is UNKNOWN_STATUS
            """
-        pass
+        os.makedirs(os.path.join(self._path, 'current'))
+
+    def get_dir_name(self):
+        """Will always return current
+
+           """
+        return 'current'
 
 
 class BlastNFilterTask(D3RTask):
@@ -164,7 +227,7 @@ class BlastNFilterTask(D3RTask):
     """
 
     def __init__(self, path, args):
-        D3RTask.__init__(self, path, args)
+        super(BlastNFilterTask, self).__init__(path, args)
         self.set_name('blastnfilter')
         self.set_stage(2)
         self.set_status(D3RTask.UNKNOWN_STATUS)
@@ -294,3 +357,30 @@ def find_latest_weekly_dataset(celppdir):
                     latestEntry = fullPath
 
     return latestEntry
+
+
+def _get_status_of_task_in_dir(path):
+    """Gets status of task based on existance of files in path
+
+       Examines `path` and returns status based on the following
+       conditions
+       """
+    if not os.path.isdir(path):
+        return D3RTask.NOTFOUND_STATUS
+
+    completeFile = os.path.join(path, D3RTask.COMPLETE_FILE)
+
+    if os.path.isfile(completeFile):
+        return D3RTask.COMPLETE_STATUS
+
+    errorFile = os.path.join(path, D3RTask.ERROR_FILE)
+
+    if os.path.isfile(errorFile):
+        return D3RTask.ERROR_STATUS
+
+    startFile = os.path.join(path, D3RTask.START_FILE)
+
+    if os.path.isfile(startFile):
+        return D3RTask.START_STATUS
+
+    return D3RTask.UNKNOWN_STATUS
