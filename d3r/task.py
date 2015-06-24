@@ -255,6 +255,7 @@ class BlastNFilterTask(D3RTask):
 
     def can_run(self):
         self._can_run = False
+        self._error = None
         # check blast 
         makeblastdb = MakeBlastDBTask(self._path, self._args)
         makeblastdb.update_status_from_filesystem()
@@ -262,6 +263,9 @@ class BlastNFilterTask(D3RTask):
             logger.info('Cannot run ' + self.get_name() + 'task ' +
                         'because ' + makeblastdb.get_name() + 'task' +
                         'has a status of ' + makeblastdb.get_status())
+            if makeblastdb.get_status() == D3RTask.ERROR_STATUS:
+                self.set_error(makeblastdb.get_name() + ' task has ' +
+                               makeblastdb.get_status() + ' status')
             return False
 
         # check data import
@@ -271,6 +275,9 @@ class BlastNFilterTask(D3RTask):
             logger.info('Cannot run ' + self.get_name() + 'task ' +
                         'because ' + dataImport.get_name() + 'task' +
                         'has a status of ' + dataImport.get_status())
+            if dataImport.get_status() == D3RTask.ERROR_STATUS:
+                self.set_error(dataImport.get_name() + ' task has ' + 
+                               dataImport.get_status() + ' status')
             return False
 
         # check blast is not complete and does not exist
@@ -302,8 +309,13 @@ class BlastNFilterTask(D3RTask):
            is set appropriately and D3RTask.end is invoked
            """
        
+        if self._can_run is None:
+            logger.info("Running can_run() to check if its allright " + 
+                        "to run")
+            self.can_run() 
+        
         if self._can_run is False:
-            logger.info("Cannot run cause can_run flag was set to False") 
+            logger.info("can_run() came back with false cannot run")
             return
         
         self.start()

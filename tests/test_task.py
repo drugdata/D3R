@@ -262,23 +262,45 @@ class TestD3rTask(unittest.TestCase):
            blastTask = BlastNFilterTask(tempDir, params)
            self.assertEqual(blastTask.can_run(), False)
 
-           # try where data import is not complete
+
+           # try where makeblastdb failed
            blastDb = MakeBlastDBTask(tempDir, params)
            blastDb.create_dir()
+           errorFile = os.path.join(blastDb.get_path(),
+                                    blastDb.get_dir_name(),
+                                    D3RTask.ERROR_FILE)
+           open(errorFile, 'a').close()
+           self.assertEqual(blastTask.can_run(), False)
+           self.assertEqual(blastTask.get_error(),
+                            'makeblastdb task has error status')
+
+           # try where data import is not complete
            completeFile = os.path.join(blastDb.get_path(),
                                        blastDb.get_dir_name(),
                                        D3RTask.COMPLETE_FILE)
            open(completeFile, 'a').close()   
            self.assertEqual(blastTask.can_run(), False)
+           self.assertEqual(blastTask.get_error(), None)
 
-           # try where blast can run
+
+           # try where data import failed
            dataImport = DataImportTask(tempDir, params)
            dataImport.create_dir()
+           errorFile = os.path.join(dataImport.get_path(),
+                                    dataImport.get_dir_name(),
+                                    D3RTask.ERROR_FILE)
+           open(errorFile, 'a').close()
+           self.assertEqual(blastTask.can_run(), False)
+           self.assertEqual(blastTask.get_error(),
+                            'dataimport task has error status')
+
+           # try where blast can run
            completeFile = os.path.join(dataImport.get_path(),
                                        dataImport.get_dir_name(),
                                        D3RTask.COMPLETE_FILE)
            open(completeFile, 'a').close()
            self.assertEqual(blastTask.can_run(), True)
+           self.assertEqual(blastTask.get_error(), None)
            
 
            # try where blast exists
@@ -294,7 +316,7 @@ class TestD3rTask(unittest.TestCase):
                                        D3RTask.COMPLETE_FILE)
            open(completeFile, 'a').close()
            self.assertEqual(blastTask.can_run(), False)
-           
+           self.assertEqual(blastTask.get_error(), None)
            
        finally:
            shutil.rmtree(tempDir)
