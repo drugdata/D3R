@@ -92,15 +92,48 @@ def _parse_arguments(desc, args):
 def main():
 
     desc = """Runs last 3 stages of CELPP processing pipeline (blast,
-              docking, and scoring).  This tool will examine the
+              docking, and scoring).\n\n
+              Only 1 stage is run per invocation and the stage to be
+              run is defined via required --stage flag.\n\n
+              This program drops a pid lockfile 
+              (celpprunner.<stage>.lockpid) during startup to prevent 
+              duplicate invocation.\n
+              When run this program will examine the stage and see
+              if work can be done.  If stage is complete, the program will
+              exit silently.  If previous steps have not completed,
+              program will also exit silently.  If previous steps have
+              failed or current stage already exists in error uncomplete
+              state then program will report the error via emails set in
+              --email flag as well as report via stderr/stdout and output
+              a nonzero exit code.  This program utilizes simple token
+              files to denote stage completion.  If a stage has a 
+              'complete' file then its considered done.  If a stage has
+              a 'start' file its running.  If stage has 'error' file then
+              there was a problem.  If both 'complete' and 'error' file 
+              exists, the stage will still be considered complete.\n
+              If a notification will be logged and if set via --email then
+              an email notification of job start and completion will 
+              also be sent.
+               
+              Regardless of the stage specified this program will examine the
               celppdir to find the latest weekly download of data from
-              wwPDB which should be under\n
-              <year>/dataset.week.#/stage.1.dataimport path.\n
-              The tool then verifies the stage specified by can be run
-              and performs the operation to prevent duplicate invocation
-              a token file named celprunner.# is dropped in the celppdir
-              which contains the pid of the process.  This is checked
-              upon startup to prevent duplicate invocation.
+              wwPDB which should be under <year>/dataset.week.# path.
+              This program then verifies the stage specified by --stage can
+              be run.\n
+              For 'blast' stage this program verifies 
+              stage.1.dataimport exists and has 'complete' file.  Also
+              the --blastdir path must exist and within a 'current'
+              symlink/folder must exist and within a 'complete' file must
+              also reside. If both conditions are met then the blast stage
+              is run and output stored in stage.2.blastnfilter\n
+              For 'docking' stage, this program verifies stage2.blastnfilter
+              exists and has a 'complete' file within it.  If 'complete'
+              this program will run fred docking and store output in
+              stage.3.fred.  As new algorithms are incorporated additional
+              stage.3.<algo> will be created an run.
+              For 'scoring' stage, this program finds all complete 
+              stage.3.<algo> folders and invokes appropriate scoring
+              algorithm storing results in stage.4.<algo>.scoring
               """
 
     theargs = _parse_arguments(desc, sys.argv[1:])
