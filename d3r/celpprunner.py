@@ -127,28 +127,46 @@ def main():
 
     desc = """
               Runs last 3 stages of CELPP processing pipeline (blast,
-              dock, and score).\n\n
+              dock, and score).
+
+              CELPP processing pipeline is basically a set of folders
+              with specific structure.  The pipeline runs a set of
+              what are known as stages.  Each stage has a numerical
+              value and a name.  The numerical value denotes tasks
+              order and the stage name identifies the separate
+              tasks to run in the stage.  
+
+              The filesystem structure of the stage is:
+
+              stage.<stage number>.<task name>
+
               Only 1 stage is run per invocation and the stage to be
-              run is defined via required --stage flag.\n\n
+              run is defined via required --stage flag.
+ 
               This program drops a pid lockfile 
               (celpprunner.<stage>.lockpid) during startup to prevent
-              duplicate invocation.\n
-              When run this program will examine the stage and see
-              if work can be done.  If stage is complete, the program will
-              exit silently.  If previous steps have not completed,
-              program will also exit silently.  If previous steps have
-              failed or current stage already exists in error uncomplete
-              state then program will report the error via emails set in
-              --email flag as well as report via stderr/stdout and output
-              a nonzero exit code.  This program utilizes simple token
-              files to denote stage completion.  If a stage has a 
-              'complete' file then its considered done.  If a stage has
-              a 'start' file its running.  If stage has 'error' file then
-              there was a problem.  If both 'complete' and 'error' file 
-              exists, the stage will still be considered complete.\n
-              If a notification will be logged and if set via --email then
-              an email notification of job start and completion will 
-              also be sent.
+              duplicate invocation.
+
+              When run, this program will examine the stage and see
+              if work can be done.  If stage is complete or previous
+              steps have not completed, the program will exit silently.
+              If previous steps have failed or current stage already 
+              exists in error uncomplete state then program will report
+              the error via emails set in --email flag as well as report
+              via stderr/stdout and exit with nonzero exit code.  
+              
+              This program utilizes simple token files to denote stage
+              completion.  If a stage has a:
+
+              'complete' file - then stage is done and no other
+                                checking is done.
+
+              'error' file - then stage failed.
+          
+              'start' file - then stage is running.
+              
+              Notification of stage start and end will be sent to 
+              addresses set via --email flag.
                
               Regardless of the stage specified this program will examine the
               celppdir to find the latest weekly download of data from
