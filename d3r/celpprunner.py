@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 
 import sys
+import errno
 import os
 import argparse
 import psutil
@@ -63,12 +64,45 @@ def _setup_logging(theargs):
     logging.basicConfig(format=theargs.logFormat)
     logging.getLogger('d3r.task').setLevel(theargs.logLevel)
 
+def run_stage(theargs):
+    latestWeekly = d3r.task.find_latest_weekly_dataset(theargs.celppdir)
+
+    if latestWeekly is None:
+        logger.info("No weekly dataset found in path " +
+                    theargs.celppdir)
+        return 0
+
+    logger.info("Starting " + theargs.stage + " stage")
+
+    # perform processing
+    if theargs.stage == 'blast':
+        task = BlastNFilterTask(latestWeekly,theargs)
+
+    if theargs.stage == 'dock':
+        raise NotImplementedError('uh oh dock is not implemented yet')
+
+    if theargs.stage == 'score':
+        raise NotImplementedError('uh oh score is not implemented yet')
+
+    if task.can_run():
+        logger.info("Running task " + task.get_name())
+        task.run()
+        logger.debug("Task " + task.get_name() + " has finished running " +
+                     " with status " + task.get_status())
+    if task.get_error() != None:
+        logger.error('Error running task ' + task.get_name() +
+                     ' ' + task.get_error())
+        return 1
+    return 0
+
 def _parse_arguments(desc, args):
     """Parses command line arguments
        """
     parsed_arguments = D3RParameters()
 
-    parser = argparse.ArgumentParser(description=desc)
+    helpFormatter = argparse.RawDescriptionHelpFormatter
+    parser = argparse.ArgumentParser(description=desc,
+                                     formatter_class=helpFormatter)
     parser.add_argument("celppdir", help='Base celpp directory')
     parser.add_argument("--blastdir", help='Parent directory of ' +
                         ' blastdb.  There should exist a "current" ' +
@@ -91,12 +125,13 @@ def _parse_arguments(desc, args):
 
 def main():
 
-    desc = """Runs last 3 stages of CELPP processing pipeline (blast,
-              docking, and scoring).\n\n
+    desc = """
+              Runs last 3 stages of CELPP processing pipeline (blast,
+              dock, and score).\n\n
               Only 1 stage is run per invocation and the stage to be
               run is defined via required --stage flag.\n\n
               This program drops a pid lockfile 
-              (celpprunner.<stage>.lockpid) during startup to prevent 
+              (celpprunner.<stage>.lockpid) during startup to prevent
               duplicate invocation.\n
               When run this program will examine the stage and see
               if work can be done.  If stage is complete, the program will
@@ -145,37 +180,18 @@ def main():
      
     _setup_logging(theargs)
 
-    # get the lock
-    lock = _get_lock(theargs)
+    try:
+        # get the lock
+        lock = _get_lock(theargs)
+        sys.exit(run_stage(theargs))
 
-    latestWeekly = d3r.task.find_latest_weekly_dataset(theargs.celppdir)
-
-    if latestWeekly is None:
-        logger.info("No weekly dataset found in path " +
-                     theargs.celppdir)
-        return
-
-    logger.info("Starting " + theargs.stage + " stage")
-
-    # perform processing
-    if theargs.stage == 'blast':
-        task = BlastNFilterTask(latestWeekly,theargs)
-
-    if theargs.stage == 'dock':
-        raise NotImplementedError('uh oh dock is not implemented yet')
-
-    if theargs.stage == 'score':
-        raise NotImplementedError('uh oh score is not implemented yet')
- 
-    if task.can_run():
-        logger.info("Running task " + task.get_name())
-        task.run()
-        logger.debug("Task " + task.get_name() + " has finished running " +
-                     " with status " + task.get_status())
-
-    # release lock
-    logger.debug('Releasing lock')
-    lock.release()
+    except Exception as e:
+        logger.exception("Error caught exception")
+        sys.exit(2)
+    finally:
+        # release lock
+        logger.debug('Releasing lock')
+        lock.release()
 
 
 if __name__ == '__main__':
