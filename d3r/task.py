@@ -121,6 +121,13 @@ class D3RTask(object):
 
     def start(self):
         logger.info(self._name + ' task has started ')
+        if not self.create_dir():
+            self.set_error('Unable to create directory')
+            self.end()
+            return
+
+        open(os.path.join(self._path, self.get_dir_name(),
+                              D3RTask.START_FILE), 'a').close()
         
 
     def end(self):
@@ -129,7 +136,12 @@ class D3RTask(object):
         if not self._error is None:
             logger.error(self._name + ' task failed with error ' +
                          self.get_error())
+            open(os.path.join(self._path, self.get_dir_name(),
+                              D3RTask.ERROR_FILE), 'a').close()
 
+        if self.get_status() == D3RTask.COMPLETE_STATUS:
+            open(os.path.join(self._path, self.get_dir_name(),
+                              D3RTask.COMPLETE_FILE), 'a').close()
     def run(self):
         logger.info(self._name + ' task is running')
 
@@ -294,7 +306,6 @@ class BlastNFilterTask(D3RTask):
             self.set_error(self.get_dir_name() + ' already exists and ' +
                            'status is ' + self.get_status())
             return False
-
         self._can_run = True
         return True
 
@@ -320,8 +331,7 @@ class BlastNFilterTask(D3RTask):
         
         self.start()
 
-        if not self.create_dir():
-            self.set_error('Unable to create directory')
+        if self.get_error() != None:
             self.end()
             return
 
@@ -329,6 +339,7 @@ class BlastNFilterTask(D3RTask):
         logger.info("Running blastnfilter")
         print "Running blastnfilter <> <>"
 
+        self.set_status(D3RTask.COMPLETE_STATUS)
         # assess the result
         self.end()
 
