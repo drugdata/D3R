@@ -6,6 +6,7 @@ import re
 
 logger = logging.getLogger(__name__)
 
+
 class D3RParameters(object):
     """Holds parameters common to Tasks
 
@@ -127,13 +128,12 @@ class D3RTask(object):
             return
 
         open(os.path.join(self._path, self.get_dir_name(),
-                              D3RTask.START_FILE), 'a').close()
-        
+                          D3RTask.START_FILE), 'a').close()
 
     def end(self):
         logger.info(self._name + ' task has finished with status ' +
-                 self.get_status())
-        if not self._error is None:
+                    self.get_status())
+        if self._error is not None:
             logger.error(self._name + ' task failed with error ' +
                          self.get_error())
             open(os.path.join(self._path, self.get_dir_name(),
@@ -142,6 +142,7 @@ class D3RTask(object):
         if self.get_status() == D3RTask.COMPLETE_STATUS:
             open(os.path.join(self._path, self.get_dir_name(),
                               D3RTask.COMPLETE_FILE), 'a').close()
+
     def run(self):
         logger.info(self._name + ' task is running')
 
@@ -268,7 +269,7 @@ class BlastNFilterTask(D3RTask):
     def can_run(self):
         self._can_run = False
         self._error = None
-        # check blast 
+        # check blast
         makeblastdb = MakeBlastDBTask(self._path, self._args)
         makeblastdb.update_status_from_filesystem()
         if makeblastdb.get_status() != D3RTask.COMPLETE_STATUS:
@@ -288,7 +289,7 @@ class BlastNFilterTask(D3RTask):
                         'because ' + dataImport.get_name() + 'task' +
                         'has a status of ' + dataImport.get_status())
             if dataImport.get_status() == D3RTask.ERROR_STATUS:
-                self.set_error(dataImport.get_name() + ' task has ' + 
+                self.set_error(dataImport.get_name() + ' task has ' +
                                dataImport.get_status() + ' status')
             return False
 
@@ -301,7 +302,7 @@ class BlastNFilterTask(D3RTask):
             return False
 
         if self.get_status() != D3RTask.NOTFOUND_STATUS:
-            logger.warning(self.get_name() + " task was already " + 
+            logger.warning(self.get_name() + " task was already " +
                            "attempted, but there was a problem")
             self.set_error(self.get_dir_name() + ' already exists and ' +
                            'status is ' + self.get_status())
@@ -311,7 +312,7 @@ class BlastNFilterTask(D3RTask):
 
     def run(self):
         """Runs blastnfilter task after verifying dataimport was good
-          
+
            Method requires can_run() to be called before hand with
            successful outcome
            Otherwise method invokes D3RTask.start then this method
@@ -319,19 +320,19 @@ class BlastNFilterTask(D3RTask):
            completion results are analyzed and success or error status
            is set appropriately and D3RTask.end is invoked
            """
-       
+
         if self._can_run is None:
-            logger.info("Running can_run() to check if its allright " + 
+            logger.info("Running can_run() to check if its allright " +
                         "to run")
-            self.can_run() 
-        
+            self.can_run()
+
         if self._can_run is False:
             logger.info("can_run() came back with false cannot run")
             return
-        
+
         self.start()
 
-        if self.get_error() != None:
+        if self.get_error() is not None:
             self.end()
             return
 
@@ -392,7 +393,6 @@ def find_latest_weekly_dataset(celppdir):
 
     if latestYear is None:
         return
-
 
     dirPattern = re.compile("^dataset.week.\d+$")
 
