@@ -253,73 +253,71 @@ class TestD3rTask(unittest.TestCase):
         self._try_update_status_from_filesystem(task)
 
     def test_BlastNFilterTask_can_run(self):
-       tempDir = tempfile.mkdtemp()
+        tempDir = tempfile.mkdtemp()
 
-       try:
-           # try where makeblastdb is not complete
-           params = D3RParameters()
-           params.blastdir = tempDir
-           blastTask = BlastNFilterTask(tempDir, params)
-           self.assertEqual(blastTask.can_run(), False)
+        try:
+            # try where makeblastdb is not complete
+            params = D3RParameters()
+            params.blastdir = tempDir
+            blastTask = BlastNFilterTask(tempDir, params)
+            self.assertEqual(blastTask.can_run(), False)
 
+            # try where makeblastdb failed
+            blastDb = MakeBlastDBTask(tempDir, params)
+            blastDb.create_dir()
+            errorFile = os.path.join(blastDb.get_path(),
+                                     blastDb.get_dir_name(),
+                                     D3RTask.ERROR_FILE)
+            open(errorFile, 'a').close()
+            self.assertEqual(blastTask.can_run(), False)
+            self.assertEqual(blastTask.get_error(),
+                             'makeblastdb task has error status')
 
-           # try where makeblastdb failed
-           blastDb = MakeBlastDBTask(tempDir, params)
-           blastDb.create_dir()
-           errorFile = os.path.join(blastDb.get_path(),
-                                    blastDb.get_dir_name(),
-                                    D3RTask.ERROR_FILE)
-           open(errorFile, 'a').close()
-           self.assertEqual(blastTask.can_run(), False)
-           self.assertEqual(blastTask.get_error(),
-                            'makeblastdb task has error status')
+            # try where data import is not complete
+            completeFile = os.path.join(blastDb.get_path(),
+                                        blastDb.get_dir_name(),
+                                        D3RTask.COMPLETE_FILE)
+            open(completeFile, 'a').close()
+            self.assertEqual(blastTask.can_run(), False)
+            self.assertEqual(blastTask.get_error(), None)
 
-           # try where data import is not complete
-           completeFile = os.path.join(blastDb.get_path(),
-                                       blastDb.get_dir_name(),
-                                       D3RTask.COMPLETE_FILE)
-           open(completeFile, 'a').close()   
-           self.assertEqual(blastTask.can_run(), False)
-           self.assertEqual(blastTask.get_error(), None)
+            # try where data import failed
+            dataImport = DataImportTask(tempDir, params)
+            dataImport.create_dir()
+            errorFile = os.path.join(dataImport.get_path(),
+                                     dataImport.get_dir_name(),
+                                     D3RTask.ERROR_FILE)
+            open(errorFile, 'a').close()
+            self.assertEqual(blastTask.can_run(), False)
+            self.assertEqual(blastTask.get_error(),
+                             'dataimport task has error status')
 
+            # try where blast can run
+            completeFile = os.path.join(dataImport.get_path(),
+                                        dataImport.get_dir_name(),
+                                        D3RTask.COMPLETE_FILE)
+            open(completeFile, 'a').close()
+            self.assertEqual(blastTask.can_run(), True)
+            self.assertEqual(blastTask.get_error(), None)
 
-           # try where data import failed
-           dataImport = DataImportTask(tempDir, params)
-           dataImport.create_dir()
-           errorFile = os.path.join(dataImport.get_path(),
-                                    dataImport.get_dir_name(),
-                                    D3RTask.ERROR_FILE)
-           open(errorFile, 'a').close()
-           self.assertEqual(blastTask.can_run(), False)
-           self.assertEqual(blastTask.get_error(),
-                            'dataimport task has error status')
+            # try where blast exists
+            blastTask.create_dir()
+            self.assertEqual(blastTask.can_run(), False)
+            self.assertEqual(blastTask.get_error(),
+                             'stage.2.blastnfilter already exists and' +
+                             ' status is unknown')
 
-           # try where blast can run
-           completeFile = os.path.join(dataImport.get_path(),
-                                       dataImport.get_dir_name(),
-                                       D3RTask.COMPLETE_FILE)
-           open(completeFile, 'a').close()
-           self.assertEqual(blastTask.can_run(), True)
-           self.assertEqual(blastTask.get_error(), None)
-           
+            # try where blast is complete
+            completeFile = os.path.join(blastTask.get_path(),
+                                        blastTask.get_dir_name(),
+                                        D3RTask.COMPLETE_FILE)
+            open(completeFile, 'a').close()
+            self.assertEqual(blastTask.can_run(), False)
+            self.assertEqual(blastTask.get_error(), None)
 
-           # try where blast exists
-           blastTask.create_dir()
-           self.assertEqual(blastTask.can_run(), False)
-           self.assertEqual(blastTask.get_error(), 
-                            'stage.2.blastnfilter already exists and' + 
-                            ' status is unknown')
+        finally:
+            shutil.rmtree(tempDir)
 
-           # try where blast is complete
-           completeFile = os.path.join(blastTask.get_path(),
-                                       blastTask.get_dir_name(),
-                                       D3RTask.COMPLETE_FILE)
-           open(completeFile, 'a').close()
-           self.assertEqual(blastTask.can_run(), False)
-           self.assertEqual(blastTask.get_error(), None)
-           
-       finally:
-           shutil.rmtree(tempDir)
     def tearDown(self):
         pass
 
