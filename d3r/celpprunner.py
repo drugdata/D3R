@@ -1,7 +1,6 @@
 #! /usr/bin/env python
 
 import sys
-import errno
 import os
 import argparse
 import psutil
@@ -64,10 +63,11 @@ def _setup_logging(theargs):
     logging.basicConfig(format=theargs.logFormat)
     logging.getLogger('d3r.task').setLevel(theargs.logLevel)
 
-def run_stage(theargs):
-    latestWeekly = d3r.task.find_latest_weekly_dataset(theargs.celppdir)
 
-    if latestWeekly is None:
+def run_stage(theargs):
+    theargs.latestWeekly = d3r.task.find_latest_weekly_dataset(theargs.celppdir)
+
+    if theargs.latestWeekly is None:
         logger.info("No weekly dataset found in path " +
                     theargs.celppdir)
         return 0
@@ -76,7 +76,7 @@ def run_stage(theargs):
 
     # perform processing
     if theargs.stage == 'blast':
-        task = BlastNFilterTask(latestWeekly,theargs)
+        task = BlastNFilterTask(theargs.latestWeekly, theargs)
 
     if theargs.stage == 'dock':
         raise NotImplementedError('uh oh dock is not implemented yet')
@@ -89,11 +89,12 @@ def run_stage(theargs):
         task.run()
         logger.debug("Task " + task.get_name() + " has finished running " +
                      " with status " + task.get_status())
-    if task.get_error() != None:
+    if task.get_error() is not None:
         logger.error('Error running task ' + task.get_name() +
                      ' ' + task.get_error())
         return 1
     return 0
+
 
 def _parse_arguments(desc, args):
     """Parses command line arguments
@@ -106,7 +107,7 @@ def _parse_arguments(desc, args):
     parser.add_argument("celppdir", help='Base celpp directory')
     parser.add_argument("--blastdir", help='Parent directory of ' +
                         ' blastdb.  There should exist a "current" ' +
-                        ' symlink or folder that contains the db.')
+                        ' symlink or directory that contains the db.')
     parser.add_argument("--email",
                         help='Comma delimited list of email addresses')
 
@@ -126,67 +127,81 @@ def _parse_arguments(desc, args):
 def main():
 
     desc = """
-              Runs last 3 stages of CELPP processing pipeline (blast,
-              dock, and score).
+              Runs last 3 stages (blast, dock, & score) of CELPP
+              processing pipeline (http://www.drugdesigndata.org)
 
-              CELPP processing pipeline is basically a set of folders
-              with specific structure.  The pipeline runs a set of
-              what are known as stages.  Each stage has a numerical
-              value and a name.  The numerical value denotes tasks
-              order and the stage name identifies the separate
-              tasks to run in the stage.  
+              CELPP processing pipeline relies on a set of directories
+              with specific structure. The pipeline runs a set of stages
+              Each stage has a numerical value and a name. The numerical
+              value denotes order and the stage name identifies separate
+              tasks to run in the stage.
 
               The filesystem structure of the stage is:
 
               stage.<stage number>.<task name>
 
-              Only 1 stage is run per invocation and the stage to be
-              run is defined via required --stage flag.
- 
-              This program drops a pid lockfile 
-              (celpprunner.<stage>.lockpid) during startup to prevent
-              duplicate invocation.
+              Only 1 stage is run per invocation of this program and the
+              stage to be run is defined via the required --stage flag.
+
+              This program drops a pid lockfile
+              (celpprunner.<stage>.lockpid) to prevent duplicate
+              invocation.
 
               When run, this program will examine the stage and see
               if work can be done.  If stage is complete or previous
               steps have not completed, the program will exit silently.
-              If previous steps have failed or current stage already 
-              exists in error uncomplete state then program will report
-              the error via emails set in --email flag as well as report
-              via stderr/stdout and exit with nonzero exit code.  
-              
+              If previous steps have failed or current stage already
+              exists in an error or uncomplete state then program will
+              report the error via email using addresses set in --email
+              flag. Errors will also be reported via stderr/stdout.
+              The program will also exit with nonzero exit code.
+
               This program utilizes simple token files to denote stage
-              completion.  If a stage has a:
+              completion.  If within the stage directory there is a:
 
               'complete' file - then stage is done and no other
                                 checking is done.
 
               'error' file - then stage failed.
-          
+
               'start' file - then stage is running.
-              
-              Notification of stage start and end will be sent to 
+
+              Notification of stage start and end will be sent to
               addresses set via --email flag.
-               
-              Regardless of the stage specified this program will examine the
-              celppdir to find the latest weekly download of data from
-              wwPDB which should be under <year>/dataset.week.# path.
-              This program then verifies the stage specified by --stage can
-              be run.\n
-              For 'blast' stage this program verifies 
-              stage.1.dataimport exists and has 'complete' file.  Also
-              the --blastdir path must exist and within a 'current'
-              symlink/folder must exist and within a 'complete' file must
-              also reside. If both conditions are met then the blast stage
-              is run and output stored in stage.2.blastnfilter\n
-              For 'docking' stage, this program verifies stage2.blastnfilter
-              exists and has a 'complete' file within it.  If 'complete'
-              this program will run fred docking and store output in
-              stage.3.fred.  As new algorithms are incorporated additional
-              stage.3.<algo> will be created an run.
-              For 'scoring' stage, this program finds all complete 
-              stage.3.<algo> folders and invokes appropriate scoring
-              algorithm storing results in stage.4.<algo>.scoring
+
+              Regardless of the stage specified, this program will
+              examine the 'celppdir' (last argument passed on
+              commandline) to find the latest directory under this path:
+              <year>/dataset.week.#
+              The program will find the latest <year> and within
+              that year the dataset.week.# with highest #.  The output
+              directories created will be put within this directory.
+
+              Breakdown of behavior of program is defined by
+              value passed with --stage flag:
+
+              If --stage 'blast'
+
+              Verifies stage.1.dataimport exists and has 'complete'
+              file.  Also the --blastdir path must exist and within a
+              'current' symlink/directory must exist and within that a
+              'complete' file must also reside. If both conditions
+              are met then the 'blast' stage is run and output stored
+              in stage.2.blastnfilter
+
+              If --stage 'dock'
+
+              Verifies stage2.blastnfilter exists and has a 'complete'
+              file within it.  If complete, this program will run fred
+              docking and store output in stage.3.fred.  As new
+              algorithms are incorporated additional stage.3.<algo> will
+              be created and run.
+
+              If --stage 'score'
+
+              Finds all stage.3.<algo> directories with 'complete' files
+              in them and invokes appropriate scoring algorithm storing
+              results in stage.4.<algo>.scoring.
               """
 
     theargs = _parse_arguments(desc, sys.argv[1:])
@@ -195,15 +210,17 @@ def main():
             theargs.blastdir = os.path.dirname(theargs.blastdir)
     except AttributeError:
         pass
-     
+
     _setup_logging(theargs)
 
     try:
         # get the lock
         lock = _get_lock(theargs)
+
+        # run the stage
         sys.exit(run_stage(theargs))
 
-    except Exception as e:
+    except Exception:
         logger.exception("Error caught exception")
         sys.exit(2)
     finally:
