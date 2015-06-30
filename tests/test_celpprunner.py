@@ -50,22 +50,25 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEqual(logger.getEffectiveLevel(), 30)
 
     def test_parse_arguments(self):
-        theargs = ['--stage', 'blast', 'foo']
+        theargs = ['--stage', 'blast', 'foo', '--blastnfilter', 'true']
         result = celpprunner._parse_arguments('hi', theargs)
         self.assertEqual(result.stage, 'blast')
         self.assertEqual(result.celppdir, 'foo')
         self.assertEqual(result.blastdir, None)
         self.assertEqual(result.email, None)
         self.assertEqual(result.logLevel, 'WARNING')
+        self.assertEqual(result.blastnfilter, 'true')
 
         theargs = ['foo', '--stage', 'dock', '--email', 'b@b.com,h@h',
-                   '--blastdir', 'b', '--log', 'ERROR']
+                   '--blastdir', 'b', '--log', 'ERROR',
+                   '--blastnfilter', '/bin/blastnfilter.py']
         result = celpprunner._parse_arguments('hi', theargs)
         self.assertEqual(result.stage, 'dock')
         self.assertEqual(result.celppdir, 'foo')
         self.assertEqual(result.blastdir, 'b')
         self.assertEqual(result.email, 'b@b.com,h@h')
         self.assertEqual(result.logLevel, 'ERROR')
+        self.assertEqual(result.blastnfilter, '/bin/blastnfilter.py')
 
     def tearDown(self):
         pass
