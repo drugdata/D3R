@@ -116,6 +116,8 @@ def _parse_arguments(desc, args):
                         'blastnfilter (2), dock = fred & other ' +
                         'docking algorithms (3), ' +
                         'score = scoring (4)')
+    parser.add_argument("--blastnfilter", required=True,
+                        help='Path to BlastnFilter script')
     parser.add_argument("--log", dest="logLevel", choices=['DEBUG',
                         'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
                         help="Set the logging level",
