@@ -318,6 +318,14 @@ class TestD3rTask(unittest.TestCase):
         finally:
             shutil.rmtree(tempDir)
 
+    def test_BlastNFilterTask_run_with_success(self):
+        tempDir = tempfile.mkdtemp()
+
+        try:
+            pass
+        finally:
+            shutil.rmtree(tempDir)
+
     def tearDown(self):
         pass
 
