@@ -3,7 +3,8 @@
 import os
 import logging
 import re
-
+import subprocess
+import shlex
 logger = logging.getLogger(__name__)
 
 
@@ -127,7 +128,7 @@ class D3RTask(object):
             self.end()
             return
 
-        open(os.path.join(self._path, self.get_dir_name(),
+        open(os.path.join(self.get_dir(),
                           D3RTask.START_FILE), 'a').close()
 
     def end(self):
@@ -136,11 +137,11 @@ class D3RTask(object):
         if self._error is not None:
             logger.error(self._name + ' task failed with error ' +
                          self.get_error())
-            open(os.path.join(self._path, self.get_dir_name(),
+            open(os.path.join(self.get_dir(),
                               D3RTask.ERROR_FILE), 'a').close()
 
         if self.get_status() == D3RTask.COMPLETE_STATUS:
-            open(os.path.join(self._path, self.get_dir_name(),
+            open(os.path.join(self.get_dir(),
                               D3RTask.COMPLETE_FILE), 'a').close()
 
     def run(self):
@@ -159,6 +160,10 @@ class D3RTask(object):
         return (D3RTask.STAGE_DIRNAME_PREFIX + "." + str(self._stage) +
                 "." + self._name)
 
+    def get_dir(self):
+        return os.path.join(self.get_path(),
+                            self.get_dir_name())
+
     def update_status_from_filesystem(self):
         """Updates status by querying filesystem.
 
@@ -172,7 +177,7 @@ class D3RTask(object):
         if self._path is None:
             raise UnsetPathException('Path must be set')
 
-        pathToCheck = os.path.join(self._path, self.get_dir_name())
+        pathToCheck = self.get_dir()
 
         self.set_status(_get_status_of_task_in_dir(pathToCheck))
         logger.debug(self.get_name() + ' task status set to ' +
@@ -193,8 +198,7 @@ class D3RTask(object):
             logger.warning("Dir name is null cannot create directory")
             return
 
-        thePath = os.path.join(self.get_path(),
-                               self.get_dir_name())
+        thePath = self.get_dir()
 
         logger.debug('Creating directory: ' + thePath)
 
@@ -206,17 +210,35 @@ class D3RTask(object):
 
         return thePath
 
+    def write_to_file(self, str, file_name):
+        """Writes `str` to `file_name` under `task` directory"""
+        f = open(os.path.join(self.get_dir() + file_name), 'w')
+        f.write(str)
+        f.close()
+
 
 class DataImportTask(D3RTask):
     """Represents DataImport Task
 
        """
+    NONPOLYMER_TSV = "new_release_structure_nonpolymer.tsv"
+    SEQUENCE_TSV = "new_release_structure_sequence.tsv"
 
     def __init__(self, path, args):
         super(DataImportTask, self).__init__(path, args)
         self.set_name('dataimport')
         self.set_stage(1)
         self.set_status(D3RTask.UNKNOWN_STATUS)
+
+    def get_nonpolymer_tsv(self):
+        """Returns path to new_release_structure_nonpolymer.tsv file"""
+        return os.path.join(self.get_dir() +
+                            DataImportTask.NONPOLYMER_TSV)
+
+    def get_sequence_tsv(self):
+        """Returns path to new_release_structure_sequence.tsv file"""
+        return os.path.join(self.get_dir() +
+                            DataImportTask.SEQUENCE_TSV)
 
 
 class MakeBlastDBTask(D3RTask):
@@ -267,6 +289,13 @@ class BlastNFilterTask(D3RTask):
         self.set_status(D3RTask.UNKNOWN_STATUS)
 
     def can_run(self):
+        """Determines if task can actually run
+
+           This method first verifies the `MakeBlastDBTask` task
+           and `DataImportTask` both have `D3RTask.COMPLETE_STATUS` for
+           status.  The method then verifies a `BlastNFilterTask` does
+           not already exist.
+        """
         self._can_run = False
         self._error = None
         # check blast
@@ -336,11 +365,45 @@ class BlastNFilterTask(D3RTask):
             self.end()
             return
 
-        # Run the blastnfilter
-        logger.info("Running blastnfilter")
-        print "Running blastnfilter <> <>"
+        dataImport = DataImportTask(self._path, self._args)
 
-        self.set_status(D3RTask.COMPLETE_STATUS)
+        cmdToRun = (self.get_args().blastnfilter + ' --nonpolymertsv ' +
+                    dataImport.get_nonpolymer_tsv() +
+                    ' --sequencetsv ' +
+                    dataImport.get_sequence_tsv() +
+                    ' --outdir ' + self.get_dir())
+
+        # Run the blastnfilter
+        logger.info("Running command " + cmdToRun)
+        try:
+            p = subprocess.Popen(shlex.split(cmdToRun),
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE)
+        except Exception as e:
+            logger.exception("Error caught exception")
+            self.set_status(D3RTask.ERROR_STATUS)
+            self.set_error("Caught Exception trying to run " +
+                           cmdToRun + " : " + e.message)
+            self.end()
+            return
+
+        out, err = p.communicate()
+
+        self.write_to_file(err,
+                           os.path.basename(self.get_args().blastnfilter +
+                                            '.stderr'))
+        self.write_to_file(out,
+                           os.path.basename(self.get_args().blastnfilter +
+                                            '.stdout'))
+
+        if p.returncode == 0:
+            self.set_status(D3RTask.COMPLETE_STATUS)
+        else:
+            self.set_status(D3RTask.ERROR_STATUS)
+            self.set_error("Non zero exit code: " + p.returncode +
+                           "received. Standard out: " + out +
+                           " Standard error : " + err)
+
         # assess the result
         self.end()
 
