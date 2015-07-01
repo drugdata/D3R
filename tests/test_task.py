@@ -17,9 +17,9 @@ import shutil
 
 from d3r import task
 from d3r.task import D3RParameters
-from d3r.task import UnsetPathException
-from d3r.task import UnsetStageException
-from d3r.task import UnsetNameException
+from d3r.task import UnsetPathError
+from d3r.task import UnsetStageError
+from d3r.task import UnsetNameError
 from d3r.task import D3RTask
 from d3r.task import BlastNFilterTask
 from d3r.task import DataImportTask
@@ -87,7 +87,6 @@ class TestD3rTask(unittest.TestCase):
         self.assertEqual(task.get_stage(), None)
         self.assertEqual(task.get_status(), D3RTask.UNKNOWN_STATUS)
         self.assertEqual(task.get_error(), None)
-
         task.set_name('foo')
         task.set_path('blah')
         task.set_stage(4)
@@ -105,19 +104,73 @@ class TestD3rTask(unittest.TestCase):
         task = D3RTask(None, params)
         try:
             task.get_dir_name()
-            self.fail('Expected UnsetStageException')
-        except UnsetStageException:
+            self.fail('Expected UnsetStageError')
+        except UnsetStageError:
             pass
 
         task.set_stage(1)
         try:
             task.get_dir_name()
-            self.fail('Expected UnsetNameException')
-        except UnsetNameException:
+            self.fail('Expected UnsetNameError')
+        except UnsetNameError:
             pass
 
         task.set_name('foo')
         self.assertEqual(task.get_dir_name(), 'stage.1.foo')
+
+    def test_D3RTask_get_dir(self):
+        params = D3RParameters()
+        task = D3RTask(None, params)
+        try:
+            task.get_dir()
+            self.fail('Expected UnsetPathError')
+        except UnsetPathError:
+            pass
+
+        task.set_path('/blah')
+
+        try:
+            task.get_dir()
+            self.fail('Expected UnsetStageError')
+        except UnsetStageError:
+            pass
+
+        task.set_stage(1)
+        try:
+            task.get_dir()
+            self.fail('Expected UnsetNameError')
+        except UnsetNameError:
+            pass
+
+        task.set_name('foo')
+
+        self.assertEqual(task.get_dir(), '/blah/stage.1.foo')
+
+    def test_D3RTask_write_to_file(self):
+        tempDir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = D3RTask(None, params)
+            try:
+                task.write_to_file('hello', 'foo')
+                self.fail('Expected UnsetPathError')
+            except UnsetPathError:
+                pass
+            task.set_name('foo')
+            task.set_stage(1)
+            task.set_path(tempDir)
+
+            try:
+                task.write_to_file('hello', 'foo')
+                self.fail('Expected IOError')
+            except IOError:
+                pass
+            task.create_dir()
+            task.write_to_file('hello', 'foo')
+            self.assertEqual(os.path.isfile(os.path.join(task.get_dir(),
+                                            'foo')), True)
+        finally:
+            shutil.rmtree(tempDir)
 
     def test_D3RTask_create_dir(self):
         tempDir = tempfile.mkdtemp()
@@ -139,8 +192,8 @@ class TestD3rTask(unittest.TestCase):
 
         try:
             task.update_status_from_filesystem()
-            self.fail("Expected UnsetPathException")
-        except UnsetPathException:
+            self.fail("Expected UnsetPathError")
+        except UnsetPathError:
             pass
 
         tempDir = tempfile.mkdtemp()
@@ -150,8 +203,8 @@ class TestD3rTask(unittest.TestCase):
             # Test unset stage
             try:
                 task.update_status_from_filesystem()
-                self.fail("Expected UnsetStageException")
-            except UnsetStageException:
+                self.fail("Expected UnsetStageError")
+            except UnsetStageError:
                 pass
         finally:
             shutil.rmtree(tempDir)
