@@ -58,16 +58,16 @@ def _get_lock(theargs):
 def _setup_logging(theargs):
     """Sets up the logging for application
        """
-    theargs.logFormat = LOG_FORMAT
-    logger.setLevel(theargs.logLevel)
-    logging.basicConfig(format=theargs.logFormat)
-    logging.getLogger('d3r.task').setLevel(theargs.logLevel)
+    theargs.logformat = LOG_FORMAT
+    logger.setLevel(theargs.loglevel)
+    logging.basicConfig(format=theargs.logformat)
+    logging.getLogger('d3r.task').setLevel(theargs.loglevel)
 
 
 def run_stage(theargs):
-    theargs.latestWeekly = d3r.task.find_latest_weekly_dataset(theargs.celppdir)
+    theargs.latest_weekly = d3r.task.find_latest_weekly_dataset(theargs.celppdir)
 
-    if theargs.latestWeekly is None:
+    if theargs.latest_weekly is None:
         logger.info("No weekly dataset found in path " +
                     theargs.celppdir)
         return 0
@@ -76,7 +76,7 @@ def run_stage(theargs):
 
     # perform processing
     if theargs.stage == 'blast':
-        task = BlastNFilterTask(theargs.latestWeekly, theargs)
+        task = BlastNFilterTask(theargs.latest_weekly, theargs)
 
     if theargs.stage == 'dock':
         raise NotImplementedError('uh oh dock is not implemented yet')
@@ -101,9 +101,9 @@ def _parse_arguments(desc, args):
        """
     parsed_arguments = D3RParameters()
 
-    helpFormatter = argparse.RawDescriptionHelpFormatter
+    help_formatter = argparse.RawDescriptionHelpFormatter
     parser = argparse.ArgumentParser(description=desc,
-                                     formatter_class=helpFormatter)
+                                     formatter_class=help_formatter)
     parser.add_argument("celppdir", help='Base celpp directory')
     parser.add_argument("--blastdir", help='Parent directory of ' +
                         ' blastdb.  There should exist a "current" ' +
@@ -118,7 +118,7 @@ def _parse_arguments(desc, args):
                         'score = scoring (4)')
     parser.add_argument("--blastnfilter", required=True,
                         help='Path to BlastnFilter script')
-    parser.add_argument("--log", dest="logLevel", choices=['DEBUG',
+    parser.add_argument("--log", dest="loglevel", choices=['DEBUG',
                         'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
                         help="Set the logging level",
                         default='WARNING')
