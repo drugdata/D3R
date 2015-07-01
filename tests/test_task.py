@@ -128,7 +128,11 @@ class TestD3rTask(unittest.TestCase):
         try:
             params = D3RParameters()
             task = D3RTask(None, params)
-            self.assertEqual(task.create_dir(), None)
+            try:
+                task.create_dir()
+                self.fail('Expected UnsetPathError')
+            except UnsetPathError:
+                pass
             task.set_name('foo')
             task.set_stage(1)
             task.set_path(tempDir)
