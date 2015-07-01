@@ -6,7 +6,7 @@ import argparse
 import psutil
 import logging
 
-import d3r.task
+from d3r import util
 from d3r.task import D3RParameters
 from d3r.task import BlastNFilterTask
 from lockfile.pidlockfile import PIDLockFile
@@ -65,7 +65,7 @@ def _setup_logging(theargs):
 
 
 def run_stage(theargs):
-    theargs.latest_weekly = d3r.task.find_latest_weekly_dataset(theargs.celppdir)
+    theargs.latest_weekly = util.find_latest_weekly_dataset(theargs.celppdir)
 
     if theargs.latest_weekly is None:
         logger.info("No weekly dataset found in path " +
