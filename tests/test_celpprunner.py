@@ -45,7 +45,7 @@ class TestCelppRunner(unittest.TestCase):
     def test_setup_logging(self):
         logger = logging.getLogger('funlogger')
         theargs = D3RParameters()
-        theargs.logLevel = 'DEBUG'
+        theargs.loglevel = 'DEBUG'
         celpprunner._setup_logging(theargs)
         self.assertEqual(logger.getEffectiveLevel(), 30)
 
@@ -56,7 +56,7 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEqual(result.celppdir, 'foo')
         self.assertEqual(result.blastdir, None)
         self.assertEqual(result.email, None)
-        self.assertEqual(result.logLevel, 'WARNING')
+        self.assertEqual(result.loglevel, 'WARNING')
         self.assertEqual(result.blastnfilter, 'true')
 
         theargs = ['foo', '--stage', 'dock', '--email', 'b@b.com,h@h',
@@ -67,7 +67,7 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEqual(result.celppdir, 'foo')
         self.assertEqual(result.blastdir, 'b')
         self.assertEqual(result.email, 'b@b.com,h@h')
-        self.assertEqual(result.logLevel, 'ERROR')
+        self.assertEqual(result.loglevel, 'ERROR')
         self.assertEqual(result.blastnfilter, '/bin/blastnfilter.py')
 
     def tearDown(self):
