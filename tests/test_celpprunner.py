@@ -11,8 +11,9 @@ Tests for `celpprunner` module.
 import unittest
 import tempfile
 import logging
+import os
 import os.path
-
+import shutil
 
 from d3r import celpprunner
 from d3r.task import D3RParameters
@@ -24,23 +25,25 @@ class TestCelppRunner(unittest.TestCase):
         pass
 
     def test_get_lock(self):
-        tempDir = tempfile.mkdtemp()
-        theargs = D3RParameters()
-        theargs.celppdir = tempDir
-        theargs.stage = 'blast'
+        temp_dir = tempfile.mkdtemp()
+        try:
+            theargs = D3RParameters()
+            theargs.celppdir = temp_dir
+            theargs.stage = 'blast'
 
-        # get the lock file which should work
-        lock = celpprunner._get_lock(theargs)
-        expectedLockFile = os.path.join(tempDir,
-                                        'celpprunner.blast.lockpid')
-        self.assertTrue(os.path.isfile(expectedLockFile))
+            # get the lock file which should work
+            lock = celpprunner._get_lock(theargs)
+            expectedLockFile = os.path.join(temp_dir,
+                                            'celpprunner.blast.lockpid')
+            self.assertTrue(os.path.isfile(expectedLockFile))
 
-        # try getting lock again which should also work
-        lock = celpprunner._get_lock(theargs)
+            # try getting lock again which should also work
+            lock = celpprunner._get_lock(theargs)
 
-        lock.release()
-        self.assertFalse(os.path.isfile(expectedLockFile))
-        os.rmdir(tempDir)
+            lock.release()
+            self.assertFalse(os.path.isfile(expectedLockFile))
+        finally:
+            shutil.rmtree(temp_dir)
 
     def test_setup_logging(self):
         logger = logging.getLogger('funlogger')
@@ -69,6 +72,92 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEqual(result.email, 'b@b.com,h@h')
         self.assertEqual(result.loglevel, 'ERROR')
         self.assertEqual(result.blastnfilter, '/bin/blastnfilter.py')
+
+    def test_run_stage_no_weekly_datasetfound(self):
+        temp_dir = tempfile.mkdtemp()
+
+        try:
+            theargs = D3RParameters()
+            theargs.celppdir = temp_dir
+            self.assertEqual(celpprunner.run_stage(theargs), 0)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_run_stage_dock(self):
+        temp_dir = tempfile.mkdtemp()
+
+        try:
+            theargs = D3RParameters()
+            theargs.celppdir = os.path.join(temp_dir)
+
+            os.mkdir(os.path.join(temp_dir, '2015'))
+            os.mkdir(os.path.join(temp_dir, '2015', 'dataset.week.1'))
+
+            theargs.stage = 'dock'
+            try:
+                celpprunner.run_stage(theargs)
+                self.fail('Expected NotImplementedError')
+            except NotImplementedError:
+                pass
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_run_stage_score(self):
+        temp_dir = tempfile.mkdtemp()
+
+        try:
+            theargs = D3RParameters()
+            theargs.celppdir = os.path.join(temp_dir)
+
+            os.mkdir(os.path.join(temp_dir, '2015'))
+            os.mkdir(os.path.join(temp_dir, '2015', 'dataset.week.1'))
+
+            theargs.stage = 'score'
+            try:
+                celpprunner.run_stage(theargs)
+                self.fail('Expected NotImplementedError')
+            except NotImplementedError:
+                pass
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_run_stage_blast(self):
+        temp_dir = tempfile.mkdtemp()
+
+        try:
+            theargs = D3RParameters()
+            theargs.celppdir = os.path.join(temp_dir)
+            os.mkdir(os.path.join(temp_dir, 'current'))
+            open(os.path.join(temp_dir, 'current', 'complete'), 'a').close()
+            theargs.blastdir = temp_dir
+            os.mkdir(os.path.join(temp_dir, '2015'))
+            os.mkdir(os.path.join(temp_dir, '2015', 'dataset.week.1'))
+
+            theargs.stage = 'blast'
+            self.assertEqual(celpprunner.run_stage(theargs), 0)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_run_stage_blast_has_error(self):
+        temp_dir = tempfile.mkdtemp()
+
+        try:
+            theargs = D3RParameters()
+            theargs.celppdir = os.path.join(temp_dir)
+            os.mkdir(os.path.join(temp_dir, 'current'))
+            open(os.path.join(temp_dir, 'current', 'error'), 'a').close()
+            theargs.blastdir = temp_dir
+            os.mkdir(os.path.join(temp_dir, '2015'))
+            os.mkdir(os.path.join(temp_dir, '2015', 'dataset.week.1'))
+            theargs.stage = 'blast'
+            self.assertEqual(celpprunner.run_stage(theargs), 1)
+
+        finally:
+            shutil.rmtree(temp_dir)
 
     def tearDown(self):
         pass
