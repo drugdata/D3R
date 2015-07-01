@@ -108,7 +108,7 @@ def _parse_arguments(desc, args):
     parser.add_argument("--blastdir", help='Parent directory of ' +
                         ' blastdb.  There should exist a "current" ' +
                         ' symlink or directory that contains the db.')
-    parser.add_argument("--email",
+    parser.add_argument("--email", dest="email",
                         help='Comma delimited list of email addresses')
 
     parser.add_argument("--stage", choices=['blast', 'dock', 'score'],
