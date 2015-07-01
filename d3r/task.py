@@ -15,37 +15,43 @@ class D3RParameters(object):
     pass
 
 
-class UnsetPathException(Exception):
+class UnsetPathError(Exception):
     """Exception to denote path is unset
     """
     pass
 
 
-class UnsetNameException(Exception):
+class UnsetFileNameError(Exception):
+    """Exception to denote file name is unset
+    """
+    pass
+
+
+class UnsetNameError(Exception):
     """Exception to denote name is unset
     """
     pass
 
 
-class UnsetStageException(Exception):
+class UnsetStageError(Exception):
     """Exception to denote stage is unset
     """
     pass
 
 
-class UnsetBlastDirException(Exception):
+class UnsetBlastDirError(Exception):
     """Exception to denote blastdir in D3RParameters is unset
     """
     pass
 
 
-class TaskUnableToStartException(Exception):
+class TaskUnableToStartError(Exception):
     """Exception to denote when task cannot start due to failure
     """
     pass
 
 
-class TaskFailedException(Exception):
+class TaskFailedError(Exception):
     """Exception to denote when a task failed
     """
     pass
@@ -150,17 +156,26 @@ class D3RTask(object):
     def get_dir_name(self):
         """Gets directory name for task
 
-           """
+           :raises: UnsetStageError, UnsetNameError
+        """
         if self._stage is None:
-            raise UnsetStageException('Stage must be set')
+            raise UnsetStageError('Stage must be set')
 
         if self._name is None:
-            raise UnsetNameException('Name must be set')
+            raise UnsetNameError('Name must be set')
 
         return (D3RTask.STAGE_DIRNAME_PREFIX + "." + str(self._stage) +
                 "." + self._name)
 
     def get_dir(self):
+        """Gets full path of Task
+
+           :raises: UnsetPathError if path is not set,
+                    and all exceptions from get_dir_name()
+        """
+        if self.get_path() is None:
+            raise UnsetPathError('Path must be set')
+
         return os.path.join(self.get_path(),
                             self.get_dir_name())
 
@@ -174,12 +189,12 @@ class D3RTask(object):
            If start file exists under path then status is START_STATUS
            else status is UNKNOWN_STATUS
            """
-        if self._path is None:
-            raise UnsetPathException('Path must be set')
+        if self.get_path() is None:
+            raise UnsetPathError('Path must be set')
 
-        pathToCheck = self.get_dir()
+        path_to_check = self.get_dir()
 
-        self.set_status(_get_status_of_task_in_dir(pathToCheck))
+        self.set_status(_get_status_of_task_in_dir(path_to_check))
         logger.debug(self.get_name() + ' task status set to ' +
                      self.get_status())
         return self.get_status()
@@ -198,22 +213,36 @@ class D3RTask(object):
             logger.warning("Dir name is null cannot create directory")
             return
 
-        thePath = self.get_dir()
+        the_path = self.get_dir()
 
-        logger.debug('Creating directory: ' + thePath)
+        logger.debug('Creating directory: ' + the_path)
 
-        os.mkdir(thePath)
+        os.mkdir(the_path)
 
-        if not os.path.isdir(thePath):
-            logger.warning("Unable to create directory: " + thePath)
+        if not os.path.isdir(the_path):
+            logger.warning("Unable to create directory: " + the_path)
             return
 
-        return thePath
+        return the_path
 
     def write_to_file(self, str, file_name):
-        """Writes `str` to `file_name` under `task` directory"""
-        f = open(os.path.join(self.get_dir() + file_name), 'w')
-        f.write(str)
+        """Writes `str` to `file_name` under `task` directory
+
+           If `str` is None file is created but nothing is written.
+           File is written using 'w' mode so if file exists it will
+           be overwritten.
+
+           :raises: UnsetFileNameError if file_name is None
+        """
+        if file_name is None:
+            raise UnsetFileNameError('file_name must be set')
+        file_to_write = os.path.join(self.get_dir(), file_name)
+        logger.debug('Writing file ' + file_to_write)
+        f = open(file_to_write, 'w')
+
+        if str is not None:
+            f.write(str)
+
         f.close()
 
 
@@ -299,27 +328,27 @@ class BlastNFilterTask(D3RTask):
         self._can_run = False
         self._error = None
         # check blast
-        makeblastdb = MakeBlastDBTask(self._path, self._args)
-        makeblastdb.update_status_from_filesystem()
-        if makeblastdb.get_status() != D3RTask.COMPLETE_STATUS:
+        make_blastdb = MakeBlastDBTask(self._path, self._args)
+        make_blastdb.update_status_from_filesystem()
+        if make_blastdb.get_status() != D3RTask.COMPLETE_STATUS:
             logger.info('Cannot run ' + self.get_name() + 'task ' +
-                        'because ' + makeblastdb.get_name() + 'task' +
-                        'has a status of ' + makeblastdb.get_status())
-            if makeblastdb.get_status() == D3RTask.ERROR_STATUS:
-                self.set_error(makeblastdb.get_name() + ' task has ' +
-                               makeblastdb.get_status() + ' status')
+                        'because ' + make_blastdb.get_name() + 'task' +
+                        'has a status of ' + make_blastdb.get_status())
+            if make_blastdb.get_status() == D3RTask.ERROR_STATUS:
+                self.set_error(make_blastdb.get_name() + ' task has ' +
+                               make_blastdb.get_status() + ' status')
             return False
 
         # check data import
-        dataImport = DataImportTask(self._path, self._args)
-        dataImport.update_status_from_filesystem()
-        if dataImport.get_status() != D3RTask.COMPLETE_STATUS:
+        data_import = DataImportTask(self._path, self._args)
+        data_import.update_status_from_filesystem()
+        if data_import.get_status() != D3RTask.COMPLETE_STATUS:
             logger.info('Cannot run ' + self.get_name() + 'task ' +
-                        'because ' + dataImport.get_name() + 'task' +
-                        'has a status of ' + dataImport.get_status())
-            if dataImport.get_status() == D3RTask.ERROR_STATUS:
-                self.set_error(dataImport.get_name() + ' task has ' +
-                               dataImport.get_status() + ' status')
+                        'because ' + data_import.get_name() + 'task' +
+                        'has a status of ' + data_import.get_status())
+            if data_import.get_status() == D3RTask.ERROR_STATUS:
+                self.set_error(data_import.get_name() + ' task has ' +
+                               data_import.get_status() + ' status')
             return False
 
         # check blast is not complete and does not exist
@@ -365,25 +394,25 @@ class BlastNFilterTask(D3RTask):
             self.end()
             return
 
-        dataImport = DataImportTask(self._path, self._args)
+        data_import = DataImportTask(self._path, self._args)
 
-        cmdToRun = (self.get_args().blastnfilter + ' --nonpolymertsv ' +
-                    dataImport.get_nonpolymer_tsv() +
-                    ' --sequencetsv ' +
-                    dataImport.get_sequence_tsv() +
-                    ' --outdir ' + self.get_dir())
+        cmd_to_run = (self.get_args().blastnfilter + ' --nonpolymertsv ' +
+                      data_import.get_nonpolymer_tsv() +
+                      ' --sequencetsv ' +
+                      data_import.get_sequence_tsv() +
+                      ' --outdir ' + self.get_dir())
 
         # Run the blastnfilter
-        logger.info("Running command " + cmdToRun)
+        logger.info("Running command " + cmd_to_run)
         try:
-            p = subprocess.Popen(shlex.split(cmdToRun),
+            p = subprocess.Popen(shlex.split(cmd_to_run),
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE)
         except Exception as e:
             logger.exception("Error caught exception")
             self.set_status(D3RTask.ERROR_STATUS)
             self.set_error("Caught Exception trying to run " +
-                           cmdToRun + " : " + e.message)
+                           cmd_to_run + " : " + e.message)
             self.end()
             return
 
@@ -420,25 +449,25 @@ def find_latest_year(celppdir):
     if not os.path.isdir(celppdir):
         raise Exception(celppdir+" is not a directory")
 
-    dirPattern = re.compile("^\d\d\d\d$")
+    dir_pattern = re.compile("^\d\d\d\d$")
 
-    latestYear = -1
-    latestEntry = None
-    fullPath = None
+    latest_year = -1
+    latest_entry = None
+    full_path = None
     for entry in os.listdir(celppdir):
-        if re.match(dirPattern, entry):
-            entryYear = int(entry)
+        if re.match(dir_pattern, entry):
+            entry_year = int(entry)
 
-            if entryYear > latestYear:
-                fullPath = os.path.join(celppdir, entry)
-                if os.path.isdir(fullPath):
-                    latestYear = entryYear
-                    latestEntry = fullPath
+            if entry_year > latest_year:
+                full_path = os.path.join(celppdir, entry)
+                if os.path.isdir(full_path):
+                    latest_year = entry_year
+                    latest_entry = full_path
 
-    if latestYear == -1:
+    if latest_year == -1:
         return
 
-    return latestEntry
+    return latest_entry
 
 
 def find_latest_weekly_dataset(celppdir):
@@ -452,26 +481,26 @@ def find_latest_weekly_dataset(celppdir):
        :raises: Exception: If celppdir is not a directory
        """
 
-    latestYear = find_latest_year(celppdir)
+    latest_year = find_latest_year(celppdir)
 
-    if latestYear is None:
+    if latest_year is None:
         return
 
-    dirPattern = re.compile("^dataset.week.\d+$")
+    dir_pattern = re.compile("^dataset.week.\d+$")
 
-    latestEntry = None
-    latestWeekNo = -1
-    fullPath = None
-    for entry in os.listdir(latestYear):
-        if re.match(dirPattern, entry):
-            weekNo = re.sub("dataset.week.", "", entry)
-            if weekNo > latestWeekNo:
-                fullPath = os.path.join(latestYear, entry)
-                if os.path.isdir(fullPath):
-                    latestWeekNo = weekNo
-                    latestEntry = fullPath
+    latest_entry = None
+    latest_weekno = -1
+    full_path = None
+    for entry in os.listdir(latest_year):
+        if re.match(dir_pattern, entry):
+            weekno = re.sub("dataset.week.", "", entry)
+            if weekno > latest_weekno:
+                full_path = os.path.join(latest_year, entry)
+                if os.path.isdir(full_path):
+                    latest_weekno = weekno
+                    latest_entry = full_path
 
-    return latestEntry
+    return latest_entry
 
 
 def _get_status_of_task_in_dir(path):
@@ -483,19 +512,13 @@ def _get_status_of_task_in_dir(path):
     if not os.path.isdir(path):
         return D3RTask.NOTFOUND_STATUS
 
-    completeFile = os.path.join(path, D3RTask.COMPLETE_FILE)
-
-    if os.path.isfile(completeFile):
+    if os.path.isfile(os.path.join(path, D3RTask.COMPLETE_FILE)):
         return D3RTask.COMPLETE_STATUS
 
-    errorFile = os.path.join(path, D3RTask.ERROR_FILE)
-
-    if os.path.isfile(errorFile):
+    if os.path.isfile(os.path.join(path, D3RTask.ERROR_FILE)):
         return D3RTask.ERROR_STATUS
 
-    startFile = os.path.join(path, D3RTask.START_FILE)
-
-    if os.path.isfile(startFile):
+    if os.path.isfile(os.path.join(path, D3RTask.START_FILE)):
         return D3RTask.START_STATUS
 
     return D3RTask.UNKNOWN_STATUS
