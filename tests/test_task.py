@@ -15,7 +15,6 @@ Tests for `task` module.
 
 import shutil
 
-from d3r import task
 from d3r.task import D3RParameters
 from d3r.task import UnsetPathError
 from d3r.task import UnsetStageError
@@ -30,54 +29,6 @@ class TestD3rTask(unittest.TestCase):
 
     def setUp(self):
         pass
-
-    def test_find_latest_year(self):
-        tempDir = tempfile.mkdtemp()
-        try:
-            self.assertEqual(task.find_latest_year(tempDir), None)
-
-            os.mkdir(os.path.join(tempDir, "foo"))
-            os.mkdir(os.path.join(tempDir, "2014"))
-            self.assertEqual(task.find_latest_year(tempDir),
-                             os.path.join(tempDir, '2014'))
-
-            open(os.path.join(tempDir, '2016'), 'a').close()
-            self.assertEqual(task.find_latest_year(tempDir),
-                             os.path.join(tempDir, '2014'))
-
-            os.mkdir(os.path.join(tempDir, '2012'))
-            self.assertEqual(task.find_latest_year(tempDir),
-                             os.path.join(tempDir, '2014'))
-
-            os.mkdir(os.path.join(tempDir, '2015'))
-
-            self.assertEqual(task.find_latest_year(tempDir),
-                             os.path.join(tempDir, '2015'))
-
-        finally:
-            shutil.rmtree(tempDir)
-
-    def test_find_latest_weekly_dataset(self):
-        tempDir = tempfile.mkdtemp()
-
-        try:
-            self.assertEqual(task.find_latest_weekly_dataset(tempDir), None)
-
-            os.mkdir(os.path.join(tempDir, '2015'))
-
-            self.assertEqual(task.find_latest_weekly_dataset(tempDir), None)
-
-            open(os.path.join(tempDir, '2015', 'dataset.week.4'), 'a').close()
-
-            self.assertEqual(task.find_latest_weekly_dataset(tempDir), None)
-
-            os.mkdir(os.path.join(tempDir, '2015', 'dataset.week.3'))
-
-            self.assertEqual(task.find_latest_weekly_dataset(tempDir),
-                             os.path.join(tempDir, '2015',
-                                          'dataset.week.3'))
-        finally:
-            shutil.rmtree(tempDir)
 
     def test_D3RTask(self):
         params = D3RParameters()
