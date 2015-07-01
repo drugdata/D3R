@@ -203,15 +203,9 @@ class D3RTask(object):
 
            Directory will be named stage.<stage>.<name>
            and located under get_path()
+           :raises: UnsetPathError if path is not set and all exceptions
+                    from get_dir_name()
            """
-        if self.get_path() is None:
-            logger.warning("Path is null cannot create directory")
-            return
-
-        if self.get_dir_name() is None:
-            logger.warning("Dir name is null cannot create directory")
-            return
-
         the_path = self.get_dir()
 
         logger.debug('Creating directory: ' + the_path)
