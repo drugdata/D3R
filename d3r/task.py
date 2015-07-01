@@ -2,7 +2,6 @@
 
 import os
 import logging
-import re
 import subprocess
 import shlex
 logger = logging.getLogger(__name__)
@@ -194,7 +193,7 @@ class D3RTask(object):
 
         path_to_check = self.get_dir()
 
-        self.set_status(_get_status_of_task_in_dir(path_to_check))
+        self.set_status(self._get_status_of_task_in_dir(path_to_check))
         logger.debug(self.get_name() + ' task status set to ' +
                      self.get_status())
         return self.get_status()
@@ -244,6 +243,26 @@ class D3RTask(object):
             f.write(str)
 
         f.close()
+
+    def _get_status_of_task_in_dir(self, path):
+        """Gets status of task based on existance of files in path
+
+           Examines get_path() and returns status based on the following
+           conditions
+        """
+        if not os.path.isdir(path):
+            return D3RTask.NOTFOUND_STATUS
+
+        if os.path.isfile(os.path.join(path, D3RTask.COMPLETE_FILE)):
+            return D3RTask.COMPLETE_STATUS
+
+        if os.path.isfile(os.path.join(path, D3RTask.ERROR_FILE)):
+            return D3RTask.ERROR_STATUS
+
+        if os.path.isfile(os.path.join(path, D3RTask.START_FILE)):
+            return D3RTask.START_STATUS
+
+        return D3RTask.UNKNOWN_STATUS
 
 
 class DataImportTask(D3RTask):
@@ -435,90 +454,3 @@ class BlastNFilterTask(D3RTask):
 
         # assess the result
         self.end()
-
-
-def find_latest_year(celppdir):
-    """Given a directory find the latest year
-
-       The latest year will be a folder of 4 digits
-       and have the highest value ie 2015
-       :return: Directory or None if none is found
-       :raises: Exception: If celppdir is not a directory
-       """
-
-    if not os.path.isdir(celppdir):
-        raise Exception(celppdir+" is not a directory")
-
-    dir_pattern = re.compile("^\d\d\d\d$")
-
-    latest_year = -1
-    latest_entry = None
-    full_path = None
-    for entry in os.listdir(celppdir):
-        if re.match(dir_pattern, entry):
-            entry_year = int(entry)
-
-            if entry_year > latest_year:
-                full_path = os.path.join(celppdir, entry)
-                if os.path.isdir(full_path):
-                    latest_year = entry_year
-                    latest_entry = full_path
-
-    if latest_year == -1:
-        return
-
-    return latest_entry
-
-
-def find_latest_weekly_dataset(celppdir):
-    """Given a directory find the latest dataset
-
-       This method looks in directory passed in for
-       paths with dataset.week.# format and returns
-       the path with highest # on it.  If none are
-       found then None is returned.
-       :return: Directory upon success or None if no directory found
-       :raises: Exception: If celppdir is not a directory
-       """
-
-    latest_year = find_latest_year(celppdir)
-
-    if latest_year is None:
-        return
-
-    dir_pattern = re.compile("^dataset.week.\d+$")
-
-    latest_entry = None
-    latest_weekno = -1
-    full_path = None
-    for entry in os.listdir(latest_year):
-        if re.match(dir_pattern, entry):
-            weekno = re.sub("dataset.week.", "", entry)
-            if weekno > latest_weekno:
-                full_path = os.path.join(latest_year, entry)
-                if os.path.isdir(full_path):
-                    latest_weekno = weekno
-                    latest_entry = full_path
-
-    return latest_entry
-
-
-def _get_status_of_task_in_dir(path):
-    """Gets status of task based on existance of files in path
-
-       Examines `path` and returns status based on the following
-       conditions
-       """
-    if not os.path.isdir(path):
-        return D3RTask.NOTFOUND_STATUS
-
-    if os.path.isfile(os.path.join(path, D3RTask.COMPLETE_FILE)):
-        return D3RTask.COMPLETE_STATUS
-
-    if os.path.isfile(os.path.join(path, D3RTask.ERROR_FILE)):
-        return D3RTask.ERROR_STATUS
-
-    if os.path.isfile(os.path.join(path, D3RTask.START_FILE)):
-        return D3RTask.START_STATUS
-
-    return D3RTask.UNKNOWN_STATUS
