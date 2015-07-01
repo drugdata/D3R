@@ -4,6 +4,7 @@ import os
 import logging
 import subprocess
 import shlex
+import smtplib
 logger = logging.getLogger(__name__)
 
 
@@ -13,44 +14,49 @@ class D3RParameters(object):
     """
     pass
 
+class TaskException(Exception):
+    """base exception class for all the other exceptions provided by 
+       this module.
+    """
+    pass
 
-class UnsetPathError(Exception):
+class UnsetPathError(TaskException):
     """Exception to denote path is unset
     """
     pass
 
 
-class UnsetFileNameError(Exception):
+class UnsetFileNameError(TaskException):
     """Exception to denote file name is unset
     """
     pass
 
 
-class UnsetNameError(Exception):
+class UnsetNameError(TaskException):
     """Exception to denote name is unset
     """
     pass
 
 
-class UnsetStageError(Exception):
+class UnsetStageError(TaskException):
     """Exception to denote stage is unset
     """
     pass
 
 
-class UnsetBlastDirError(Exception):
+class UnsetBlastDirError(TaskException):
     """Exception to denote blastdir in D3RParameters is unset
     """
     pass
 
 
-class TaskUnableToStartError(Exception):
+class TaskUnableToStartError(TaskException):
     """Exception to denote when task cannot start due to failure
     """
     pass
 
 
-class TaskFailedError(Exception):
+class TaskFailedError(TaskException):
     """Exception to denote when a task failed
     """
     pass
@@ -126,8 +132,19 @@ class D3RTask(object):
     def set_error(self, error):
         self._error = error
 
+    def _get_smtp_server(self):
+        return smtplib.SMTP('localhost')
+
     def start(self):
         logger.info(self._name + ' task has started ')
+
+        if self.get_args().email is not None:       
+            server = self._get_smtp_server()
+            server.sendmail('celpprunner@localhost.com',
+                            self.get_args().email,
+                            'task ' + self.get_name() + ' has started')
+            server.quit()
+        
         if not self.create_dir():
             self.set_error('Unable to create directory')
             self.end()
@@ -148,6 +165,15 @@ class D3RTask(object):
         if self.get_status() == D3RTask.COMPLETE_STATUS:
             open(os.path.join(self.get_dir(),
                               D3RTask.COMPLETE_FILE), 'a').close()
+
+        if self.get_args().email is not None:
+            server = self._get_smtp_server()
+            server.sendmail('celpprunner@localhost.com',
+                            self.get_args().email,
+                            'task ' + self.get_name() + ' has finished' +
+                            ' with status ' + self.get_status() + ' : ' +
+                            self.get_error())
+            server.quit()
 
     def run(self):
         logger.info(self._name + ' task is running')
