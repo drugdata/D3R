@@ -84,11 +84,10 @@ def run_stage(theargs):
     if theargs.stage == 'score':
         raise NotImplementedError('uh oh score is not implemented yet')
 
-    if task.can_run():
-        logger.info("Running task " + task.get_name())
-        task.run()
-        logger.debug("Task " + task.get_name() + " has finished running " +
-                     " with status " + task.get_status())
+    logger.info("Running task " + task.get_name())
+    task.run()
+    logger.debug("Task " + task.get_name() + " has finished running " +
+                 " with status " + task.get_status())
     if task.get_error() is not None:
         logger.error('Error running task ' + task.get_name() +
                      ' ' + task.get_error())
@@ -207,6 +206,7 @@ def main():
               """
 
     theargs = _parse_arguments(desc, sys.argv[1:])
+    theargs.program = sys.argv[0]
     try:
         if os.path.basename(theargs.blastdir) is 'current':
             theargs.blastdir = os.path.dirname(theargs.blastdir)
