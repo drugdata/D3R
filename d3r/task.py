@@ -5,6 +5,9 @@ import logging
 import subprocess
 import shlex
 import smtplib
+import platform
+from email.mime.text import MIMEText
+
 logger = logging.getLogger(__name__)
 
 
@@ -94,7 +97,7 @@ class D3RTask(object):
         self._status = D3RTask.UNKNOWN_STATUS
         self._error = None
         self._args = args
-        self._can_run = False
+        self._can_run = None
 
     def get_args(self):
         return self._args
@@ -133,20 +136,102 @@ class D3RTask(object):
         self._error = error
 
     def _get_smtp_server(self):
+        """Gets smtplib server for localhost"""
         return smtplib.SMTP('localhost')
 
-    def start(self):
-        logger.info(self._name + ' task has started ')
+    def _build_from_address(self):
+        """Returns from email address
 
-        if self.get_args().email is not None:       
-            server = self._get_smtp_server()
-            server.sendmail('celpprunner@localhost.com',
-                            self.get_args().email,
-                            'task ' + self.get_name() + ' has started')
-            server.quit()
+           The address is in format of login@host
+        """
+        hostname = platform.node()
+        if hostname is '':
+            hostname = 'localhost'
+        return (os.getlogin() + '@' + hostname)
+
+    def _send_start_email(self):
+        """Creates start email message that can be passed to sendmail
+
+        """
+        the_message = ('Hi,\n ' + self.get_dir_name() + ' has started' +
+                       ' running on host ' + platform.node() +
+                       ' under path ' + self.get_dir() + '\n\n' +
+                       'Sincerely,\n' + __file__)
+                         
+        msg = MIMEText(the_message)
+        msg['Subject'] = (self.get_dir_name() + ' has started running')
+        self._send_email(msg)
+
+
+    def _send_end_email(self):
+        """Creates end email message that can be passed to sendmail
+
+        """
         
-        if not self.create_dir():
-            self.set_error('Unable to create directory')
+        the_message = ('Hi,\n ' + self.get_dir_name() + ' has finished' +
+                       ' with status ' + self.get_status() + ' on host '
+                       + platform.node() +
+                       ' under path ' + self.get_dir() + '\n\n' +
+                       'Sincerely,\n' + __file__)
+                         
+        msg = MIMEText(the_message)
+        msg['Subject'] = (self.get_dir_name() +
+                          ' has finished with status '+ self.get_status())
+        self._send_email(msg)
+
+
+    def _send_email(self,mime_msg):
+        """Sends email with message passed in
+
+
+           If email attribute is set with valid email addresses
+           in get_args() object then this method will send
+           an email with `message` passed in as content.
+        """
+        try: 
+            if self.get_args().email is not None:
+                email_list = self.get_args().email.split(',')
+                logger.debug('Sending email to: ' + ", ".join(email_list))
+                server = self._get_smtp_server()
+
+                from_addr = self._build_from_address()
+
+                mime_msg['From'] = from_addr
+                mime_msg['To'] = self.get_args().email
+
+                server.sendmail(from_addr,
+                                email_list, mime_msg.as_string())
+                server.quit()
+                return
+            else:
+                logger.debug('Email was set to None, skipping email ' +
+                             'notification')
+        except AttributeError as e:
+            logger.debug('No email set, skipping email notification ' +
+                         str(e))
+
+    def start(self):
+        """Denotes start of task
+
+           Creates task directory, along with token start file.
+           If get_args() has email attribute then an email is
+           sent denoting task start.  Also sets get_status()
+           to D3RTask.START_STATUS.
+           If there is an error creating task directory then
+           end() is invoked and get_error() will be set with
+           message denoting error
+        """
+        logger.info(self._name + ' task has started ') 
+
+        self.set_status(D3RTask.START_STATUS)
+
+        self._send_start_email()
+       
+        try:
+            self.create_dir() 
+        except Exception as e:
+            self.set_error('Caught exception trying to create directory ' +
+                           str(e))
             self.end()
             return
 
@@ -154,29 +239,83 @@ class D3RTask(object):
                           D3RTask.START_FILE), 'a').close()
 
     def end(self):
+        """Denotes task has completed
+
+           If get_error() is not none then 'error' token file is 
+           put in task directory and get_status() set to D3RTask.ERROR_STATUS
+           Otherwise 'complete' token file is put in task directory.
+           if get_args() email is set then a notification of task 
+           completion is sent
+        """
+
         logger.info(self._name + ' task has finished with status ' +
                     self.get_status())
-        if self._error is not None:
+
+        if self.get_error() is not None:
             logger.error(self._name + ' task failed with error ' +
                          self.get_error())
-            open(os.path.join(self.get_dir(),
-                              D3RTask.ERROR_FILE), 'a').close()
+            self.set_status(D3RTask.ERROR_STATUS)
+            try:
+                open(os.path.join(self.get_dir(),
+                                  D3RTask.ERROR_FILE), 'a').close()
+            except:
+                logger.exception('Caught exception')
 
-        if self.get_status() == D3RTask.COMPLETE_STATUS:
-            open(os.path.join(self.get_dir(),
-                              D3RTask.COMPLETE_FILE), 'a').close()
+        if self.get_status() == D3RTask.ERROR_STATUS:
+            try:
+                open(os.path.join(self.get_dir(),
+                                  D3RTask.ERROR_FILE), 'a').close()
+            except:
+                logger.exception('Caught Exception')
+            self._send_end_email()
+            return
 
-        if self.get_args().email is not None:
-            server = self._get_smtp_server()
-            server.sendmail('celpprunner@localhost.com',
-                            self.get_args().email,
-                            'task ' + self.get_name() + ' has finished' +
-                            ' with status ' + self.get_status() + ' : ' +
-                            self.get_error())
-            server.quit()
+        self.set_status(D3RTask.COMPLETE_STATUS)
+        open(os.path.join(self.get_dir(),
+                          D3RTask.COMPLETE_FILE), 'a').close()
+        self._send_end_email()
+
+    def can_run(self):
+        """Always returns False
+            
+           Derived classes should override this method
+        """
+        self._can_run = False
+        return False
 
     def run(self):
-        logger.info(self._name + ' task is running')
+        """Sees if task can run
+      
+           This is the base implementation and does not actually
+           run anything.  Instead this method calls can_run()
+           if the internal variable _can_run is None.  It is assumed
+           can_run() will set _can_run variable.  If _can_run is False
+           method will just return.  If _can_run is True then start()
+           is called and after invocation get_error() is checked, if
+           an error is found end() is called and _can_run is set to False
+        """
+        name = self._name
+        if name is None:
+            name = 'unset'
+          
+        logger.info(name + ' task is running')
+        if self._can_run is None:
+            logger.info("Running can_run() to check if its allright " +
+                        "to run")
+            self.can_run()
+
+        if self._can_run is False:
+            logger.info("can_run() came back with false cannot run")
+            if self.get_error() is not None:
+                self.end()
+            return
+
+        self.start()
+
+        if self.get_error() is not None:
+            self._can_run = False
+            self.end()
+            return
 
     def get_dir_name(self):
         """Gets directory name for task
@@ -230,17 +369,14 @@ class D3RTask(object):
            Directory will be named stage.<stage>.<name>
            and located under get_path()
            :raises: UnsetPathError if path is not set and all exceptions
-                    from get_dir_name()
+                    from get_dir_name(), and OSError if there is a
+                    problem creating the directory
            """
         the_path = self.get_dir()
 
         logger.debug('Creating directory: ' + the_path)
 
         os.mkdir(the_path)
-
-        if not os.path.isdir(the_path):
-            logger.warning("Unable to create directory: " + the_path)
-            return
 
         return the_path
 
@@ -300,12 +436,12 @@ class DataImportTask(D3RTask):
 
     def get_nonpolymer_tsv(self):
         """Returns path to new_release_structure_nonpolymer.tsv file"""
-        return os.path.join(self.get_dir() +
+        return os.path.join(self.get_dir(),
                             DataImportTask.NONPOLYMER_TSV)
 
     def get_sequence_tsv(self):
         """Returns path to new_release_structure_sequence.tsv file"""
-        return os.path.join(self.get_dir() +
+        return os.path.join(self.get_dir(),
                             DataImportTask.SEQUENCE_TSV)
 
 
@@ -417,21 +553,11 @@ class BlastNFilterTask(D3RTask):
            completion results are analyzed and success or error status
            is set appropriately and D3RTask.end is invoked
            """
-
-        if self._can_run is None:
-            logger.info("Running can_run() to check if its allright " +
-                        "to run")
-            self.can_run()
+        super(BlastNFilterTask, self).run()
 
         if self._can_run is False:
-            logger.info("can_run() came back with false cannot run")
             return
 
-        self.start()
-
-        if self.get_error() is not None:
-            self.end()
-            return
 
         data_import = DataImportTask(self._path, self._args)
 
@@ -451,24 +577,21 @@ class BlastNFilterTask(D3RTask):
             logger.exception("Error caught exception")
             self.set_status(D3RTask.ERROR_STATUS)
             self.set_error("Caught Exception trying to run " +
-                           cmd_to_run + " : " + e.message)
+                           cmd_to_run + " : " + str(e))
             self.end()
             return
 
         out, err = p.communicate()
 
-        self.write_to_file(err,
-                           os.path.basename(self.get_args().blastnfilter +
-                                            '.stderr'))
-        self.write_to_file(out,
-                           os.path.basename(self.get_args().blastnfilter +
-                                            '.stdout'))
+        blastnfilter_name = os.path.basename(self.get_args().blastnfilter)
+        self.write_to_file(err, blastnfilter_name + '.stderr')
+        self.write_to_file(out, blastnfilter_name + '.stdout')
 
         if p.returncode == 0:
             self.set_status(D3RTask.COMPLETE_STATUS)
         else:
             self.set_status(D3RTask.ERROR_STATUS)
-            self.set_error("Non zero exit code: " + p.returncode +
+            self.set_error("Non zero exit code: " + str(p.returncode) +
                            "received. Standard out: " + out +
                            " Standard error : " + err)
 
