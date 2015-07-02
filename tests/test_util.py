@@ -24,52 +24,59 @@ class TestUtil(unittest.TestCase):
         pass
 
     def test_find_latest_year(self):
-        tempDir = tempfile.mkdtemp()
+        temp_dir = tempfile.mkdtemp()
         try:
-            self.assertEqual(util.find_latest_year(tempDir), None)
+            try:
+                fakefile = os.path.join(temp_dir,'fakefile')
+                open(fakefile,'a').close()
+                util.find_latest_year(fakefile)
+                self.fail('Expected exception')
+            except Exception:
+                pass
+            self.assertEqual(util.find_latest_year(temp_dir), None)
 
-            os.mkdir(os.path.join(tempDir, "foo"))
-            os.mkdir(os.path.join(tempDir, "2014"))
-            self.assertEqual(util.find_latest_year(tempDir),
-                             os.path.join(tempDir, '2014'))
+            os.mkdir(os.path.join(temp_dir, "foo"))
+            os.mkdir(os.path.join(temp_dir, "2014"))
+            self.assertEqual(util.find_latest_year(temp_dir),
+                             os.path.join(temp_dir, '2014'))
 
-            open(os.path.join(tempDir, '2016'), 'a').close()
-            self.assertEqual(util.find_latest_year(tempDir),
-                             os.path.join(tempDir, '2014'))
+            open(os.path.join(temp_dir, '2016'), 'a').close()
+            self.assertEqual(util.find_latest_year(temp_dir),
+                             os.path.join(temp_dir, '2014'))
 
-            os.mkdir(os.path.join(tempDir, '2012'))
-            self.assertEqual(util.find_latest_year(tempDir),
-                             os.path.join(tempDir, '2014'))
+            os.mkdir(os.path.join(temp_dir, '2012'))
+            self.assertEqual(util.find_latest_year(temp_dir),
+                             os.path.join(temp_dir, '2014'))
 
-            os.mkdir(os.path.join(tempDir, '2015'))
+            os.mkdir(os.path.join(temp_dir, '2015'))
 
-            self.assertEqual(util.find_latest_year(tempDir),
-                             os.path.join(tempDir, '2015'))
+            self.assertEqual(util.find_latest_year(temp_dir),
+                             os.path.join(temp_dir, '2015'))
 
         finally:
-            shutil.rmtree(tempDir)
+            shutil.rmtree(temp_dir)
 
     def test_find_latest_weekly_dataset(self):
-        tempDir = tempfile.mkdtemp()
+        temp_dir = tempfile.mkdtemp()
 
         try:
-            self.assertEqual(util.find_latest_weekly_dataset(tempDir), None)
+            self.assertEqual(util.find_latest_weekly_dataset(temp_dir), None)
 
-            os.mkdir(os.path.join(tempDir, '2015'))
+            os.mkdir(os.path.join(temp_dir, '2015'))
 
-            self.assertEqual(util.find_latest_weekly_dataset(tempDir), None)
+            self.assertEqual(util.find_latest_weekly_dataset(temp_dir), None)
 
-            open(os.path.join(tempDir, '2015', 'dataset.week.4'), 'a').close()
+            open(os.path.join(temp_dir, '2015', 'dataset.week.4'), 'a').close()
 
-            self.assertEqual(util.find_latest_weekly_dataset(tempDir), None)
+            self.assertEqual(util.find_latest_weekly_dataset(temp_dir), None)
 
-            os.mkdir(os.path.join(tempDir, '2015', 'dataset.week.3'))
+            os.mkdir(os.path.join(temp_dir, '2015', 'dataset.week.3'))
 
-            self.assertEqual(util.find_latest_weekly_dataset(tempDir),
-                             os.path.join(tempDir, '2015',
+            self.assertEqual(util.find_latest_weekly_dataset(temp_dir),
+                             os.path.join(temp_dir, '2015',
                                           'dataset.week.3'))
         finally:
-            shutil.rmtree(tempDir)
+            shutil.rmtree(temp_dir)
 
     def tearDown(self):
         pass
