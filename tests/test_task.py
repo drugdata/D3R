@@ -14,11 +14,13 @@ Tests for `task` module.
 """
 
 import shutil
-
+import platform
+import os
 from d3r.task import D3RParameters
 from d3r.task import UnsetPathError
 from d3r.task import UnsetStageError
 from d3r.task import UnsetNameError
+from d3r.task import UnsetFileNameError
 from d3r.task import D3RTask
 from d3r.task import BlastNFilterTask
 from d3r.task import DataImportTask
@@ -96,12 +98,38 @@ class TestD3rTask(unittest.TestCase):
         task.set_name('foo')
 
         self.assertEqual(task.get_dir(), '/blah/stage.1.foo')
+    
+    def test_D3RTask_can_run(self):
+        task = D3RTask(None, D3RParameters())
+        self.assertEqual(task.can_run(), False)
+
+    def test_D3RTask_run(self):
+        params = D3RParameters()
+        task = D3RTask(None, params)
+        self.assertEqual(task._can_run, None)
+        task.run()
+        self.assertEqual(task._can_run, False)
+        task._can_run = True
+  
+        temp_dir = tempfile.mkdtemp()
+        task.set_name('foo')
+        task.set_stage(1)
+        task.set_path(temp_dir)
+        try:
+           task.run()
+        finally:
+            shutil.rmtree(temp_dir)
 
     def test_D3RTask_write_to_file(self):
         tempDir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
             task = D3RTask(None, params)
+            try:
+                task.write_to_file('hello', None)
+                self.fail('Expected UnsetFileNameError')
+            except UnsetFileNameError:
+                pass
             try:
                 task.write_to_file('hello', 'foo')
                 self.fail('Expected UnsetPathError')
@@ -169,6 +197,70 @@ class TestD3rTask(unittest.TestCase):
 
         self._try_update_status_from_filesystem(task)
 
+    def test_D3RTask_start(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = D3RTask(temp_dir,params)
+            task.set_stage(1)
+            task.set_name('foo')
+            task.start()
+	    self.assertEqual(os.path.isfile(os.path.join(task.get_dir(),
+                                                         D3RTask.START_FILE)), True)
+            self.assertEqual(task.get_error(), None)
+            self.assertEqual(task.get_status(),D3RTask.START_STATUS) 
+            task.start()
+            self.assertNotEqual(task.get_error(), None)
+            self.assertEqual(task.get_status(),D3RTask.ERROR_STATUS)
+            self.assertEqual(os.path.isfile(os.path.join(task.get_dir(),
+                                                         D3RTask.ERROR_FILE)), True)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_D3RTask_end(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = D3RTask(temp_dir,params)
+            task.set_stage(1)
+            task.set_name('foo')
+            task.start()
+            task.end()
+            self.assertEqual(os.path.isfile(os.path.join(task.get_dir(),
+                                                         D3RTask.COMPLETE_FILE)), True)
+            self.assertEqual(task.get_error(), None)
+            self.assertEqual(task.get_status(),D3RTask.COMPLETE_STATUS)
+            task.set_error('some error')
+            task.end()
+            self.assertEqual(task.get_error(), 'some error')
+            self.assertEqual(task.get_status(),D3RTask.ERROR_STATUS)
+            self.assertEqual(os.path.isfile(os.path.join(task.get_dir(),
+                                                         D3RTask.ERROR_FILE)), True)
+            task.set_status(D3RTask.ERROR_STATUS)
+            os.remove(os.path.join(task.get_dir(),
+                                   D3RTask.ERROR_FILE))
+            task.set_error(None)
+            task.end()
+            self.assertEqual(task.get_status(),D3RTask.ERROR_STATUS)
+            self.assertEqual(os.path.isfile(os.path.join(task.get_dir(),
+                                                         D3RTask.ERROR_FILE)), True)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_D3RTask_get_smtp_server(self):
+        params = D3RParameters()
+        task = D3RTask(None, params)
+        self.assertNotEqual(task._get_smtp_server(), None)
+
+    def test_D3RTask_build_from_address(self):
+        params = D3RParameters()
+        task = D3RTask(None, params)
+        exp_from_addr = os.getlogin() + '@' + platform.node()
+        self.assertEqual(task._build_from_address(), exp_from_addr)
+
+
     def test_BlastNFilterTask_update_status_from_filesystem(self):
         params = D3RParameters()
         task = BlastNFilterTask(None, params)
@@ -179,6 +271,16 @@ class TestD3rTask(unittest.TestCase):
         task = DataImportTask(None, params)
         self._try_update_status_from_filesystem(task)
 
+    def test_DataImportTask_get_nonpolymer_tsv(self):
+        params = D3RParameters()
+        task = DataImportTask('/foo', params)
+        self.assertEqual(task.get_nonpolymer_tsv(), '/foo/stage.1.dataimport/new_release_structure_nonpolymer.tsv')
+        
+    def test_DataImportTask_get_sequence_tsv(self):
+        params = D3RParameters()
+        task = DataImportTask('/foo', params)
+        self.assertEqual(task.get_sequence_tsv(), '/foo/stage.1.dataimport/new_release_structure_sequence.tsv')
+   
     def _try_update_status_from_filesystem(self, task):
 
         tempDir = tempfile.mkdtemp()
@@ -327,12 +429,84 @@ class TestD3rTask(unittest.TestCase):
             shutil.rmtree(tempDir)
 
     def test_BlastNFilterTask_run_with_success(self):
-        tempDir = tempfile.mkdtemp()
+        temp_dir = tempfile.mkdtemp()
 
         try:
-            pass
+            params = D3RParameters()
+            params.blastnfilter = '/bin/echo'
+            blasttask = BlastNFilterTask(temp_dir, params)
+            blasttask._can_run = True
+            blasttask.run()
+            self.assertEqual(blasttask.get_status(), D3RTask.COMPLETE_STATUS)
+            self.assertEqual(blasttask.get_error(), None)
+            complete_file = os.path.join(blasttask.get_dir(),
+                                         D3RTask.COMPLETE_FILE)
+
+            self.assertEqual(os.path.isfile(complete_file), True)
+
+            std_err_file = os.path.join(blasttask.get_dir(),
+                                        'echo.stderr')
+
+            self.assertEqual(os.path.isfile(std_err_file), True)
+
+            std_out_file = os.path.join(blasttask.get_dir(),
+                                        'echo.stdout')
+
+            self.assertEqual(os.path.isfile(std_out_file), True)
         finally:
-            shutil.rmtree(tempDir)
+            shutil.rmtree(temp_dir)
+
+    def test_BlastNFilterTask_run_with_error(self):
+        temp_dir = tempfile.mkdtemp()
+
+        try:
+            params = D3RParameters()
+            params.blastnfilter = 'false'
+            blasttask = BlastNFilterTask(temp_dir, params)
+            blasttask._can_run = True
+            blasttask.run()
+            self.assertEqual(blasttask.get_status(), D3RTask.ERROR_STATUS)
+            self.assertNotEqual(blasttask.get_error(), None)
+            error_file = os.path.join(blasttask.get_dir(),
+                                         D3RTask.ERROR_FILE)
+
+            self.assertEqual(os.path.isfile(error_file), True)
+            
+            std_err_file = os.path.join(blasttask.get_dir(),
+                                        'false.stderr')
+            
+            self.assertEqual(os.path.isfile(std_err_file), True)
+
+            std_out_file = os.path.join(blasttask.get_dir(),
+                                        'false.stdout')
+
+            self.assertEqual(os.path.isfile(std_out_file), True)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_BlastNFilterTask_run_with_exception(self):
+        temp_dir = tempfile.mkdtemp()
+
+        try:
+            params = D3RParameters()
+            params.blastnfilter = 'falseasdfasdf'
+            blasttask = BlastNFilterTask(temp_dir, params)
+            blasttask._can_run = True
+            blasttask.run()
+            self.assertEqual(blasttask.get_status(), D3RTask.ERROR_STATUS)
+            self.assertEqual(blasttask.get_error().startswith('Caught'), True)
+            self.assertNotEqual(blasttask.get_error(), None)
+        finally:
+            shutil.rmtree(temp_dir)
+
+
+    def test_BlastNFilterTask_run_with_can_run_already_set_false(self):
+        params = D3RParameters()
+        params.blastnfilter = 'false'
+        blasttask = BlastNFilterTask(None, params)
+        blasttask._can_run = False
+        blasttask.run()
+   
 
     def tearDown(self):
         pass
