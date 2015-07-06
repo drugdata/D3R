@@ -164,11 +164,14 @@ class D3RTask(object):
         :return: Name of program that invoked this
         """
         program_name = __file__
+        version = ''
         try:
             program_name = self.get_args().program
+            version = self.get_args().version
         except:
-            logger.debug('args.program was not set.  using __file__')
-        return program_name
+            logger.debug('args.program or args.version was not set.  '
+                         'using __file__')
+        return program_name + ' ' + version
 
     def _get_time(self):
         """ Gets the current time as a string using ctime()
