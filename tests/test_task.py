@@ -391,7 +391,8 @@ class TestD3rTask(unittest.TestCase):
                                         D3RTask.COMPLETE_FILE)
             open(completeFile, 'a').close()
             self.assertEqual(blastTask.can_run(), False)
-            self.assertEqual(blastTask.get_error(), None)
+            self.assertEqual(blastTask.get_error(), 'dataimport task has ' +
+                             'notfound status')
 
             # try where data import failed
             dataImport = DataImportTask(tempDir, params)
