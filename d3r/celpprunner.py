@@ -145,7 +145,7 @@ def main():
               stage to be run is defined via the required --stage flag.
 
               This program drops a pid lockfile
-              (celpprunner.<stage>.lockpid) to prevent duplicate
+              (celpprunner.<stage>.lockpid) in celppdir to prevent duplicate
               invocation.
 
               When run, this program will examine the stage and see
@@ -172,7 +172,7 @@ def main():
 
               Regardless of the stage specified, this program will
               examine the 'celppdir' (last argument passed on
-              commandline) to find the latest directory under this path:
+              commandline) to find the latest directory with this path:
               <year>/dataset.week.#
               The program will find the latest <year> and within
               that year the dataset.week.# with highest #.  The output
