@@ -6,6 +6,7 @@ import argparse
 import psutil
 import logging
 
+import d3r
 from d3r import util
 from d3r.task import D3RParameters
 from d3r.task import BlastNFilterTask
@@ -125,12 +126,12 @@ def _parse_arguments(desc, args):
                         default='localhost')
     parser.add_argument('--smtpport', dest='smtpport',
                         help='Sets smtp server port', default='25')
-
+    parser.add_argument('--version', action='version',
+                        version=('%(prog)s ' + d3r.__version__))
     return parser.parse_args(args, namespace=parsed_arguments)
 
 
 def main():
-
     desc = """
               Runs last 3 stages (blast, dock, & score) of CELPP
               processing pipeline (http://www.drugdesigndata.org)
@@ -211,6 +212,7 @@ def main():
 
     theargs = _parse_arguments(desc, sys.argv[1:])
     theargs.program = sys.argv[0]
+    theargs.version = d3r.__version__
     try:
         if os.path.basename(theargs.blastdir) is 'current':
             theargs.blastdir = os.path.dirname(theargs.blastdir)
