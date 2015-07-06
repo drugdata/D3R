@@ -28,8 +28,9 @@ test_requirements = [
 
 setup(
     name='d3r',
-    version='0.1.0',
-    description="Drug Design Data Resource CELPP Runner is an application to run the filtering, docking, and scoring of new sequences from wwpdb",
+    version='0.2.0',
+    description='Drug Design Data Resource CELPP Runner is an application to run the filtering, docking, and scoring '
+                'of new sequences from wwpdb',
     long_description=readme + '\n\n' + history,
     author="Christopher Churas",
     author_email='churas@ncmir.ucsd.edu',
