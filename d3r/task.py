@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import time
 import logging
 import subprocess
 import shlex
@@ -136,19 +137,44 @@ class D3RTask(object):
         self._error = error
 
     def _get_smtp_server(self):
-        """Gets smtplib server for localhost"""
+        """Gets smtplib server for localhost
+
+           creates smtplib.SMTP server using get_args().smtp and
+           get_args().smtpport for the smtp server and port
+        :return: SMTP server
+        """
         return smtplib.SMTP(self.get_args().smtp,
                             self.get_args().smtpport)
 
     def _build_from_address(self):
         """Returns from email address
 
-           The address is in format of login@host
+           :return: string in format login@host
         """
         hostname = platform.node()
         if hostname is '':
             hostname = 'localhost'
         return (os.getlogin() + '@' + hostname)
+
+    def _get_program_name(self):
+        """Gets name of program running
+
+        Looks at _args.program for the program name, if unset or
+        empty then __file__ is used
+        :return: Name of program that invoked this
+        """
+        program_name = __file__
+        try:
+            program_name = self.get_args().program
+        except:
+            logger.debug('args.program was not set.  using __file__')
+        return program_name
+
+    def _get_time(self):
+        """ Gets the current time as a string using ctime()
+        :return: ctime string followed by --
+        """
+        return time.ctime() + ' -- '
 
     def _send_start_email(self):
         """Creates start email message that can be passed to sendmail
@@ -156,11 +182,12 @@ class D3RTask(object):
         """
         the_message = ('Hi,\n ' + self.get_dir_name() + ' has started' +
                        ' running on host ' + platform.node() +
-                       ' under path ' + self.get_dir() + '\n\n' +
-                       'Sincerely,\n' + __file__)
+                       '\nunder path ' + self.get_dir() + '\n\n' +
+                       'Sincerely,\n\n' + self._get_program_name())
                          
         msg = MIMEText(the_message)
-        msg['Subject'] = (self.get_dir_name() + ' has started running')
+        msg['Subject'] = (self._get_time() + self.get_dir_name() +
+                          ' has started running')
         self._send_email(msg)
 
 
@@ -168,15 +195,19 @@ class D3RTask(object):
         """Creates end email message that can be passed to sendmail
 
         """
-        
+
+        error_msg = ''
+        if self.get_error() is not None:
+            error_msg = ('Error:\n' + self.get_error()+ '\n\n')
+
         the_message = ('Hi,\n ' + self.get_dir_name() + ' has finished' +
                        ' with status ' + self.get_status() + ' on host '
                        + platform.node() +
-                       ' under path ' + self.get_dir() + '\n\n' +
-                       'Sincerely,\n' + __file__)
+                       '\nunder path ' + self.get_dir() + '\n\n' + error_msg +
+                       'Sincerely,\n\n' + self._get_program_name())
                          
         msg = MIMEText(the_message)
-        msg['Subject'] = (self.get_dir_name() +
+        msg['Subject'] = (self._get_time() + self.get_dir_name() +
                           ' has finished with status '+ self.get_status())
         self._send_email(msg)
 
@@ -198,7 +229,10 @@ class D3RTask(object):
                 from_addr = self._build_from_address()
 
                 mime_msg['From'] = from_addr
-                mime_msg['To'] = self.get_args().email
+                mime_msg['To'] = ", ".join(email_list)
+
+                if self.get_args().loglevel == 'DEBUG':
+                    server.set_debuglevel(1)
 
                 server.sendmail(from_addr,
                                 email_list, mime_msg.as_string())
@@ -353,6 +387,7 @@ class D3RTask(object):
            If error file exists under path then status is ERROR_STATUS
            If start file exists under path then status is START_STATUS
            else status is UNKNOWN_STATUS
+           :return: status as string updated from file system
            """
         if self.get_path() is None:
             raise UnsetPathError('Path must be set')
@@ -372,6 +407,7 @@ class D3RTask(object):
            :raises: UnsetPathError if path is not set and all exceptions
                     from get_dir_name(), and OSError if there is a
                     problem creating the directory
+           :return: path to created directory
            """
         the_path = self.get_dir()
 
@@ -406,6 +442,7 @@ class D3RTask(object):
 
            Examines get_path() and returns status based on the following
            conditions
+           :return: status of task as string
         """
         if not os.path.isdir(path):
             return D3RTask.NOTFOUND_STATUS
@@ -436,12 +473,16 @@ class DataImportTask(D3RTask):
         self.set_status(D3RTask.UNKNOWN_STATUS)
 
     def get_nonpolymer_tsv(self):
-        """Returns path to new_release_structure_nonpolymer.tsv file"""
+        """Returns path to new_release_structure_nonpolymer.tsv file
+        :return: full path to DataImportTask.NONPOLYMER_TSV file
+        """
         return os.path.join(self.get_dir(),
                             DataImportTask.NONPOLYMER_TSV)
 
     def get_sequence_tsv(self):
-        """Returns path to new_release_structure_sequence.tsv file"""
+        """Returns path to new_release_structure_sequence.tsv file
+        :return: full path to DataImportTask.SEQUENCE_TSV file
+        """
         return os.path.join(self.get_dir(),
                             DataImportTask.SEQUENCE_TSV)
 
@@ -473,12 +514,14 @@ class MakeBlastDBTask(D3RTask):
         """Creates path set in get_path()
 
            """
-        os.makedirs(os.path.join(self._path, 'current'))
+        the_path = os.path.join(self._path,self.get_dir_name())
+        os.makedirs(the_path)
+        return the_path
 
     def get_dir_name(self):
         """Will always return current
-
-           """
+        :return: 'current' string
+        """
         return 'current'
 
 
@@ -499,7 +542,9 @@ class BlastNFilterTask(D3RTask):
            This method first verifies the `MakeBlastDBTask` task
            and `DataImportTask` both have `D3RTask.COMPLETE_STATUS` for
            status.  The method then verifies a `BlastNFilterTask` does
-           not already exist.
+           not already exist.  If above is not true then self.set_error()
+           is set with information about the issue
+           :return: True if can run otherwise False
         """
         self._can_run = False
         self._error = None
@@ -510,9 +555,8 @@ class BlastNFilterTask(D3RTask):
             logger.info('Cannot run ' + self.get_name() + 'task ' +
                         'because ' + make_blastdb.get_name() + 'task' +
                         'has a status of ' + make_blastdb.get_status())
-            if make_blastdb.get_status() == D3RTask.ERROR_STATUS:
-                self.set_error(make_blastdb.get_name() + ' task has ' +
-                               make_blastdb.get_status() + ' status')
+            self.set_error(make_blastdb.get_name() + ' task has ' +
+                           make_blastdb.get_status() + ' status')
             return False
 
         # check data import
@@ -522,9 +566,8 @@ class BlastNFilterTask(D3RTask):
             logger.info('Cannot run ' + self.get_name() + 'task ' +
                         'because ' + data_import.get_name() + 'task' +
                         'has a status of ' + data_import.get_status())
-            if data_import.get_status() == D3RTask.ERROR_STATUS:
-                self.set_error(data_import.get_name() + ' task has ' +
-                               data_import.get_status() + ' status')
+            self.set_error(data_import.get_name() + ' task has ' +
+                           data_import.get_status() + ' status')
             return False
 
         # check blast is not complete and does not exist
