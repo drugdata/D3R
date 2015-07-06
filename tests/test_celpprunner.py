@@ -124,7 +124,7 @@ class TestCelppRunner(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
-    def test_run_stage_blast(self):
+    def test_run_stage_blast_data_import_missing(self):
         temp_dir = tempfile.mkdtemp()
 
         try:
@@ -137,10 +137,32 @@ class TestCelppRunner(unittest.TestCase):
             os.mkdir(os.path.join(temp_dir, '2015', 'dataset.week.1'))
 
             theargs.stage = 'blast'
+            self.assertEqual(celpprunner.run_stage(theargs), 1)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_run_stage_blast(self):
+        temp_dir = tempfile.mkdtemp()
+
+        try:
+            theargs = D3RParameters()
+            theargs.celppdir = os.path.join(temp_dir)
+            os.mkdir(os.path.join(temp_dir, 'current'))
+            open(os.path.join(temp_dir, 'current', 'complete'), 'a').close()
+            theargs.blastdir = temp_dir
+            d_import_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
+                                        'stage.1.dataimport')
+            os.makedirs(d_import_dir)
+            open(os.path.join(d_import_dir, 'complete'), 'a').close()
+
+            theargs.stage = 'blast'
+            theargs.blastnfilter= 'echo'
             self.assertEqual(celpprunner.run_stage(theargs), 0)
 
         finally:
             shutil.rmtree(temp_dir)
+
 
     def test_run_stage_blast_has_error(self):
         temp_dir = tempfile.mkdtemp()
