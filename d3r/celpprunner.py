@@ -121,6 +121,10 @@ def _parse_arguments(desc, args):
                         'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
                         help="Set the logging level",
                         default='WARNING')
+    parser.add_argument('--smtp', dest='smtp', help='Sets smtpserver to use',
+                        default='localhost')
+    parser.add_argument('--smtpport', dest='smtpport',
+                        help='Sets smtp server port', default='25')
 
     return parser.parse_args(args, namespace=parsed_arguments)
 
