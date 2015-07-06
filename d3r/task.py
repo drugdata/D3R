@@ -137,7 +137,8 @@ class D3RTask(object):
 
     def _get_smtp_server(self):
         """Gets smtplib server for localhost"""
-        return smtplib.SMTP('localhost')
+        return smtplib.SMTP(self.get_args().smtp,
+                            self.get_args().smtpport)
 
     def _build_from_address(self):
         """Returns from email address
@@ -221,7 +222,7 @@ class D3RTask(object):
            end() is invoked and get_error() will be set with
            message denoting error
         """
-        logger.info(self._name + ' task has started ') 
+        logger.info(self.get_dir_name() + ' task has started ')
 
         self.set_status(D3RTask.START_STATUS)
 
@@ -248,11 +249,11 @@ class D3RTask(object):
            completion is sent
         """
 
-        logger.info(self._name + ' task has finished with status ' +
+        logger.info(self.get_dir_name() + ' task has finished with status ' +
                     self.get_status())
 
         if self.get_error() is not None:
-            logger.error(self._name + ' task failed with error ' +
+            logger.error(self.get_dir() + ' task failed with error ' +
                          self.get_error())
             self.set_status(D3RTask.ERROR_STATUS)
             try:
@@ -556,6 +557,8 @@ class BlastNFilterTask(D3RTask):
         super(BlastNFilterTask, self).run()
 
         if self._can_run is False:
+            logger.debug(self.get_dir_name()+ ' cannot run cause _can_run flag '
+                         'is False')
             return
 
 
