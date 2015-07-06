@@ -250,9 +250,11 @@ class TestD3rTask(unittest.TestCase):
             shutil.rmtree(temp_dir)
 
     def test_D3RTask_get_smtp_server(self):
-        params = D3RParameters()
-        task = D3RTask(None, params)
-        self.assertNotEqual(task._get_smtp_server(), None)
+         params = D3RParameters()
+         params.smtp = ''
+         params.smtpport = '25'
+         task = D3RTask(None, params)
+         self.assertNotEqual(task._get_smtp_server(), None)
 
     def test_D3RTask_build_from_address(self):
         params = D3RParameters()
