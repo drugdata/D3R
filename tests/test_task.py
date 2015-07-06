@@ -437,6 +437,7 @@ class TestD3rTask(unittest.TestCase):
         try:
             params = D3RParameters()
             params.blastnfilter = '/bin/echo'
+            params.blastdir = temp_dir
             blasttask = BlastNFilterTask(temp_dir, params)
             blasttask._can_run = True
             blasttask.run()
@@ -465,6 +466,7 @@ class TestD3rTask(unittest.TestCase):
         try:
             params = D3RParameters()
             params.blastnfilter = 'false'
+            params.blastdir = temp_dir
             blasttask = BlastNFilterTask(temp_dir, params)
             blasttask._can_run = True
             blasttask.run()
@@ -493,6 +495,7 @@ class TestD3rTask(unittest.TestCase):
         try:
             params = D3RParameters()
             params.blastnfilter = 'falseasdfasdf'
+            params.blastdir = temp_dir
             blasttask = BlastNFilterTask(temp_dir, params)
             blasttask._can_run = True
             blasttask.run()
@@ -506,6 +509,7 @@ class TestD3rTask(unittest.TestCase):
     def test_BlastNFilterTask_run_with_can_run_already_set_false(self):
         params = D3RParameters()
         params.blastnfilter = 'false'
+        params.blastdir = '/foo'
         blasttask = BlastNFilterTask(None, params)
         blasttask._can_run = False
         blasttask.run()

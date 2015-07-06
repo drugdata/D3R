@@ -607,10 +607,14 @@ class BlastNFilterTask(D3RTask):
 
         data_import = DataImportTask(self._path, self._args)
 
+        make_blastdb = MakeBlastDBTask(self._path, self._args)
+
         cmd_to_run = (self.get_args().blastnfilter + ' --nonpolymertsv ' +
                       data_import.get_nonpolymer_tsv() +
                       ' --sequencetsv ' +
                       data_import.get_sequence_tsv() +
+                      ' --pdbblastdb ' +
+                      make_blastdb.get_dir() +
                       ' --outdir ' + self.get_dir())
 
         # Run the blastnfilter
