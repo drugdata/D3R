@@ -122,24 +122,24 @@ Run
               results in stage.4.<algo>.scoring.
               
 
-positional arguments:
-  celppdir              Base celpp directory
+  positional arguments:
+    celppdir              Base celpp directory
 
-optional arguments:
-  -h, --help            show this help message and exit
-  --blastdir BLASTDIR   Parent directory of blastdb. There should exist a
-                        "current" symlink or directory that contains the db.
-  --email EMAIL         Comma delimited list of email addresses
-  --stage {blast,dock,score}
-                        Stage to run blast = blastnfilter (2), dock = fred &
-                        other docking algorithms (3), score = scoring (4)
-  --blastnfilter BLASTNFILTER
-                        Path to BlastnFilter script
-  --log {DEBUG,INFO,WARNING,ERROR,CRITICAL}
-                        Set the logging level
-  --smtp SMTP           Sets smtpserver to use
-  --smtpport SMTPPORT   Sets smtp server port
-  --version             show program's version number and exit
+  optional arguments:
+    -h, --help            show this help message and exit
+    --blastdir BLASTDIR   Parent directory of blastdb. There should exist a
+                          "current" symlink or directory that contains the db.
+    --email EMAIL         Comma delimited list of email addresses
+    --stage {blast,dock,score}
+                          Stage to run blast = blastnfilter (2), dock = fred &
+                          other docking algorithms (3), score = scoring (4)
+    --blastnfilter BLASTNFILTER
+                          Path to BlastnFilter script
+    --log {DEBUG,INFO,WARNING,ERROR,CRITICAL}
+                          Set the logging level
+    --smtp SMTP           Sets smtpserver to use
+    --smtpport SMTPPORT   Sets smtp server port
+    --version             show program's version number and exit
 
 
 * TODO
