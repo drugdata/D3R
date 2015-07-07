@@ -60,9 +60,22 @@ def _setup_logging(theargs):
     """Sets up the logging for application
        """
     theargs.logformat = LOG_FORMAT
-    logger.setLevel(theargs.loglevel)
+    theargs.numericloglevel = logging.NOTSET
+    if theargs.loglevel == 'DEBUG':
+        theargs.numericloglevel = logging.DEBUG
+    if theargs.loglevel == 'INFO':
+        theargs.numericloglevel = logging.INFO
+    if theargs.loglevel == 'WARNING':
+        theargs.numericloglevel = logging.WARNING
+    if theargs.loglevel == 'ERROR':
+        theargs.numericloglevel = logging.ERROR
+    if theargs.loglevel == 'CRITICAL':
+        theargs.numericloglevel = logging.CRITICAL
+
+
+    logger.setLevel(theargs.numericloglevel)
     logging.basicConfig(format=theargs.logformat)
-    logging.getLogger('d3r.task').setLevel(theargs.loglevel)
+    logging.getLogger('d3r.task').setLevel(theargs.numericloglevel)
 
 
 def run_stage(theargs):

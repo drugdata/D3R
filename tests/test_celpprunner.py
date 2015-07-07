@@ -48,9 +48,11 @@ class TestCelppRunner(unittest.TestCase):
     def test_setup_logging(self):
         logger = logging.getLogger('funlogger')
         theargs = D3RParameters()
-        theargs.loglevel = 'DEBUG'
+        theargs.loglevel = 'INFO'
         celpprunner._setup_logging(theargs)
-        self.assertEqual(logger.getEffectiveLevel(), 30)
+        self.assertEqual(logging.getLogger('d3r.task').getEffectiveLevel(),
+                         logging.INFO)
+        self.assertEqual(theargs.numericloglevel, logging.INFO)
 
     def test_parse_arguments(self):
         theargs = ['--stage', 'blast', 'foo', '--blastnfilter', 'true']
