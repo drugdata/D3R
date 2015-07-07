@@ -20,5 +20,13 @@ Features
 
  * Works with Python 2.6, 2.7, 3.0, 3.2, 3.4
 
+Installation
+------------
+
+Pip install is coming, but in the meantime:
+
+    git clone https://github.com/nbcrrolls/D3R
+    cd D3R
+    make install
 
 * TODO
