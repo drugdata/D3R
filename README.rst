@@ -25,7 +25,7 @@ Installation
 
 Pip install is coming, but in the meantime:
 
-.. code::
+.. code:: bash
   git clone https://github.com/nbcrrolls/D3R
   cd D3R
   make install
