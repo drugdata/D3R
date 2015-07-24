@@ -17,7 +17,8 @@ with open('HISTORY.rst') as history_file:
 requirements = [
     "argparse",
     "lockfile",
-    "psutil"
+    "psutil",
+    "biopython",
 ]
 
 test_requirements = [
@@ -36,7 +37,7 @@ setup(
     author_email='churas@ncmir.ucsd.edu',
     url='https://github.com/nbcrrolls/D3R',
     packages=[
-        'd3r',
+        'd3r', 'd3r.Blast', 'd3r.PreRelease', 'd3r.Utilities'
     ],
     package_dir={'d3r':
                  'd3r'},
@@ -56,7 +57,7 @@ setup(
         'Programming Language :: Python :: 3.2',
         'Programming Language :: Python :: 3.4',
     ],
-    scripts = ['d3r/celpprunner.py'],
+    scripts = ['d3r/celpprunner.py', 'd3r/blastnfilter.py'],
     test_suite='tests',
     tests_require=test_requirements
 )
