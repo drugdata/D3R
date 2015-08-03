@@ -98,7 +98,7 @@ class TestD3rTask(unittest.TestCase):
         task.set_name('foo')
 
         self.assertEqual(task.get_dir(), '/blah/stage.1.foo')
-    
+
     def test_D3RTask_can_run(self):
         task = D3RTask(None, D3RParameters())
         self.assertEqual(task.can_run(), False)
@@ -110,13 +110,13 @@ class TestD3rTask(unittest.TestCase):
         task.run()
         self.assertEqual(task._can_run, False)
         task._can_run = True
-  
+
         temp_dir = tempfile.mkdtemp()
         task.set_name('foo')
         task.set_stage(1)
         task.set_path(temp_dir)
         try:
-           task.run()
+            task.run()
         finally:
             shutil.rmtree(temp_dir)
 
@@ -201,19 +201,20 @@ class TestD3rTask(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
-            task = D3RTask(temp_dir,params)
+            task = D3RTask(temp_dir, params)
             task.set_stage(1)
             task.set_name('foo')
             task.start()
-	    self.assertEqual(os.path.isfile(os.path.join(task.get_dir(),
-                                                         D3RTask.START_FILE)), True)
+            self.assertEqual(os.path.isfile(os.path.join(task.get_dir(),
+                                            D3RTask.START_FILE)), True)
             self.assertEqual(task.get_error(), None)
-            self.assertEqual(task.get_status(),D3RTask.START_STATUS) 
+            self.assertEqual(task.get_status(), D3RTask.START_STATUS)
             task.start()
             self.assertNotEqual(task.get_error(), None)
-            self.assertEqual(task.get_status(),D3RTask.ERROR_STATUS)
+            self.assertEqual(task.get_status(), D3RTask.ERROR_STATUS)
             self.assertEqual(os.path.isfile(os.path.join(task.get_dir(),
-                                                         D3RTask.ERROR_FILE)), True)
+                                                         D3RTask
+                                                         .ERROR_FILE)), True)
 
         finally:
             shutil.rmtree(temp_dir)
@@ -222,46 +223,46 @@ class TestD3rTask(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
-            task = D3RTask(temp_dir,params)
+            task = D3RTask(temp_dir, params)
             task.set_stage(1)
             task.set_name('foo')
             task.start()
             task.end()
             self.assertEqual(os.path.isfile(os.path.join(task.get_dir(),
-                                                         D3RTask.COMPLETE_FILE)), True)
+                                                         D3RTask.
+                                                         COMPLETE_FILE)), True)
             self.assertEqual(task.get_error(), None)
-            self.assertEqual(task.get_status(),D3RTask.COMPLETE_STATUS)
+            self.assertEqual(task.get_status(), D3RTask.COMPLETE_STATUS)
             task.set_error('some error')
             task.end()
             self.assertEqual(task.get_error(), 'some error')
-            self.assertEqual(task.get_status(),D3RTask.ERROR_STATUS)
+            self.assertEqual(task.get_status(), D3RTask.ERROR_STATUS)
             self.assertEqual(os.path.isfile(os.path.join(task.get_dir(),
-                                                         D3RTask.ERROR_FILE)), True)
+                                            D3RTask.ERROR_FILE)), True)
             task.set_status(D3RTask.ERROR_STATUS)
             os.remove(os.path.join(task.get_dir(),
                                    D3RTask.ERROR_FILE))
             task.set_error(None)
             task.end()
-            self.assertEqual(task.get_status(),D3RTask.ERROR_STATUS)
+            self.assertEqual(task.get_status(), D3RTask.ERROR_STATUS)
             self.assertEqual(os.path.isfile(os.path.join(task.get_dir(),
-                                                         D3RTask.ERROR_FILE)), True)
+                                            D3RTask.ERROR_FILE)), True)
 
         finally:
             shutil.rmtree(temp_dir)
 
     def test_D3RTask_get_smtp_server(self):
-         params = D3RParameters()
-         params.smtp = ''
-         params.smtpport = '25'
-         task = D3RTask(None, params)
-         self.assertNotEqual(task._get_smtp_server(), None)
+        params = D3RParameters()
+        params.smtp = ''
+        params.smtpport = '25'
+        task = D3RTask(None, params)
+        self.assertNotEqual(task._get_smtp_server(), None)
 
     def test_D3RTask_build_from_address(self):
         params = D3RParameters()
         task = D3RTask(None, params)
         exp_from_addr = os.getlogin() + '@' + platform.node()
         self.assertEqual(task._build_from_address(), exp_from_addr)
-
 
     def test_BlastNFilterTask_update_status_from_filesystem(self):
         params = D3RParameters()
@@ -276,13 +277,17 @@ class TestD3rTask(unittest.TestCase):
     def test_DataImportTask_get_nonpolymer_tsv(self):
         params = D3RParameters()
         task = DataImportTask('/foo', params)
-        self.assertEqual(task.get_nonpolymer_tsv(), '/foo/stage.1.dataimport/new_release_structure_nonpolymer.tsv')
-        
+        self.assertEqual(task.get_nonpolymer_tsv(),
+                         '/foo/stage.1.dataimport' +
+                         '/new_release_structure_nonpolymer.tsv')
+
     def test_DataImportTask_get_sequence_tsv(self):
         params = D3RParameters()
         task = DataImportTask('/foo', params)
-        self.assertEqual(task.get_sequence_tsv(), '/foo/stage.1.dataimport/new_release_structure_sequence.tsv')
-   
+        self.assertEqual(task.get_sequence_tsv(),
+                         '/foo/stage.1.dataimport/' +
+                         'new_release_structure_sequence.tsv')
+
     def _try_update_status_from_filesystem(self, task):
 
         tempDir = tempfile.mkdtemp()
@@ -457,6 +462,11 @@ class TestD3rTask(unittest.TestCase):
                                         'echo.stdout')
 
             self.assertEqual(os.path.isfile(std_out_file), True)
+
+            res = blasttask.get_email_log().rstrip('\n')
+            res.index('/bin/echo')
+            res.index('# targets found: 0')
+            res.index('Target,Candidate Count')
         finally:
             shutil.rmtree(temp_dir)
 
@@ -473,13 +483,13 @@ class TestD3rTask(unittest.TestCase):
             self.assertEqual(blasttask.get_status(), D3RTask.ERROR_STATUS)
             self.assertNotEqual(blasttask.get_error(), None)
             error_file = os.path.join(blasttask.get_dir(),
-                                         D3RTask.ERROR_FILE)
+                                      D3RTask.ERROR_FILE)
 
             self.assertEqual(os.path.isfile(error_file), True)
-            
+
             std_err_file = os.path.join(blasttask.get_dir(),
                                         'false.stderr')
-            
+
             self.assertEqual(os.path.isfile(std_err_file), True)
 
             std_out_file = os.path.join(blasttask.get_dir(),
@@ -505,7 +515,6 @@ class TestD3rTask(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
-
     def test_BlastNFilterTask_run_with_can_run_already_set_false(self):
         params = D3RParameters()
         params.blastnfilter = 'false'
@@ -513,7 +522,123 @@ class TestD3rTask(unittest.TestCase):
         blasttask = BlastNFilterTask(None, params)
         blasttask._can_run = False
         blasttask.run()
-   
+
+    def test_get_candidate_count_from_csv(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            params.blastdir = temp_dir
+            blasttask = BlastNFilterTask(temp_dir, params)
+            csv_file = os.path.join(temp_dir, '4zyc.csv')
+            open(csv_file, 'a').close()
+            self.assertEqual(blasttask.
+                             _get_candidate_count_from_csv(csv_file), 0)
+
+            f = open(csv_file, 'w')
+            f.write('Target Information\n')
+            f.write('PDBID,Ligand\n')
+            f.write('4zyc,4SS\n\nTest Information\n')
+            f.write('PDBID,Coverage,Identity,Resolution,Ligand1,Ligand2\n \n')
+            f.flush()
+            f.close()
+
+            self.assertEqual(blasttask.
+                             _get_candidate_count_from_csv(csv_file), 0)
+
+            f = open(csv_file, 'w')
+            f.write('Target Information\n')
+            f.write('PDBID,Ligand\n')
+            f.write('4zyc,4SS\n\nTest Information\n')
+            f.write('PDBID,Coverage,Identity,Resolution,Ligand1,Ligand2\n')
+            f.write('asdf,0.979166666667,0.989361702128,1.38,SO4,2U5\n')
+            f.flush()
+            f.close()
+            self.assertEqual(blasttask
+                             ._get_candidate_count_from_csv(csv_file), 1)
+
+            f = open(csv_file, 'w')
+            f.write('Target Information\n')
+            f.write('PDBID,Ligand\n')
+            f.write('4zyc,4SS\n\nTest Information\n')
+            f.write('PDBID,Coverage,Identity,Resolution,Ligand1,Ligand2\n')
+            f.write('asdf,0.979166666667,0.989361702128,1.38,SO4,2U5\n')
+            f.write('asdf,0.979166666667,0.989361702128,1.38,SO4,2U5\n')
+            f.write('asdf,0.979166666667,0.989361702128,1.38,SO4,2U5\n')
+            f.flush()
+            f.close()
+            self.assertEqual(blasttask
+                             ._get_candidate_count_from_csv(csv_file), 3)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_parse_blastnfilter_output_for_hit_stats(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            params.blastdir = temp_dir
+            blasttask = BlastNFilterTask(temp_dir, params)
+
+            blasttask.create_dir()
+            self.assertEquals(blasttask
+                              ._parse_blastnfilter_output_for_hit_stats(),
+                              '# targets found: 0\n\nTarget,Candidate Count\n')
+
+            csv_file = os.path.join(blasttask.get_dir(), '4zyc.csv')
+            f = open(csv_file, 'w')
+            f.write('Target Information\n')
+            f.write('PDBID,Ligand\n')
+            f.write('4zyc,4SS\n\nTest Information\n')
+            f.write('PDBID,Coverage,Identity,Resolution,Ligand1,Ligand2\n \n')
+            f.flush()
+            f.close()
+            self.assertEquals(blasttask
+                              ._parse_blastnfilter_output_for_hit_stats(),
+                              '# targets found: 1\n\nTarget,Candidate Count' +
+                              '\n4zyc,0\n')
+
+            csv_file = os.path.join(blasttask.get_dir(), '4qqq.csv')
+            f = open(csv_file, 'w')
+            f.write('Target Information\n')
+            f.write('PDBID,Ligand\n')
+            f.write('4qqq,4SS\n\nTest Information\n')
+            f.write('PDBID,Coverage,Identity,Resolution,Ligand1,Ligand2\n\n')
+            f.write('asdf,0.979166666667,0.989361702128,1.38,SO4,2U5\n')
+            f.flush()
+            f.close()
+            res = blasttask._parse_blastnfilter_output_for_hit_stats()\
+                .rstrip('\n')
+            res.index('# targets found: 2')
+            res.index('Target,Candidate Count')
+            res.index('4qqq,1')
+            res.index('4zyc,0')
+
+            csv_file = os.path.join(blasttask.get_dir(), '4abc.csv')
+            f = open(csv_file, 'w')
+            f.write('Target Information\n')
+            f.write('PDBID,Ligand\n')
+            f.write('4abc,4SS\n\nTest Information\n')
+            f.write('PDBID,Coverage,Identity,Resolution,Ligand1,Ligand2\n\n')
+            f.write('asdf,0.979166666667,0.989361702128,1.38,SO4,2U5\n')
+            f.write('bsdf,0.979166666667,0.989361702128,1.38,SO4,2U5\n')
+            f.write('csdf,0.979166666667,0.989361702128,1.38,SO4,2U5\n')
+            f.write('dsdf,0.979166666667,0.989361702128,1.38,SO4,2U5\n')
+            f.write('esdf,0.979166666667,0.989361702128,1.38,SO4,2U5\n')
+            f.write('asdf,0.979166666667,0.989361702128,1.38,SO4,2U5\n')
+            f.write('asdf,0.979166666667,0.989361702128,1.38,SO4,2U5\n')
+            f.write('fsdf,0.979166666667,0.989361702128,1.38,SO4,2U5\n')
+            f.flush()
+            f.close()
+            res = blasttask._parse_blastnfilter_output_for_hit_stats()\
+                .rstrip('\n')
+            res.index('# targets found: 3')
+            res.index('Target,Candidate Count')
+            res.index('4qqq,1')
+            res.index('4zyc,0')
+            res.index('4abc,8')
+
+        finally:
+            shutil.rmtree(temp_dir)
 
     def tearDown(self):
         pass

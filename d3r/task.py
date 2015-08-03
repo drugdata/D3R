@@ -18,11 +18,13 @@ class D3RParameters(object):
     """
     pass
 
+
 class TaskException(Exception):
-    """base exception class for all the other exceptions provided by 
+    """base exception class for all the other exceptions provided by
        this module.
     """
     pass
+
 
 class UnsetPathError(TaskException):
     """Exception to denote path is unset
@@ -99,12 +101,27 @@ class D3RTask(object):
         self._error = None
         self._args = args
         self._can_run = None
+        self._start_time = None
+        self._duration = -1
+        self._email_log = None
 
     def get_args(self):
         return self._args
 
     def set_args(self, args):
         self._args = args
+
+    def set_email_log(self, email_log):
+        self._email_log = email_log
+
+    def append_to_email_log(self, append_log):
+        if self._email_log is None:
+            self._email_log = append_log
+        else:
+            self._email_log += append_log
+
+    def get_email_log(self):
+        return self._email_log
 
     def get_path(self):
         return self._path
@@ -183,39 +200,46 @@ class D3RTask(object):
         """Creates start email message that can be passed to sendmail
 
         """
+        email_log = ''
+        if self._email_log is not None:
+            email_log = (self._email_log + '\n\n')
+
         the_message = ('Hi,\n ' + self.get_dir_name() + ' has started' +
                        ' running on host ' + platform.node() +
-                       '\nunder path ' + self.get_dir() + '\n\n' +
+                       '\nunder path ' + self.get_dir() + '\n\n' + email_log +
                        'Sincerely,\n\n' + self._get_program_name())
-                         
+
         msg = MIMEText(the_message)
         msg['Subject'] = (self._get_time() + self.get_dir_name() +
                           ' has started running')
         self._send_email(msg)
-
 
     def _send_end_email(self):
         """Creates end email message that can be passed to sendmail
 
         """
 
+        email_log = ''
+        if self._email_log is not None:
+            email_log = (self._email_log + '\n\n')
+
         error_msg = ''
         if self.get_error() is not None:
-            error_msg = ('Error:\n' + self.get_error()+ '\n\n')
+            error_msg = ('Error:\n' + self.get_error() + '\n\n')
 
         the_message = ('Hi,\n ' + self.get_dir_name() + ' has finished' +
+                       ' after ' + str(self._duration) + ' seconds' +
                        ' with status ' + self.get_status() + ' on host '
                        + platform.node() +
-                       '\nunder path ' + self.get_dir() + '\n\n' + error_msg +
-                       'Sincerely,\n\n' + self._get_program_name())
-                         
+                       '\nunder path ' + self.get_dir() + '\n\n' + email_log +
+                       error_msg + 'Sincerely,\n\n' + self._get_program_name())
+
         msg = MIMEText(the_message)
         msg['Subject'] = (self._get_time() + self.get_dir_name() +
-                          ' has finished with status '+ self.get_status())
+                          ' has finished with status ' + self.get_status())
         self._send_email(msg)
 
-
-    def _send_email(self,mime_msg):
+    def _send_email(self, mime_msg):
         """Sends email with message passed in
 
 
@@ -223,7 +247,7 @@ class D3RTask(object):
            in get_args() object then this method will send
            an email with `message` passed in as content.
         """
-        try: 
+        try:
             if self.get_args().email is not None:
                 email_list = self.get_args().email.split(',')
                 logger.debug('Sending email to: ' + ", ".join(email_list))
@@ -259,14 +283,15 @@ class D3RTask(object):
            end() is invoked and get_error() will be set with
            message denoting error
         """
+        self._start_time = int(time.time())
         logger.info(self.get_dir_name() + ' task has started ')
 
         self.set_status(D3RTask.START_STATUS)
 
         self._send_start_email()
-       
+
         try:
-            self.create_dir() 
+            self.create_dir()
         except Exception as e:
             self.set_error('Caught exception trying to create directory ' +
                            str(e))
@@ -279,15 +304,21 @@ class D3RTask(object):
     def end(self):
         """Denotes task has completed
 
-           If get_error() is not none then 'error' token file is 
+           If get_error() is not none then 'error' token file is
            put in task directory and get_status() set to D3RTask.ERROR_STATUS
            Otherwise 'complete' token file is put in task directory.
-           if get_args() email is set then a notification of task 
+           if get_args() email is set then a notification of task
            completion is sent
         """
 
-        logger.info(self.get_dir_name() + ' task has finished with status ' +
-                    self.get_status())
+        if self._start_time is not None:
+            self._duration = self._start_time - int(time.time())
+        else:
+            self._duration = -1
+
+        logger.info(self.get_dir_name() + ' task took ' +
+                    str(self._duration) + 'seconds and has ' +
+                    'finished with status ' + self.get_status())
 
         if self.get_error() is not None:
             logger.error(self.get_dir() + ' task failed with error ' +
@@ -315,7 +346,7 @@ class D3RTask(object):
 
     def can_run(self):
         """Always returns False
-            
+
            Derived classes should override this method
         """
         self._can_run = False
@@ -323,7 +354,7 @@ class D3RTask(object):
 
     def run(self):
         """Sees if task can run
-      
+
            This is the base implementation and does not actually
            run anything.  Instead this method calls can_run()
            if the internal variable _can_run is None.  It is assumed
@@ -335,7 +366,7 @@ class D3RTask(object):
         name = self._name
         if name is None:
             name = 'unset'
-          
+
         logger.info(name + ' task is running')
         if self._can_run is None:
             logger.info("Running can_run() to check if its allright " +
@@ -517,7 +548,7 @@ class MakeBlastDBTask(D3RTask):
         """Creates path set in get_path()
 
            """
-        the_path = os.path.join(self._path,self.get_dir_name())
+        the_path = os.path.join(self._path, self.get_dir_name())
         os.makedirs(the_path)
         return the_path
 
@@ -538,6 +569,67 @@ class BlastNFilterTask(D3RTask):
         self.set_name('blastnfilter')
         self.set_stage(2)
         self.set_status(D3RTask.UNKNOWN_STATUS)
+
+    def _get_candidate_count_from_csv(self, csv_path):
+        """Looks at csv file and counts lines below PBD,Coverage
+
+           Example File:
+                  Target Information
+                  PDBID,Ligand
+                  4zyc,4SS
+
+                  Test Information
+                  PDBID,Coverage,Identity,Resolution,Ligand1,Ligand2
+                  4ogn,0.979166666667,0.989361702128,1.38,SO4,2U5
+                  4wt2,0.979166666667,0.989361702128,1.42,3UD,SO4
+
+        """
+        candidate_count = 0
+        try:
+            f = open(csv_path, 'r')
+            start_count = False
+            for line in f:
+                if line.find('PDBID,Coverage,') >= 0:
+                    start_count = True
+                    continue
+
+                if start_count:
+                    if line.find(',') > 0:
+                        candidate_count += 1
+            f.close()
+        except Exception as e:
+            logger.warning('Caught Exception trying to examine: ' + csv_path +
+                           ' : ' + str(e))
+            candidate_count = -1
+        return candidate_count
+
+    def _parse_blastnfilter_output_for_hit_stats(self):
+        """Examines output directory of blastnfilter.py for stats on run
+
+           This method looks at the output directory and counts the number
+           of .csv files found.  Each .csv file corresponds to a target.
+           Within each .csv file the entries under Test Information correspond
+           to candidates.  This method will output number of candidates for
+           that target by calling get_candidate_count_from_csv method
+        """
+        out_dir = self.get_dir()
+        target_count = 0
+        can_count_list = '\n\nTarget,Candidate Count\n'
+        for entry in os.listdir(out_dir):
+            if entry.endswith('.csv'):
+                full_path = os.path.join(out_dir, entry)
+                if os.path.isfile(full_path):
+                    target_count += 1
+                    candidate_count = self._get_candidate_count_from_csv(
+                        full_path)
+                    can_count_list = (can_count_list +
+                                      entry.replace('.csv', '') +
+                                      ',' + str(candidate_count) + '\n')
+
+        hit_stats = ('# targets found: ' + str(target_count) +
+                     can_count_list)
+
+        return hit_stats
 
     def can_run(self):
         """Determines if task can actually run
@@ -603,10 +695,10 @@ class BlastNFilterTask(D3RTask):
         super(BlastNFilterTask, self).run()
 
         if self._can_run is False:
-            logger.debug(self.get_dir_name()+ ' cannot run cause _can_run flag '
-                         'is False')
+            logger.debug(
+                self.get_dir_name() + ' cannot run cause _can_run flag '
+                                      'is False')
             return
-
 
         data_import = DataImportTask(self._path, self._args)
 
@@ -622,6 +714,7 @@ class BlastNFilterTask(D3RTask):
 
         # Run the blastnfilter
         logger.info("Running command " + cmd_to_run)
+        self.set_email_log('Running command: ' + cmd_to_run + '\n')
         try:
             p = subprocess.Popen(shlex.split(cmd_to_run),
                                  stdout=subprocess.PIPE,
@@ -647,6 +740,14 @@ class BlastNFilterTask(D3RTask):
             self.set_error("Non zero exit code: " + str(p.returncode) +
                            "received. Standard out: " + out +
                            " Standard error : " + err)
+
+        try:
+            # examine output to get candidate hit count DR-12
+            hit_stats = self._parse_blastnfilter_output_for_hit_stats()
+            if hit_stats is not None:
+                self.append_to_email_log(hit_stats)
+        except Exception as e:
+            logger.exception("Error caught exception")
 
         # assess the result
         self.end()
