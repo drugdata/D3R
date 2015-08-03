@@ -53,6 +53,7 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEqual(logging.getLogger('d3r.task').getEffectiveLevel(),
                          logging.INFO)
         self.assertEqual(theargs.numericloglevel, logging.INFO)
+        logger.debug('test')
 
     def test_parse_arguments(self):
         theargs = ['--stage', 'blast', 'foo', '--blastnfilter', 'true']
@@ -159,12 +160,11 @@ class TestCelppRunner(unittest.TestCase):
             open(os.path.join(d_import_dir, 'complete'), 'a').close()
 
             theargs.stage = 'blast'
-            theargs.blastnfilter= 'echo'
+            theargs.blastnfilter = 'echo'
             self.assertEqual(celpprunner.run_stage(theargs), 0)
 
         finally:
             shutil.rmtree(temp_dir)
-
 
     def test_run_stage_blast_has_error(self):
         temp_dir = tempfile.mkdtemp()
