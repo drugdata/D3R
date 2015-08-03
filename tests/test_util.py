@@ -27,8 +27,8 @@ class TestUtil(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             try:
-                fakefile = os.path.join(temp_dir,'fakefile')
-                open(fakefile,'a').close()
+                fakefile = os.path.join(temp_dir, 'fakefile')
+                open(fakefile, 'a').close()
                 util.find_latest_year(fakefile)
                 self.fail('Expected exception')
             except Exception:
