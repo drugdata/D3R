@@ -312,7 +312,7 @@ class D3RTask(object):
         """
 
         if self._start_time is not None:
-            self._duration = self._start_time - int(time.time())
+            self._duration = int(time.time()) - self._start_time
         else:
             self._duration = -1
 
@@ -626,7 +626,7 @@ class BlastNFilterTask(D3RTask):
                                       entry.replace('.csv', '') +
                                       ',' + str(candidate_count) + '\n')
 
-        hit_stats = ('# targets found: ' + str(target_count) +
+        hit_stats = ('\n# targets found: ' + str(target_count) +
                      can_count_list)
 
         return hit_stats

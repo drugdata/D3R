@@ -642,7 +642,7 @@ class TestD3rTask(unittest.TestCase):
             blasttask.create_dir()
             self.assertEquals(blasttask
                               ._parse_blastnfilter_output_for_hit_stats(),
-                              '# targets found: 0\n\nTarget,Candidate Count\n')
+                              '\n# targets found: 0\n\nTarget,Candidate Count\n')
 
             csv_file = os.path.join(blasttask.get_dir(), '4zyc.csv')
             f = open(csv_file, 'w')
@@ -654,7 +654,7 @@ class TestD3rTask(unittest.TestCase):
             f.close()
             self.assertEquals(blasttask
                               ._parse_blastnfilter_output_for_hit_stats(),
-                              '# targets found: 1\n\nTarget,Candidate Count' +
+                              '\n# targets found: 1\n\nTarget,Candidate Count' +
                               '\n4zyc,0\n')
 
             csv_file = os.path.join(blasttask.get_dir(), '4qqq.csv')
