@@ -16,6 +16,7 @@ Tests for `task` module.
 import shutil
 import platform
 import os
+import stat
 from d3r.task import D3RParameters
 from d3r.task import UnsetPathError
 from d3r.task import UnsetStageError
@@ -467,6 +468,65 @@ class TestD3rTask(unittest.TestCase):
             res.index('/bin/echo')
             res.index('# targets found: 0')
             res.index('Target,Candidate Count')
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_BlastNFilterTask_run_success_with_csv_files(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            foo_script = os.path.join(temp_dir, 'foo.py')
+            params.blastnfilter = foo_script
+            params.blastdir = temp_dir
+            blasttask = BlastNFilterTask(temp_dir, params)
+            blasttask._can_run = True
+
+            csv_file = os.path.join(blasttask.get_dir(), '4abc.csv')
+
+            csv_contents = ('Target Information\\n' +
+                            'PDBID,Ligand\\n' +
+                            '4zyc,4SS\\n\\n' +
+                            'Test Information\\n' +
+                            'PDBID,Coverage,Identity,Resolution,Ligand1,' +
+                            'Ligand2\\n' +
+                            '4ogn,0.979166666667,0.989361702128,1.38,SO4,' +
+                            '2U5\\n' +
+                            '4wt2,0.979166666667,0.989361702128,1.42,3UD,' +
+                            'SO4\\n')
+
+            # create fake blastnfilter script that makes csv files
+            f = open(foo_script, 'w')
+            f.write('#! /usr/bin/env python\n\n')
+            f.write('f = open(\'' + csv_file + '\', \'w\')\n')
+            f.write('f.write(\'' + csv_contents + '\\n\')\n')
+            f.write('f.flush()\nf.close()\n')
+            f.flush()
+            f.close()
+            os.chmod(foo_script, stat.S_IRWXU)
+
+            blasttask.run()
+            self.assertEqual(blasttask.get_error(), None)
+            self.assertEqual(blasttask.get_status(), D3RTask.COMPLETE_STATUS)
+            complete_file = os.path.join(blasttask.get_dir(),
+                                         D3RTask.COMPLETE_FILE)
+
+            self.assertEqual(os.path.isfile(complete_file), True)
+
+            std_err_file = os.path.join(blasttask.get_dir(),
+                                        'foo.py.stderr')
+
+            self.assertEqual(os.path.isfile(std_err_file), True)
+
+            std_out_file = os.path.join(blasttask.get_dir(),
+                                        'foo.py.stdout')
+
+            self.assertEqual(os.path.isfile(std_out_file), True)
+
+            res = blasttask.get_email_log().rstrip('\n')
+            res.index('/foo.py')
+            res.index('# targets found: 1')
+            res.index('Target,Candidate Count')
+            res.index('4abc,2')
         finally:
             shutil.rmtree(temp_dir)
 
