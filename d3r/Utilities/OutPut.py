@@ -54,3 +54,12 @@ def write_csv(target_list, out_dir):
                 csv_writer.writerow(line)
 
         out_handle.close()
+
+def write_log(arg):
+    """
+
+    :param arg:
+    :return:
+    """
+
+    

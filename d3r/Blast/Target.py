@@ -1,7 +1,6 @@
 __author__ = 'robswift'
 
 from collections import defaultdict
-import os
 from Bio.Blast.Applications import NcbiblastpCommandline
 from Bio.Blast import NCBIXML
 from StringIO import StringIO
@@ -12,7 +11,6 @@ from Bio.SeqRecord import SeqRecord
 import ParseAlignment
 from SequenceBase import Base
 from Test import Test
-
 
 class Target(Base):
     """
@@ -122,6 +120,13 @@ class Target(Base):
         del_test_indices.sort(reverse=True)
         for test_index in del_test_indices:
             del self.test_list[test_index]
+
+    def filter_blast_results(self):
+        """
+        Removes test structures from test_list whose sequences fail to meet the %identity and %coverage criteria
+        :return:
+        """
+
 
     def instantiate_test(self, alignment, record):
         """

@@ -24,10 +24,9 @@ class Test(Base):
     @staticmethod
     def set_pdb_dict(fasta):
         """
-        Each PDB ID may have one or more chains, each with a unique sequence. Each PDB ID is mapped to a list sequences
-        for each of its chains. This information is stored in the class default dictionary pdb_dict, i.e.
+        Each PDB ID is mapped to a list of sequences, one sequence for each of its chains. This information is stored
+        in a class-wide default dictionary pdb_dict, with the following structure
         pdb_dict = { 'PDB ID' : [ seq_chainA, seq_chainB, ... ] }
-
         :param fasta: path to the PDB sequences stored in FASTA format, i.e. "pdb_seqres.txt"
         :return:
         """
