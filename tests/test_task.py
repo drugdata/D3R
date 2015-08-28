@@ -26,6 +26,7 @@ from d3r.task import D3RTask
 from d3r.task import BlastNFilterTask
 from d3r.task import DataImportTask
 from d3r.task import MakeBlastDBTask
+from d3r.task import PDBPrepTask
 
 
 class TestD3rTask(unittest.TestCase):
@@ -696,6 +697,84 @@ class TestD3rTask(unittest.TestCase):
             res.index('4qqq,1')
             res.index('4zyc,0')
             res.index('4abc,8')
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_PDBPrepTask_can_run(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            # no blast task found so it cannot run
+            params = D3RParameters()
+            pdbpreptask = PDBPrepTask(temp_dir, params)
+            self.assertEqual(pdbpreptask.can_run(), False)
+            self.assertEqual(pdbpreptask.get_error(),
+                             'blastnfilter task has notfound status')
+
+            # blastn filter running
+            blastnfilter = BlastNFilterTask(temp_dir, params)
+            blastnfilter.create_dir()
+            open(os.path.join(blastnfilter.get_dir(), D3RTask.START_FILE),
+                 'a').close()
+            pdbpreptask = PDBPrepTask(temp_dir, params)
+            self.assertEqual(pdbpreptask.can_run(), False)
+            self.assertEqual(pdbpreptask.get_error(),
+                             'blastnfilter task has start status')
+
+            # blastnfilter failed
+            error_file = os.path.join(blastnfilter.get_dir(),
+                                      D3RTask.ERROR_FILE)
+            open(error_file, 'a').close()
+            pdbpreptask = PDBPrepTask(temp_dir, params)
+            self.assertEqual(pdbpreptask.can_run(), False)
+            self.assertEqual(pdbpreptask.get_error(),
+                             'blastnfilter task has error status')
+
+            # blastnfilter success
+            os.remove(error_file)
+            open(os.path.join(blastnfilter.get_dir(),
+                              D3RTask.COMPLETE_FILE), 'a').close()
+            pdbpreptask = PDBPrepTask(temp_dir, params)
+            self.assertEqual(pdbpreptask.can_run(), True)
+            self.assertEqual(pdbpreptask.get_error(), None)
+
+            # pdbprep task exists already
+            pdbpreptask = PDBPrepTask(temp_dir, params)
+            pdbpreptask.create_dir()
+            print "ERROR: ",pdbpreptask.get_error()
+            print "status: ",pdbpreptask.get_status()
+            self.assertEqual(pdbpreptask.can_run(), False)
+            self.assertEqual(pdbpreptask.get_error(),
+                             pdbpreptask.get_dir_name() +
+                             ' already exists and status is unknown')
+
+            #pdbprep already complete
+            pdbpreptask = PDBPrepTask(temp_dir, params)
+            open(os.path.join(pdbpreptask.get_dir(),
+                              D3RTask.COMPLETE_FILE), 'a').close()
+            self.assertEqual(pdbpreptask.can_run(), False)
+            self.assertEqual(pdbpreptask.get_error(), None)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_PDBPrepTask_run(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            params.pdbprep = 'echo'
+
+            # return immediately cause can_run is false
+            pdbpreptask = PDBPrepTask(temp_dir, params)
+            pdbpreptask.run()
+            self.assertEqual(pdbpreptask.get_error(),
+                             'blastnfilter task has notfound status')
+
+            blastnfilter = BlastNFilterTask(temp_dir, params)
+            blastnfilter.create_dir()
+            open(os.path.join(blastnfilter.get_dir(), D3RTask.COMPLETE_FILE),
+                 'a').close()
+
 
         finally:
             shutil.rmtree(temp_dir)
