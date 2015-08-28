@@ -10,6 +10,7 @@ import d3r
 from d3r import util
 from d3r.task import D3RParameters
 from d3r.task import BlastNFilterTask
+from d3r.task import PDBPrepTask
 from lockfile.pidlockfile import PIDLockFile
 
 # create logger
@@ -92,6 +93,9 @@ def run_stage(theargs):
     if theargs.stage == 'blast':
         task = BlastNFilterTask(theargs.latest_weekly, theargs)
 
+    if theargs.stage == 'pdbprep':
+        task = PDBPrepTask(theargs.latest_weekly, theargs)
+
     if theargs.stage == 'dock':
         raise NotImplementedError('uh oh dock is not implemented yet')
 
@@ -124,13 +128,15 @@ def _parse_arguments(desc, args):
     parser.add_argument("--email", dest="email",
                         help='Comma delimited list of email addresses')
 
-    parser.add_argument("--stage", choices=['blast', 'dock', 'score'],
+    parser.add_argument("--stage", choices=['blast', 'pdbprep', 'dock', 'score'],
                         required=True, help='Stage to run blast = ' +
-                        'blastnfilter (2), dock = fred & other ' +
-                        'docking algorithms (3), ' +
-                        'score = scoring (4)')
-    parser.add_argument("--blastnfilter", required=True,
+                        'blastnfilter (2), pdbprep (3), dock = fred & other ' +
+                        'docking algorithms (4), ' +
+                        'score = scoring (5)')
+    parser.add_argument("--blastnfilter",default='blastnfilter.py',
                         help='Path to BlastnFilter script')
+    parser.add_argument("--pdbprep",default='pdbprep.py',
+                        help='Path to pdbprep script')
     parser.add_argument("--log", dest="loglevel", choices=['DEBUG',
                         'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
                         help="Set the logging level",
@@ -146,7 +152,7 @@ def _parse_arguments(desc, args):
 
 def main():
     desc = """
-              Runs last 3 stages (blast, dock, & score) of CELPP
+              Runs last 4 stages (blast, pdbprep, dock, & score) of CELPP
               processing pipeline (http://www.drugdesigndata.org)
 
               CELPP processing pipeline relies on a set of directories
@@ -208,19 +214,26 @@ def main():
               are met then the 'blast' stage is run and output stored
               in stage.2.blastnfilter
 
+              If --stage 'pdbprep'
+
+              Verifies stage.2.blastnfilter exists and has 'complete'
+              file.  If complete, this stage runs which invokes program
+              set in --pdbprep flag to prepare pdb and inchi files storing
+              output in stage.3.pdbprep
+
               If --stage 'dock'
 
-              Verifies stage2.blastnfilter exists and has a 'complete'
+              Verifies stage3.pdbprep exists and has a 'complete'
               file within it.  If complete, this program will run fred
-              docking and store output in stage.3.fred.  As new
-              algorithms are incorporated additional stage.3.<algo> will
+              docking and store output in stage.4.fred.  As new
+              algorithms are incorporated additional stage.4.<algo> will
               be created and run.
 
               If --stage 'score'
 
-              Finds all stage.3.<algo> directories with 'complete' files
+              Finds all stage.4.<algo> directories with 'complete' files
               in them and invokes appropriate scoring algorithm storing
-              results in stage.4.<algo>.scoring.
+              results in stage.5.<algo>.scoring.
               """
 
     theargs = _parse_arguments(desc, sys.argv[1:])
