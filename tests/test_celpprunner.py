@@ -56,18 +56,20 @@ class TestCelppRunner(unittest.TestCase):
         logger.debug('test')
 
     def test_parse_arguments(self):
-        theargs = ['--stage', 'blast', 'foo', '--blastnfilter', 'true']
+        theargs = ['--stage', 'blast', 'foo']
         result = celpprunner._parse_arguments('hi', theargs)
         self.assertEqual(result.stage, 'blast')
         self.assertEqual(result.celppdir, 'foo')
         self.assertEqual(result.blastdir, None)
         self.assertEqual(result.email, None)
         self.assertEqual(result.loglevel, 'WARNING')
-        self.assertEqual(result.blastnfilter, 'true')
+        self.assertEqual(result.blastnfilter, 'blastnfilter.py')
+        self.assertEqual(result.pdbprep, 'pdbprep.py')
 
         theargs = ['foo', '--stage', 'dock', '--email', 'b@b.com,h@h',
                    '--blastdir', 'b', '--log', 'ERROR',
-                   '--blastnfilter', '/bin/blastnfilter.py']
+                   '--blastnfilter', '/bin/blastnfilter.py',
+                   '--pdbprep', '/bin/pdbprep.py']
         result = celpprunner._parse_arguments('hi', theargs)
         self.assertEqual(result.stage, 'dock')
         self.assertEqual(result.celppdir, 'foo')
@@ -75,6 +77,7 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEqual(result.email, 'b@b.com,h@h')
         self.assertEqual(result.loglevel, 'ERROR')
         self.assertEqual(result.blastnfilter, '/bin/blastnfilter.py')
+        self.assertEqual(result.pdbprep, '/bin/pdbprep.py')
 
     def test_run_stage_no_weekly_datasetfound(self):
         temp_dir = tempfile.mkdtemp()
