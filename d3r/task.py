@@ -492,6 +492,36 @@ class D3RTask(object):
 
         return D3RTask.UNKNOWN_STATUS
 
+    def run_external_command(self,command_name, cmd_to_run):
+        """Runs external command line process
+        """
+        logger.info("Running command " + cmd_to_run)
+        self.set_email_log('Running command: ' + cmd_to_run + '\n')
+        try:
+            p = subprocess.Popen(shlex.split(cmd_to_run),
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE)
+        except Exception as e:
+            logger.exception("Error caught exception")
+            self.set_status(D3RTask.ERROR_STATUS)
+            self.set_error("Caught Exception trying to run " +
+                           cmd_to_run + " : " + str(e))
+            self.end()
+            return
+
+        out, err = p.communicate()
+
+        self.write_to_file(err, command_name + '.stderr')
+        self.write_to_file(out, command_name + '.stdout')
+
+        if p.returncode == 0:
+            self.set_status(D3RTask.COMPLETE_STATUS)
+        else:
+            self.set_status(D3RTask.ERROR_STATUS)
+            self.set_error("Non zero exit code: " + str(p.returncode) +
+                           "received. Standard out: " + out +
+                           " Standard error : " + err)
+        return p.returncode
 
 class DataImportTask(D3RTask):
     """Represents DataImport Task
@@ -615,21 +645,31 @@ class BlastNFilterTask(D3RTask):
         out_dir = self.get_dir()
         target_count = 0
         can_count_list = '\n\nTarget,Candidate Count\n'
-        for entry in os.listdir(out_dir):
-            if entry.endswith('.csv'):
-                full_path = os.path.join(out_dir, entry)
-                if os.path.isfile(full_path):
-                    target_count += 1
-                    candidate_count = self._get_candidate_count_from_csv(
-                        full_path)
-                    can_count_list = (can_count_list +
-                                      entry.replace('.csv', '') +
-                                      ',' + str(candidate_count) + '\n')
+        for entry in self.get_csv_files():
+            full_path = os.path.join(out_dir, entry)
+            if os.path.isfile(full_path):
+                target_count += 1
+                candidate_count = self._get_candidate_count_from_csv(full_path)
+                can_count_list = (can_count_list +
+                                  entry.replace('.csv', '') +
+                                  ',' + str(candidate_count) + '\n')
 
         hit_stats = ('\n# targets found: ' + str(target_count) +
                      can_count_list)
 
         return hit_stats
+
+    def get_csv_files(self):
+        """ Gets CSV files in task directory (just the names)
+        :return:list of CSV file names
+        """
+        out_dir = self.get_dir()
+        csv_list = []
+        for entry in os.listdir(out_dir):
+            if entry.endswith('.csv'):
+                csv_list.append(entry)
+
+        return csv_list
 
     def can_run(self):
         """Determines if task can actually run
@@ -712,34 +752,9 @@ class BlastNFilterTask(D3RTask):
                       make_blastdb.get_dir() +
                       ' --outdir ' + self.get_dir())
 
-        # Run the blastnfilter
-        logger.info("Running command " + cmd_to_run)
-        self.set_email_log('Running command: ' + cmd_to_run + '\n')
-        try:
-            p = subprocess.Popen(shlex.split(cmd_to_run),
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE)
-        except Exception as e:
-            logger.exception("Error caught exception")
-            self.set_status(D3RTask.ERROR_STATUS)
-            self.set_error("Caught Exception trying to run " +
-                           cmd_to_run + " : " + str(e))
-            self.end()
-            return
-
-        out, err = p.communicate()
-
         blastnfilter_name = os.path.basename(self.get_args().blastnfilter)
-        self.write_to_file(err, blastnfilter_name + '.stderr')
-        self.write_to_file(out, blastnfilter_name + '.stdout')
 
-        if p.returncode == 0:
-            self.set_status(D3RTask.COMPLETE_STATUS)
-        else:
-            self.set_status(D3RTask.ERROR_STATUS)
-            self.set_error("Non zero exit code: " + str(p.returncode) +
-                           "received. Standard out: " + out +
-                           " Standard error : " + err)
+        self.run_external_command(blastnfilter_name,cmd_to_run)
 
         try:
             # examine output to get candidate hit count DR-12
@@ -749,5 +764,95 @@ class BlastNFilterTask(D3RTask):
         except Exception as e:
             logger.exception("Error caught exception")
 
+        # assess the result
+        self.end()
+
+
+class PDBPrepTask(D3RTask):
+    """Performs preparation of PDB and inchi files
+
+    """
+
+    def __init__(self, path, args):
+        super(PDBPrepTask, self).__init__(path, args)
+        self.set_name('pdbprep')
+        self.set_stage(3)
+        self.set_status(D3RTask.UNKNOWN_STATUS)
+
+    def can_run(self):
+        """Determines if task can actually run
+
+           This method first verifies the `BlastNFilterTask` task
+           has `D3RTask.COMPLETE_STATUS` for
+           status.  The method then verifies a `PDBPrepTask` does
+           not already exist.  If above is not true then self.set_error()
+           is set with information about the issue
+           :return: True if can run otherwise False
+        """
+        self._can_run = False
+        self._error = None
+        # check blast
+        blastnfilter = BlastNFilterTask(self._path, self._args)
+        blastnfilter.update_status_from_filesystem()
+        if blastnfilter.get_status() != D3RTask.COMPLETE_STATUS:
+            logger.info('Cannot run ' + self.get_name() + 'task ' +
+                        'because ' + blastnfilter.get_name() + 'task' +
+                        'has a status of ' + blastnfilter.get_status())
+            self.set_error(blastnfilter.get_name() + ' task has ' +
+                           blastnfilter.get_status() + ' status')
+            return False
+
+        # check this task is not complete and does not exist
+
+        self.update_status_from_filesystem()
+        if self.get_status() == D3RTask.COMPLETE_STATUS:
+            logger.debug("No work needed for " + self.get_name() +
+                         " task")
+            return False
+
+        if self.get_status() != D3RTask.NOTFOUND_STATUS:
+            logger.warning(self.get_name() + " task was already " +
+                           "attempted, but there was a problem")
+            self.set_error(self.get_dir_name() + ' already exists and ' +
+                           'status is ' + self.get_status())
+            return False
+        self._can_run = True
+        return True
+
+    def run(self):
+        """Runs pdbprep task after verifying blastnfilter was good
+
+           Method requires can_run() to be called before hand with
+           successful outcome
+           Otherwise method invokes D3RTask.start then this method
+           creates a directory and invokes blastnfilter script.  Upon
+           completion results are analyzed and success or error status
+           is set appropriately and D3RTask.end is invoked
+           """
+        super(PDBPrepTask, self).run()
+
+        if self._can_run is False:
+            logger.debug(
+                self.get_dir_name() + ' cannot run cause _can_run flag '
+                                      'is False')
+            return
+
+        blastnfilter = BlastNFilterTask(self._path, self._args)
+        csv_file_list = blastnfilter.get_csv_files()
+
+        if len(csv_file_list) is 0:
+            logger.debug(self.get_dir_name() + ' no csv files found')
+            self.end()
+            return
+
+        cmd_to_run = (self.get_args().pdbprep + ' --csvfiles ' +
+                      ",".join(csv_file_list) +
+                      ' --csvdir ' +
+                      blastnfilter.get_dir() +
+                      ' --outdir ' + self.get_dir())
+
+        pdbprep_name = os.path.basename(self.get_args().pdbprep)
+
+        self.run_external_command(pdbprep_name,cmd_to_run)
         # assess the result
         self.end()
