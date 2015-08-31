@@ -18,7 +18,7 @@ logger = logging.getLogger('d3r.celpprunner')
 LOG_FORMAT = "%(asctime)-15s %(levelname)s %(name)s %(message)s"
 
 
-def _get_lock(theargs):
+def _get_lock(theargs, stage):
     """Create lock file to prevent this process from running on same data
 
        This uses ``PIDLockFile`` to create a pid lock file in celppdir
@@ -27,13 +27,13 @@ def _get_lock(theargs):
        is broken and recreated
 
        :param theargs: return value from argparse and should contain
-                       theargs.stage which denotes stage of processing
-                       and theargs.celppdir should be set to path
+                       theargs.celppdir should be set to path
+       :param stage: set to stage that is being run
        :return: ``PIDLockFile`` upon success
        :raises: LockException
        """
     mylockfile = os.path.join(theargs.celppdir, "celpprunner." +
-                              theargs.stage + ".lockpid")
+                              stage + ".lockpid")
     logger.debug("Looking for lock file: " + mylockfile)
     lock = PIDLockFile(mylockfile, timeout=10)
 
@@ -79,7 +79,18 @@ def _setup_logging(theargs):
     logging.getLogger('d3r.task').setLevel(theargs.numericloglevel)
 
 
-def run_stage(theargs):
+def run_stages(theargs):
+    """Runs all the stages set in theargs.stage parameter
+
+
+       Examines theargs.stage and splits it by comma to get
+       list of stages to run.  For each stage found a lock file
+       is created and run_stage is invoked with theargs.latest_weekly set to
+       the output of util.find_latest_weekly_dataset.  After run_stage the
+       lockfile is released
+       :param theargs: should contain theargs.celppdir and other parameters
+                       set via commandline
+    """
     theargs.latest_weekly = util.find_latest_weekly_dataset(theargs.celppdir)
 
     if theargs.latest_weekly is None:
@@ -87,31 +98,83 @@ def run_stage(theargs):
                     theargs.celppdir)
         return 0
 
-    logger.info("Starting " + theargs.stage + " stage")
+    for stage_name in theargs.stage.split(','):
+        logger.info("Starting " + stage_name + " stage")
+        try:
+            lock = _get_lock(theargs, stage_name)
 
-    # perform processing
-    if theargs.stage == 'blast':
-        task = BlastNFilterTask(theargs.latest_weekly, theargs)
+            task_list = get_task_list_for_stage(theargs, stage_name)
 
-    if theargs.stage == 'pdbprep':
-        task = PDBPrepTask(theargs.latest_weekly, theargs)
+            # run the stage
+            exit_code = run_tasks(task_list)
+            if exit_code is not 0:
+                return exit_code
+        finally:
+             # release lock
+            logger.debug('Releasing lock')
+            lock.release()
 
-    if theargs.stage == 'dock':
-        raise NotImplementedError('uh oh dock is not implemented yet')
+        return 0
 
-    if theargs.stage == 'score':
-        raise NotImplementedError('uh oh score is not implemented yet')
 
-    logger.info("Running task " + task.get_name())
-    task.run()
-    logger.debug("Task " + task.get_name() + " has finished running " +
-                 " with status " + task.get_status())
-    if task.get_error() is not None:
-        logger.error('Error running task ' + task.get_name() +
-                     ' ' + task.get_error())
-        return 1
+def run_tasks(task_list):
+    """Runs a specific stage
+
+       Runs the tasks in task_list
+       :param task_list: list of tasks to run
+    """
+    if task_list is None:
+        logger.error('Task list is None')
+        return 3
+
+    if len(task_list) == 0:
+        logger.error('Task list is empty')
+        return 2
+
+    for task in task_list:
+        logger.info("Running task " + task.get_name())
+        try:
+            task.run()
+        except Exception as e:
+            logger.exception("Error caught exception")
+            if task.get_error() is None:
+                task.set_error('Caught Exception running task: ' + e.message)
+
+        logger.debug("Task " + task.get_name() + " has finished running " +
+                     " with status " + task.get_status())
+        if task.get_error() is not None:
+            logger.error('Error running task ' + task.get_name() +
+                         ' ' + task.get_error())
+            return 1
+
     return 0
 
+def get_task_list_for_stage(theargs, stage_name):
+    """Factory method that generates a list of tasks for given stage
+
+       Using stage_name get the list of tasks that need to
+       be run.
+       :param theargs: parameters set via commandline along with
+                       theargs.latest_weekly which should be set to
+                       to base directory where stages will be run
+       :param stage_name:  Name of stage to run
+    """
+    if stage_name is None:
+        raise NotImplementedError('stage_name is None')
+
+    task_list = []
+
+    if stage_name == 'blast':
+        task_list.append(BlastNFilterTask(theargs.latest_weekly, theargs))
+
+    if stage_name == 'pdbprep':
+        task_list.append(PDBPrepTask(theargs.latest_weekly, theargs))
+
+    if len(task_list) is 0:
+        raise NotImplementedError(
+            'uh oh no tasks for ' + stage_name + ' stage')
+
+    return task_list
 
 def _parse_arguments(desc, args):
     """Parses command line arguments
@@ -128,11 +191,10 @@ def _parse_arguments(desc, args):
     parser.add_argument("--email", dest="email",
                         help='Comma delimited list of email addresses')
 
-    parser.add_argument("--stage", choices=['blast', 'pdbprep', 'dock', 'score'],
-                        required=True, help='Stage to run blast = ' +
-                        'blastnfilter (2), pdbprep (3), dock = fred & other ' +
-                        'docking algorithms (4), ' +
-                        'score = scoring (5)')
+    parser.add_argument("--stage", required=True, help='Comma delimited list' +
+                        ' of stages to run.  Valid STAGES = ' +
+                        '{blast, pdbprep, dock} '
+                        )
     parser.add_argument("--blastnfilter",default='blastnfilter.py',
                         help='Path to BlastnFilter script')
     parser.add_argument("--pdbprep",default='pdbprep.py',
@@ -152,8 +214,8 @@ def _parse_arguments(desc, args):
 
 def main():
     desc = """
-              Runs last 4 stages (blast, pdbprep, dock, & score) of CELPP
-              processing pipeline (http://www.drugdesigndata.org)
+              Runs the 5 stages (import, blast, pdbprep, dock, & score) of
+              CELPP processing pipeline (http://www.drugdesigndata.org)
 
               CELPP processing pipeline relies on a set of directories
               with specific structure. The pipeline runs a set of stages
@@ -165,8 +227,14 @@ def main():
 
               stage.<stage number>.<task name>
 
-              Only 1 stage is run per invocation of this program and the
-              stage to be run is defined via the required --stage flag.
+              The stage(s) run are defined via the required --stage flag.
+
+              To run multiple stages serially just pass a comma delimited
+              list to the --stage flag. Example: --stage blast,pdbprep
+
+              NOTE:  When running multiple stages serially the program will
+                     exit as soon as a task in a stage fails and subsequent
+                     stages will NOT be run.
 
               This program drops a pid lockfile
               (celpprunner.<stage>.lockpid) in celppdir to prevent duplicate
@@ -204,6 +272,13 @@ def main():
 
               Breakdown of behavior of program is defined by
               value passed with --stage flag:
+
+              If --stage 'import'
+
+              The first stage which downloads Components-inchi.ich into
+              stage.1.compinchi.  The stage.1.dataimport is currently run
+              by an external script, but really should be done by this tool
+              at some point.
 
               If --stage 'blast'
 
@@ -248,19 +323,11 @@ def main():
     _setup_logging(theargs)
 
     try:
-        # get the lock
-        lock = _get_lock(theargs)
-
-        # run the stage
-        sys.exit(run_stage(theargs))
-
+        run_stages(theargs)
     except Exception:
         logger.exception("Error caught exception")
         sys.exit(2)
-    finally:
-        # release lock
-        logger.debug('Releasing lock')
-        lock.release()
+
 
 
 if __name__ == '__main__':

@@ -17,7 +17,34 @@ import shutil
 
 from d3r import celpprunner
 from d3r.task import D3RParameters
+from d3r import util
+from d3r.task import D3RTask
 
+class DummyTask(D3RTask):
+    """Dummy Task used for tests below
+    """
+    def __init__(self, path, args, error_message, can_run_return,
+                 can_run_exception, run_exception):
+        """Sets up a dummy task
+        """
+        super(DummyTask, self).__init__(path, args)
+        self.set_error(error_message)
+        self._can_run_return = can_run_return
+        self._can_run_exception = can_run_exception
+        self._run_exception = run_exception
+        self._run_count = 0
+
+
+    def can_run(self):
+        if self._can_run_exception is not None:
+            raise self._can_run_exception
+
+        return self._can_run_return
+
+    def run(self):
+        self._run_count += 1
+        if self._run_exception is not None:
+            raise self._run_exception
 
 class TestCelppRunner(unittest.TestCase):
 
@@ -29,16 +56,15 @@ class TestCelppRunner(unittest.TestCase):
         try:
             theargs = D3RParameters()
             theargs.celppdir = temp_dir
-            theargs.stage = 'blast'
 
             # get the lock file which should work
-            lock = celpprunner._get_lock(theargs)
+            lock = celpprunner._get_lock(theargs, 'blast')
             expectedLockFile = os.path.join(temp_dir,
                                             'celpprunner.blast.lockpid')
             self.assertTrue(os.path.isfile(expectedLockFile))
 
             # try getting lock again which should also work
-            lock = celpprunner._get_lock(theargs)
+            lock = celpprunner._get_lock(theargs, 'blast')
 
             lock.release()
             self.assertFalse(os.path.isfile(expectedLockFile))
@@ -79,81 +105,160 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEqual(result.blastnfilter, '/bin/blastnfilter.py')
         self.assertEqual(result.pdbprep, '/bin/pdbprep.py')
 
-    def test_run_stage_no_weekly_datasetfound(self):
+    def test_run_tasks_passing_none_and_empty_list(self):
+        self.assertEquals(celpprunner.run_tasks(None), 3)
+        task_list = []
+        self.assertEquals(celpprunner.run_tasks(task_list), 2)
+
+    def test_run_one_successful_task(self):
+        success_task = DummyTask(D3RParameters(),'foo', None, True, None, None)
+        success_task.set_name('dummy')
+        task_list = []
+        task_list.append(success_task)
+        self.assertEquals(celpprunner.run_tasks(task_list), 0)
+
+    def test_run_one_fail_task_with_error_message(self):
+        task = DummyTask(D3RParameters(),'foo', 'someerror', True, None, None)
+        task.set_name('dummy')
+        task_list = []
+        task_list.append(task)
+        self.assertEquals(celpprunner.run_tasks(task_list), 1)
+        self.assertEquals(task.get_error(),'someerror')
+
+    def test_run_one_fail_task_with_exception_and_no_message(self):
+        task = DummyTask(D3RParameters(),'foo', None, True, None, Exception('hi'))
+        task.set_name('dummy')
+        task_list = []
+        task_list.append(task)
+        self.assertEquals(celpprunner.run_tasks(task_list), 1)
+        self.assertEquals(task.get_error(),'Caught Exception running task: hi')
+
+    def test_run_two_tasks_success(self):
+        task_list = []
+        task = DummyTask(D3RParameters(),'foo', None, True, None, None)
+        task.set_name('dummy')
+        task_list.append(task)
+        task_list.append(task)
+
+        self.assertEquals(celpprunner.run_tasks(task_list), 0)
+        self.assertEquals(task._run_count, 2)
+
+    def test_run_two_tasks_second_task_has_error(self):
+        task_list = []
+        task = DummyTask(D3RParameters(),'foo', None, True, None, None)
+        task.set_name('dummy')
+        task_list.append(task)
+
+        task_two = DummyTask(D3RParameters(),'foo', None, True, None, Exception('hi'))
+        task_two.set_name('dummy')
+        task_list.append(task_two)
+
+        self.assertEquals(celpprunner.run_tasks(task_list), 1)
+        self.assertEquals(task._run_count, 1)
+        self.assertEquals(task_two._run_count, 1)
+        self.assertEquals(task_two.get_error(), 'Caught Exception running task: hi')
+
+    def test_run_two_tasks_first_task_has_error(self):
+        task_list = []
+        task = DummyTask(D3RParameters(),'foo', None, True, None, Exception('hi'))
+        task.set_name('dummy')
+        task_list.append(task)
+
+        task_two = DummyTask(D3RParameters(),'foo', None, True, None, None)
+        task_two.set_name('dummy')
+        task_list.append(task_two)
+
+        self.assertEquals(celpprunner.run_tasks(task_list), 1)
+        self.assertEquals(task.get_error(), 'Caught Exception running task: hi')
+
+        self.assertEquals(task._run_count, 1)
+        self.assertEquals(task_two._run_count, 0)
+
+    def test_get_task_list_for_stage_with_none_and_empty_n_invalid_stage_name(self):
+
+        try:
+            celpprunner.get_task_list_for_stage(D3RParameters(), None)
+            self.fail('Expected exception')
+        except NotImplementedError as e:
+            self.assertEquals(e.message, 'stage_name is None')
+
+        try:
+            celpprunner.get_task_list_for_stage(D3RParameters(), '')
+            self.fail('Expected exception')
+        except NotImplementedError as e:
+            self.assertEquals(e.message, 'uh oh no tasks for  stage')
+
+        try:
+            celpprunner.get_task_list_for_stage(D3RParameters(), 'foo')
+            self.fail('Expected exception')
+        except NotImplementedError as e:
+            self.assertEquals(e.message, 'uh oh no tasks for foo stage')
+
+
+    def test_get_task_list_for_stage_with_valid_stages(self):
+        params = D3RParameters()
+        params.latest_weekly = 'foo'
+        task_list = celpprunner.get_task_list_for_stage(params, 'blast')
+        self.assertEquals(len(task_list), 1)
+        self.assertEquals(task_list[0].get_dir(),
+                          os.path.join('foo', 'stage.2.blastnfilter'))
+
+        task_list = celpprunner.get_task_list_for_stage(params, 'pdbprep')
+        self.assertEquals(len(task_list), 1)
+        self.assertEquals(task_list[0].get_dir(),
+                          os.path.join('foo', 'stage.3.pdbprep'))
+
+
+    def test_run_stages_no_weekly_datasetfound(self):
         temp_dir = tempfile.mkdtemp()
 
         try:
             theargs = D3RParameters()
             theargs.celppdir = temp_dir
-            self.assertEqual(celpprunner.run_stage(theargs), 0)
+            self.assertEqual(celpprunner.run_stages(theargs), 0)
 
         finally:
             shutil.rmtree(temp_dir)
 
-    def test_run_stage_dock(self):
+    def test_run_stages_invalid_stage(self):
         temp_dir = tempfile.mkdtemp()
-
         try:
             theargs = D3RParameters()
-            theargs.celppdir = os.path.join(temp_dir)
-
+            theargs.celppdir = temp_dir
+            theargs.stage = 'foo'
             os.mkdir(os.path.join(temp_dir, '2015'))
             os.mkdir(os.path.join(temp_dir, '2015', 'dataset.week.1'))
-
-            theargs.stage = 'dock'
             try:
-                celpprunner.run_stage(theargs)
-                self.fail('Expected NotImplementedError')
-            except NotImplementedError:
-                pass
-
+                celpprunner.run_stages(theargs)
+            except NotImplementedError as e:
+                self.assertEquals(e.message, 'uh oh no tasks for foo stage')
         finally:
             shutil.rmtree(temp_dir)
 
-    def test_run_stage_score(self):
+    def test_run_stages_blast_stage_data_import_missing(self):
         temp_dir = tempfile.mkdtemp()
-
         try:
             theargs = D3RParameters()
-            theargs.celppdir = os.path.join(temp_dir)
-
+            theargs.celppdir = temp_dir
+            theargs.stage = 'blast'
             os.mkdir(os.path.join(temp_dir, '2015'))
             os.mkdir(os.path.join(temp_dir, '2015', 'dataset.week.1'))
-
-            theargs.stage = 'score'
-            try:
-                celpprunner.run_stage(theargs)
-                self.fail('Expected NotImplementedError')
-            except NotImplementedError:
-                pass
-
-        finally:
-            shutil.rmtree(temp_dir)
-
-    def test_run_stage_blast_data_import_missing(self):
-        temp_dir = tempfile.mkdtemp()
-
-        try:
-            theargs = D3RParameters()
-            theargs.celppdir = os.path.join(temp_dir)
             os.mkdir(os.path.join(temp_dir, 'current'))
             open(os.path.join(temp_dir, 'current', 'complete'), 'a').close()
             theargs.blastdir = temp_dir
-            os.mkdir(os.path.join(temp_dir, '2015'))
-            os.mkdir(os.path.join(temp_dir, '2015', 'dataset.week.1'))
 
-            theargs.stage = 'blast'
-            self.assertEqual(celpprunner.run_stage(theargs), 1)
+            self.assertEquals(celpprunner.run_stages(theargs), 1)
 
         finally:
             shutil.rmtree(temp_dir)
 
-    def test_run_stage_blast(self):
+    def test_run_stages_blast(self):
         temp_dir = tempfile.mkdtemp()
 
         try:
             theargs = D3RParameters()
             theargs.celppdir = os.path.join(temp_dir)
+            theargs.stage = 'blast'
             os.mkdir(os.path.join(temp_dir, 'current'))
             open(os.path.join(temp_dir, 'current', 'complete'), 'a').close()
             theargs.blastdir = temp_dir
@@ -161,31 +266,70 @@ class TestCelppRunner(unittest.TestCase):
                                         'stage.1.dataimport')
             os.makedirs(d_import_dir)
             open(os.path.join(d_import_dir, 'complete'), 'a').close()
-
-            theargs.stage = 'blast'
             theargs.blastnfilter = 'echo'
-            self.assertEqual(celpprunner.run_stage(theargs), 0)
+            self.assertEqual(celpprunner.run_stages(theargs), 0)
 
         finally:
             shutil.rmtree(temp_dir)
 
-    def test_run_stage_blast_has_error(self):
+    def test_run_stages_blast_has_error(self):
         temp_dir = tempfile.mkdtemp()
 
         try:
             theargs = D3RParameters()
             theargs.celppdir = os.path.join(temp_dir)
+            theargs.stage = 'blast'
             os.mkdir(os.path.join(temp_dir, 'current'))
             open(os.path.join(temp_dir, 'current', 'error'), 'a').close()
             theargs.blastdir = temp_dir
             os.mkdir(os.path.join(temp_dir, '2015'))
             os.mkdir(os.path.join(temp_dir, '2015', 'dataset.week.1'))
-            theargs.stage = 'blast'
-            self.assertEqual(celpprunner.run_stage(theargs), 1)
+            self.assertEqual(celpprunner.run_stages(theargs), 1)
 
         finally:
             shutil.rmtree(temp_dir)
 
+    def test_run_stages_blast_and_pdbprep_no_error(self):
+        temp_dir = tempfile.mkdtemp()
+
+        try:
+            theargs = D3RParameters()
+            theargs.celppdir = os.path.join(temp_dir)
+            theargs.stage = 'blast,pdbprep'
+            os.mkdir(os.path.join(temp_dir, 'current'))
+            open(os.path.join(temp_dir, 'current', 'complete'), 'a').close()
+            theargs.blastdir = temp_dir
+            d_import_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
+                                        'stage.1.dataimport')
+            os.makedirs(d_import_dir)
+            open(os.path.join(d_import_dir, 'complete'), 'a').close()
+            theargs.blastnfilter = 'echo'
+            theargs.pdbprep = 'echo'
+            self.assertEqual(celpprunner.run_stages(theargs), 0)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_run_stages_blast_and_pdbprep_blast_has_error(self):
+        temp_dir = tempfile.mkdtemp()
+
+        try:
+            theargs = D3RParameters()
+            theargs.celppdir = os.path.join(temp_dir)
+            theargs.stage = 'blast,pdbprep'
+            os.mkdir(os.path.join(temp_dir, 'current'))
+            open(os.path.join(temp_dir, 'current', 'complete'), 'a').close()
+            theargs.blastdir = temp_dir
+            d_import_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
+                                        'stage.1.dataimport')
+            os.makedirs(d_import_dir)
+            open(os.path.join(d_import_dir, 'error'), 'a').close()
+            theargs.blastnfilter = 'echo'
+            theargs.pdbprep = 'echo'
+            self.assertEqual(celpprunner.run_stages(theargs), 1)
+
+        finally:
+            shutil.rmtree(temp_dir)
     def tearDown(self):
         pass
 
