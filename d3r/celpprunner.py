@@ -11,6 +11,7 @@ from d3r import util
 from d3r.task import D3RParameters
 from d3r.task import BlastNFilterTask
 from d3r.task import PDBPrepTask
+from d3r.task import CompInchiDownloadTask
 from lockfile.pidlockfile import PIDLockFile
 
 # create logger
@@ -108,13 +109,15 @@ def run_stages(theargs):
             # run the stage
             exit_code = run_tasks(task_list)
             if exit_code is not 0:
+                logger.error('Non zero exit code from task ' + stage_name +
+                             'exiting')
                 return exit_code
         finally:
              # release lock
             logger.debug('Releasing lock')
             lock.release()
 
-        return 0
+    return 0
 
 
 def run_tasks(task_list):
@@ -164,6 +167,12 @@ def get_task_list_for_stage(theargs, stage_name):
 
     task_list = []
 
+    logger.debug('Getting task list for ' + stage_name)
+
+    if stage_name == 'import':
+        # TODO replace external stage.1.dataimport with task in celpprunner
+        task_list.append(CompInchiDownloadTask(theargs.latest_weekly, theargs))
+
     if stage_name == 'blast':
         task_list.append(BlastNFilterTask(theargs.latest_weekly, theargs))
 
@@ -187,18 +196,24 @@ def _parse_arguments(desc, args):
     parser.add_argument("celppdir", help='Base celpp directory')
     parser.add_argument("--blastdir", help='Parent directory of ' +
                         ' blastdb.  There should exist a "current" ' +
-                        ' symlink or directory that contains the db.')
+                        ' symlink or directory that contains the db.' +
+                        ' NOTE: Required parameter for blast stage')
     parser.add_argument("--email", dest="email",
                         help='Comma delimited list of email addresses')
 
     parser.add_argument("--stage", required=True, help='Comma delimited list' +
                         ' of stages to run.  Valid STAGES = ' +
-                        '{blast, pdbprep, dock} '
+                        '{import, blast, pdbprep} '
                         )
     parser.add_argument("--blastnfilter",default='blastnfilter.py',
                         help='Path to BlastnFilter script')
     parser.add_argument("--pdbprep",default='pdbprep.py',
                         help='Path to pdbprep script')
+    parser.add_argument("--compinchi",
+                        default='http://ligand-expo.rcsb.org/' +
+                        'dictionaries/Components-inchi.ich',
+                        help = 'URL to download Components-inchi.ich file for'
+                               'task stage.1.compinchi')
     parser.add_argument("--log", dest="loglevel", choices=['DEBUG',
                         'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
                         help="Set the logging level",
@@ -327,7 +342,6 @@ def main():
     except Exception:
         logger.exception("Error caught exception")
         sys.exit(2)
-
 
 
 if __name__ == '__main__':
