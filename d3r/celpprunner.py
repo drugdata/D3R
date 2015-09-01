@@ -20,7 +20,7 @@ LOG_FORMAT = "%(asctime)-15s %(levelname)s %(name)s %(message)s"
 
 
 def _get_lock(theargs, stage):
-    """Create lock file to prevent this process from running on same data
+    """Create lock file to prevent this process from running on same data.
 
        This uses ``PIDLockFile`` to create a pid lock file in celppdir
        directory named celprunner.<stage>.lockpid
@@ -31,7 +31,8 @@ def _get_lock(theargs, stage):
                        theargs.celppdir should be set to path
        :param stage: set to stage that is being run
        :return: ``PIDLockFile`` upon success
-       :raises: LockException
+       :raises: LockException: If there was a problem locking
+       :raises: Exception: If valid pid lock file already exists
        """
     mylockfile = os.path.join(theargs.celppdir, "celpprunner." +
                               stage + ".lockpid")
@@ -158,7 +159,7 @@ def get_task_list_for_stage(theargs, stage_name):
        Using stage_name get the list of tasks that need to
        be run.
        :param theargs: parameters set via commandline along with
-                       theargs.latest_weekly which should be set to
+                       ``theargs.latest_weekly`` which should be set to
                        to base directory where stages will be run
        :param stage_name:  Name of stage to run
     """
@@ -186,8 +187,8 @@ def get_task_list_for_stage(theargs, stage_name):
     return task_list
 
 def _parse_arguments(desc, args):
-    """Parses command line arguments
-       """
+    """Parses command line arguments using argparse.
+    """
     parsed_arguments = D3RParameters()
 
     help_formatter = argparse.RawDescriptionHelpFormatter
