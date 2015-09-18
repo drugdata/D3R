@@ -19,6 +19,7 @@ requirements = [
     "lockfile",
     "psutil",
     "biopython",
+    "xlsxwriter",
 ]
 
 test_requirements = [
@@ -29,7 +30,7 @@ test_requirements = [
 
 setup(
     name='d3r',
-    version='0.4.4',
+    version='0.5.0',
     description='Drug Design Data Resource CELPP Runner is an application to run the filtering, docking, and scoring '
                 'of new sequences from wwpdb',
     long_description=readme + '\n\n' + history,
@@ -37,7 +38,7 @@ setup(
     author_email='churas@ncmir.ucsd.edu',
     url='https://github.com/nbcrrolls/D3R',
     packages=[
-        'd3r', 'd3r.Blast', 'd3r.PreRelease', 'd3r.Utilities'
+        'd3r', 'd3r.blast', 'd3r.filter', 'd3r.utilities'
     ],
     package_dir={'d3r':
                  'd3r'},
@@ -57,7 +58,7 @@ setup(
         'Programming Language :: Python :: 3.2',
         'Programming Language :: Python :: 3.4',
     ],
-    scripts = ['d3r/celpprunner.py', 'd3r/blastnfilter.py'],
+    scripts = ['d3r/celpprunner.py', 'd3r/blastnfilter.py', 'd3r/postanalysis.py'],
     test_suite='tests',
     tests_require=test_requirements
 )
