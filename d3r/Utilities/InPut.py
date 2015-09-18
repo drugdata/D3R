@@ -2,7 +2,7 @@ __author__ = 'robswift'
 
 import sys
 from collections import defaultdict
-from filtering_sets import do_not_call
+from d3r.PreRelease.filtering_sets import do_not_call
 from d3r.Blast.Target import Target
 
 def add_ligands(non_polymer):
