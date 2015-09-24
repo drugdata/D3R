@@ -9,7 +9,7 @@ Drug Design Data Resource CELPP Runner
         :target: https://pypi.python.org/pypi/D3R
 
 
-Drug Design Data Resource CELPP Runner is a command line program to run the 
+Drug Design Data Resource is a suite of software to enable 
 filtering, docking, and scoring of new sequences from wwpdb.
 
 * Free software: BSD license
