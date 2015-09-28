@@ -7,52 +7,78 @@ from d3r.Blast.Target import Target
 
 def add_ligands(non_polymer):
     """
-    Remove undesirable residues from the non_polymer_file, and return a list of target objects.
+    Read undesirable residues from the non_polymer_file, and return a list of target objects.
     :param non_polymer: absolute path to the pre-release non_polymer.tsv file
-    :return: target_list
+    :return: targets
     """
-    # stores a list of target objects
-    target_list = []
+    ligands = read_n_label(non_polymer)
+    ligands = remove_n_reduce(ligands)
+    targets = instantiate_targets(ligands)
 
-    # load ligands in the default dict, ligand_dict[pdbid] = [(resname, inchi, label), (resname, inchi, label), ... ]
-    # label is either 'do_not_call' or 'dock'
-    ligand_dict = defaultdict(list)
 
-    np_file_handle = open(non_polymer, 'r')  # add a file checker class
+def read_n_label(non_polymer):
+    """
+    Reads ligands from new_release_nonpolymer.tsv. Each ligand is labeled 'do_not_call' or 'dock' depending on whether
+    or not the ligand's resname is in the do_not_call filtering set. The ligand's resname, inchii string, and label are
+    then added to the ligands dictionary, using the corresponding PDBID as a key. Specifically, a ligands dictionary
+    entry has the following structure {'PDBID' :  [(resname, inchi, label), (resname, inchi, label), ... ]}, with each
+    tuple representing a ligand associated with the PDB structure labeled by PDBID.
+    :param non_polymer: the path to the new_release_nonpolymer.tsv file
+    :return: ligand_dict, defaultdict(list)
+    """
+    ligands = defaultdict(list)
+    handle = open(non_polymer, 'r')  # add a file checker class
 
-    for line in np_file_handle.readlines()[1:]:
+    for line in handle.readlines()[1:]:
         words = line.split()
         if words:
             try:
                 pdb_id = words[0].upper()
                 resname = words[1]
                 inchi = words[2]
-                if resname in do_not_call:
+                if resname and resname in do_not_call:
                     label = 'do_not_call'
                 else:
                     label = 'dock'
                 tup = (resname, inchi, label)
-                ligand_dict[pdb_id].append(tup)
+                ligands[pdb_id].append(tup)
             except:
                 continue
-    np_file_handle.close()
+    handle.close()
+    return ligands
 
-    # iterate over ligand dictionary contents, & delete structures if all of the ligands are 'do_not_call'
-    for pdb_id in ligand_dict.keys():
-        lig_set = set([tup[0] for tup in ligand_dict[pdb_id]])
+
+def remove_n_reduce(ligands):
+    """
+    Iterates over the contents for the ligands dictionary, and deletes structures if all of the ligands are labeled
+    'do_not_call'
+    :param ligands: {'PDBID' :  [(resname, inchi, label), (resname, inchi, label), ... ]}
+    :return: ligands
+    """
+    for pdb in ligands.keys():
+        lig_set = set([tup[0] for tup in ligands[pdb]])
         if lig_set.issubset(do_not_call):
-            continue
-        else:
-            target = Target()
-            target.set_pdb_id(pdb_id)
-            for ligand_tup in ligand_dict[pdb_id]:
-                resname = ligand_tup[0]
-                inchi = ligand_tup[1]
-                label = ligand_tup[2]
-                target.set_ligand(format(resname),format(inchi),format(label))
-            target_list.append(target)
-    return target_list
+            del ligands[pdb]
+            # write to a log file
+    return ligands
 
+def instantiate_targets(ligands):
+    """
+    Creates target objects for each of the PDBIDs that are keys in the input ligands dictionary.
+    :param ligands: {'PDBID' :  [(resname, inchi, label), (resname, inchi, label), ... ]}
+    :return: targets, a list of target objects
+    """
+    targets = []
+    for pdb in ligands.keys():
+        target = Target()
+        target.set_pdb_id(pdb)
+        for ligand in ligands[pdb]:
+            resname = ligand[0]
+            inchi = ligand[1]
+            label = ligand[2]
+            target.set_ligand(format(resname), format(inchi), format(label))
+        targets.append(target)
+    return targets
 
 def add_sequences(polymer, target_list):
     # target_list will be populated if the weekly release contains docking competent ligands. If the list is not

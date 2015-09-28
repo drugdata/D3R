@@ -93,7 +93,7 @@ def coverage_and_identity(alignment, record):
 
 def filter_by_chain(molecule_list, chain_number):
     """
-    Removes targets from target that contain a number of chains greater than chain_number
+    Removes targets from the molecule_list that contain a number of chains greater than chain_number
     :param molecule_list: may be either a list of target objects, or a list of test objects, e.g. target.test_list
     :param chain_number: an integer
     :return: target_list
