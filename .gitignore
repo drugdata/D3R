@@ -3,3 +3,4 @@
 *.egg
 *.pyo
 *.swp
+.idea/workspace.xml
