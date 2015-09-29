@@ -1,7 +1,7 @@
 __author__ = 'robswift'
 
-from d3r.filter.FilteringSets import do_not_call
-from d3r.blast.Query import Query
+from d3r.filter.filtering_sets import do_not_call
+from d3r.blast.query import Query
 
 def create_queries(polymer, non_polymer):
     """
@@ -21,7 +21,7 @@ def read_sequences(polymer):
     Reads the information in a new_release_sequence.tsv file. A Blast.Target() object is created for each unique wwPDB
     ID and appended to a list, which is returned.
     :param polymer: the absolute path to a new_release_sequence.tsv file
-    :return: targets a list of target objects.
+    :return: queries a list of query objects.
     """
     queries = []
     handle = open(polymer, 'r')

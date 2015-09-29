@@ -4,15 +4,13 @@ import os
 from StringIO import StringIO
 from Bio.Blast.Applications import NcbiblastpCommandline
 from Bio.Blast import NCBIXML
-from Bio.Alphabet import generic_protein
+from Bio.Alphabet import IUPAC
 from Bio.Seq import Seq
 from Bio import SeqIO
 from Bio.SeqRecord import SeqRecord
-from rdkit import Chem
-from rdkit.Chem import rdFMCS
-from Base import Base
-from Hit import Hit
-from Ligand import Ligand
+from base import Base
+from hit import Hit
+from ligand import Ligand
 
 class Query(Base):
     """
@@ -32,12 +30,11 @@ class Query(Base):
       ligand.
     """
     def __init__(self):
-        super(Query, self).__init__()             # inherit superclass constructor
-        self.test_list = []                        # [test object, test object, ... ]
-        self.test_membership = {}                  # {'PDB_ID' : index (int)} where PDB_ID is a lowercase string and
+        super(Query, self).__init__()              # inherit superclass constructor
+        self.hits = []                            # [test object, test object, ... ]
+        self.hit_membership = {}                  # {'PDB_ID' : index (int)} where PDB_ID is a lowercase string and
                                                    # index is the index of the corresponding PDB in test_list
         self.inchi_error = None                    # None, True, or False.
-        self.contains_largest_mcss = None          #
 
     def set_ligand(self, resname, inchi, label):
         """
@@ -73,13 +70,14 @@ class Query(Base):
         Converts an input FASTA sequence to a Bio.SeqRecord with the id field set to the input integer chain id. Each
         unique sequence receives a unique integer chain id, so chain ids will be numbered 1 through N, where N is the
         count of the last unique chain of the protein. Additionally, each time a sequence is added, the
-        chain_count attribute of the Target object will be incremented. Note that no effort is made to check whether or
+        sequence_count attribute of the Target object will be incremented. Note that no effort is made to check whether or
         not the input sequence is unique, i.e. that it hasn't been added before.
         :param chain_id: (an integer cast
         :param seq:  a FASTA sequence
         """
-        self.sequences.append(SeqRecord(Seq(seq, generic_protein), id = format(chain_id)))
-        self.chain_count += 1
+        id = '{pdb_id}_{chain_id}'.format(pdb_id = self.pdb_id, chain_id = chain_id)
+        self.sequences.append(SeqRecord(Seq(seq, IUPAC.protein), id = id))
+        self.sequence_count += 1
 
     def run_blast(self, pdb_db, out_dir):
         """
@@ -95,15 +93,15 @@ class Query(Base):
         BLASTP and is deleted after the BLASTP search is completed.
         :return: Bio.Blast.Record object
         """
-        if self.chain_count == 0:
+        if self.sequence_count == 0:
             print "Fasta sequences have not been added to the Target.sequences list, and BLAST cannot be run"
             return False
-        elif self.chain_count == 1:
+        elif self.sequence_count == 1:
             record = self.blast_monomer(pdb_db, out_dir)
             return record
-        elif self.chain_count > 1:
-            record = self.blast_multimer(pdb_db, out_dir)
-            return record
+        elif self.sequence_count > 1:
+            records = self.blast_multimer(pdb_db, out_dir)
+            return records
 
     def blast_monomer(self, pdb_db, out_dir):
         """
@@ -112,12 +110,15 @@ class Query(Base):
         :param out_dir: (string) The absolute path to the output directory. A fasta file is writen here prior to running
         :return: Bio.Blast.Record
         """
+        records = []
         for sequence in self.sequences:
             fasta = self.write_fasta(sequence, out_dir)
             if fasta:
                 record = self.blastp(fasta, pdb_db)
                 os.remove(fasta)
-                return record
+                if record:
+                    records.append(record)
+                return records
 
     def blast_multimer(self, pdb_db, out_dir):
         """
@@ -133,8 +134,8 @@ class Query(Base):
                 records.append(self.blastp(fasta, pdb_db))
                 os.remove(fasta)
         if records:
-            record = self.get_intersection(records)
-            return record
+            self.get_intersection(records)
+            return records
 
     def get_intersection(self, records):
         """
@@ -147,10 +148,9 @@ class Query(Base):
         for record in records:
             ids.append(set([self.get_pdb_id_from_alignment(a) for a in record.alignments]))
         id_intersection = set.intersection(*ids)
-        self.clean_alignments(records[0], id_intersection)
-        return records[0]
+        self.clean_alignments(records, id_intersection)
 
-    def clean_alignments(self, record, id_intersection):
+    def clean_alignments(self, records, id_intersection):
         """
         Removes all alignments from the input Bio.Blast.Record object whose sequences correspond to wwPDB IDs not in the
         input intersection set. It's assumed that the wwPDB IDs of the input Bio.Blast.Record.alignments list can form
@@ -159,13 +159,14 @@ class Query(Base):
         :param id_intersection: (set) a set of wwPDB ids that represent the intersection of two or more BLASTP results.
         :return:
         """
-        delete = []
-        for index in range(len(record.alignments)):
-            if self.get_pdb_id_from_alignment(record.alignments[index]) not in id_intersection:
-                delete.append(index)
-        delete.sort(reverse=True)
-        for index in delete:
-            del record.alignments[index]
+        for record in records:
+            delete = []
+            for index in range(len(record.alignments)):
+                if self.get_pdb_id_from_alignment(record.alignments[index]) not in id_intersection:
+                    delete.append(index)
+            delete.sort(reverse = True)
+            for index in delete:
+                del record.alignments[index]
 
     def blastp(self, fasta, pdb_db):
         """
@@ -220,60 +221,42 @@ class Query(Base):
         If a test list exists, and each test object has a resolution value, the list is sorted from highest resolution
         (lowest value) to lowest resolution (highest value)
         """
-        self.test_list.sort(key=lambda x: x.get_resolution())
+        self.hits.sort(key=lambda x: x.get_resolution())
 
-    def set_test_list(self, record):
+    def set_hits(self, records):
         """
-        Populate self.test_list with a list of test objects. Each test object corresponds to a BLASTP hit stored in one
+        Populate self.test_list with a list of hit objects. Each hit object corresponds to a BLASTP hit stored in one
         of the alignment objects found in the input record.alignments list and contains the following information about
         the structural hit: wwPDB id, % coverage (alignment length / query length), % identity (number of identical
         amino acids in the alignment / hit length), experimental structural determination method, resolution,
         :param record (Bio.Blast.Record object)
         """
-        for alignment in record.alignments:
-            pdb_id = self.get_pdb_id_from_alignment(alignment)
-            chain_id = self.get_chain_id_from_alignment(alignment)
-            if pdb_id in self.test_membership.keys():
-                self.test_list[self.test_membership[pdb_id]].set_sequence(pdb_id, chain_id, alignment,
-                                                                          record.query_length)
-            else:
-                test = Hit()
-                # set the pdb_id
-                test.pdb_id = pdb_id
-                # read in a pdb file into the test object
-                test.read_pdb()
-                # set the resolution
-                test.set_resolution()
-                # set the experimental method
-                test.set_expt_method()
-                # set the test sequence
-                test.set_sequence(pdb_id, chain_id, alignment, record.query_length)
-                # add ligands
-                test.set_ligands()
-                # update the test_list
-                self.test_list.append(test)
-                # update test_membership
-                self.test_membership[pdb_id] = len(self.test_list) - 1
+        # do something to set chain count and include those chains not in alignments
+        #### add stuff to make this work...move this stuff inside Query
+        for record in records:
+            for alignment in record.alignments:
+                pdb_id = self.get_pdb_id_from_alignment(alignment)
+                chain_id = self.get_chain_id_from_alignment(alignment)
+                if pdb_id in self.hit_membership.keys():
+                    self.hits[self.hit_membership[pdb_id]].set_sequence(pdb_id, chain_id, record, alignment)
+                else:
+                    hit = Hit()
+                    hit.pdb_id = pdb_id
+                    if not hit.read_pdb():
+                        continue
+                    hit.set_resolution()
+                    hit.set_expt_method()
+                    hit.set_sequence(pdb_id, chain_id, record, alignment)
+                    hit.set_ligands()
+                    self.hits.append(hit)
+                    self.hit_membership[pdb_id] = len(self.hits) - 1
 
-
-    def mcss(self):
+    def fill_sequences(self):
         """
-        Performs a maximum common substructure (MCSS) search between each of the Target objects dockable ligands and
-        each of the Test objects dockable ligands. If the calculation is successful, the MCSS is stored as an rd mol
-        object in the Ligand embedded in the Test object.
-        each of the dockable ligands of each of the corresponding Test structures, i.e. those in self.test_list.
+        Iterates over each hit and calls the fill_sequence method. The result is that for each hit, chains that are
+        present in the pdb that weren't picked up by blast are added. For example, these can include nucleic acid
+        sequences that weren't co-crystallized with the protein. This method should only be called after the set_hits()
+        method is called and all the hit sequences were initiated.
         """
-        if self.dock_count > 0:
-            for target_lig in self.dock:
-                for test in self.test_list:
-                    if test.dock_count > 0:
-                        test_index = self.test_membership[test.pdb_id]
-                        for test_lig in test.dock:
-                            dock_index = test.dock_membership[test_lig.resname]
-                            res = rdFMCS.FindMCS([target_lig, test_lig])
-                            if res.numAtoms == 0:
-                                self.test_list[test_index].dock[dock_index].mcss_error = True
-                            else:
-                                mcss = Chem.MolFromSmarts(res.smartsString)
-                                self.test_list[test_index].dock[dock_index].mcss = mcss
-
+        for hit in self.hits:
+            hit.fill_sequence()
