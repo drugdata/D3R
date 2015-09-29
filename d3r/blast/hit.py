@@ -116,7 +116,7 @@ class Hit(Base):
         Bio.PDB structure object. If reading the file and assigning the Bio.PDB structure object is successful, True
         is returned. Otherwise, False is returned. Prior to calling the method, the pdb_id attribute must be set. E.g.
         typical usage follows
-            test = d3r.Blast.Test()
+            test = d3r.blast.Test()
             test.pdb_id = '1xdn'
             test.read_pdb()
         :return: Boolean
@@ -224,7 +224,7 @@ class Hit(Base):
         do_not_call list, then the ligand_count is incremented. No effort is made to check whether or not the
         input ligand is unique, i.e. that it hasn't been added before. Prior to calling the method, the pdb_id
         attribute must be set, and the read_pdb method must be called. For example:
-            test = d3r.Blast.Test()
+            test = d3r.blast.Test()
             test.pdb_id = '1xdn'
             test.read_pdb()
             test.set_ligands()
@@ -254,7 +254,7 @@ class Hit(Base):
         """
         Set the resolution of the PDB of the test object, self.resolution. Before this method is called, the pdb_id
         attribute must be set, and the read_pdb method must be called. For example:
-            test = d3r.Blast.Test()
+            test = d3r.blast.Test()
             test.pdb_id = '1xdn'
             test.read_pdb()
             test.set_resolution()
@@ -280,7 +280,7 @@ class Hit(Base):
         """
         Set the experimental structure determination method of the PDB of the test object, self.exp_method. Before this
         method is called, the pdb_id attribute must be set, and the read_pdb method must be called. For example:
-            test = d3r.Blast.Test()
+            test = d3r.blast.Test()
             test.pdb_id = '1xdn'
             test.read_pdb()
             test.set_expt_method()

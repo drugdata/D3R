@@ -18,7 +18,7 @@ def create_queries(polymer, non_polymer):
 
 def read_sequences(polymer):
     """
-    Reads the information in a new_release_sequence.tsv file. A Blast.Target() object is created for each unique wwPDB
+    Reads the information in a new_release_sequence.tsv file. A blast.Target() object is created for each unique wwPDB
     ID and appended to a list, which is returned.
     :param polymer: the absolute path to a new_release_sequence.tsv file
     :return: queries a list of query objects.

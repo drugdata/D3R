@@ -591,7 +591,7 @@ class MakeBlastDBTask(D3RTask):
 
 
 class BlastNFilterTask(D3RTask):
-    """Performs Blast and filter of sequences
+    """Performs blast and filter of sequences
 
     """
 

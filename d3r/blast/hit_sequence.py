@@ -6,7 +6,7 @@ class HitSequence(object):
     """
     def __init__(self, seq_record):
         """
-        Holds a sequence from a Blast hit and information about it from one or more query alignments. Hit sequence
+        Holds a sequence from a blast hit and information about it from one or more query alignments. Hit sequence
         information is stored in the following attributes:
             - seq_record        - A protein sequence (Bio.SeqRecord object)
             - hit_pdb_id        - pdb_id of the blast hit (string)
@@ -55,7 +55,7 @@ class QueryAlignment(object):
     """
     def __init__(self):
         """
-        Stores information about the alignment between a Blast hit and a particular Query.
+        Stores information about the alignment between a blast hit and a particular Query.
             - query_pdb_id      - pdb_id of the query (string)
             - query_chain_id    - chain_id of the query (string)
             - identity          - Percent identity (float)

@@ -11,8 +11,8 @@ def filter_blast_result(alignment, record):
     variable, length threshold.
     (ii) Y % of the aligned sequence must be identical to the target sequence. Where Y is given by the class
     variable, identity_threshold.
-    :param alignment: Bio.Blast.Record.Alignment object
-    :param record: Bio.Blast.Record object
+    :param alignment: Bio.blast.Record.Alignment object
+    :param record: Bio.blast.Record object
     :return: True if criteria are satisfied otherwise return False
     """
     length_threshold = 0.9

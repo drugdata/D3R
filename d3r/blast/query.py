@@ -83,15 +83,15 @@ class Query(Base):
         """
         Runs BLASTP on the sequence(s) contained in the Target instance. If the chain of a sequence has not been
         assigned to the Target instance, then the sequence returns False. Otherwise, the sequence returns a
-        Bio.Blast.Record object. If the Target instance is a multimer, the alignment objects in the list,
-        Bio.Blast.Record.alignments are the intersection of the alignment objects, or BLASTP hits that result from
+        Bio.blast.Record object. If the Target instance is a multimer, the alignment objects in the list,
+        Bio.blast.Record.alignments are the intersection of the alignment objects, or BLASTP hits that result from
         running BLASTP on each of the sequences of each of the unique chains that constitutes the multimer. If the
-        Target instance is a monomer, the alignment objects in the list Bio.Blast.Record.alignments is simply the list
+        Target instance is a monomer, the alignment objects in the list Bio.blast.Record.alignments is simply the list
         of BLASTP hits that result from running BLASTP on the single unique sequence that makes up the monomer.
         :param pdb_db: (string) The absolute path to a BLASTP database
         :param out_dir: (string) The absolute path to the output directory. A fasta file is writen here prior to running
         BLASTP and is deleted after the BLASTP search is completed.
-        :return: Bio.Blast.Record object
+        :return: Bio.blast.Record object
         """
         if self.sequence_count == 0:
             print "Fasta sequences have not been added to the Target.sequences list, and BLAST cannot be run"
@@ -108,7 +108,7 @@ class Query(Base):
         Runs a BLASTP search of sequences in the wwPDB for a single monomer chain
         :param pdb_db: (string) The absolute path to a BLASTP database
         :param out_dir: (string) The absolute path to the output directory. A fasta file is writen here prior to running
-        :return: Bio.Blast.Record
+        :return: Bio.blast.Record
         """
         records = []
         for sequence in self.sequences:
@@ -125,7 +125,7 @@ class Query(Base):
         Runs a BLASTP search of sequences in the wwPDB for each unique chain in a multimer.
         :param pdb_db: (string) The absolute path to a BLASTP database
         :param out_dir: (string) The absolute path to the output directory. A fasta file is writen here prior to running
-        :return: Bio.Blast.Record
+        :return: Bio.blast.Record
         """
         records = []
         for sequence in self.sequences:
@@ -139,10 +139,10 @@ class Query(Base):
 
     def get_intersection(self, records):
         """
-        Returns a Bio.Blast record object, whose alignment objects are the intersection of the alignments stored in
-        each of the Bio.Blast record objects contained in the input records list.
-        :param records: a list of Bio.Blast.Record objects
-        :return: record, a Bio.Blast.Record object
+        Returns a Bio.blast record object, whose alignment objects are the intersection of the alignments stored in
+        each of the Bio.blast record objects contained in the input records list.
+        :param records: a list of Bio.blast.Record objects
+        :return: record, a Bio.blast.Record object
         """
         ids=[]
         for record in records:
@@ -152,10 +152,10 @@ class Query(Base):
 
     def clean_alignments(self, records, id_intersection):
         """
-        Removes all alignments from the input Bio.Blast.Record object whose sequences correspond to wwPDB IDs not in the
-        input intersection set. It's assumed that the wwPDB IDs of the input Bio.Blast.Record.alignments list can form
+        Removes all alignments from the input Bio.blast.Record object whose sequences correspond to wwPDB IDs not in the
+        input intersection set. It's assumed that the wwPDB IDs of the input Bio.blast.Record.alignments list can form
         a superset of the input intersection set.
-        :param record: a Bio.Blast.Record object
+        :param record: a Bio.blast.Record object
         :param id_intersection: (set) a set of wwPDB ids that represent the intersection of two or more BLASTP results.
         :return:
         """
@@ -173,7 +173,7 @@ class Query(Base):
         Runs BLASTP locally on a input fasta file and specified BLASTP database
         :param fasta: The absolute path to a FASTA file
         :param pdb_db: A BLASTP database
-        :return: Bio.Blast.Record object
+        :return: Bio.blast.Record object
         """
         cline = NcbiblastpCommandline(cmd='blastp', query=fasta, db=pdb_db, evalue=0.001, outfmt=5)
         std_out, std_err = cline()
@@ -229,7 +229,7 @@ class Query(Base):
         of the alignment objects found in the input record.alignments list and contains the following information about
         the structural hit: wwPDB id, % coverage (alignment length / query length), % identity (number of identical
         amino acids in the alignment / hit length), experimental structural determination method, resolution,
-        :param record (Bio.Blast.Record object)
+        :param record (Bio.blast.Record object)
         """
         # do something to set chain count and include those chains not in alignments
         #### add stuff to make this work...move this stuff inside Query
