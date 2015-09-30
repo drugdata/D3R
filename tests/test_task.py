@@ -413,9 +413,29 @@ class TestD3rTask(unittest.TestCase):
             self.assertEqual(blastTask.get_error(),
                              'dataimport task has error status')
 
-            # try where blast can run
+            # try where compinchi is not complete
             completeFile = os.path.join(dataImport.get_path(),
                                         dataImport.get_dir_name(),
+                                        D3RTask.COMPLETE_FILE)
+            open(completeFile, 'a').close()
+            self.assertEqual(blastTask.can_run(), False)
+            self.assertEqual(blastTask.get_error(), 'compinchi task has ' +
+                             'notfound status')
+
+            # try where compinchi failed
+            compinchi = CompInchiDownloadTask(tempDir,params)
+            compinchi.create_dir()
+            errorFile = os.path.join(compinchi.get_path(),
+                                     compinchi.get_dir_name(),
+                                     D3RTask.ERROR_FILE)
+            open(errorFile, 'a').close()
+            self.assertEqual(blastTask.can_run(), False)
+            self.assertEqual(blastTask.get_error(),
+                             'compinchi task has error status')
+
+            # try where blast can run
+            completeFile = os.path.join(compinchi.get_path(),
+                                        compinchi.get_dir_name(),
                                         D3RTask.COMPLETE_FILE)
             open(completeFile, 'a').close()
             self.assertEqual(blastTask.can_run(), True)
@@ -584,55 +604,6 @@ class TestD3rTask(unittest.TestCase):
         blasttask = BlastNFilterTask(None, params)
         blasttask._can_run = False
         blasttask.run()
-
-    def test_get_candidate_count_from_csv(self):
-        temp_dir = tempfile.mkdtemp()
-        try:
-            params = D3RParameters()
-            params.blastdir = temp_dir
-            blasttask = BlastNFilterTask(temp_dir, params)
-            csv_file = os.path.join(temp_dir, '4zyc.csv')
-            open(csv_file, 'a').close()
-            self.assertEqual(blasttask.
-                             _get_candidate_count_from_csv(csv_file), 0)
-
-            f = open(csv_file, 'w')
-            f.write('Target Information\n')
-            f.write('PDBID,Ligand\n')
-            f.write('4zyc,4SS\n\nTest Information\n')
-            f.write('PDBID,Coverage,Identity,Resolution,Ligand1,Ligand2\n \n')
-            f.flush()
-            f.close()
-
-            self.assertEqual(blasttask.
-                             _get_candidate_count_from_csv(csv_file), 0)
-
-            f = open(csv_file, 'w')
-            f.write('Target Information\n')
-            f.write('PDBID,Ligand\n')
-            f.write('4zyc,4SS\n\nTest Information\n')
-            f.write('PDBID,Coverage,Identity,Resolution,Ligand1,Ligand2\n')
-            f.write('asdf,0.979166666667,0.989361702128,1.38,SO4,2U5\n')
-            f.flush()
-            f.close()
-            self.assertEqual(blasttask
-                             ._get_candidate_count_from_csv(csv_file), 1)
-
-            f = open(csv_file, 'w')
-            f.write('Target Information\n')
-            f.write('PDBID,Ligand\n')
-            f.write('4zyc,4SS\n\nTest Information\n')
-            f.write('PDBID,Coverage,Identity,Resolution,Ligand1,Ligand2\n')
-            f.write('asdf,0.979166666667,0.989361702128,1.38,SO4,2U5\n')
-            f.write('asdf,0.979166666667,0.989361702128,1.38,SO4,2U5\n')
-            f.write('asdf,0.979166666667,0.989361702128,1.38,SO4,2U5\n')
-            f.flush()
-            f.close()
-            self.assertEqual(blasttask
-                             ._get_candidate_count_from_csv(csv_file), 3)
-
-        finally:
-            shutil.rmtree(temp_dir)
 
     def test_parse_blastnfilter_output_for_hit_stats(self):
         temp_dir = tempfile.mkdtemp()

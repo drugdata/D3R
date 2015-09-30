@@ -266,6 +266,12 @@ class TestCelppRunner(unittest.TestCase):
                                         'stage.1.dataimport')
             os.makedirs(d_import_dir)
             open(os.path.join(d_import_dir, 'complete'), 'a').close()
+
+            compinchi_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
+                                         'stage.1.compinchi')
+            os.makedirs(compinchi_dir)
+            open(os.path.join(compinchi_dir, 'complete'), 'a').close()
+
             theargs.blastnfilter = 'echo'
             self.assertEqual(celpprunner.run_stages(theargs), 0)
 
@@ -303,6 +309,12 @@ class TestCelppRunner(unittest.TestCase):
                                         'stage.1.dataimport')
             os.makedirs(d_import_dir)
             open(os.path.join(d_import_dir, 'complete'), 'a').close()
+
+            compinchi_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
+                                         'stage.1.compinchi')
+            os.makedirs(compinchi_dir)
+            open(os.path.join(compinchi_dir, 'complete'), 'a').close()
+
             theargs.blastnfilter = 'echo'
             theargs.pdbprep = 'echo'
             self.assertEqual(celpprunner.run_stages(theargs), 0)

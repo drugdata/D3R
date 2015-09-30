@@ -601,39 +601,6 @@ class BlastNFilterTask(D3RTask):
         self.set_stage(2)
         self.set_status(D3RTask.UNKNOWN_STATUS)
 
-    def _get_candidate_count_from_csv(self, csv_path):
-        """Looks at csv file and counts lines below PBD,Coverage
-
-           Example File:
-                  Target Information
-                  PDBID,Ligand
-                  4zyc,4SS
-
-                  Test Information
-                  PDBID,Coverage,Identity,Resolution,Ligand1,Ligand2
-                  4ogn,0.979166666667,0.989361702128,1.38,SO4,2U5
-                  4wt2,0.979166666667,0.989361702128,1.42,3UD,SO4
-
-        """
-        candidate_count = 0
-        try:
-            f = open(csv_path, 'r')
-            start_count = False
-            for line in f:
-                if line.find('PDBID,Coverage,') >= 0:
-                    start_count = True
-                    continue
-
-                if start_count:
-                    if line.find(',') > 0:
-                        candidate_count += 1
-            f.close()
-        except Exception as e:
-            logger.warning('Caught Exception trying to examine: ' + csv_path +
-                           ' : ' + str(e))
-            candidate_count = -1
-        return candidate_count
-
     def _parse_blastnfilter_output_for_hit_stats(self):
         """Examines output directory of blastnfilter.py for stats on run
 
@@ -643,43 +610,31 @@ class BlastNFilterTask(D3RTask):
            to candidates.  This method will output number of candidates for
            that target by calling get_candidate_count_from_csv method
         """
-        out_dir = self.get_dir()
-        target_count = 0
-        can_count_list = '\n\nTarget,Candidate Count\n'
-        for entry in self.get_csv_files():
-            full_path = os.path.join(out_dir, entry)
-            if os.path.isfile(full_path):
-                target_count += 1
-                candidate_count = self._get_candidate_count_from_csv(full_path)
-                can_count_list = (can_count_list +
-                                  entry.replace('.csv', '') +
-                                  ',' + str(candidate_count) + '\n')
+        raise NotImplementedError(
+            'uh oh no dont know how to get hit status for new blastnfilter')
+        return None
 
-        hit_stats = ('\n# targets found: ' + str(target_count) +
-                     can_count_list)
-
-        return hit_stats
-
-    def get_csv_files(self):
+    def get_txt_files(self):
         """ Gets CSV files in task directory (just the names)
         :return:list of CSV file names
         """
         out_dir = self.get_dir()
-        csv_list = []
+        txt_list = []
         for entry in os.listdir(out_dir):
-            if entry.endswith('.csv'):
-                csv_list.append(entry)
+            if entry.endswith('.txt'):
+                txt_list.append(entry)
 
-        return csv_list
+        return txt_list
 
     def can_run(self):
         """Determines if task can actually run
 
            This method first verifies the `MakeBlastDBTask` task
-           and `DataImportTask` both have `D3RTask.COMPLETE_STATUS` for
-           status.  The method then verifies a `BlastNFilterTask` does
-           not already exist.  If above is not true then self.set_error()
-           is set with information about the issue
+           `DataImportTask`, `CompInchiDownloadTask` all have
+           `D3RTask.COMPLETE_STATUS` for status.  The method then
+           verifies a `BlastNFilterTask` does not already exist.
+             If above is not true then self.set_error() is set
+             with information about the issue
            :return: True if can run otherwise False
         """
         self._can_run = False
@@ -688,8 +643,8 @@ class BlastNFilterTask(D3RTask):
         make_blastdb = MakeBlastDBTask(self._path, self._args)
         make_blastdb.update_status_from_filesystem()
         if make_blastdb.get_status() != D3RTask.COMPLETE_STATUS:
-            logger.info('Cannot run ' + self.get_name() + 'task ' +
-                        'because ' + make_blastdb.get_name() + 'task' +
+            logger.info('Cannot run ' + self.get_name() + ' task ' +
+                        'because ' + make_blastdb.get_name() + ' task' +
                         'has a status of ' + make_blastdb.get_status())
             self.set_error(make_blastdb.get_name() + ' task has ' +
                            make_blastdb.get_status() + ' status')
@@ -699,11 +654,22 @@ class BlastNFilterTask(D3RTask):
         data_import = DataImportTask(self._path, self._args)
         data_import.update_status_from_filesystem()
         if data_import.get_status() != D3RTask.COMPLETE_STATUS:
-            logger.info('Cannot run ' + self.get_name() + 'task ' +
-                        'because ' + data_import.get_name() + 'task' +
+            logger.info('Cannot run ' + self.get_name() + ' task ' +
+                        'because ' + data_import.get_name() + ' task' +
                         'has a status of ' + data_import.get_status())
             self.set_error(data_import.get_name() + ' task has ' +
                            data_import.get_status() + ' status')
+            return False
+
+        # check compinchi complete
+        compinchi = CompInchiDownloadTask(self._path, self._args)
+        compinchi.update_status_from_filesystem()
+        if compinchi.get_status() != D3RTask.COMPLETE_STATUS:
+            logger.info('Cannot run ' + self.get_name() + ' task ' +
+                        'because ' + compinchi.get_name() + ' task ' +
+                        'has a status of ' + compinchi.get_status())
+            self.set_error(compinchi.get_name() + ' task has ' +
+                           compinchi.get_status() + ' status')
             return False
 
         # check blast is not complete and does not exist
@@ -745,12 +711,16 @@ class BlastNFilterTask(D3RTask):
 
         make_blastdb = MakeBlastDBTask(self._path, self._args)
 
+        compinchi = CompInchiDownloadTask(self._path, self._args)
+
         cmd_to_run = (self.get_args().blastnfilter + ' --nonpolymertsv ' +
                       data_import.get_nonpolymer_tsv() +
                       ' --sequencetsv ' +
                       data_import.get_sequence_tsv() +
                       ' --pdbblastdb ' +
                       make_blastdb.get_dir() +
+                      ' --compinchi ' +
+                      compinchi.get_components_inchi_file() +
                       ' --outdir ' + self.get_dir())
 
         blastnfilter_name = os.path.basename(self.get_args().blastnfilter)
