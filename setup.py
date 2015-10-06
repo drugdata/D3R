@@ -19,13 +19,15 @@ requirements = [
     "lockfile",
     "psutil",
     "biopython",
-    "xlsxwriter",
+    "xlsxwriter"
 ]
 
 test_requirements = [
     "argparse",
     "lockfile",
-    "psutil"
+    "psutil",
+    "biopython",
+    "xlsxwriter"
 ]
 
 setup(
