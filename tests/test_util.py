@@ -86,45 +86,45 @@ class TestUtil(unittest.TestCase):
         except Exception:
             pass
 
-        #try 1-1-2016
-        celp_week = util.get_celpp_week_of_year_from_date(date(2016,1,1))
-        self.assertEqual(celp_week[0],1)
-        self.assertEqual(celp_week[1],2016)
+        # try 1-1-2016
+        celp_week = util.get_celpp_week_of_year_from_date(date(2016, 1, 1))
+        self.assertEqual(celp_week[0], 1)
+        self.assertEqual(celp_week[1], 2016)
 
-        #try 12-31-2015
-        celp_week = util.get_celpp_week_of_year_from_date(date(2015,12,31))
-        self.assertEqual(celp_week[0],53)
-        self.assertEqual(celp_week[1],2015)
+        # try 12-31-2015
+        celp_week = util.get_celpp_week_of_year_from_date(date(2015, 12, 31))
+        self.assertEqual(celp_week[0], 53)
+        self.assertEqual(celp_week[1], 2015)
 
-        #try 10-5-2015
-        celp_week = util.get_celpp_week_of_year_from_date(date(2015,10,5))
-        self.assertEqual(celp_week[0],41)
-        self.assertEqual(celp_week[1],2015)
+        # try 10-5-2015
+        celp_week = util.get_celpp_week_of_year_from_date(date(2015, 10, 5))
+        self.assertEqual(celp_week[0], 41)
+        self.assertEqual(celp_week[1], 2015)
 
-        #try 10-8-2015
-        celp_week = util.get_celpp_week_of_year_from_date(date(2015,10,8))
-        self.assertEqual(celp_week[0],41)
-        self.assertEqual(celp_week[1],2015)
+        # try 10-8-2015
+        celp_week = util.get_celpp_week_of_year_from_date(date(2015, 10, 8))
+        self.assertEqual(celp_week[0], 41)
+        self.assertEqual(celp_week[1], 2015)
 
-        #try 10-9-2015
-        celp_week = util.get_celpp_week_of_year_from_date(date(2015,10,9))
-        self.assertEqual(celp_week[0],42)
-        self.assertEqual(celp_week[1],2015)
+        # try 10-9-2015
+        celp_week = util.get_celpp_week_of_year_from_date(date(2015, 10, 9))
+        self.assertEqual(celp_week[0], 42)
+        self.assertEqual(celp_week[1], 2015)
 
-        #try 10-10-2015
-        celp_week = util.get_celpp_week_of_year_from_date(date(2015,10,10))
-        self.assertEqual(celp_week[0],42)
-        self.assertEqual(celp_week[1],2015)
+        # try 10-10-2015
+        celp_week = util.get_celpp_week_of_year_from_date(date(2015, 10, 10))
+        self.assertEqual(celp_week[0], 42)
+        self.assertEqual(celp_week[1], 2015)
 
-        #try 10-11-2015
-        celp_week = util.get_celpp_week_of_year_from_date(date(2015,10,11))
-        self.assertEqual(celp_week[0],42)
-        self.assertEqual(celp_week[1],2015)
+        # try 10-11-2015
+        celp_week = util.get_celpp_week_of_year_from_date(date(2015, 10, 11))
+        self.assertEqual(celp_week[0], 42)
+        self.assertEqual(celp_week[1], 2015)
 
-        #try 10-12-2015
-        celp_week = util.get_celpp_week_of_year_from_date(date(2015,10,12))
-        self.assertEqual(celp_week[0],42)
-        self.assertEqual(celp_week[1],2015)
+        # try 10-12-2015
+        celp_week = util.get_celpp_week_of_year_from_date(date(2015, 10, 12))
+        self.assertEqual(celp_week[0], 42)
+        self.assertEqual(celp_week[1], 2015)
 
     def test_create_celpp_week_dir(self):
         temp_dir = tempfile.mkdtemp()
@@ -138,31 +138,30 @@ class TestUtil(unittest.TestCase):
                 util.create_celpp_week_dir(None, temp_dir)
 
                 # try celppdir None
-                util.create_celpp_week_dir((1,2015), None)
+                util.create_celpp_week_dir((1, 2015), None)
 
                 self.fail('Expected exception')
             except Exception:
                 pass
 
             # try path already exists as dir
-            os.makedirs(os.path.join(temp_dir,'2015','dataset.week.1'), 0775)
-            util.create_celpp_week_dir((1,2015),temp_dir)
+            os.makedirs(os.path.join(temp_dir, '2015', 'dataset.week.1'), 0775)
+            util.create_celpp_week_dir((1, 2015), temp_dir)
 
             # try path already exists as file so it will fail
-            open(os.path.join(temp_dir,'2015','dataset.week.2'),'a').close()
+            open(os.path.join(temp_dir, '2015', 'dataset.week.2'), 'a').close()
             try:
-                util.create_celpp_week_dir((2,2015),temp_dir)
+                util.create_celpp_week_dir((2, 2015), temp_dir)
                 self.fail('Expected OSError')
             except OSError:
                 pass
 
             # try path successful create
-            util.create_celpp_week_dir((3,2015),temp_dir)
-            new_dir = os.path.join(temp_dir,'2015','dataset.week.3')
+            util.create_celpp_week_dir((3, 2015), temp_dir)
+            new_dir = os.path.join(temp_dir, '2015', 'dataset.week.3')
             self.assertEquals(os.path.isdir(new_dir), True)
         finally:
             shutil.rmtree(temp_dir)
-
 
     def tearDown(self):
         pass

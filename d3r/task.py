@@ -493,7 +493,7 @@ class D3RTask(object):
 
         return D3RTask.UNKNOWN_STATUS
 
-    def run_external_command(self,command_name, cmd_to_run):
+    def run_external_command(self, command_name, cmd_to_run):
         """Runs external command line process
         """
         logger.info("Running command " + cmd_to_run)
@@ -523,6 +523,7 @@ class D3RTask(object):
                            "received. Standard out: " + out +
                            " Standard error : " + err)
         return p.returncode
+
 
 class DataImportTask(D3RTask):
     """Represents DataImport Task
@@ -740,14 +741,14 @@ class BlastNFilterTask(D3RTask):
 
         blastnfilter_name = os.path.basename(self.get_args().blastnfilter)
 
-        self.run_external_command(blastnfilter_name,cmd_to_run)
+        self.run_external_command(blastnfilter_name, cmd_to_run)
 
         try:
             # examine output to get candidate hit count DR-12
             hit_stats = self._parse_blastnfilter_output_for_hit_stats()
             if hit_stats is not None:
                 self.append_to_email_log(hit_stats)
-        except Exception as e:
+        except Exception:
             logger.exception("Error caught exception")
 
         # assess the result
@@ -839,13 +840,13 @@ class PDBPrepTask(D3RTask):
 
         pdbprep_name = os.path.basename(self.get_args().pdbprep)
 
-        self.run_external_command(pdbprep_name,cmd_to_run)
+        self.run_external_command(pdbprep_name, cmd_to_run)
         # assess the result
         self.end()
 
+
 class CompInchiDownloadTask(D3RTask):
     """Downloads Components-inchi.inchi file
-
     """
 
     def __init__(self, path, args):
@@ -903,7 +904,7 @@ class CompInchiDownloadTask(D3RTask):
                                       'is False')
             return
         download_path = self.get_components_inchi_file()
-        count = 1;
+        count = 1
         while count <= self._maxretries:
             logger.debug('Try # ' + str(count) + ' of ' +
                          str(self._maxretries) + ' to download ' +
@@ -913,7 +914,7 @@ class CompInchiDownloadTask(D3RTask):
                                                filename=download_path)
                 self.end()
                 return
-            except Exception as e:
+            except Exception:
                 logger.exception('Caught Exception trying to download file')
             count += 1
 

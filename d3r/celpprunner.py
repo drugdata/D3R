@@ -76,7 +76,6 @@ def _setup_logging(theargs):
     if theargs.loglevel == 'CRITICAL':
         theargs.numericloglevel = logging.CRITICAL
 
-
     logger.setLevel(theargs.numericloglevel)
     logging.basicConfig(format=theargs.logformat)
     logging.getLogger('d3r.task').setLevel(theargs.numericloglevel)
@@ -125,7 +124,7 @@ def run_stages(theargs):
                              'exiting')
                 return exit_code
         finally:
-             # release lock
+            # release lock
             logger.debug('Releasing lock')
             lock.release()
 
@@ -164,6 +163,7 @@ def run_tasks(task_list):
 
     return 0
 
+
 def get_task_list_for_stage(theargs, stage_name):
     """Factory method that generates a list of tasks for given stage
 
@@ -197,6 +197,7 @@ def get_task_list_for_stage(theargs, stage_name):
 
     return task_list
 
+
 def _parse_arguments(desc, args):
     """Parses command line arguments using argparse.
     """
@@ -220,15 +221,16 @@ def _parse_arguments(desc, args):
                         ' of stages to run.  Valid STAGES = ' +
                         '{import, blast, pdbprep} '
                         )
-    parser.add_argument("--blastnfilter",default='blastnfilter.py',
+    parser.add_argument("--blastnfilter", default='blastnfilter.py',
                         help='Path to BlastnFilter script')
-    parser.add_argument("--pdbprep",default='pdbprep.py',
+    parser.add_argument("--pdbprep", default='pdbprep.py',
                         help='Path to pdbprep script')
     parser.add_argument("--compinchi",
                         default='http://ligand-expo.rcsb.org/' +
                         'dictionaries/Components-inchi.ich',
-                        help = 'URL to download Components-inchi.ich file for'
-                               'task stage.1.compinchi')
+                        help='URL to download Components-inchi.ich' +
+                             ' file for' +
+                             'task stage.1.compinchi')
     parser.add_argument("--log", dest="loglevel", choices=['DEBUG',
                         'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
                         help="Set the logging level",

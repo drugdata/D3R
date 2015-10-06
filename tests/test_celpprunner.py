@@ -21,6 +21,7 @@ from d3r.task import D3RParameters
 from d3r import util
 from d3r.task import D3RTask
 
+
 class DummyTask(D3RTask):
     """Dummy Task used for tests below
     """
@@ -35,7 +36,6 @@ class DummyTask(D3RTask):
         self._run_exception = run_exception
         self._run_count = 0
 
-
     def can_run(self):
         if self._can_run_exception is not None:
             raise self._can_run_exception
@@ -46,6 +46,7 @@ class DummyTask(D3RTask):
         self._run_count += 1
         if self._run_exception is not None:
             raise self._run_exception
+
 
 class TestCelppRunner(unittest.TestCase):
 
@@ -112,31 +113,34 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEquals(celpprunner.run_tasks(task_list), 2)
 
     def test_run_one_successful_task(self):
-        success_task = DummyTask(D3RParameters(),'foo', None, True, None, None)
+        success_task = DummyTask(D3RParameters(), 'foo', None, True, None,
+                                 None)
         success_task.set_name('dummy')
         task_list = []
         task_list.append(success_task)
         self.assertEquals(celpprunner.run_tasks(task_list), 0)
 
     def test_run_one_fail_task_with_error_message(self):
-        task = DummyTask(D3RParameters(),'foo', 'someerror', True, None, None)
+        task = DummyTask(D3RParameters(), 'foo', 'someerror', True, None, None)
         task.set_name('dummy')
         task_list = []
         task_list.append(task)
         self.assertEquals(celpprunner.run_tasks(task_list), 1)
-        self.assertEquals(task.get_error(),'someerror')
+        self.assertEquals(task.get_error(), 'someerror')
 
     def test_run_one_fail_task_with_exception_and_no_message(self):
-        task = DummyTask(D3RParameters(),'foo', None, True, None, Exception('hi'))
+        task = DummyTask(D3RParameters(), 'foo', None, True,
+                         None, Exception('hi'))
         task.set_name('dummy')
         task_list = []
         task_list.append(task)
         self.assertEquals(celpprunner.run_tasks(task_list), 1)
-        self.assertEquals(task.get_error(),'Caught Exception running task: hi')
+        self.assertEquals(task.get_error(),
+                          'Caught Exception running task: hi')
 
     def test_run_two_tasks_success(self):
         task_list = []
-        task = DummyTask(D3RParameters(),'foo', None, True, None, None)
+        task = DummyTask(D3RParameters(), 'foo', None, True, None, None)
         task.set_name('dummy')
         task_list.append(task)
         task_list.append(task)
@@ -146,36 +150,41 @@ class TestCelppRunner(unittest.TestCase):
 
     def test_run_two_tasks_second_task_has_error(self):
         task_list = []
-        task = DummyTask(D3RParameters(),'foo', None, True, None, None)
+        task = DummyTask(D3RParameters(), 'foo', None, True, None, None)
         task.set_name('dummy')
         task_list.append(task)
 
-        task_two = DummyTask(D3RParameters(),'foo', None, True, None, Exception('hi'))
+        task_two = DummyTask(D3RParameters(), 'foo', None, True,
+                             None, Exception('hi'))
         task_two.set_name('dummy')
         task_list.append(task_two)
 
         self.assertEquals(celpprunner.run_tasks(task_list), 1)
         self.assertEquals(task._run_count, 1)
         self.assertEquals(task_two._run_count, 1)
-        self.assertEquals(task_two.get_error(), 'Caught Exception running task: hi')
+        self.assertEquals(task_two.get_error(),
+                          'Caught Exception running task: hi')
 
     def test_run_two_tasks_first_task_has_error(self):
         task_list = []
-        task = DummyTask(D3RParameters(),'foo', None, True, None, Exception('hi'))
+        task = DummyTask(D3RParameters(), 'foo', None, True, None,
+                         Exception('hi'))
         task.set_name('dummy')
         task_list.append(task)
 
-        task_two = DummyTask(D3RParameters(),'foo', None, True, None, None)
+        task_two = DummyTask(D3RParameters(), 'foo', None, True, None,
+                             None)
         task_two.set_name('dummy')
         task_list.append(task_two)
 
         self.assertEquals(celpprunner.run_tasks(task_list), 1)
-        self.assertEquals(task.get_error(), 'Caught Exception running task: hi')
+        self.assertEquals(task.get_error(),
+                          'Caught Exception running task: hi')
 
         self.assertEquals(task._run_count, 1)
         self.assertEquals(task_two._run_count, 0)
 
-    def test_get_task_list_for_stage_with_none_and_empty_n_invalid_stage_name(self):
+    def test_get_task_list_for_stage_with_invalid_stage_name(self):
 
         try:
             celpprunner.get_task_list_for_stage(D3RParameters(), None)
@@ -195,7 +204,6 @@ class TestCelppRunner(unittest.TestCase):
         except NotImplementedError as e:
             self.assertEquals(e.message, 'uh oh no tasks for foo stage')
 
-
     def test_get_task_list_for_stage_with_valid_stages(self):
         params = D3RParameters()
         params.latest_weekly = 'foo'
@@ -208,7 +216,6 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEquals(len(task_list), 1)
         self.assertEquals(task_list[0].get_dir(),
                           os.path.join('foo', 'stage.3.pdbprep'))
-
 
     def test_run_stages_no_weekly_datasetfound(self):
         temp_dir = tempfile.mkdtemp()

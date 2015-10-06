@@ -390,30 +390,29 @@ class TestD3rTask(unittest.TestCase):
 
             # try where only summary.txt exists
             summary_file = os.path.join(blast_task.get_dir(), 'summary.txt')
-            open(summary_file,'a').close()
+            open(summary_file, 'a').close()
             self.assertEquals(len(blast_task.get_txt_files()), 0)
 
             # try non txt files only
             os.remove(summary_file)
-            open(os.path.join(blast_task.get_dir(),'foo.csv'),'a').close()
+            open(os.path.join(blast_task.get_dir(), 'foo.csv'), 'a').close()
             self.assertEquals(len(blast_task.get_txt_files()), 0)
 
             # try 1 txt file
-            open(os.path.join(blast_task.get_dir(),'4vwx.txt'),'a').close()
+            open(os.path.join(blast_task.get_dir(), '4vwx.txt'), 'a').close()
             self.assertEquals(len(blast_task.get_txt_files()), 1)
 
             # try 1 summary.txt and 1 txt file
             summary_file = os.path.join(blast_task.get_dir(), 'summary.txt')
-            open(summary_file,'a').close()
+            open(summary_file, 'a').close()
             self.assertEquals(len(blast_task.get_txt_files()), 1)
 
             # try multiple txt files
-            open(os.path.join(blast_task.get_dir(),'5vwx.txt'),'a').close()
+            open(os.path.join(blast_task.get_dir(), '5vwx.txt'), 'a').close()
             self.assertEquals(len(blast_task.get_txt_files()), 2)
 
         finally:
             shutil.rmtree(temp_dir)
-
 
     def test_BlastNFilterTask_can_run(self):
         tempDir = tempfile.mkdtemp()
@@ -466,7 +465,7 @@ class TestD3rTask(unittest.TestCase):
                              'notfound status')
 
             # try where compinchi failed
-            compinchi = CompInchiDownloadTask(tempDir,params)
+            compinchi = CompInchiDownloadTask(tempDir, params)
             compinchi.create_dir()
             errorFile = os.path.join(compinchi.get_path(),
                                      compinchi.get_dir_name(),
@@ -526,20 +525,21 @@ class TestD3rTask(unittest.TestCase):
 
             std_out_file = os.path.join(blasttask.get_dir(),
                                         'echo.stdout')
-            f = open(std_out_file,'r')
-            echo_out = f.read().replace('\n','')
-            echo_out.index('--nonpolymertsv '+
+            f = open(std_out_file, 'r')
+            echo_out = f.read().replace('\n', '')
+            echo_out.index('--nonpolymertsv ' +
                            os.path.join(temp_dir, 'stage.1.dataimport',
-                                        'new_release_structure_nonpolymer.tsv'))
-            echo_out.index('--sequencetsv '+
+                                        'new_release_structure_nonpolymer.tsv'
+                                        ))
+            echo_out.index('--sequencetsv ' +
                            os.path.join(temp_dir, 'stage.1.dataimport',
                                         'new_release_structure_sequence.tsv'))
-            echo_out.index('--pdbblastdb '+
+            echo_out.index('--pdbblastdb ' +
                            os.path.join(temp_dir, 'current'))
-            echo_out.index('--compinchi '+
+            echo_out.index('--compinchi ' +
                            os.path.join(temp_dir, 'stage.1.compinchi',
                                         'Components-inchi.ich'))
-            echo_out.index('--outdir '+
+            echo_out.index('--outdir ' +
                            os.path.join(temp_dir, 'stage.2.blastnfilter'))
             f.close()
 
@@ -762,7 +762,7 @@ class TestD3rTask(unittest.TestCase):
                              pdbpreptask.get_dir_name() +
                              ' already exists and status is unknown')
 
-            #pdbprep already complete
+            # pdbprep already complete
             pdbpreptask = PDBPrepTask(temp_dir, params)
             open(os.path.join(pdbpreptask.get_dir(),
                               D3RTask.COMPLETE_FILE), 'a').close()
@@ -788,7 +788,6 @@ class TestD3rTask(unittest.TestCase):
             blastnfilter.create_dir()
             open(os.path.join(blastnfilter.get_dir(), D3RTask.COMPLETE_FILE),
                  'a').close()
-
 
         finally:
             shutil.rmtree(temp_dir)
@@ -817,14 +816,14 @@ class TestD3rTask(unittest.TestCase):
                               D3RTask.UNKNOWN_STATUS)
 
             open(os.path.join(task.get_dir(), D3RTask.START_FILE),
-                              'a').close()
+                 'a').close()
             self.assertEquals(task.can_run(), False)
             self.assertEquals(task.get_error(), task.get_dir_name() +
                               ' already exists and status is ' +
                               D3RTask.START_STATUS)
 
             open(os.path.join(task.get_dir(), D3RTask.ERROR_FILE),
-                              'a').close()
+                 'a').close()
             self.assertEquals(task.can_run(), False)
             self.assertEquals(task.get_error(), task.get_dir_name() +
                               ' already exists and status is ' +
@@ -833,7 +832,7 @@ class TestD3rTask(unittest.TestCase):
             os.remove(os.path.join(task.get_dir(), D3RTask.ERROR_FILE))
 
             open(os.path.join(task.get_dir(), D3RTask.COMPLETE_FILE),
-                              'a').close()
+                 'a').close()
             self.assertEquals(task.can_run(), False)
             self.assertEquals(task.get_error(), None)
         finally:
@@ -848,7 +847,7 @@ class TestD3rTask(unittest.TestCase):
                 task = CompInchiDownloadTask(temp_dir, params)
                 task.run()
                 self.fail('Expected exception')
-            except AttributeError as e:
+            except AttributeError:
                 pass
 
             shutil.rmtree(task.get_dir())
@@ -858,8 +857,8 @@ class TestD3rTask(unittest.TestCase):
                                                          'doesnotexistasdf')
             task = CompInchiDownloadTask(temp_dir, params)
             task.run()
-            self.assertEquals(task.get_error(), 'Unable to download file from' +
-                              ' ' + params.compinchi)
+            self.assertEquals(task.get_error(), 'Unable to download file ' +
+                              'from ' + params.compinchi)
         finally:
             shutil.rmtree(temp_dir)
 
@@ -868,7 +867,7 @@ class TestD3rTask(unittest.TestCase):
         try:
 
             params = D3RParameters()
-            fakefile = os.path.join(temp_dir,'fakefile')
+            fakefile = os.path.join(temp_dir, 'fakefile')
             f = open(fakefile, 'w')
             f.write('hi\n')
             f.flush()

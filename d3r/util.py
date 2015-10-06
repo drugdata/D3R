@@ -103,6 +103,7 @@ def get_celpp_week_of_year_from_date(the_date):
     return (updated_date.isocalendar()[1],
             updated_date.isocalendar()[0])
 
+
 def create_celpp_week_dir(celpp_week_tuple, celppdir):
     """Creates celpp week dir in `celppdir`
     Creates celpp week directory under `celppdir`
@@ -121,7 +122,8 @@ def create_celpp_week_dir(celpp_week_tuple, celppdir):
     dir_to_create = os.path.join(celppdir, str(celpp_week_tuple[1]),
                                  'dataset.week.'+str(celpp_week_tuple[0]))
     if os.path.isdir(dir_to_create):
-        logger.debug(dir_to_create + ' directory already exists skipping creation')
+        logger.debug(dir_to_create +
+                     ' directory already exists skipping creation')
         return
 
     logger.debug('Creating ' + dir_to_create)
