@@ -10,9 +10,9 @@ from datetime import date
 import d3r
 from d3r.celpp import util
 from d3r.celpp.task import D3RParameters
-from d3r.celpp.task import BlastNFilterTask
-from d3r.celpp.task import PDBPrepTask
-from d3r.celpp.task import CompInchiDownloadTask
+from d3r.celpp.blastnfilter import BlastNFilterTask
+from d3r.celpp.pdbprep import PDBPrepTask
+from d3r.celpp.compinchidownload import CompInchiDownloadTask
 from lockfile.pidlockfile import PIDLockFile
 
 # create logger
