@@ -133,14 +133,19 @@ class TestUtil(unittest.TestCase):
             try:
                 # try both parameters None
                 util.create_celpp_week_dir(None, None)
+                self.fail('Expected exception')
+            except Exception:
+                pass
 
+            try:
                 # try week tuple None
                 util.create_celpp_week_dir(None, temp_dir)
+            except Exception:
+                pass
 
+            try:
                 # try celppdir None
                 util.create_celpp_week_dir((1, 2015), None)
-
-                self.fail('Expected exception')
             except Exception:
                 pass
 
