@@ -4,3 +4,8 @@
 *.pyo
 *.swp
 .idea/workspace.xml
+.coverage
+.tox/
+dist/
+htmlcov/
+build/
