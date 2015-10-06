@@ -83,6 +83,30 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEqual(theargs.numericloglevel, logging.INFO)
         logger.debug('test')
 
+        theargs.loglevel = 'DEBUG'
+        celpprunner._setup_logging(theargs)
+        self.assertEqual(logging.getLogger('d3r.task').getEffectiveLevel(),
+                         logging.DEBUG)
+        self.assertEqual(theargs.numericloglevel, logging.DEBUG)
+
+        theargs.loglevel = 'WARNING'
+        celpprunner._setup_logging(theargs)
+        self.assertEqual(logging.getLogger('d3r.task').getEffectiveLevel(),
+                         logging.WARNING)
+        self.assertEqual(theargs.numericloglevel, logging.WARNING)
+
+        theargs.loglevel = 'ERROR'
+        celpprunner._setup_logging(theargs)
+        self.assertEqual(logging.getLogger('d3r.task').getEffectiveLevel(),
+                         logging.ERROR)
+        self.assertEqual(theargs.numericloglevel, logging.ERROR)
+
+        theargs.loglevel = 'CRITICAL'
+        celpprunner._setup_logging(theargs)
+        self.assertEqual(logging.getLogger('d3r.task').getEffectiveLevel(),
+                         logging.CRITICAL)
+        self.assertEqual(theargs.numericloglevel, logging.CRITICAL)
+
     def test_parse_arguments(self):
         theargs = ['--stage', 'blast', 'foo']
         result = celpprunner._parse_arguments('hi', theargs)
@@ -216,6 +240,11 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEquals(len(task_list), 1)
         self.assertEquals(task_list[0].get_dir(),
                           os.path.join('foo', 'stage.3.pdbprep'))
+
+        task_list = celpprunner.get_task_list_for_stage(params, 'import')
+        self.assertEquals(len(task_list), 1)
+        self.assertEquals(task_list[0].get_dir(),
+                          os.path.join('foo', 'stage.1.compinchi'))
 
     def test_run_stages_no_weekly_datasetfound(self):
         temp_dir = tempfile.mkdtemp()
