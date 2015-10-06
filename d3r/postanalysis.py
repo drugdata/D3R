@@ -1,5 +1,6 @@
-__author__ = 'robswift'
+#!/usr/bin/env python
 
+__author__ = 'robswift'
 
 import argparse
 import os
@@ -13,9 +14,10 @@ from io import BytesIO
 class MakeSheet(object):
 
     inchi_dict = {}
-    inchi_file = '/Users/robswift/Documents/Work/D3R/devel/data/expo/Components-inchi.ich'
+    inchi_file = None
     @staticmethod
-    def set_inchi_dict():
+    def set_inchi_dict(compinchi):
+        MakeSheet.inchi_file = compinchi
         handle = open(MakeSheet.inchi_file, 'r')
         for line in handle.readlines():
             try:
@@ -106,14 +108,14 @@ class MakeSheet(object):
     def rm_image(self):
         os.remove(self.image_file)
 
-def read_log(path):
+def read_log(path, compinchi):
     """
     read log file and add resname and inchi to d = dict {'resname': inchi}
     :param path:
     :return: d
     """
     if not MakeSheet.inchi_dict:
-        MakeSheet.set_inchi_dict()
+        MakeSheet.set_inchi_dict(compinchi)
     f = os.path.join(path, 'blastnfilter.log')
     content_dict = {}
     handle = open(f, 'r')
@@ -131,13 +133,16 @@ def read_log(path):
 
 def cmd_line():
     parser = argparse.ArgumentParser()
-    parser.add_argument("dir")
-    arg = parser.parse_args()
-    return os.path.abspath(arg.dir)
+
+    parser.add_argument("dir", help='stage.2.blastnfilter directory')
+    parser.add_argument('--compinchi', help='Path to Components-inchi.ich file',
+                        required=True)
+    return parser.parse_args()
 
 def run():
-    out_dir = cmd_line()
-    content_dict = read_log(out_dir)
+    parsed_args = cmd_line()
+    out_dir = os.path.abspath(parsed_args.dir)
+    content_dict = read_log(out_dir, parsed_args.compinchi)
     make_sheet = MakeSheet()
     make_sheet.out_dir = out_dir
     make_sheet.content_dict = content_dict
