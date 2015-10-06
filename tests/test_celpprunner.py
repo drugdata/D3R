@@ -358,7 +358,7 @@ class TestCelppRunner(unittest.TestCase):
                 self.fail('Expected NotImplementedError')
             except NotImplementedError:
                 pass
-            
+
             expected_dir = os.path.join(temp_dir, str(celp_week[1]),
                                         'dataset.week.' +
                                         str(celp_week[0]))
