@@ -17,9 +17,9 @@ import shutil
 from datetime import date
 
 from d3r import celpprunner
-from d3r.task import D3RParameters
-from d3r import util
-from d3r.task import D3RTask
+from d3r.celpp.task import D3RParameters
+from d3r.celpp import util
+from d3r.celpp.task import D3RTask
 
 
 class DummyTask(D3RTask):

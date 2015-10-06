@@ -15,7 +15,7 @@ Tests for `task` module.
 
 import shutil
 from datetime import date
-from d3r import util
+from d3r.celpp import util
 
 
 class TestUtil(unittest.TestCase):

@@ -17,17 +17,17 @@ import shutil
 import platform
 import os
 import stat
-from d3r.task import D3RParameters
-from d3r.task import UnsetPathError
-from d3r.task import UnsetStageError
-from d3r.task import UnsetNameError
-from d3r.task import UnsetFileNameError
-from d3r.task import D3RTask
-from d3r.task import BlastNFilterTask
-from d3r.task import DataImportTask
-from d3r.task import MakeBlastDBTask
-from d3r.task import PDBPrepTask
-from d3r.task import CompInchiDownloadTask
+from d3r.celpp.task import D3RParameters
+from d3r.celpp.task import UnsetPathError
+from d3r.celpp.task import UnsetStageError
+from d3r.celpp.task import UnsetNameError
+from d3r.celpp.task import UnsetFileNameError
+from d3r.celpp.task import D3RTask
+from d3r.celpp.task import BlastNFilterTask
+from d3r.celpp.task import DataImportTask
+from d3r.celpp.task import MakeBlastDBTask
+from d3r.celpp.task import PDBPrepTask
+from d3r.celpp.task import CompInchiDownloadTask
 
 
 class TestD3rTask(unittest.TestCase):

@@ -8,11 +8,11 @@ import logging
 from datetime import date
 
 import d3r
-from d3r import util
-from d3r.task import D3RParameters
-from d3r.task import BlastNFilterTask
-from d3r.task import PDBPrepTask
-from d3r.task import CompInchiDownloadTask
+from d3r.celpp import util
+from d3r.celpp.task import D3RParameters
+from d3r.celpp.task import BlastNFilterTask
+from d3r.celpp.task import PDBPrepTask
+from d3r.celpp.task import CompInchiDownloadTask
 from lockfile.pidlockfile import PIDLockFile
 
 # create logger
