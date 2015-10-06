@@ -24,7 +24,7 @@ class TestMakeBlastDBTask(unittest.TestCase):
     def setUp(self):
         pass
 
-    def test_MakeBlastDBTask(self):
+    def test_constructor(self):
         params = D3RParameters()
         try:
             task = MakeBlastDBTask('blah', params)

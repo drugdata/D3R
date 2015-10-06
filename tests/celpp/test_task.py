@@ -30,7 +30,7 @@ class TestD3rTask(unittest.TestCase):
     def setUp(self):
         pass
 
-    def test_D3RTask(self):
+    def test_constructor(self):
         params = D3RParameters()
         task = D3RTask('/path', params)
         self.assertEqual(task.get_name(), None)
@@ -69,7 +69,7 @@ class TestD3rTask(unittest.TestCase):
         task.set_name('foo')
         self.assertEqual(task.get_dir_name(), 'stage.1.foo')
 
-    def test_D3RTask_get_dir(self):
+    def test_get_dir(self):
         params = D3RParameters()
         task = D3RTask(None, params)
         try:
@@ -97,11 +97,11 @@ class TestD3rTask(unittest.TestCase):
 
         self.assertEqual(task.get_dir(), '/blah/stage.1.foo')
 
-    def test_D3RTask_can_run(self):
+    def test_can_run(self):
         task = D3RTask(None, D3RParameters())
         self.assertEqual(task.can_run(), False)
 
-    def test_D3RTask_run(self):
+    def test_run(self):
         params = D3RParameters()
         task = D3RTask(None, params)
         self.assertEqual(task._can_run, None)
@@ -118,7 +118,7 @@ class TestD3rTask(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
-    def test_D3RTask_write_to_file(self):
+    def test_write_to_file(self):
         tempDir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
@@ -149,7 +149,7 @@ class TestD3rTask(unittest.TestCase):
         finally:
             shutil.rmtree(tempDir)
 
-    def test_D3RTask_create_dir(self):
+    def test_create_dir(self):
         tempDir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
@@ -167,7 +167,7 @@ class TestD3rTask(unittest.TestCase):
         finally:
             shutil.rmtree(tempDir)
 
-    def test_D3RTask_update_status_from_filesystem(self):
+    def test_update_status_from_filesystem(self):
         params = D3RParameters()
         task = D3RTask(None, params)
 
@@ -195,7 +195,7 @@ class TestD3rTask(unittest.TestCase):
 
         try_update_status_from_filesystem(self, task)
 
-    def test_D3RTask_start(self):
+    def test_start(self):
         temp_dir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
@@ -217,7 +217,7 @@ class TestD3rTask(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
-    def test_D3RTask_end(self):
+    def test_end(self):
         temp_dir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
@@ -249,14 +249,14 @@ class TestD3rTask(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
-    def test_D3RTask_get_smtp_server(self):
+    def test_get_smtp_server(self):
         params = D3RParameters()
         params.smtp = ''
         params.smtpport = '25'
         task = D3RTask(None, params)
         self.assertNotEqual(task._get_smtp_server(), None)
 
-    def test_D3RTask_build_from_address(self):
+    def test_build_from_address(self):
         params = D3RParameters()
         task = D3RTask(None, params)
         exp_from_addr = os.getlogin() + '@' + platform.node()

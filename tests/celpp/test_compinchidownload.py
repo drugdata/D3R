@@ -27,7 +27,7 @@ class TestCompInchiDownloadTask(unittest.TestCase):
     def setUp(self):
         pass
 
-    def test_CompInchiDownloadTask_name_and_get_components_inchi_file(self):
+    def test_name_and_get_components_inchi_file(self):
 
         params = D3RParameters()
         task = CompInchiDownloadTask('foo', params)
@@ -36,7 +36,7 @@ class TestCompInchiDownloadTask(unittest.TestCase):
                           os.path.join('foo', 'stage.1.compinchi',
                                        'Components-inchi.ich'))
 
-    def test_CompInchiDownloadTask_can_run(self):
+    def test_can_run(self):
         temp_dir = tempfile.mkdtemp()
         try:
             # task does not exist
@@ -73,7 +73,7 @@ class TestCompInchiDownloadTask(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
-    def test_CompInchiDownloadTask_run_fail(self):
+    def test_run_fail(self):
         temp_dir = tempfile.mkdtemp()
         try:
             try:
@@ -97,7 +97,7 @@ class TestCompInchiDownloadTask(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
-    def test_CompInchiDownloadTask_run_success(self):
+    def test_run_success(self):
         temp_dir = tempfile.mkdtemp()
         try:
 

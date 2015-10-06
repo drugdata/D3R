@@ -36,7 +36,7 @@ class TestBlastNFilterTask(unittest.TestCase):
         task = BlastNFilterTask(None, params)
         test_task.try_update_status_from_filesystem(self, task)
 
-    def test_BlastNFilterTask(self):
+    def test_constructor(self):
         params = D3RParameters()
         blasttask = BlastNFilterTask('ha', params)
         self.assertEqual(blasttask.get_name(), 'blastnfilter')
