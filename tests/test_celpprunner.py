@@ -14,6 +14,7 @@ import logging
 import os
 import os.path
 import shutil
+from datetime import date
 
 from d3r import celpprunner
 from d3r.task import D3RParameters
@@ -342,6 +343,30 @@ class TestCelppRunner(unittest.TestCase):
 
         finally:
             shutil.rmtree(temp_dir)
+
+    def test_run_stages_createweekdir_set(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            theargs = D3RParameters()
+            theargs.celppdir = os.path.join(temp_dir)
+            theargs.createweekdir = True
+            theargs.stage = ''
+            d = date.today()
+            celp_week = util.get_celpp_week_of_year_from_date(d)
+            try:
+                self.assertEquals(celpprunner.run_stages(theargs), 0)
+                self.fail('Expected NotImplementedError')
+            except NotImplementedError:
+                pass
+            
+            expected_dir = os.path.join(temp_dir, str(celp_week[1]),
+                                        'dataset.week.' +
+                                        str(celp_week[0]))
+            self.assertEquals(os.path.isdir(expected_dir), True)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
     def tearDown(self):
         pass
 

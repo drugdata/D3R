@@ -5,6 +5,7 @@ import os
 import argparse
 import psutil
 import logging
+from datetime import date
 
 import d3r
 from d3r import util
@@ -93,6 +94,16 @@ def run_stages(theargs):
        :param theargs: should contain theargs.celppdir and other parameters
                        set via commandline
     """
+    try:
+        if theargs.createweekdir:
+            celp_week = util.get_celpp_week_of_year_from_date(date.today())
+            logger.debug('Request to create new directory ' +
+                         os.path.join(theargs.celppdir, str(celp_week[1]),
+                                      'dataset.week.'+str(celp_week[0])))
+            util.create_celpp_week_dir(celp_week, theargs.celppdir)
+    except AttributeError:
+        pass
+
     theargs.latest_weekly = util.find_latest_weekly_dataset(theargs.celppdir)
 
     if theargs.latest_weekly is None:
@@ -201,7 +212,10 @@ def _parse_arguments(desc, args):
                         ' NOTE: Required parameter for blast stage')
     parser.add_argument("--email", dest="email",
                         help='Comma delimited list of email addresses')
-
+    parser.add_argument("--createweekdir",
+                        help='Create new celpp week directory before ' +
+                             'running stages',
+                        action="store_true")
     parser.add_argument("--stage", required=True, help='Comma delimited list' +
                         ' of stages to run.  Valid STAGES = ' +
                         '{import, blast, pdbprep} '
@@ -285,6 +299,16 @@ def main():
               The program will find the latest <year> and within
               that year the dataset.week.# with highest #.  The output
               directories created will be put within this directory.
+
+              If specified --createweekdir flag will instruct this
+              program to create a new directory for the current
+              celpp week/year before invoking running any stage
+              processing.
+
+              NOTE: CELPP weeks start on Friday and end on Thursday
+                    and week # follows ISO8601 rules so week numbers
+                    at the end and start of the year are a bit
+                    wonky.
 
               Breakdown of behavior of program is defined by
               value passed with --stage flag:
