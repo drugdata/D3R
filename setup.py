@@ -30,7 +30,7 @@ test_requirements = [
 
 setup(
     name='d3r',
-    version='0.5.1',
+    version='0.6.0',
     description='Drug Design Data Resource CELPP Runner is an application to run the filtering, docking, and scoring '
                 'of new sequences from wwpdb',
     long_description=readme + '\n\n' + history,
