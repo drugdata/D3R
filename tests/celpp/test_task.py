@@ -23,11 +23,11 @@ from d3r.celpp.task import UnsetStageError
 from d3r.celpp.task import UnsetNameError
 from d3r.celpp.task import UnsetFileNameError
 from d3r.celpp.task import D3RTask
-from d3r.celpp.task import BlastNFilterTask
-from d3r.celpp.task import DataImportTask
-from d3r.celpp.task import MakeBlastDBTask
-from d3r.celpp.task import PDBPrepTask
-from d3r.celpp.task import CompInchiDownloadTask
+from d3r.celpp.blastnfilter import BlastNFilterTask
+from d3r.celpp.dataimport import DataImportTask
+from d3r.celpp.makeblastdb import MakeBlastDBTask
+from d3r.celpp.pdbprep import PDBPrepTask
+from d3r.celpp.compinchidownload import CompInchiDownloadTask
 
 
 class TestD3rTask(unittest.TestCase):
