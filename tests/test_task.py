@@ -379,6 +379,42 @@ class TestD3rTask(unittest.TestCase):
         self.assertEqual(task.get_dir_name(), 'current')
         self._try_update_status_from_filesystem(task)
 
+    def test_BlastnFilterTask_get_txt_files(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            blast_task = BlastNFilterTask(temp_dir, params)
+            blast_task.create_dir()
+            # try empty directory
+            self.assertEquals(len(blast_task.get_txt_files()), 0)
+
+            # try where only summary.txt exists
+            summary_file = os.path.join(blast_task.get_dir(), 'summary.txt')
+            open(summary_file,'a').close()
+            self.assertEquals(len(blast_task.get_txt_files()), 0)
+
+            # try non txt files only
+            os.remove(summary_file)
+            open(os.path.join(blast_task.get_dir(),'foo.csv'),'a').close()
+            self.assertEquals(len(blast_task.get_txt_files()), 0)
+
+            # try 1 txt file
+            open(os.path.join(blast_task.get_dir(),'4vwx.txt'),'a').close()
+            self.assertEquals(len(blast_task.get_txt_files()), 1)
+
+            # try 1 summary.txt and 1 txt file
+            summary_file = os.path.join(blast_task.get_dir(), 'summary.txt')
+            open(summary_file,'a').close()
+            self.assertEquals(len(blast_task.get_txt_files()), 1)
+
+            # try multiple txt files
+            open(os.path.join(blast_task.get_dir(),'5vwx.txt'),'a').close()
+            self.assertEquals(len(blast_task.get_txt_files()), 2)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+
     def test_BlastNFilterTask_can_run(self):
         tempDir = tempfile.mkdtemp()
 

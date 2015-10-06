@@ -627,12 +627,15 @@ class BlastNFilterTask(D3RTask):
         return '\n# targets found: ' + str(len(txt_list)) + '\n' + target_list
 
     def get_txt_files(self):
-        """ Gets CSV files in task directory (just the names)
-        :return:list of CSV file names
+        """ Gets txt files in task directory (just the names) skiping summary.txt
+        :return:list of txt file names
         """
         out_dir = self.get_dir()
         txt_list = []
         for entry in os.listdir(out_dir):
+            if entry == 'summary.txt':
+                continue
+
             if entry.endswith('.txt'):
                 txt_list.append(entry)
 
