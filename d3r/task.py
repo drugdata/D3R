@@ -530,6 +530,7 @@ class DataImportTask(D3RTask):
        """
     NONPOLYMER_TSV = "new_release_structure_nonpolymer.tsv"
     SEQUENCE_TSV = "new_release_structure_sequence.tsv"
+    CRYSTALPH_TSV = "new_release_crystallization_pH.tsv"
 
     def __init__(self, path, args):
         super(DataImportTask, self).__init__(path, args)
@@ -550,6 +551,13 @@ class DataImportTask(D3RTask):
         """
         return os.path.join(self.get_dir(),
                             DataImportTask.SEQUENCE_TSV)
+
+    def get_crystalph_tsv(self):
+        """Returns path to new_release_crystallization_pH.tsv file
+        :return: full path to DataImportTask.CRYSTALPH_TSV file
+        """
+        return os.path.join(self.get_dir(),
+                            DataImportTask.CRYSTALPH_TSV)
 
 
 class MakeBlastDBTask(D3RTask):
@@ -610,9 +618,13 @@ class BlastNFilterTask(D3RTask):
            to candidates.  This method will output number of candidates for
            that target by calling get_candidate_count_from_csv method
         """
-        raise NotImplementedError(
-            'uh oh no dont know how to get hit status for new blastnfilter')
-        return None
+
+        txt_list = self.get_txt_files()
+        target_list = '\n\nTarget\n'
+        for entry in txt_list:
+            target_list = (target_list + entry.replace('.txt', '') + '\n')
+
+        return '\n# targets found: ' + str(len(txt_list)) + '\n' + target_list
 
     def get_txt_files(self):
         """ Gets CSV files in task directory (just the names)
@@ -809,16 +821,16 @@ class PDBPrepTask(D3RTask):
             return
 
         blastnfilter = BlastNFilterTask(self._path, self._args)
-        csv_file_list = blastnfilter.get_csv_files()
+        txt_file_list = blastnfilter.get_txt_files()
 
-        if len(csv_file_list) is 0:
-            logger.debug(self.get_dir_name() + ' no csv files found')
+        if len(txt_file_list) is 0:
+            logger.debug(self.get_dir_name() + ' no txt files found')
             self.end()
             return
 
-        cmd_to_run = (self.get_args().pdbprep + ' --csvfiles ' +
-                      ",".join(csv_file_list) +
-                      ' --csvdir ' +
+        cmd_to_run = (self.get_args().pdbprep + ' --txtfiles ' +
+                      ",".join(txt_file_list) +
+                      ' --txtdir ' +
                       blastnfilter.get_dir() +
                       ' --outdir ' + self.get_dir())
 
