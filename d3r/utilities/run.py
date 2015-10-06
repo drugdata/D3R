@@ -26,7 +26,7 @@ def split_input(options):
     compinchi = os.path.abspath(options.compinchi)
     return non_polymer, polymer, out_dir, blast_dir, pdb_db, fasta, compinchi
 
-def blast_the_query(query, pdb_db, fasta, out_dir, compinchi):
+def blast_the_query(query, pdb_db, fasta, compinchi, out_dir):
     """
     Runs a blast search using the target sequence as a query.
     :param query: a d3r.blast.Query object
@@ -119,3 +119,4 @@ def run(options):
         out_analysis.set_target(query)
         out_put.writer(out_dir, query, True)
     out_analysis.print_to_file(out_dir)
+
