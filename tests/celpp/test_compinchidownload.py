@@ -15,22 +15,12 @@ Tests for `compinchidownload` module.
 """
 
 import shutil
-import platform
 import os
-import stat
+
 from d3r.celpp.task import D3RParameters
-from d3r.celpp.task import UnsetPathError
-from d3r.celpp.task import UnsetStageError
-from d3r.celpp.task import UnsetNameError
-from d3r.celpp.task import UnsetFileNameError
 from d3r.celpp.task import D3RTask
-from d3r.celpp.blastnfilter import BlastNFilterTask
-from d3r.celpp.dataimport import DataImportTask
-from d3r.celpp.makeblastdb import MakeBlastDBTask
-from d3r.celpp.pdbprep import PDBPrepTask
 from d3r.celpp.compinchidownload import CompInchiDownloadTask
 
-from tests.celpp import test_task
 
 class TestCompInchiDownloadTask(unittest.TestCase):
 
