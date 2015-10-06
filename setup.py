@@ -51,14 +51,16 @@ setup(
     keywords='d3r',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
-        'Intended Audience :: Developers',
-        'License :: OSI Approved :: BSD License',
+        'Intended Audience :: Science/Research',
+        'License :: Free for non-commercial use',
         'Natural Language :: English',
+        'Environment :: Console',
         'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.2',
         'Programming Language :: Python :: 3.4',
+        'Topic :: Scientific/Engineering :: Chemistry'
     ],
     scripts = ['d3r/celpprunner.py', 'd3r/blastnfilter.py', 'd3r/postanalysis.py'],
     test_suite='tests',
