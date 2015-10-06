@@ -40,7 +40,7 @@ setup(
     author_email='churas@ncmir.ucsd.edu',
     url='https://github.com/nbcrrolls/D3R',
     packages=[
-        'd3r', 'd3r.blast', 'd3r.filter', 'd3r.utilities'
+        'd3r', 'd3r.blast', 'd3r.filter', 'd3r.utilities', 'd3r.celpp'
     ],
     package_dir={'d3r':
                  'd3r'},
