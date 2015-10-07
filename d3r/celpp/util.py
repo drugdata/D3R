@@ -12,10 +12,12 @@ logger = logging.getLogger(__name__)
 
 DAYS_IN_WEEK = 7
 
+
 class DownloadError(Exception):
     """Exception to denote error downloading data
     """
     pass
+
 
 def find_latest_year(celppdir):
     """Given a directory find the latest year
@@ -135,7 +137,9 @@ def create_celpp_week_dir(celpp_week_tuple, celppdir):
     logger.debug('Creating ' + dir_to_create)
     os.makedirs(dir_to_create, 0775)
 
-def download_url_to_file(url, download_path, num_retries, retry_sleep_time_secs):
+
+def download_url_to_file(url, download_path, num_retries,
+                         retry_sleep_time_secs):
     """Downloads `url` to path specified by `download_path`
 
     Downloads `url` with built in retry `num_retries` and sleep
@@ -167,8 +171,8 @@ def download_url_to_file(url, download_path, num_retries, retry_sleep_time_secs)
     count = 0
     while count <= num_retries:
         logger.debug('Try # ' + str(count) + ' of ' +
-                      str(num_retries) + ' to download ' +
-                      download_path + ' from ' + url)
+                     str(num_retries) + ' to download ' +
+                     download_path + ' from ' + url)
         try:
             (f, info) = urllib.urlretrieve(url, download_path)
             return
