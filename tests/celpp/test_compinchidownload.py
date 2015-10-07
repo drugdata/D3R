@@ -91,6 +91,10 @@ class TestCompInchiDownloadTask(unittest.TestCase):
             params.compinchi = 'file:///' + os.path.join(temp_dir,
                                                          'doesnotexistasdf')
             task = CompInchiDownloadTask(temp_dir, params)
+
+            # dirty hack to eliminate delay in retry
+            task._retrysleep = 0
+
             task.run()
             self.assertEquals(task.get_error(), 'Unable to download file ' +
                               'from ' + params.compinchi)

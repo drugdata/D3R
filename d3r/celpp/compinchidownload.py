@@ -6,6 +6,7 @@ import logging
 import urllib
 import os
 from d3r.celpp.task import D3RTask
+from d3r.celpp import util
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +21,7 @@ class CompInchiDownloadTask(D3RTask):
         self.set_stage(1)
         self.set_status(D3RTask.UNKNOWN_STATUS)
         self._maxretries = 3
+        self._retrysleep = 1
 
     def get_components_inchi_file(self):
         return os.path.join(self.get_dir(), 'Components-inchi.ich')
@@ -69,19 +71,16 @@ class CompInchiDownloadTask(D3RTask):
                                       'is False')
             return
         download_path = self.get_components_inchi_file()
-        count = 1
-        while count <= self._maxretries:
-            logger.debug('Try # ' + str(count) + ' of ' +
-                         str(self._maxretries) + ' to download ' +
-                         download_path + ' from ' + self._args.compinchi)
-            try:
-                (f, info) = urllib.urlretrieve(self._args.compinchi,
-                                               filename=download_path)
-                self.end()
-                return
-            except Exception:
-                logger.exception('Caught Exception trying to download file')
-            count += 1
+
+        try:
+            util.download_url_to_file(self._args.compinchi,
+                                      download_path,
+                                      self._maxretries,
+                                      self._retrysleep)
+            self.end()
+            return
+        except Exception as e:
+            logger.exception('Caught Exception trying to download file')
 
         self.set_error('Unable to download file from ' +
                        self._args.compinchi)
