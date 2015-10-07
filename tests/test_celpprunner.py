@@ -244,7 +244,7 @@ class TestCelppRunner(unittest.TestCase):
         task_list = celpprunner.get_task_list_for_stage(params, 'import')
         self.assertEquals(len(task_list), 1)
         self.assertEquals(task_list[0].get_dir(),
-                          os.path.join('foo', 'stage.1.compinchi'))
+                          os.path.join('foo', 'stage.1.dataimport'))
 
     def test_run_stages_no_weekly_datasetfound(self):
         temp_dir = tempfile.mkdtemp()
