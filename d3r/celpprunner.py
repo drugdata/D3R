@@ -12,7 +12,7 @@ from d3r.celpp import util
 from d3r.celpp.task import D3RParameters
 from d3r.celpp.blastnfilter import BlastNFilterTask
 from d3r.celpp.pdbprep import PDBPrepTask
-from d3r.celpp.compinchidownload import CompInchiDownloadTask
+from d3r.celpp.dataimport import DataImportTask
 from lockfile.pidlockfile import PIDLockFile
 
 # create logger
@@ -182,8 +182,7 @@ def get_task_list_for_stage(theargs, stage_name):
     logger.debug('Getting task list for ' + stage_name)
 
     if stage_name == 'import':
-        # TODO replace external stage.1.dataimport with task in celpprunner
-        task_list.append(CompInchiDownloadTask(theargs.latest_weekly, theargs))
+        task_list.append(DataImportTask(theargs.latest_weekly, theargs))
 
     if stage_name == 'blast':
         task_list.append(BlastNFilterTask(theargs.latest_weekly, theargs))
@@ -223,6 +222,8 @@ def _parse_arguments(desc, args):
                         )
     parser.add_argument("--blastnfilter", default='blastnfilter.py',
                         help='Path to BlastnFilter script')
+    parser.add_argument("--postanalysis", default='postanalysis.py',
+                        help='Path to PostAnalysis script')
     parser.add_argument("--pdbprep", default='pdbprep.py',
                         help='Path to pdbprep script')
     parser.add_argument("--compinchi",
@@ -231,6 +232,13 @@ def _parse_arguments(desc, args):
                         help='URL to download Components-inchi.ich' +
                              ' file for' +
                              'task stage.1.compinchi')
+    parser.add_argument("--pdbfileurl",
+                        default='http://www.wwpdb.org/files',
+                        help='URL to download ' +
+                             'new_release_structure_nonpolymer.tsv' +
+                             ',new_release_structure_sequence.tsv' +
+                             ', and new_release_crystallization_pH.tsv' +
+                             ' files for task stage.1.dataimport')
     parser.add_argument("--log", dest="loglevel", choices=['DEBUG',
                         'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
                         help="Set the logging level",
@@ -317,10 +325,21 @@ def main():
 
               If --stage 'import'
 
-              The first stage which downloads Components-inchi.ich into
-              stage.1.compinchi.  The stage.1.dataimport is currently run
-              by an external script, but really should be done by this tool
-              at some point.
+              In this stage 4 files are downloaded from urls specified
+              by --compinchi and --pdbfileurl flags on the commandline
+              into stage.1.dataimport directory.
+
+              The tsv files are (--pdbfileurl flag sets url to
+              download these files from):
+
+              new_release_structure_nonpolymer.tsv
+              new_release_structure_sequence.tsv
+              new_release_crystallization_pH.tsv
+
+              The ich file is (--compinchi flat sets url to
+              download this file from):
+
+              Components-inchi.ich
 
               If --stage 'blast'
 
