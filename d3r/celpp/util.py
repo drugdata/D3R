@@ -3,6 +3,8 @@
 import os
 import logging
 import re
+import urllib
+import time
 from datetime import date
 from datetime import timedelta
 
@@ -10,6 +12,10 @@ logger = logging.getLogger(__name__)
 
 DAYS_IN_WEEK = 7
 
+class DownloadError(Exception):
+    """Exception to denote error downloading data
+    """
+    pass
 
 def find_latest_year(celppdir):
     """Given a directory find the latest year
@@ -128,3 +134,51 @@ def create_celpp_week_dir(celpp_week_tuple, celppdir):
 
     logger.debug('Creating ' + dir_to_create)
     os.makedirs(dir_to_create, 0775)
+
+def download_url_to_file(url, download_path, num_retries, retry_sleep_time_secs):
+    """Downloads `url` to path specified by `download_path`
+
+    Downloads `url` with built in retry `num_retries` and sleep
+    `retry_sleep_time_secs` between retries
+    :param url: url to download file from
+    :param download_path: full path to file to write output to
+    :param num_retries: number of retries, 0 means none, 1 means one retry
+    :param retry_sleep_time_secs: # seconds delay between retry, cannot
+                                  be negative
+    :raises: DownloadError if there was an error downloading the file or
+             one of the parameters has invalid value
+    """
+
+    if url is None:
+        raise DownloadError('url is not set')
+
+    if download_path is None:
+        raise DownloadError('download_path is not set')
+
+    if num_retries is None:
+        num_retries = 0
+
+    if retry_sleep_time_secs is None:
+        retry_sleep_time_secs = 0
+
+    if retry_sleep_time_secs < 0:
+        raise DownloadError('retry sleep time cannot be negative')
+
+    count = 0
+    while count <= num_retries:
+        logger.debug('Try # ' + str(count) + ' of ' +
+                      str(num_retries) + ' to download ' +
+                      download_path + ' from ' + url)
+        try:
+            (f, info) = urllib.urlretrieve(url, download_path)
+            return
+        except Exception:
+            logger.exception('Caught exception trying to download file')
+        count += 1
+        logger.debug('Download failed, sleeping ' +
+                     str(retry_sleep_time_secs) +
+                     'seconds')
+        time.sleep(retry_sleep_time_secs)
+
+    raise DownloadError('Unable to download file from ' +
+                        url + ' to ' + download_path)
