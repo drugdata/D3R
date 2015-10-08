@@ -121,7 +121,8 @@ class TestCelppRunner(unittest.TestCase):
         theargs = ['foo', '--stage', 'dock', '--email', 'b@b.com,h@h',
                    '--blastdir', 'b', '--log', 'ERROR',
                    '--blastnfilter', '/bin/blastnfilter.py',
-                   '--pdbprep', '/bin/pdbprep.py']
+                   '--pdbprep', '/bin/pdbprep.py',
+                   '--postanalysis', '/bin/postanalysis.py']
         result = celpprunner._parse_arguments('hi', theargs)
         self.assertEqual(result.stage, 'dock')
         self.assertEqual(result.celppdir, 'foo')
@@ -130,6 +131,7 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEqual(result.loglevel, 'ERROR')
         self.assertEqual(result.blastnfilter, '/bin/blastnfilter.py')
         self.assertEqual(result.pdbprep, '/bin/pdbprep.py')
+        self.assertEquals(result.postanalysis, '/bin/postanalysis.py')
 
     def test_run_tasks_passing_none_and_empty_list(self):
         self.assertEquals(celpprunner.run_tasks(None), 3)
@@ -304,12 +306,8 @@ class TestCelppRunner(unittest.TestCase):
             os.makedirs(d_import_dir)
             open(os.path.join(d_import_dir, 'complete'), 'a').close()
 
-            compinchi_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
-                                         'stage.1.compinchi')
-            os.makedirs(compinchi_dir)
-            open(os.path.join(compinchi_dir, 'complete'), 'a').close()
-
             theargs.blastnfilter = 'echo'
+            theargs.postanalysis = 'true'
             self.assertEqual(celpprunner.run_stages(theargs), 0)
 
         finally:
@@ -347,12 +345,8 @@ class TestCelppRunner(unittest.TestCase):
             os.makedirs(d_import_dir)
             open(os.path.join(d_import_dir, 'complete'), 'a').close()
 
-            compinchi_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
-                                         'stage.1.compinchi')
-            os.makedirs(compinchi_dir)
-            open(os.path.join(compinchi_dir, 'complete'), 'a').close()
-
             theargs.blastnfilter = 'echo'
+            theargs.postanalysis = 'true'
             theargs.pdbprep = 'echo'
             self.assertEqual(celpprunner.run_stages(theargs), 0)
 
