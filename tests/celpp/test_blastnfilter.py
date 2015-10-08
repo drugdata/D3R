@@ -22,8 +22,6 @@ from d3r.celpp.task import D3RTask
 from d3r.celpp.blastnfilter import BlastNFilterTask
 from d3r.celpp.dataimport import DataImportTask
 from d3r.celpp.makeblastdb import MakeBlastDBTask
-from d3r.celpp.compinchidownload import CompInchiDownloadTask
-
 from tests.celpp import test_task
 
 
@@ -121,29 +119,9 @@ class TestBlastNFilterTask(unittest.TestCase):
             self.assertEqual(blastTask.get_error(),
                              'dataimport task has error status')
 
-            # try where compinchi is not complete
-            completeFile = os.path.join(dataImport.get_path(),
-                                        dataImport.get_dir_name(),
-                                        D3RTask.COMPLETE_FILE)
-            open(completeFile, 'a').close()
-            self.assertEqual(blastTask.can_run(), False)
-            self.assertEqual(blastTask.get_error(), 'compinchi task has ' +
-                             'notfound status')
-
-            # try where compinchi failed
-            compinchi = CompInchiDownloadTask(tempDir, params)
-            compinchi.create_dir()
-            errorFile = os.path.join(compinchi.get_path(),
-                                     compinchi.get_dir_name(),
-                                     D3RTask.ERROR_FILE)
-            open(errorFile, 'a').close()
-            self.assertEqual(blastTask.can_run(), False)
-            self.assertEqual(blastTask.get_error(),
-                             'compinchi task has error status')
-
             # try where blast can run
-            completeFile = os.path.join(compinchi.get_path(),
-                                        compinchi.get_dir_name(),
+            os.remove(errorFile)
+            completeFile = os.path.join(dataImport.get_dir(),
                                         D3RTask.COMPLETE_FILE)
             open(completeFile, 'a').close()
             self.assertEqual(blastTask.can_run(), True)
@@ -173,6 +151,7 @@ class TestBlastNFilterTask(unittest.TestCase):
         try:
             params = D3RParameters()
             params.blastnfilter = '/bin/echo'
+            params.postanalysis = 'true'
             params.blastdir = temp_dir
             blasttask = BlastNFilterTask(temp_dir, params)
             blasttask._can_run = True
@@ -203,7 +182,7 @@ class TestBlastNFilterTask(unittest.TestCase):
             echo_out.index('--pdbblastdb ' +
                            os.path.join(temp_dir, 'current'))
             echo_out.index('--compinchi ' +
-                           os.path.join(temp_dir, 'stage.1.compinchi',
+                           os.path.join(temp_dir, 'stage.1.dataimport',
                                         'Components-inchi.ich'))
             echo_out.index('--outdir ' +
                            os.path.join(temp_dir, 'stage.2.blastnfilter'))
@@ -224,6 +203,7 @@ class TestBlastNFilterTask(unittest.TestCase):
             params = D3RParameters()
             foo_script = os.path.join(temp_dir, 'foo.py')
             params.blastnfilter = foo_script
+            params.postanalysis = '/bin/echo'
             params.blastdir = temp_dir
             blasttask = BlastNFilterTask(temp_dir, params)
             blasttask._can_run = True
@@ -286,6 +266,7 @@ class TestBlastNFilterTask(unittest.TestCase):
         try:
             params = D3RParameters()
             params.blastnfilter = 'false'
+            params.postanalysis = 'true'
             params.blastdir = temp_dir
             blasttask = BlastNFilterTask(temp_dir, params)
             blasttask._can_run = True
@@ -315,6 +296,7 @@ class TestBlastNFilterTask(unittest.TestCase):
         try:
             params = D3RParameters()
             params.blastnfilter = 'falseasdfasdf'
+            params.postanalysis = 'true'
             params.blastdir = temp_dir
             blasttask = BlastNFilterTask(temp_dir, params)
             blasttask._can_run = True
@@ -328,6 +310,7 @@ class TestBlastNFilterTask(unittest.TestCase):
     def test_run_with_can_run_already_set_false(self):
         params = D3RParameters()
         params.blastnfilter = 'false'
+        params.postanalysis = 'false'
         params.blastdir = '/foo'
         blasttask = BlastNFilterTask(None, params)
         blasttask._can_run = False
