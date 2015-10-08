@@ -8,7 +8,6 @@ import logging
 from d3r.celpp.task import D3RTask
 from d3r.celpp.makeblastdb import MakeBlastDBTask
 from d3r.celpp.dataimport import DataImportTask
-from d3r.celpp.compinchidownload import CompInchiDownloadTask
 
 logger = logging.getLogger(__name__)
 
@@ -59,8 +58,8 @@ class BlastNFilterTask(D3RTask):
     def can_run(self):
         """Determines if task can actually run
 
-           This method first verifies the `MakeBlastDBTask` task
-           `DataImportTask`, `CompInchiDownloadTask` all have
+           This method first verifies the `MakeBlastDBTask` and
+           `DataImportTask` task have
            `D3RTask.COMPLETE_STATUS` for status.  The method then
            verifies a `BlastNFilterTask` does not already exist.
              If above is not true then self.set_error() is set
@@ -91,17 +90,6 @@ class BlastNFilterTask(D3RTask):
                            data_import.get_status() + ' status')
             return False
 
-        # check compinchi complete
-        compinchi = CompInchiDownloadTask(self._path, self._args)
-        compinchi.update_status_from_filesystem()
-        if compinchi.get_status() != D3RTask.COMPLETE_STATUS:
-            logger.info('Cannot run ' + self.get_name() + ' task ' +
-                        'because ' + compinchi.get_name() + ' task ' +
-                        'has a status of ' + compinchi.get_status())
-            self.set_error(compinchi.get_name() + ' task has ' +
-                           compinchi.get_status() + ' status')
-            return False
-
         # check blast is not complete and does not exist
 
         self.update_status_from_filesystem()
@@ -125,9 +113,10 @@ class BlastNFilterTask(D3RTask):
            Method requires can_run() to be called before hand with
            successful outcome
            Otherwise method invokes D3RTask.start then this method
-           creates a directory and invokes blastnfilter script.  Upon
-           completion results are analyzed and success or error status
-           is set appropriately and D3RTask.end is invoked
+           creates a directory and invokes blastnfilter script and
+           postanalysis script.  Upon completion results are
+           analyzed and success or error status is set
+           appropriately and D3RTask.end is invoked
            """
         super(BlastNFilterTask, self).run()
 
@@ -141,8 +130,6 @@ class BlastNFilterTask(D3RTask):
 
         make_blastdb = MakeBlastDBTask(self._path, self._args)
 
-        compinchi = CompInchiDownloadTask(self._path, self._args)
-
         cmd_to_run = (self.get_args().blastnfilter + ' --nonpolymertsv ' +
                       data_import.get_nonpolymer_tsv() +
                       ' --sequencetsv ' +
@@ -150,12 +137,22 @@ class BlastNFilterTask(D3RTask):
                       ' --pdbblastdb ' +
                       make_blastdb.get_dir() +
                       ' --compinchi ' +
-                      compinchi.get_components_inchi_file() +
+                      data_import.get_components_inchi_file() +
                       ' --outdir ' + self.get_dir())
 
         blastnfilter_name = os.path.basename(self.get_args().blastnfilter)
 
-        self.run_external_command(blastnfilter_name, cmd_to_run)
+        self.run_external_command(blastnfilter_name,
+                                  cmd_to_run, True)
+
+        cmd_to_run = (self.get_args().postanalysis + ' --compinchi ' +
+                      data_import.get_components_inchi_file() + ' ' +
+                      self.get_dir())
+
+        postanalysis_name = os.path.basename(self.get_args().postanalysis)
+
+        self.run_external_command(postanalysis_name,
+                                  cmd_to_run, False)
 
         try:
             # examine output to get candidate hit count DR-12
