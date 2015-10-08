@@ -262,6 +262,30 @@ class TestD3rTask(unittest.TestCase):
         exp_from_addr = os.getlogin() + '@' + platform.node()
         self.assertEqual(task._build_from_address(), exp_from_addr)
 
+    def test_run_external_command_all_params_None(self):
+        self.assertEquals(1, 2)
+
+    def test_run_external_command_name_None(self):
+        self.assertEquals(1, 2)
+
+    def test_run_external_command_name_cmd_to_run_None(self):
+        self.assertEquals(1, 2)
+
+    def test_run_external_command_name_failure_is_fatal_is_None(self):
+        self.assertEquals(1, 2)
+
+    def test_run_external_command_cmd_raises_exception(self):
+        self.assertEquals(1, 2)
+
+    def test_run_external_command_cmd_fails_and_is_fatal(self):
+        self.assertEquals(1, 2)
+
+    def test_run_external_command_cmd_fails_and_isnot_fatal(self):
+        self.assertEquals(1, 2)
+
+    def test_run_external_command_cmd_succeeds(self):
+        self.assertEquals(1, 2)
+
     def tearDown(self):
         pass
 
