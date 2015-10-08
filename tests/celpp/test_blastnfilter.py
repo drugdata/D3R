@@ -145,7 +145,59 @@ class TestBlastNFilterTask(unittest.TestCase):
         finally:
             shutil.rmtree(tempDir)
 
-    def test_run_with_success(self):
+    def test_run_with_blast_success_postanalysis_fail(self):
+        temp_dir = tempfile.mkdtemp()
+
+        try:
+            params = D3RParameters()
+            params.blastnfilter = '/bin/echo'
+            params.postanalysis = 'false'
+            params.blastdir = temp_dir
+            blasttask = BlastNFilterTask(temp_dir, params)
+            blasttask._can_run = True
+            blasttask.run()
+            self.assertEqual(blasttask.get_status(), D3RTask.COMPLETE_STATUS)
+            self.assertEqual(blasttask.get_error(), None)
+            complete_file = os.path.join(blasttask.get_dir(),
+                                         D3RTask.COMPLETE_FILE)
+
+            self.assertEqual(os.path.isfile(complete_file), True)
+
+            std_err_file = os.path.join(blasttask.get_dir(),
+                                        'echo.stderr')
+
+            self.assertEqual(os.path.isfile(std_err_file), True)
+
+            std_out_file = os.path.join(blasttask.get_dir(),
+                                        'echo.stdout')
+            f = open(std_out_file, 'r')
+            echo_out = f.read().replace('\n', '')
+            echo_out.index('--nonpolymertsv ' +
+                           os.path.join(temp_dir, 'stage.1.dataimport',
+                                        'new_release_structure_nonpolymer.tsv'
+                                        ))
+            echo_out.index('--sequencetsv ' +
+                           os.path.join(temp_dir, 'stage.1.dataimport',
+                                        'new_release_structure_sequence.tsv'))
+            echo_out.index('--pdbblastdb ' +
+                           os.path.join(temp_dir, 'current'))
+            echo_out.index('--compinchi ' +
+                           os.path.join(temp_dir, 'stage.1.dataimport',
+                                        'Components-inchi.ich'))
+            echo_out.index('--outdir ' +
+                           os.path.join(temp_dir, 'stage.2.blastnfilter'))
+            f.close()
+
+            self.assertEqual(os.path.isfile(std_out_file), True)
+            self.assertEquals('verify post analysis run and failed','ha')
+            res = blasttask.get_email_log().rstrip('\n')
+            res.index('/bin/echo')
+            res.index('# targets found: 0')
+            res.index('Target')
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_run_with_blast_success_postanalysis_success(self):
         temp_dir = tempfile.mkdtemp()
 
         try:
@@ -189,6 +241,7 @@ class TestBlastNFilterTask(unittest.TestCase):
             f.close()
 
             self.assertEqual(os.path.isfile(std_out_file), True)
+            self.assertEquals('verify post analysis run and succeeded','ha')
 
             res = blasttask.get_email_log().rstrip('\n')
             res.index('/bin/echo')
