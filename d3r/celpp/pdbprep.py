@@ -96,6 +96,7 @@ class PDBPrepTask(D3RTask):
 
         pdbprep_name = os.path.basename(self.get_args().pdbprep)
 
-        self.run_external_command(pdbprep_name, cmd_to_run)
+        self.run_external_command(pdbprep_name, cmd_to_run,
+                                  True)
         # assess the result
         self.end()
