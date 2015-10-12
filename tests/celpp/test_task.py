@@ -21,6 +21,7 @@ from d3r.celpp.task import D3RParameters
 from d3r.celpp.task import UnsetPathError
 from d3r.celpp.task import UnsetStageError
 from d3r.celpp.task import UnsetNameError
+from d3r.celpp.task import UnsetCommandError
 from d3r.celpp.task import UnsetFileNameError
 from d3r.celpp.task import D3RTask
 
@@ -263,28 +264,139 @@ class TestD3rTask(unittest.TestCase):
         self.assertEqual(task._build_from_address(), exp_from_addr)
 
     def test_run_external_command_all_params_None(self):
-        self.assertEquals(1, 2)
+        params = D3RParameters()
+        task = D3RTask(None, params)
+        try:
+            task.run_external_command(None, None, None)
+            self.fail('expected UnsetNameError')
+        except UnsetNameError:
+            pass
 
     def test_run_external_command_name_None(self):
-        self.assertEquals(1, 2)
+        params = D3RParameters()
+        task = D3RTask(None, params)
+        try:
+            task.run_external_command(None, 'true', None)
+            self.fail('expected UnsetNameError')
+        except UnsetNameError:
+            pass
 
     def test_run_external_command_name_cmd_to_run_None(self):
-        self.assertEquals(1, 2)
+        params = D3RParameters()
+        task = D3RTask(None, params)
+        try:
+            task.run_external_command('hello', None, None)
+            self.fail('expected UnsetCommandError')
+        except UnsetCommandError:
+            pass
 
     def test_run_external_command_name_failure_is_fatal_is_None(self):
-        self.assertEquals(1, 2)
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = D3RTask(None, params)
+            task.set_name('foo')
+            task.set_stage(1)
+            task.set_path(temp_dir)
+            task.create_dir()
+            task.set_path(temp_dir)
+            self.assertEquals(1, task.run_external_command('hi',
+                                                           'false',
+                                                           None))
+            self.assertEquals(task.get_error(), 'Non zero exit code:' +
+                              ' 1 received. Standard out:  Standard error: ')
+            self.assertEquals(task.get_status(), D3RTask.ERROR_STATUS)
+        finally:
+            shutil.rmtree(temp_dir)
 
     def test_run_external_command_cmd_raises_exception(self):
-        self.assertEquals(1, 2)
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = D3RTask(None, params)
+            task.set_name('foo')
+            task.set_stage(1)
+            task.set_path(temp_dir)
+            task.create_dir()
+            task.set_path(temp_dir)
+            self.assertEquals(1, task.run_external_command('hi',
+                                                           'asdfasdf',
+                                                           None))
+            self.assertEquals(task.get_error(), 'Caught Exception trying ' +
+                              'to run asdfasdf : [Errno 2] No such file ' +
+                              'or directory')
+
+            self.assertEquals(os.path.exists(os.path.join(task.get_dir(),
+                                                          'hi.stdout')),
+                              False)
+            self.assertEquals(os.path.exists(os.path.join(task.get_dir(),
+                                                          'hi.stderr')),
+                              False)
+
+        finally:
+            shutil.rmtree(temp_dir)
 
     def test_run_external_command_cmd_fails_and_is_fatal(self):
-        self.assertEquals(1, 2)
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = D3RTask(None, params)
+            task.set_name('foo')
+            task.set_stage(1)
+            task.set_path(temp_dir)
+            task.create_dir()
+            task.set_path(temp_dir)
+            self.assertEquals(1, task.run_external_command('hi',
+                                                           'false',
+                                                           True))
+            self.assertEquals(task.get_error(), 'Non zero exit code:' +
+                              ' 1 received. Standard out:  Standard error: ')
+            self.assertEquals(task.get_status(), D3RTask.ERROR_STATUS)
+        finally:
+            shutil.rmtree(temp_dir)
 
     def test_run_external_command_cmd_fails_and_isnot_fatal(self):
-        self.assertEquals(1, 2)
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = D3RTask(None, params)
+            task.set_name('foo')
+            task.set_stage(1)
+            task.set_path(temp_dir)
+            task.create_dir()
+            task.set_path(temp_dir)
+            self.assertEquals(1, task.run_external_command('hi',
+                                                           'false',
+                                                           False))
+            self.assertEquals(task.get_error(), None)
+            self.assertEquals(task.get_status(), D3RTask.UNKNOWN_STATUS)
+        finally:
+            shutil.rmtree(temp_dir)
 
     def test_run_external_command_cmd_succeeds(self):
-        self.assertEquals(1, 2)
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = D3RTask(None, params)
+            task.set_name('foo')
+            task.set_stage(1)
+            task.set_path(temp_dir)
+            task.create_dir()
+            task.set_path(temp_dir)
+            self.assertEquals(0, task.run_external_command('hi',
+                                                           'echo hi',
+                                                           False))
+            self.assertEquals(task.get_error(), None)
+            self.assertEquals(task.get_status(), D3RTask.UNKNOWN_STATUS)
+            self.assertEquals(os.path.exists(os.path.join(task.get_dir(),
+                                                          'hi.stdout')),
+                              True)
+            self.assertEquals(os.path.exists(os.path.join(task.get_dir(),
+                                                          'hi.stderr')),
+                              True)
+
+        finally:
+            shutil.rmtree(temp_dir)
 
     def tearDown(self):
         pass

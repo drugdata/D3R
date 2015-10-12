@@ -44,6 +44,12 @@ class UnsetNameError(TaskException):
     pass
 
 
+class UnsetCommandError(TaskException):
+    """Exception to denote command is unset
+    """
+    pass
+
+
 class UnsetStageError(TaskException):
     """Exception to denote stage is unset
     """
@@ -512,7 +518,18 @@ class D3RTask(object):
                D3RTask.ERROR_STATUS and failure message appended
                to email log and task.set_error is set
         :return: exit code of process
+        :raise: UnsetNameError if command_name is None
+        :raise: UnsetCommandError if cmd_to_run is None
         """
+        if command_name is None:
+            raise UnsetNameError('Command name must be set')
+
+        if cmd_to_run is None:
+            raise UnsetCommandError('Command must be set')
+
+        if command_failure_is_fatal is None:
+            command_failure_is_fatal = True
+
         logger.info("Running command " + cmd_to_run)
 
         self.append_to_email_log('Running command: ' + cmd_to_run + '\n')
@@ -533,14 +550,12 @@ class D3RTask(object):
         self.write_to_file(err, command_name + '.stderr')
         self.write_to_file(out, command_name + '.stdout')
 
-        if p.returncode == 0:
-            self.set_status(D3RTask.COMPLETE_STATUS)
-        else:
+        if p.returncode != 0:
             if command_failure_is_fatal:
                 self.set_status(D3RTask.ERROR_STATUS)
                 self.set_error("Non zero exit code: " + str(p.returncode) +
-                               "received. Standard out: " + out +
-                               " Standard error : " + err)
+                               " received. Standard out: " + out +
+                               " Standard error: " + err)
             else:
                 self.append_to_email_log("Although considered non fatal " +
                                          "for processing of stage a " +
