@@ -16,6 +16,7 @@ class BlastNFilterTask(D3RTask):
     """Performs blast and filter of sequences
 
     """
+    SUMMARY_TXT = "summary.txt"
 
     def __init__(self, path, args):
         super(BlastNFilterTask, self).__init__(path, args)
@@ -34,11 +35,20 @@ class BlastNFilterTask(D3RTask):
         """
 
         txt_list = self.get_txt_files()
-        target_list = '\n\nTarget\n'
-        for entry in txt_list:
-            target_list = (target_list + entry.replace('.txt', '') + '\n')
+        summary_out = '\nOutput from ' + BlastNFilterTask.SUMMARY_TXT + '\n'
+        summary_txt = os.path.join(self.get_dir(),
+                                   BlastNFilterTask.SUMMARY_TXT)
+        try:
+            if os.path.isfile(summary_txt):
+                f = open(summary_txt, 'r')
+                for entry in f:
+                    summary_out = (summary_out + entry)
+                f.close()
+        except:
+            logger.warning('Error reading ' + summary_txt + ' file')
 
-        return '\n# targets found: ' + str(len(txt_list)) + '\n' + target_list
+        return '\n# txt files found: ' + str(len(txt_list)) +\
+               '\n' + summary_out
 
     def get_txt_files(self):
         """ Gets txt files in task directory (just the names) skiping summary.txt
@@ -47,7 +57,7 @@ class BlastNFilterTask(D3RTask):
         out_dir = self.get_dir()
         txt_list = []
         for entry in os.listdir(out_dir):
-            if entry == 'summary.txt':
+            if entry == BlastNFilterTask.SUMMARY_TXT:
                 continue
 
             if entry.endswith('.txt'):

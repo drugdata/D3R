@@ -151,10 +151,26 @@ class TestBlastNFilterTask(unittest.TestCase):
         try:
             params = D3RParameters()
             params.blastnfilter = '/bin/echo'
-            params.postanalysis = 'false'
+            params.postanalysis = os.path.join(temp_dir, 'foo.py')
             params.blastdir = temp_dir
             blasttask = BlastNFilterTask(temp_dir, params)
             blasttask._can_run = True
+
+            txt_file = os.path.join(blasttask.get_dir(), 'summary.txt')
+
+            txt_contents = ('INPUT SUMMARY\\n' +
+                            '  sequences:  177\\n' +
+                            '  complexes:  149\\n')
+            # create fake blastnfilter script that makes csv files
+            f = open(params.postanalysis, 'w')
+            f.write('#! /usr/bin/env python\n\n')
+            f.write('f = open(\'' + txt_file + '\', \'w\')\n')
+            f.write('f.write(\'' + txt_contents + '\\n\')\n')
+            f.write('f.flush()\nf.close()\n')
+            f.flush()
+            f.close()
+            os.chmod(params.postanalysis, stat.S_IRWXU)
+
             blasttask.run()
             self.assertEqual(blasttask.get_status(), D3RTask.COMPLETE_STATUS)
             self.assertEqual(blasttask.get_error(), None)
@@ -191,19 +207,21 @@ class TestBlastNFilterTask(unittest.TestCase):
             self.assertEqual(os.path.isfile(std_out_file), True)
             self.assertEquals(blasttask.get_status(), D3RTask.COMPLETE_STATUS)
             self.assertEquals(os.path.exists(os.path.join(blasttask.get_dir(),
-                                                          'false.stderr')),
+                                                          'foo.py.stderr')),
                               True)
             self.assertEquals(os.path.exists(os.path.join(blasttask.get_dir(),
-                                                          'false.stdout')),
+                                                          'foo.py.stdout')),
                               True)
             res = blasttask.get_email_log().rstrip('\n')
             res.index('/bin/echo')
-            res.index('# targets found: 0')
-            res.index('Target')
+            res.index('# txt files found: 0')
+            res.index('Output from summary.txt')
+            res.index('  sequences:  177')
+            res.index('  complexes:  149')
         finally:
             shutil.rmtree(temp_dir)
 
-    def test_run_with_blast_success_postanalysis_success(self):
+    def test_run_with_blast_success_postanalysis_success_no_summary_file(self):
         temp_dir = tempfile.mkdtemp()
 
         try:
@@ -247,8 +265,8 @@ class TestBlastNFilterTask(unittest.TestCase):
                               True)
             res = blasttask.get_email_log().rstrip('\n')
             res.index('/bin/echo')
-            res.index('# targets found: 0')
-            res.index('Target')
+            res.index('# txt files found: 0')
+            res.index('Output from summary.txt')
         finally:
             shutil.rmtree(temp_dir)
 
@@ -309,9 +327,8 @@ class TestBlastNFilterTask(unittest.TestCase):
 
             res = blasttask.get_email_log().rstrip('\n')
             res.index('/foo.py')
-            res.index('# targets found: 1')
-            res.index('Target')
-            res.index('4za4')
+            res.index('# txt files found: 1')
+            res.index('Output from summary.txt')
         finally:
             shutil.rmtree(temp_dir)
 
@@ -381,7 +398,8 @@ class TestBlastNFilterTask(unittest.TestCase):
             blasttask.create_dir()
             self.assertEquals(blasttask
                               ._parse_blastnfilter_output_for_hit_stats(),
-                              '\n# targets found: 0\n\n\nTarget\n')
+                              '\n# txt files found: 0\n\nOutput from ' +
+                              'summary.txt\n')
 
             csv_file = os.path.join(blasttask.get_dir(), '4zyc.txt')
             f = open(csv_file, 'w')
@@ -390,8 +408,8 @@ class TestBlastNFilterTask(unittest.TestCase):
             f.close()
             self.assertEquals(blasttask
                               ._parse_blastnfilter_output_for_hit_stats(),
-                              '\n# targets found: 1\n\n\nTarget\n' +
-                              '4zyc\n')
+                              '\n# txt files found: 1\n\nOutput from ' +
+                              'summary.txt\n')
 
             csv_file = os.path.join(blasttask.get_dir(), '4qqq.txt')
             f = open(csv_file, 'w')
@@ -400,10 +418,8 @@ class TestBlastNFilterTask(unittest.TestCase):
             f.close()
             res = blasttask._parse_blastnfilter_output_for_hit_stats()\
                 .rstrip('\n')
-            res.index('# targets found: 2')
-            res.index('Target')
-            res.index('4qqq')
-            res.index('4zyc')
+            res.index('# txt files found: 2')
+            res.index('Output from summary.txt')
 
             csv_file = os.path.join(blasttask.get_dir(), '4abc.txt')
             f = open(csv_file, 'w')
@@ -412,11 +428,8 @@ class TestBlastNFilterTask(unittest.TestCase):
             f.close()
             res = blasttask._parse_blastnfilter_output_for_hit_stats()\
                 .rstrip('\n')
-            res.index('# targets found: 3')
-            res.index('Target')
-            res.index('4qqq')
-            res.index('4zyc')
-            res.index('4abc')
+            res.index('# txt files found: 3')
+            res.index('Output from summary.txt')
 
         finally:
             shutil.rmtree(temp_dir)
