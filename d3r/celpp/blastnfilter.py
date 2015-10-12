@@ -142,8 +142,10 @@ class BlastNFilterTask(D3RTask):
 
         blastnfilter_name = os.path.basename(self.get_args().blastnfilter)
 
-        self.run_external_command(blastnfilter_name,
-                                  cmd_to_run, True)
+        ret_code = self.run_external_command(blastnfilter_name,
+                                             cmd_to_run, True)
+        if ret_code == 0:
+            self.set_status(D3RTask.COMPLETE_STATUS)
 
         cmd_to_run = (self.get_args().postanalysis + ' --compinchi ' +
                       data_import.get_components_inchi_file() + ' ' +

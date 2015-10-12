@@ -189,7 +189,13 @@ class TestBlastNFilterTask(unittest.TestCase):
             f.close()
 
             self.assertEqual(os.path.isfile(std_out_file), True)
-            self.assertEquals('verify post analysis run and failed','ha')
+            self.assertEquals(blasttask.get_status(), D3RTask.COMPLETE_STATUS)
+            self.assertEquals(os.path.exists(os.path.join(blasttask.get_dir(),
+                                                          'false.stderr')),
+                              True)
+            self.assertEquals(os.path.exists(os.path.join(blasttask.get_dir(),
+                                                          'false.stdout')),
+                              True)
             res = blasttask.get_email_log().rstrip('\n')
             res.index('/bin/echo')
             res.index('# targets found: 0')
@@ -202,8 +208,8 @@ class TestBlastNFilterTask(unittest.TestCase):
 
         try:
             params = D3RParameters()
-            params.blastnfilter = '/bin/echo'
-            params.postanalysis = 'true'
+            params.blastnfilter = 'true'
+            params.postanalysis = '/bin/echo'
             params.blastdir = temp_dir
             blasttask = BlastNFilterTask(temp_dir, params)
             blasttask._can_run = True
@@ -224,25 +230,21 @@ class TestBlastNFilterTask(unittest.TestCase):
                                         'echo.stdout')
             f = open(std_out_file, 'r')
             echo_out = f.read().replace('\n', '')
-            echo_out.index('--nonpolymertsv ' +
-                           os.path.join(temp_dir, 'stage.1.dataimport',
-                                        'new_release_structure_nonpolymer.tsv'
-                                        ))
-            echo_out.index('--sequencetsv ' +
-                           os.path.join(temp_dir, 'stage.1.dataimport',
-                                        'new_release_structure_sequence.tsv'))
-            echo_out.index('--pdbblastdb ' +
-                           os.path.join(temp_dir, 'current'))
             echo_out.index('--compinchi ' +
                            os.path.join(temp_dir, 'stage.1.dataimport',
                                         'Components-inchi.ich'))
-            echo_out.index('--outdir ' +
-                           os.path.join(temp_dir, 'stage.2.blastnfilter'))
+            echo_out.index(' ' + os.path.join(temp_dir,
+                                              'stage.2.blastnfilter'))
             f.close()
 
             self.assertEqual(os.path.isfile(std_out_file), True)
-            self.assertEquals('verify post analysis run and succeeded','ha')
-
+            self.assertEquals(blasttask.get_status(), D3RTask.COMPLETE_STATUS)
+            self.assertEquals(os.path.exists(os.path.join(blasttask.get_dir(),
+                                                          'true.stderr')),
+                              True)
+            self.assertEquals(os.path.exists(os.path.join(blasttask.get_dir(),
+                                                          'true.stdout')),
+                              True)
             res = blasttask.get_email_log().rstrip('\n')
             res.index('/bin/echo')
             res.index('# targets found: 0')
