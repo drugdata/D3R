@@ -3,7 +3,7 @@ __author__ = 'robswift'
 from d3r.filter.filtering_sets import do_not_call
 from d3r.blast.query import Query
 
-def create_queries(polymer, non_polymer):
+def create_queries(polymer, non_polymer, ph):
     """
     Runs InPut.read_sequences and Input.read_ligands, which read in the sequence information contained in
     new_release_sequence.tsv and the ligand information contained in new_release_nonpolymer.tsv, respectively, and
@@ -13,6 +13,7 @@ def create_queries(polymer, non_polymer):
     :return: (d3r.blast.Target() object)
     """
     queries = read_sequences(polymer)
+    read_ph(ph, queries)
     read_ligands(non_polymer, queries)
     return queries
 
@@ -91,6 +92,35 @@ def add_ligand(pdb_id, resname, inchi, label, queries):
     added = [target.pdb_id for target in queries if target]
     queries[added.index(pdb_id)].set_ligand(resname, inchi, label)
 
+def read_ph(ph, queries):
+    """
+
+    :param ph:
+    :param queries:
+    :return:
+    """
+    handle = open(ph, 'r')
+    for line in handle.readlines()[1:]:
+        words = line.split()
+        if words:
+            try:
+                pdb_id = words[0].lower()
+                exp_ph = words[1]
+                add_ph(pdb_id, exp_ph, queries)
+            except:
+                continue
+    handle.close()
+
+def add_ph(pdb_id, exp_ph, queries):
+    """
+
+    :param pdb_id:
+    :param exp_ph:
+    :param queries:
+    :return:
+    """
+    added = [query.pdb_id for query in queries if query]
+    queries[added.index(pdb_id)].exp_ph = exp_ph
 
 def label(resname):
     """

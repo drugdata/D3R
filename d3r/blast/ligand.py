@@ -1,7 +1,6 @@
 __author__ = 'robswift'
 
 import sys
-import socket
 from rdkit import Chem
 from rdkit.Chem import rdFMCS
 from mcss import MCSS
