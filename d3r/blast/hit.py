@@ -2,7 +2,6 @@ __author__ = 'robswift'
 
 import os
 import re
-import socket
 from Bio.Alphabet import IUPAC
 from Bio import SeqIO
 from Bio.PDB import *
@@ -21,12 +20,16 @@ class Hit(Base):
     """
 
     """
-    if socket.gethostname() == 'Robs-MacBook-Pro.local':
-        pdb_dir = '/Users/robswift/Documents/Work/D3R/devel/data/pdb'
-    else:
-        pdb_dir = '/data/pdb.extracted'
 
+    pdb_dir = None
     pdb_dict = RegDict()
+
+    @staticmethod
+    def set_pdb_dir(pdb_path):
+        if os.path.isdir(pdb_path):
+            Hit.pdb_dir = pdb_path
+        else:
+            raise IOError("'{pdb_path}' is not a directory".format(pdb_path=pdb_path))
 
     @staticmethod
     def set_pdb_dict(fasta):
@@ -131,8 +134,8 @@ class Hit(Base):
         except IOError, e:
             print "Problems when assigning the ligand for wwPDB ID: %s\n%s" % (self.pdb_id, e)
             return False
-        parser = PDBParser()
         try:
+            parser = PDBParser()
             self.pdb = parser.get_structure(format(self.pdb_id), pdb_file)
             if not self.pdb:
                 return False

@@ -16,13 +16,13 @@ def print_usage():
     w.initial_indent = ''
     w.subsequent_indent = ''
 
-    usage = "usage: blastnfilter --nonpolymertsv --sequencetsv --pdbblastdb --compinchi --outdir"
+    usage = "usage: blastnfilter --nonpolymertsv --sequencetsv --crystalpH --pdbblastdb --pdbdb --compinchi --outdir"
     print
     print w.fill(usage)
     print
 
 def interface(args):
-    flags = ('--nonpolymertsv', '--sequencetsv', '--pdbblastdb', '--compinchi', '--outdir',)
+    flags = ('--nonpolymertsv', '--sequencetsv', '--crystalpH', '--pdbblastdb', '--pdbdb', '--compinchi', '--outdir',)
 
     if len(args) == 0:
         print "\nNo arguments specified"
@@ -41,7 +41,8 @@ def interface(args):
 class ParseArgs:
     def __init__(self, args):
         self.args = args
-        self.required = ('--nonpolymertsv', '--sequencetsv', '--pdbblastdb', '--compinchi', '--outdir',)
+        self.required = ('--nonpolymertsv', '--sequencetsv', '--crystalpH', '--pdbblastdb', '--pdbdb', '--compinchi',
+                         '--outdir',)
 
     def get_string(self, input_string):
         if input_string in self.required:
@@ -69,7 +70,9 @@ class SplitInput:
     def __init__(self, itf):
         self.non_polymer = itf.get_string('--nonpolymertsv')
         self.polymer = itf.get_string('--sequencetsv')
+        self.ph = itf.get_string('--crystalpH')
         self.blast_db = itf.get_string('--pdbblastdb')
+        self.pdb_path = itf.get_string('--pdbdb')
         self.compinchi = itf.get_string('--compinchi')
         self.out = itf.get_string('--outdir')
 

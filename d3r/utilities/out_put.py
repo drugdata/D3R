@@ -3,7 +3,7 @@ __author__ = 'robswift'
 import os
 import sys
 from writers import WriteLog
-from writers import WriteTxt
+from writers import WriteText
 from d3r.utilities.analysis import InputAnalysis
 from d3r.utilities.analysis import OutputAnalysis
 
@@ -17,39 +17,13 @@ def writer(out_dir, filtrate, log_file = False):
         print "%s is not writeable" % out_dir
         sys.exit(1)
 
-    txt_writer = WriteTxt(out_dir)
+    txt_writer = WriteText(out_dir)
     log_writer = WriteLog(out_dir)
     if not filtrate.triage:
         txt_writer.write_txt(filtrate)
     if log_file:
         log_writer.write_log(filtrate)
     log_writer.close_file()
-
-
-#    print "Target ID: %s" % filtrate.pdb_id
-#    if filtrate.triage:
-#        for reason in filtrate.reasons_to_triage:
-#            print "Triage Reason: %s" % reason
-#    for hit in filtrate.hits:
-#        print "  Test ID: %s" % hit.pdb_id
-#        if hit.triage:
-#            for reason in hit.reasons_to_triage:
-#                print "  Triage Reason: %s" % reason
-#        if hit.retain:
-#            for reason in hit.reasons_to_retain:
-#                print "  Retain Reason: %s" % reason
-#        print "  Method: %s" % hit.exp_method
-#        print "  Resolution: %s" % hit.resolution
-#        print "  Chain count: %s" % hit.chain_count
-#        print "  Dock count: %s" % hit.dock_count
-#        for seq in hit.sequences:
-#            for qa in seq.query_alignments:
-#                print "  Chain_%s  Identity: %.2f (chain_%s)|Coverage: %.2f (chain_%s)" % (seq.hit_chain_id,
-#                                                                                           qa.identity,
-#                                                                                           qa.query_chain_id,
-#                                                                                           qa.coverage,
-#                                                                                           qa.query_chain_id)
-#        print ""
 
 def input_analysis(out_dir, queries):
     report = InputAnalysis(queries)
@@ -61,7 +35,7 @@ class OutController(object):
     def __init__(self):
         self.report = OutputAnalysis()
 
-    def set_target(self, query):
+    def set_query(self, query):
         if not query.triage:
             self.report.query = query
             self.report.set_target_dict()
