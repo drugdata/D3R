@@ -35,6 +35,7 @@ class Query(Base):
         self.hit_membership = {}                  # {'PDB_ID' : index (int)} where PDB_ID is a lowercase string and
                                                    # index is the index of the corresponding PDB in test_list
         self.inchi_error = None                    # None, True, or False.
+        self.exp_ph = None                         # pH @ which the structure was solved. Only valid for xtal structs.
 
     def set_ligand(self, resname, inchi, label):
         """
@@ -81,9 +82,9 @@ class Query(Base):
 
     def run_blast(self, pdb_db, out_dir):
         """
-        Runs BLASTP on the sequence(s) contained in the Target instance. If the chain of a sequence has not been
-        assigned to the Target instance, then the sequence returns False. Otherwise, the sequence returns a
-        Bio.blast.Record object. If the Target instance is a multimer, the alignment objects in the list,
+        Runs BLASTP on the sequence(s) contained in the Query instance. If the chain of a sequence has not been
+        assigned to the Query instance, then False is returned. Otherwise, the sequence returns a
+        Bio.blast.Record object. If the Query instance is a multimer, the alignment objects in the list,
         Bio.blast.Record.alignments are the intersection of the alignment objects, or BLASTP hits that result from
         running BLASTP on each of the sequences of each of the unique chains that constitutes the multimer. If the
         Target instance is a monomer, the alignment objects in the list Bio.blast.Record.alignments is simply the list

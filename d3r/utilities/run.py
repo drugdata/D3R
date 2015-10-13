@@ -19,20 +19,28 @@ def split_input(options):
     """
     non_polymer = os.path.abspath(options.non_polymer)
     polymer = os.path.abspath(options.polymer)
+    ph = os.path.abspath(options.ph)
     out_dir = os.path.abspath(options.out)
     blast_dir = os.path.abspath(options.blast_db)
+    pdb_path = os.path.abspath(options.pdb_path)
     pdb_db = os.path.join(blast_dir, 'pdb_db')
     fasta = os.path.join(blast_dir, 'pdb_seqres.txt')
     compinchi = os.path.abspath(options.compinchi)
-    return non_polymer, polymer, out_dir, blast_dir, pdb_db, fasta, compinchi
+    return non_polymer, polymer, ph, out_dir, blast_dir, pdb_db, pdb_path, fasta, compinchi
 
-def blast_the_query(query, pdb_db, fasta, out_dir, compinchi):
+def blast_the_query(query, pdb_db, pdb_path, fasta, out_dir, compinchi):
     """
-    Runs a blast search using the target sequence as a query.
-    :param query: a d3r.blast.Query object
-    :param: pdb_db
-    :return: target_list
+    Runs a blast search using the target sequence as a query
+    :param query: an instance of blast.query.Query
+    :param pdb_db: The absolute path to a BLASTP database
+    :param pdb_path: The absolute path to a decompressed copy of the PDB
+    :param fasta: A file with fasta sequences of each chain in the PDB
+    :param out_dir: The path to the directory where results will be written
+    :param compinchi: The absolute path to a file with InChI strings for each ligand in the PDB
+    :return: query
     """
+    if not Hit.pdb_dir:
+        Hit.set_pdb_dir(pdb_path)
     if not Hit.pdb_dict:
         Hit.set_pdb_dict(fasta)
     if not Ligand.inchi_component:
@@ -93,7 +101,7 @@ def candidate_filter(queries):
     :return:
     """
     filter = CandidateFilter(queries)
-    filter.filter_by_resolution()
+    filter.filter_holo()
     filter.filter_apo()
     filter.filter_for_most_similar()
     filter.filter_for_least_similar()
@@ -103,19 +111,19 @@ def run(options):
     Run the BlastNFilter components
     :param options:
     """
-    non_polymer, polymer,  out_dir, blast_dir, pdb_db, fasta, compinchi = split_input(options)
-    queries = in_put.create_queries(polymer, non_polymer)
-    out_put.input_analysis(out_dir,queries)
+    non_polymer, polymer, ph, out_dir, blast_dir, pdb_db, pdb_path, fasta, compinchi = split_input(options)
+    queries = in_put.create_queries(polymer, non_polymer, ph)
+    out_put.input_analysis(out_dir, queries)
     out_analysis = out_put.OutController()
     out_analysis.print_filter_criteria(out_dir)
     while queries:
         query = queries.pop()
         query_filter(query)
         if not query.triage:
-            query = blast_the_query(query, pdb_db, fasta, compinchi, out_dir)
+            query = blast_the_query(query, pdb_db, pdb_path, fasta, out_dir, compinchi)
             calculate_mcss(query)
             hit_filter(query)
             candidate_filter(query)
-        out_analysis.set_target(query)
+        out_analysis.set_query(query)
         out_put.writer(out_dir, query, True)
     out_analysis.print_to_file(out_dir)

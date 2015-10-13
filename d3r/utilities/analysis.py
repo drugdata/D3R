@@ -126,7 +126,7 @@ class InputAnalysis(object):
         self.set_number_of_multimers_one_dock()
         handle = open(os.path.join(out_dir,'summary.txt'), 'w')
         out = ['INPUT SUMMARY']
-        out.append('  sequences:{no:>30}'.format(no = self.number_of_structures))
+        out.append('  entries:{no:>32}'.format(no = self.number_of_structures))
         out.append('  complexes:{no:>30}'.format(no = self.number_of_complexes))
         out.append('  dockable complexes:{no:>21}'.format(no = self.one_dock))
         out.append('  monomers:{no:>31}'.format(no = self.number_of_monomers))

@@ -72,7 +72,7 @@ class QueryFilter(BaseFilter):
 class HitFilter(BaseFilter):
     """
     Initiated with a list of target objects, this class can run a number of different filtering operations that will
-    label the target objects 'tosser' if they fail to pass any one of the filtering criteria. After initializing and
+    label the Hit objects 'tosser' if they fail to pass any one of the filtering criteria. After initializing and
     running the filtering operations, the method get_filtered_query() is called, and the filtered target_list is
     returned. For example
         filter = filter(target_list)
@@ -167,7 +167,7 @@ class HitFilter(BaseFilter):
 
     def filter_by_method(self, method=None):
         """
-        Removes hit structures from that weren't determined by the input method type.
+        Removes hit structures that weren't determined by the input method type.
         Method types can include:
             'x-ray diffraction', 'solution nmr', 'solid-state nmr', 'electron microscopy', 'electron crystallography',
             'fiber diffraction', 'neutron diffraction', 'solution scattering'.
@@ -195,30 +195,28 @@ class CandidateFilter(BaseFilter):
         super(CandidateFilter, self).__init__(*args, **kwargs)
 
     def filter_for_most_similar(self):
-        # sort the hits list by decreasing MCSS size
+        # sort the hits list by decreasing MCSS size and increasing resolution
         # the most similar will be at the front of the list, the least similar will be at the end of the list.
         hits = [hit for hit in self.query.hits if not hit.triage and hit.largest_mcss]
         if hits:
-            hits.sort(key=lambda hit: int(hit.largest_mcss.size), reverse = True)
-            largest = hits[0].largest_mcss.size
-            for hit in hits:
-                if hit.largest_mcss.size < largest:
-                    break
-                else:
-                    hit.set_retain_reason(1)
+            hits.sort(key=lambda hit: (int(hit.largest_mcss.size), float(hit.resolution)), reverse = True)
+            hits[0].set_retain_reason(1) # picks off the largest mcss with the highest resolution crystal structure
+
 
     def filter_for_least_similar(self):
+        # sort the hits by increasing MCSS size and increasing resolution
         hits = [hit for hit in self.query.hits if not hit.triage and hit.smallest_mcss]
         if hits:
-            hits.sort(key=lambda hit: int(hit.smallest_mcss.size))
-            smallest = hits[0].smallest_mcss.size
-            for hit in hits:
-                if hit.smallest_mcss.size > smallest:
-                    break
-                else:
-                    hit.set_retain_reason(2)
+            hits.sort(key=lambda hit: (int(hit.smallest_mcss.size), float(hit.resolution)))
+            hits[0].set_retain_reason(2) # picks off the smallest mcss with the highest resolution crystal structure
+            #smallest = hits[0].smallest_mcss.size
+            #for hit in hits:
+            #    if hit.smallest_mcss.size > smallest:
+            #        break
+            #    else:
+            #        hit.set_retain_reason(2)
 
-    def filter_by_resolution(self):
+    def filter_holo(self):
         hits = [hit for hit in self.query.hits if hit.resolution and not hit.triage and hit.dock_count > 0]
         if hits:
             hits.sort(key=lambda hit: hit.resolution)
