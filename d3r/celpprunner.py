@@ -226,6 +226,8 @@ def _parse_arguments(desc, args):
                         help='Path to PostAnalysis script')
     parser.add_argument("--pdbprep", default='pdbprep.py',
                         help='Path to pdbprep script')
+    parser.add_argument("--pdbdb", default='/data/pdb',
+                        help='Path to PDB database files')
     parser.add_argument("--compinchi",
                         default='http://ligand-expo.rcsb.org/' +
                         'dictionaries/Components-inchi.ich',
@@ -348,7 +350,8 @@ def main():
               'current' symlink/directory must exist and within that a
               'complete' file must also reside. If both conditions
               are met then the 'blast' stage is run and output stored
-              in stage.2.blastnfilter
+              in stage.2.blastnfilter.  Requires --pdbdb to be set
+              to a directory with valid PDB database files.
 
               If --stage 'pdbprep'
 

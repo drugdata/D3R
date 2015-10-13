@@ -148,6 +148,10 @@ class BlastNFilterTask(D3RTask):
                       make_blastdb.get_dir() +
                       ' --compinchi ' +
                       data_import.get_components_inchi_file() +
+                      ' --crystalpH ' +
+                      data_import.get_crystalph_tsv() +
+                      ' --pdbdb ' +
+                      self.get_args().pdbdb +
                       ' --outdir ' + self.get_dir())
 
         blastnfilter_name = os.path.basename(self.get_args().blastnfilter)
