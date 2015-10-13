@@ -298,6 +298,7 @@ class TestCelppRunner(unittest.TestCase):
             theargs = D3RParameters()
             theargs.celppdir = os.path.join(temp_dir)
             theargs.stage = 'blast'
+            theargs.pdbdb = '/pdbdb'
             os.mkdir(os.path.join(temp_dir, 'current'))
             open(os.path.join(temp_dir, 'current', 'complete'), 'a').close()
             theargs.blastdir = temp_dir
@@ -335,6 +336,7 @@ class TestCelppRunner(unittest.TestCase):
 
         try:
             theargs = D3RParameters()
+            theargs.pdbdb = '/pdbdb'
             theargs.celppdir = os.path.join(temp_dir)
             theargs.stage = 'blast,pdbprep'
             os.mkdir(os.path.join(temp_dir, 'current'))

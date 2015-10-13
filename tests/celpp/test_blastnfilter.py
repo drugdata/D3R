@@ -153,6 +153,7 @@ class TestBlastNFilterTask(unittest.TestCase):
             params.blastnfilter = '/bin/echo'
             params.postanalysis = os.path.join(temp_dir, 'foo.py')
             params.blastdir = temp_dir
+            params.pdbdb = '/pdbdb'
             blasttask = BlastNFilterTask(temp_dir, params)
             blasttask._can_run = True
 
@@ -192,16 +193,20 @@ class TestBlastNFilterTask(unittest.TestCase):
                            os.path.join(temp_dir, 'stage.1.dataimport',
                                         'new_release_structure_nonpolymer.tsv'
                                         ))
-            echo_out.index('--sequencetsv ' +
+            echo_out.index(' --sequencetsv ' +
                            os.path.join(temp_dir, 'stage.1.dataimport',
                                         'new_release_structure_sequence.tsv'))
-            echo_out.index('--pdbblastdb ' +
+            echo_out.index(' --pdbblastdb ' +
                            os.path.join(temp_dir, 'current'))
-            echo_out.index('--compinchi ' +
+            echo_out.index(' --compinchi ' +
                            os.path.join(temp_dir, 'stage.1.dataimport',
                                         'Components-inchi.ich'))
-            echo_out.index('--outdir ' +
+            echo_out.index(' --outdir ' +
                            os.path.join(temp_dir, 'stage.2.blastnfilter'))
+            echo_out.index(' --crystalpH ' +
+                           os.path.join(temp_dir, 'stage.1.dataimport',
+                                        'new_release_crystallization_pH.tsv'))
+            echo_out.index(' --pdbdb /pdbdb ')
             f.close()
 
             self.assertEqual(os.path.isfile(std_out_file), True)
@@ -229,6 +234,7 @@ class TestBlastNFilterTask(unittest.TestCase):
             params.blastnfilter = 'true'
             params.postanalysis = '/bin/echo'
             params.blastdir = temp_dir
+            params.pdbdb = '/pdbdb'
             blasttask = BlastNFilterTask(temp_dir, params)
             blasttask._can_run = True
             blasttask.run()
@@ -278,6 +284,7 @@ class TestBlastNFilterTask(unittest.TestCase):
             params.blastnfilter = foo_script
             params.postanalysis = '/bin/echo'
             params.blastdir = temp_dir
+            params.pdbdb = '/pdbdb'
             blasttask = BlastNFilterTask(temp_dir, params)
             blasttask._can_run = True
 
@@ -340,6 +347,7 @@ class TestBlastNFilterTask(unittest.TestCase):
             params.blastnfilter = 'false'
             params.postanalysis = 'true'
             params.blastdir = temp_dir
+            params.pdbdb = '/pdbdb'
             blasttask = BlastNFilterTask(temp_dir, params)
             blasttask._can_run = True
             blasttask.run()
@@ -370,6 +378,7 @@ class TestBlastNFilterTask(unittest.TestCase):
             params.blastnfilter = 'falseasdfasdf'
             params.postanalysis = 'true'
             params.blastdir = temp_dir
+            params.pdbdb = '/pdbdb'
             blasttask = BlastNFilterTask(temp_dir, params)
             blasttask._can_run = True
             blasttask.run()
@@ -384,6 +393,7 @@ class TestBlastNFilterTask(unittest.TestCase):
         params.blastnfilter = 'false'
         params.postanalysis = 'false'
         params.blastdir = '/foo'
+        params.pdbdb = '/pdbdb'
         blasttask = BlastNFilterTask(None, params)
         blasttask._can_run = False
         blasttask.run()
