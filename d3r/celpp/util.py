@@ -5,6 +5,7 @@ import logging
 import re
 import urllib
 import time
+import gzip
 from datetime import date
 from datetime import timedelta
 
@@ -186,3 +187,15 @@ def download_url_to_file(url, download_path, num_retries,
 
     raise DownloadError('Unable to download file from ' +
                         url + ' to ' + download_path)
+
+def gunzip_file(gzip_file, dest_file):
+    """Uses Python gzip library to uncompress gzip file
+        TODO NEED TO IMPROVE THIS IMPLEMENTATION
+    """
+    f_in = gzip.open(gzip_file, 'rb')
+    f_out = open(dest_file, 'wb')
+    for f in f_in:
+        f_out.write(f)
+    f_out.flush()
+    f_out.close()
+    f_in.close()
