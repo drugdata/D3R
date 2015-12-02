@@ -11,7 +11,7 @@ import d3r
 from d3r.celpp import util
 from d3r.celpp.task import D3RParameters
 from d3r.celpp.blastnfilter import BlastNFilterTask
-from d3r.celpp.pdbprep import PDBPrepTask
+from d3r.celpp.proteinligprep import ProteinLigPrepTask
 from d3r.celpp.dataimport import DataImportTask
 from lockfile.pidlockfile import PIDLockFile
 
@@ -80,18 +80,21 @@ def _setup_logging(theargs):
     logging.basicConfig(format=theargs.logformat)
     logging.getLogger('d3r.task').setLevel(theargs.numericloglevel)
 
+def set_andor_create_latest_weekly_parameter(theargs):
+    """Looks at theargs parameters to get celpp week directory
 
-def run_stages(theargs):
-    """Runs all the stages set in theargs.stage parameter
+       What this method does varies by values in theargs
+       parameter.
+
+       If theargs.createweekdir is set then code will determine
+       current celp week ie (dataset.week.#) and create it under
+       the theargs.celppdir.
+
+       Otherwise code will find the latest
+       celpp week dir under the theargs.celppdir directory and set
+       theargs.latest_weekly to this path.
 
 
-       Examines theargs.stage and splits it by comma to get
-       list of stages to run.  For each stage found a lock file
-       is created and run_stage is invoked with theargs.latest_weekly set to
-       the output of util.find_latest_weekly_dataset.  After run_stage the
-       lockfile is released
-       :param theargs: should contain theargs.celppdir and other parameters
-                       set via commandline
     """
     try:
         if theargs.createweekdir:
@@ -103,19 +106,39 @@ def run_stages(theargs):
     except AttributeError:
         pass
 
-    theargs.latest_weekly = util.find_latest_weekly_dataset(theargs.celppdir)
+    try:
+        if theargs.customweekdir:
+            theargs.latest_weekly = theargs.celppdir
+        else:
+            theargs.latest_weekly = util.find_latest_weekly_dataset(theargs.celppdir)
+    except AttributeError:
+        theargs.latest_weekly = util.find_latest_weekly_dataset(theargs.celppdir)
+    return theargs
 
-    if theargs.latest_weekly is None:
+def run_stages(theargs):
+    """Runs all the stages set in theargs.stage parameter
+
+
+       Examines theargs.stage and splits it by comma to get
+       list of stages to run.  For each stage found a lock file
+       is created and run_stage is invoked with theargs.latest_weekly set to
+       the output of util.find_latest_weekly_dataset.  After run_stage the
+       lockfile is released
+       :param updatedtheargs: should contain theargs.celppdir and other parameters
+                       set via commandline
+    """
+    updatedtheargs = set_andor_create_latest_weekly_parameter(theargs)
+
+    if updatedtheargs.latest_weekly is None:
         logger.info("No weekly dataset found in path " +
-                    theargs.celppdir)
+                    updatedtheargs.celppdir)
         return 0
-
-    for stage_name in theargs.stage.split(','):
+    for stage_name in updatedtheargs.stage.split(','):
         logger.info("Starting " + stage_name + " stage")
         try:
-            lock = _get_lock(theargs, stage_name)
+            lock = _get_lock(updatedtheargs, stage_name)
 
-            task_list = get_task_list_for_stage(theargs, stage_name)
+            task_list = get_task_list_for_stage(updatedtheargs, stage_name)
 
             # run the stage
             exit_code = run_tasks(task_list)
@@ -187,8 +210,8 @@ def get_task_list_for_stage(theargs, stage_name):
     if stage_name == 'blast':
         task_list.append(BlastNFilterTask(theargs.latest_weekly, theargs))
 
-    if stage_name == 'pdbprep':
-        task_list.append(PDBPrepTask(theargs.latest_weekly, theargs))
+    if stage_name == 'proteinligprep':
+        task_list.append(ProteinLigPrepTask(theargs.latest_weekly, theargs))
 
     if len(task_list) is 0:
         raise NotImplementedError(
@@ -216,16 +239,21 @@ def _parse_arguments(desc, args):
                         help='Create new celpp week directory before ' +
                              'running stages',
                         action="store_true")
+    parser.add_argument("--customweekdir",
+                        action='store_true',
+                        help="Use directory set in celppdir instead of " +
+                             "looking for latest weekdir.  --createweekdir " +
+                             "will create a dataset.week.# dir under celppdir")
     parser.add_argument("--stage", required=True, help='Comma delimited list' +
                         ' of stages to run.  Valid STAGES = ' +
-                        '{import, blast, pdbprep} '
+                        '{import, blast, proteinligprep} '
                         )
     parser.add_argument("--blastnfilter", default='blastnfilter.py',
                         help='Path to BlastnFilter script')
     parser.add_argument("--postanalysis", default='postanalysis.py',
                         help='Path to PostAnalysis script')
-    parser.add_argument("--pdbprep", default='pdbprep.py',
-                        help='Path to pdbprep script')
+    parser.add_argument("--proteinligprep", default='proteinligprep.py',
+                        help='Path to proteinligprep script')
     parser.add_argument("--pdbdb", default='/data/pdb',
                         help='Path to PDB database files')
     parser.add_argument("--compinchi",
@@ -256,7 +284,7 @@ def _parse_arguments(desc, args):
 
 def main():
     desc = """
-              Runs the 5 stages (import, blast, pdbprep, dock, & score) of
+              Runs the 5 stages (import, blast, proteinligprep, dock, & score) of
               CELPP processing pipeline (http://www.drugdesigndata.org)
 
               CELPP processing pipeline relies on a set of directories
@@ -353,18 +381,18 @@ def main():
               in stage.2.blastnfilter.  Requires --pdbdb to be set
               to a directory with valid PDB database files.
 
-              If --stage 'pdbprep'
+              If --stage 'proteinligprep'
 
               Verifies stage.2.blastnfilter exists and has 'complete'
               file.  If complete, this stage runs which invokes program
-              set in --pdbprep flag to prepare pdb and inchi files storing
-              output in stage.3.pdbprep
+              set in --proteinligprep flag to prepare pdb and inchi files storing
+              output in stage.3.proteinligprep
 
               If --stage 'dock'
 
-              Verifies stage3.pdbprep exists and has a 'complete'
-              file within it.  If complete, this program will run fred
-              docking and store output in stage.4.fred.  As new
+              Verifies stage3.proteinligprep exists and has a 'complete'
+              file within it.  If complete, this program will run glide
+              docking and store output in stage.4.glide.  As new
               algorithms are incorporated additional stage.4.<algo> will
               be created and run.
 
