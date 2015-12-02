@@ -1,0 +1,50 @@
+Added command-line flags & crystal resolution MCSS filtering
+
+Command-line flags added: 
+	(i) '--pdbdb' should point to a local copy
+	of the wwPDB.
+	(ii) '--crystalpH' should point to
+	new_release_crystallization_ph.tsv file 
+
+Crystal resolution MCSS filtering:
+	Added functionality to sort ligand-bound BLAST hits, which are
+	docking candidates in the largest and smallest MCSS category, by decreasing
+	crystal structure resolution. These additions ensure that only the
+	highest resolution crystal structures bound to ligands with the largest
+	and smallest MCSS (to the candidate BLAST query) will be reported for
+	subsequent docking.
+ 
+	
+d3r/blast/hit.py: added the static method set_pdb_dir to accommodate
+input from the '--pdbdb' command-line flag.
+
+d3r/blast/ligand.py: minor edits
+
+d3r/blast/query.py: added the instance variable 'exp_ph,' to the Query
+class, to store crystalization pH conditions.
+
+d3r/filter/filter.py: modified the CandidateFilter class to filter
+candidates for largest and smallest MCSS by decreasing crystal structure
+resolution. 
+
+d3r/filter/filter_sets.py: minor edits
+
+d3r/utilities/analysis.py: minor edits
+
+d3r/utilities/in_put.py: added the functions 'read_ph' and 'add_ph' to
+proccess the new_release_crystallization_ph.tsv file (passed in by new
+--crystalpH flag) and add the information to an appropriate instance of
+the Query class.
+
+d3r/utilities/io_parser.py: added '--pdbdb' and '--crystalpH'
+command-line flags.
+
+d3r/utilities/out_put.py: minor edits
+
+d3r/utilites/run.py: made changes to accomodate the new '--pdbdb' and
+'--crystalpH' command-line flags.
+
+d3r/utilites/writers.py: (i) added the class WriteText, which writes
+PDBID.txt files, to Shuai's specs., for each elected docking candidate
+(ii) in the 'summary.txt' file, the 'sequence' heading was changed to
+read 'entries.' 
