@@ -1,7 +1,7 @@
 ===============================
 Drug Design Data Resource CELPP Runner
 ===============================
- make a minor change
+
 .. image:: https://img.shields.io/travis/nbcrrolls/D3R.svg
         :target: https://travis-ci.org/nbcrrolls/D3R
 
