@@ -221,6 +221,11 @@ def get_task_list_for_stage(theargs, stage_name):
     if stage_name == 'glide':
         task_list.append(GlideTask(theargs.latest_weekly, theargs))
 
+    if stage_name == 'scoring':
+        # use util function call to get all scoring tasks
+        # append them to the task_list
+        raise NotImplementedError('not implemented')
+
     if len(task_list) is 0:
         raise NotImplementedError(
             'uh oh no tasks for ' + stage_name + ' stage')
