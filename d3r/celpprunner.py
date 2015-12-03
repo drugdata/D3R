@@ -13,6 +13,7 @@ from d3r.celpp.task import D3RParameters
 from d3r.celpp.blastnfilter import BlastNFilterTask
 from d3r.celpp.proteinligprep import ProteinLigPrepTask
 from d3r.celpp.dataimport import DataImportTask
+from d3r.celpp.glide import GlideTask
 from lockfile.pidlockfile import PIDLockFile
 
 # create logger
@@ -213,6 +214,9 @@ def get_task_list_for_stage(theargs, stage_name):
     if stage_name == 'proteinligprep':
         task_list.append(ProteinLigPrepTask(theargs.latest_weekly, theargs))
 
+    if stage_name == 'glide':
+        task_list.append(GlideTask(theargs.latest_weekly, theargs))
+
     if len(task_list) is 0:
         raise NotImplementedError(
             'uh oh no tasks for ' + stage_name + ' stage')
@@ -246,7 +250,7 @@ def _parse_arguments(desc, args):
                              "will create a dataset.week.# dir under celppdir")
     parser.add_argument("--stage", required=True, help='Comma delimited list' +
                         ' of stages to run.  Valid STAGES = ' +
-                        '{import, blast, proteinligprep} '
+                        '{import, blast, proteinligprep, glide} '
                         )
     parser.add_argument("--blastnfilter", default='blastnfilter.py',
                         help='Path to BlastnFilter script')
@@ -254,6 +258,8 @@ def _parse_arguments(desc, args):
                         help='Path to PostAnalysis script')
     parser.add_argument("--proteinligprep", default='proteinligprep.py',
                         help='Path to proteinligprep script')
+    parser.add_argument("--glide", default='glide.py',
+                        help='Path to glide docking script')
     parser.add_argument("--pdbdb", default='/data/pdb',
                         help='Path to PDB database files')
     parser.add_argument("--compinchi",
@@ -388,13 +394,12 @@ def main():
               set in --proteinligprep flag to prepare pdb and inchi files storing
               output in stage.3.proteinligprep
 
-              If --stage 'dock'
+              If --stage 'glide'
 
               Verifies stage3.proteinligprep exists and has a 'complete'
-              file within it.  If complete, this program will run glide
-              docking and store output in stage.4.glide.  As new
-              algorithms are incorporated additional stage.4.<algo> will
-              be created and run.
+              file within it.  If complete, this stage runs which invokes
+              program set in --glide flag to perform docking via glide
+              storing output in stage.4.glide
 
               If --stage 'score'
 
