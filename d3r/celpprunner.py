@@ -81,6 +81,7 @@ def _setup_logging(theargs):
     logging.basicConfig(format=theargs.logformat)
     logging.getLogger('d3r.task').setLevel(theargs.numericloglevel)
 
+
 def set_andor_create_latest_weekly_parameter(theargs):
     """Looks at theargs parameters to get celpp week directory
 
@@ -111,10 +112,13 @@ def set_andor_create_latest_weekly_parameter(theargs):
         if theargs.customweekdir:
             theargs.latest_weekly = theargs.celppdir
         else:
-            theargs.latest_weekly = util.find_latest_weekly_dataset(theargs.celppdir)
+            theargs.latest_weekly = \
+                util.find_latest_weekly_dataset(theargs.celppdir)
     except AttributeError:
-        theargs.latest_weekly = util.find_latest_weekly_dataset(theargs.celppdir)
+        theargs.latest_weekly = \
+            util.find_latest_weekly_dataset(theargs.celppdir)
     return theargs
+
 
 def run_stages(theargs):
     """Runs all the stages set in theargs.stage parameter
@@ -125,7 +129,7 @@ def run_stages(theargs):
        is created and run_stage is invoked with theargs.latest_weekly set to
        the output of util.find_latest_weekly_dataset.  After run_stage the
        lockfile is released
-       :param updatedtheargs: should contain theargs.celppdir and other parameters
+       :param theargs: should contain theargs.celppdir & other params
                        set via commandline
     """
     updatedtheargs = set_andor_create_latest_weekly_parameter(theargs)
@@ -290,8 +294,8 @@ def _parse_arguments(desc, args):
 
 def main():
     desc = """
-              Runs the 5 stages (import, blast, proteinligprep, dock, & score) of
-              CELPP processing pipeline (http://www.drugdesigndata.org)
+              Runs the 5 stages (import, blast, proteinligprep, dock, & score)
+              of CELPP processing pipeline (http://www.drugdesigndata.org)
 
               CELPP processing pipeline relies on a set of directories
               with specific structure. The pipeline runs a set of stages
@@ -391,8 +395,8 @@ def main():
 
               Verifies stage.2.blastnfilter exists and has 'complete'
               file.  If complete, this stage runs which invokes program
-              set in --proteinligprep flag to prepare pdb and inchi files storing
-              output in stage.3.proteinligprep
+              set in --proteinligprep flag to prepare pdb and inchi files
+              storing output in stage.3.proteinligprep
 
               If --stage 'glide'
 

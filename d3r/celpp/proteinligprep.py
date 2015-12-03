@@ -88,9 +88,9 @@ class ProteinLigPrepTask(D3RTask):
 
         blastnfilter = BlastNFilterTask(self._path, self._args)
 
-       #
-       # proteinligprep.py --candidatedir <path to stage.2.blastnfilter> \
-       # --outdir <path to stage.3.proteinligprep>
+        #
+        # proteinligprep.py --candidatedir <path to stage.2.blastnfilter> \
+        # --outdir <path to stage.3.proteinligprep>
         cmd_to_run = (self.get_args().proteinligprep + ' --candidatedir ' +
                       blastnfilter.get_dir() +
                       ' --outdir ' + self.get_dir())

@@ -241,7 +241,8 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEquals(task_list[0].get_dir(),
                           os.path.join('foo', 'stage.2.blastnfilter'))
 
-        task_list = celpprunner.get_task_list_for_stage(params, 'proteinligprep')
+        task_list = celpprunner.get_task_list_for_stage(params,
+                                                        'proteinligprep')
         self.assertEquals(len(task_list), 1)
         self.assertEquals(task_list[0].get_dir(),
                           os.path.join('foo', 'stage.3.proteinligprep'))
@@ -354,7 +355,8 @@ class TestCelppRunner(unittest.TestCase):
             d_import_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
                                         'stage.1.dataimport')
             os.makedirs(d_import_dir)
-            open(os.path.join(d_import_dir, D3RTask.COMPLETE_FILE), 'a').close()
+            open(os.path.join(d_import_dir,
+                              D3RTask.COMPLETE_FILE), 'a').close()
 
             theargs.blastnfilter = 'echo'
             theargs.postanalysis = 'true'
@@ -400,7 +402,8 @@ class TestCelppRunner(unittest.TestCase):
             d_import_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
                                         'stage.1.dataimport')
             os.makedirs(d_import_dir)
-            open(os.path.join(d_import_dir, D3RTask.COMPLETE_FILE), 'a').close()
+            open(os.path.join(d_import_dir,
+                              D3RTask.COMPLETE_FILE), 'a').close()
 
             theargs.blastnfilter = 'echo'
             theargs.postanalysis = 'true'
@@ -447,8 +450,6 @@ class TestCelppRunner(unittest.TestCase):
                 self.fail('Expected NotImplementedError')
             except NotImplementedError:
                 pass
-
-
 
         finally:
             shutil.rmtree(temp_dir)

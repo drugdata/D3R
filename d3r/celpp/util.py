@@ -87,16 +87,16 @@ def find_latest_weekly_dataset(celppdir):
 
 
 def get_celpp_week_of_year_from_date(the_date):
-    """Returns CELPP week of year
-    The CELPP week of year matches ISO week of year, but it
-    starts on Friday instead of Monday.  The way it works is
-    the code examines `the_date` and if its 12:00am Monday -
-    11:59pm Thursday the current week according to date.isocalendar()
-    is used.  If date falls between Friday 12:00am to Sunday 11:59pm
-    this function advances the date to the following Monday and extracts
-    week of year.
-       :return: tuple with first value the week and second value the year
-       :raises: Exception if `the_date` is None
+    """ Returns CELPP week of year
+        The CELPP week of year matches ISO week of year, but it
+        starts on Friday instead of Monday.  The way it works is
+        the code examines `the_date` and if its 12:00am Monday -
+        11:59pm Thursday the current week according to date.isocalendar()
+        is used.  If date falls between Friday 12:00am to Sunday 11:59pm
+        this function advances the date to the following Monday and extracts
+        week of year.
+        :return: tuple with first value the week and second value the year
+        :raises: Exception if `the_date` is None
     """
     if the_date is None:
         raise Exception('Must pass a valid date')
@@ -187,6 +187,7 @@ def download_url_to_file(url, download_path, num_retries,
 
     raise DownloadError('Unable to download file from ' +
                         url + ' to ' + download_path)
+
 
 def gunzip_file(gzip_file, dest_file):
     """Uses Python gzip library to uncompress gzip file

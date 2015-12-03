@@ -88,10 +88,10 @@ class GlideTask(D3RTask):
 
         proteinligprep = ProteinLigPrepTask(self._path, self._args)
 
-       #
-       # glide.py --structuredir <path to stage.3.proteinligprep> \
-       # --outdir <path to stage.4.glide>
-       #
+        #
+        # glide.py --structuredir <path to stage.3.proteinligprep> \
+        # --outdir <path to stage.4.glide>
+        #
         cmd_to_run = (self.get_args().glide + ' --structuredir ' +
                       proteinligprep.get_dir() +
                       ' --outdir ' + self.get_dir())
