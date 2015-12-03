@@ -5,10 +5,10 @@ import tempfile
 import os.path
 
 """
-test_blastnfilter
+test_proteinligprep
 --------------------------------
 
-Tests for `blastnfilter` module.
+Tests for `proteinligprep` module.
 """
 
 import shutil
