@@ -211,7 +211,7 @@ class TestCelppRunner(unittest.TestCase):
                           'Caught Exception running task: hi')
 
         self.assertEquals(task._run_count, 1)
-        self.assertEquals(task_two._run_count, 0)
+        self.assertEquals(task_two._run_count, 1)
 
     def test_get_task_list_for_stage_with_invalid_stage_name(self):
 

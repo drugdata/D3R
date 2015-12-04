@@ -161,7 +161,6 @@ def run_stages(theargs):
 
     return 0
 
-
 def run_tasks(task_list):
     """Runs a specific stage
 
@@ -175,6 +174,8 @@ def run_tasks(task_list):
     if len(task_list) == 0:
         logger.error('Task list is empty')
         return 2
+
+    returnval = 0
 
     for task in task_list:
         logger.info("Running task " + task.get_name())
@@ -190,9 +191,9 @@ def run_tasks(task_list):
         if task.get_error() is not None:
             logger.error('Error running task ' + task.get_name() +
                          ' ' + task.get_error())
-            return 1
+            returnval = 1
 
-    return 0
+    return returnval
 
 
 def get_task_list_for_stage(theargs, stage_name):
@@ -417,8 +418,9 @@ def main():
               If --stage 'score'
 
               Finds all stage.4.<algo> directories with 'complete' files
-              in them and invokes appropriate scoring algorithm storing
-              results in stage.5.<algo>.scoring.
+              in them which do not end in name 'webdata' and runs
+              script set via --scoring parameter storing the result of
+              the script into stage.5.<algo>.scoring.
               """
 
     theargs = _parse_arguments(desc, sys.argv[1:])
