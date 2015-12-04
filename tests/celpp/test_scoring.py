@@ -18,14 +18,46 @@ from d3r.celpp.task import D3RTask
 from d3r.celpp.blastnfilter import BlastNFilterTask
 from d3r.celpp.scoring import ScoringTaskFactory
 from d3r.celpp.scoring import ScoringTask
-from d3r.celpp.proteinligprep import ProteinLigPrepTask
+from d3r.celpp.scoring import PathNotDirectoryError
 
 
 class TestScoring(unittest.TestCase):
     def setUp(self):
         pass
 
-    def test_constructor(self):
+    def test_scoringtaskfactory_constructor(self):
+        params = D3RParameters()
+        params.hi = True
+        stf = ScoringTaskFactory('/foo', params)
+        self.assertEquals(stf.get_args().hi, True)
+        self.assertEquals(stf.get_path(), '/foo')
+
+    def test_get_scoring_tasks_invalid_path(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            path = os.path.join(temp_dir, 'doesnotexist')
+            stf = ScoringTaskFactory(path, params)
+            try:
+                task_list = stf.get_scoring_tasks()
+                self.fail('Expected PathNotDirectoryError')
+            except PathNotDirectoryError:
+                pass
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_scoring_tasks_on_empty_dir(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            stf = ScoringTaskFactory(temp_dir, params)
+            task_list = stf.get_scoring_tasks()
+            self.assertEquals(len(task_list), 0)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_scoringtask_constructor(self):
         params = D3RParameters()
         # no dock task found so it cannot run
         docktask = D3RTask('/blah', params)
