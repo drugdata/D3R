@@ -14,6 +14,9 @@ from d3r.celpp.blastnfilter import BlastNFilterTask
 from d3r.celpp.proteinligprep import ProteinLigPrepTask
 from d3r.celpp.dataimport import DataImportTask
 from d3r.celpp.glide import GlideTask
+from d3r.celpp.scoring import ScoringTaskFactory
+from d3r.celpp.scoring import ScoringTask
+
 from lockfile.pidlockfile import PIDLockFile
 
 # create logger
@@ -224,7 +227,8 @@ def get_task_list_for_stage(theargs, stage_name):
     if stage_name == 'scoring':
         # use util function call to get all scoring tasks
         # append them to the task_list
-        raise NotImplementedError('not implemented')
+        score_task_factory = ScoringTaskFactory(theargs.latest_weekly, theargs)
+        task_list.append(score_task_factory.get_scoring_tasks())
 
     if len(task_list) is 0:
         raise NotImplementedError(
