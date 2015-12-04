@@ -17,10 +17,14 @@ class ScoringTaskFactory(object):
     """Factory class to generate ScoringTask objects
 
        This factory examines a celpp week directory for
-       all stage 4 tasks that are potential docking
-       tasks.  The code then generates ScoringTask
-       objects for all eligible docking tasks
+       all docking tasks.  The code then generates
+       ScoringTask objects for all eligible docking tasks
     """
+    DOCKSTAGE = 4
+    STAGE_FOUR_PREFIX = D3RTask.STAGE_DIRNAME_PREFIX + '.' +\
+                        str(DOCKSTAGE) + '.'
+    SCORING_SUFFIX = 'scoring'
+    WEB_DATA_SUFFIX = 'webdata'
 
     def __init__(self, path, theargs):
         """Constructor
@@ -29,9 +33,14 @@ class ScoringTaskFactory(object):
         self.set_args(theargs)
 
     def set_args(self, theargs):
+        """ Sets args
+        :param theargs: arguments to set
+        """
         self._args = theargs
 
     def get_args(self):
+        """Gets args passed into constructor or via set_args()
+        """
         return self._args
 
     def set_path(self, path):
@@ -47,25 +56,47 @@ class ScoringTaskFactory(object):
     def get_scoring_tasks(self):
         """Generate ScoringTasks
 
-           This method creates a list of
-           ScoringTask objects, one for each
-           stage 4 dock task found in path set
-           via setpath() or via constructor of
-           this object
+           This method examines the path directory
+           set via the constructor or set_path() method
+           for all stage 4 tasks excluding tasks
+           that end with 'webdata'  A ScoringTask
+           object is created for each of these tasks
+           and returned in a list.
+           :return: list of ScoringTask objects or empty list if none found
         """
         path = self.get_path()
+        logger.debug('Examining ' + path + ' for docking tasks')
         if not os.path.isdir(path):
             raise PathNotDirectoryError(path + ' is not a directory')
         scoring_tasks = []
+
         path_list = os.listdir(path)
 
         for entry in path_list:
             full_path = os.path.join(path, entry)
             if os.path.isdir(full_path):
-                if entry.startswith('stage.4.'):
-                    if not entry.endswith('webdata'):
-                        # we have a valid docking path
-                        pass #NEED TO CALL Scoring task constructor here
+                if entry.startswith(ScoringTaskFactory.STAGE_FOUR_PREFIX):
+                    if entry.endswith(ScoringTaskFactory.WEB_DATA_SUFFIX):
+                        logger.debug('Skipping '+ entry + ' due to suffix')
+                        continue
+
+                    # we have a valid docking path
+                    docktask = D3RTask(path, self.get_args())
+                    docktask.set_stage(ScoringTaskFactory.DOCKSTAGE)
+                    docktask.set_name(entry[
+                                      len(ScoringTaskFactory.STAGE_FOUR_PREFIX)
+                                      + 1:])
+                    stask = ScoringTask(path,
+                                        docktask.get_name() + '.' +
+                                        ScoringTaskFactory.SCORING_SUFFIX,
+                                        self.get_args())
+                    if stask.can_run():
+                        logger.debug('Adding task ' + stask.get_name())
+                        scoring_tasks.append(stask)
+                    else:
+                        logger.debug(stask.get_name() + ' cannot be' +
+                                     ' added : ' + stask.get_error())
+
         return scoring_tasks
 
 
@@ -77,16 +108,16 @@ class ScoringTask(D3RTask):
     def __init__(self, path, name, docktask, args):
         super(ScoringTask, self).__init__(path, args)
         self.set_name(name)
-        self.set_stage(4)
+        self.set_stage(5)
         self.set_status(D3RTask.UNKNOWN_STATUS)
         self._docktask = docktask
 
     def can_run(self):
         """Determines if task can actually run
 
-           This method first verifies the `ProteinLigPrep` task
+           This method first verifies the docking task
            has `D3RTask.COMPLETE_STATUS` for
-           status.  The method then verifies a `GlideTask` does
+           status.  The method then verifies this task does
            not already exist.  If above is not true then self.set_error()
            is set with information about the issue
            :return: True if can run otherwise False
@@ -125,7 +156,7 @@ class ScoringTask(D3RTask):
            Method requires can_run() to be called before hand with
            successful outcome
            Otherwise method invokes D3RTask.start then this method
-           creates a directory and invokes blastnfilter script.  Upon
+           creates a directory and invokes scoring script.  Upon
            completion results are analyzed and success or error status
            is set appropriately and D3RTask.end is invoked
            """
@@ -142,6 +173,14 @@ class ScoringTask(D3RTask):
                          self.get_args().scoring)
         except AttributeError:
             self.set_error('scoring not set')
+            self.end()
+            return
+
+        try:
+            logger.debug('pdbdb set to ' +
+                         self.get_args().pdbdb)
+        except AttributeError:
+            self.set_error('pdbdb not set')
             self.end()
             return
 
