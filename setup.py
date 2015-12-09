@@ -32,7 +32,7 @@ test_requirements = [
 
 setup(
     name='d3r',
-    version='0.6.0',
+    version='0.8.0',
     description='Drug Design Data Resource CELPP Runner is an application to run the filtering, docking, and scoring '
                 'of new sequences from wwpdb',
     long_description=readme + '\n\n' + history,
@@ -40,7 +40,7 @@ setup(
     author_email='churas@ncmir.ucsd.edu',
     url='https://github.com/nbcrrolls/D3R',
     packages=[
-        'd3r', 'd3r.blast', 'd3r.filter', 'd3r.utilities'
+        'd3r', 'd3r.blast', 'd3r.filter', 'd3r.utilities', 'd3r.celpp'
     ],
     package_dir={'d3r':
                  'd3r'},
@@ -51,14 +51,16 @@ setup(
     keywords='d3r',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
-        'Intended Audience :: Developers',
-        'License :: OSI Approved :: BSD License',
+        'Intended Audience :: Science/Research',
+        'License :: Free for non-commercial use',
         'Natural Language :: English',
+        'Environment :: Console',
         'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.2',
         'Programming Language :: Python :: 3.4',
+        'Topic :: Scientific/Engineering :: Chemistry'
     ],
     scripts = ['d3r/celpprunner.py', 'd3r/blastnfilter.py', 'd3r/postanalysis.py'],
     test_suite='tests',

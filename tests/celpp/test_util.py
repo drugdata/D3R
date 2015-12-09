@@ -15,11 +15,11 @@ Tests for `task` module.
 
 import shutil
 from datetime import date
-from d3r import util
+from d3r.celpp import util
+from d3r.celpp.util import DownloadError
 
 
 class TestUtil(unittest.TestCase):
-
     def setUp(self):
         pass
 
@@ -168,8 +168,66 @@ class TestUtil(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
+    def test_download_url_to_file(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            # url is None
+            try:
+                util.download_url_to_file(None, None, 0, 0)
+                self.fail('Expected DownloadError')
+            except DownloadError as d:
+                self.assertEquals(str(d), 'url is not set')
+
+            # download_path is None
+            try:
+                util.download_url_to_file('foo', None, 0, 0)
+                self.fail('Expected DownloadError')
+            except DownloadError as d:
+                self.assertEquals(str(d), 'download_path is not set')
+
+            # retry sleep time negative
+            try:
+                util.download_url_to_file('foo', 'ha', 0, -1)
+                self.fail('Expected DownloadError')
+            except DownloadError as d:
+                self.assertEquals(str(d), 'retry sleep time cannot be ' +
+                                  'negative')
+
+            # error download
+            try:
+                util.download_url_to_file('file://' + temp_dir +
+                                          '/haha',
+                                          os.path.join(temp_dir, 'boo'), 0, 0)
+                self.fail('Expected DownloadError')
+            except DownloadError as d:
+                self.assertEquals(str(d), 'Unable to download file from ' +
+                                  'file://' + temp_dir + '/haha to ' +
+                                  os.path.join(temp_dir, 'boo'))
+
+            # successful download retry sleep and num retries both None
+            fake_file = os.path.join(temp_dir, 'hello')
+            f = open(fake_file, 'w')
+            f.write('hi\n')
+            f.flush()
+            f.close()
+            util.download_url_to_file('file://' + fake_file,
+                                      os.path.join(temp_dir, 'boo'),
+                                      None, None)
+            self.assertEquals(os.path.isfile(os.path.join(temp_dir, 'boo')),
+                              True)
+
+            # successful download retry sleep and num retries both 0
+            util.download_url_to_file('file://' + fake_file,
+                                      os.path.join(temp_dir, 'boo2'), 0, 0)
+            self.assertEquals(os.path.isfile(os.path.join(temp_dir, 'boo2')),
+                              True)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
     def tearDown(self):
         pass
+
 
 if __name__ == '__main__':
     unittest.main()

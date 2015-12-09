@@ -17,9 +17,9 @@ import shutil
 from datetime import date
 
 from d3r import celpprunner
-from d3r.task import D3RParameters
-from d3r import util
-from d3r.task import D3RTask
+from d3r.celpp.task import D3RParameters
+from d3r.celpp import util
+from d3r.celpp.task import D3RTask
 
 
 class DummyTask(D3RTask):
@@ -116,20 +116,25 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEqual(result.email, None)
         self.assertEqual(result.loglevel, 'WARNING')
         self.assertEqual(result.blastnfilter, 'blastnfilter.py')
-        self.assertEqual(result.pdbprep, 'pdbprep.py')
-
-        theargs = ['foo', '--stage', 'dock', '--email', 'b@b.com,h@h',
+        self.assertEqual(result.proteinligprep, 'proteinligprep.py')
+        theargs = ['foo', '--stage', 'dock,glide', '--email', 'b@b.com,h@h',
                    '--blastdir', 'b', '--log', 'ERROR',
                    '--blastnfilter', '/bin/blastnfilter.py',
-                   '--pdbprep', '/bin/pdbprep.py']
+                   '--proteinligprep', '/bin/proteinligprep.py',
+                   '--postanalysis', '/bin/postanalysis.py',
+                   '--glide', '/bin/glide.py',
+                   '--customweekdir']
         result = celpprunner._parse_arguments('hi', theargs)
-        self.assertEqual(result.stage, 'dock')
+        self.assertEqual(result.stage, 'dock,glide')
         self.assertEqual(result.celppdir, 'foo')
         self.assertEqual(result.blastdir, 'b')
         self.assertEqual(result.email, 'b@b.com,h@h')
         self.assertEqual(result.loglevel, 'ERROR')
         self.assertEqual(result.blastnfilter, '/bin/blastnfilter.py')
-        self.assertEqual(result.pdbprep, '/bin/pdbprep.py')
+        self.assertEqual(result.proteinligprep, '/bin/proteinligprep.py')
+        self.assertEquals(result.postanalysis, '/bin/postanalysis.py')
+        self.assertEquals(result.glide, '/bin/glide.py')
+        self.assertEquals(result.customweekdir, True)
 
     def test_run_tasks_passing_none_and_empty_list(self):
         self.assertEquals(celpprunner.run_tasks(None), 3)
@@ -236,15 +241,21 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEquals(task_list[0].get_dir(),
                           os.path.join('foo', 'stage.2.blastnfilter'))
 
-        task_list = celpprunner.get_task_list_for_stage(params, 'pdbprep')
+        task_list = celpprunner.get_task_list_for_stage(params,
+                                                        'proteinligprep')
         self.assertEquals(len(task_list), 1)
         self.assertEquals(task_list[0].get_dir(),
-                          os.path.join('foo', 'stage.3.pdbprep'))
+                          os.path.join('foo', 'stage.3.proteinligprep'))
 
         task_list = celpprunner.get_task_list_for_stage(params, 'import')
         self.assertEquals(len(task_list), 1)
         self.assertEquals(task_list[0].get_dir(),
-                          os.path.join('foo', 'stage.1.compinchi'))
+                          os.path.join('foo', 'stage.1.dataimport'))
+
+        task_list = celpprunner.get_task_list_for_stage(params, 'glide')
+        self.assertEquals(len(task_list), 1)
+        self.assertEquals(task_list[0].get_dir(),
+                          os.path.join('foo', 'stage.4.glide'))
 
     def test_run_stages_no_weekly_datasetfound(self):
         temp_dir = tempfile.mkdtemp()
@@ -296,6 +307,7 @@ class TestCelppRunner(unittest.TestCase):
             theargs = D3RParameters()
             theargs.celppdir = os.path.join(temp_dir)
             theargs.stage = 'blast'
+            theargs.pdbdb = '/pdbdb'
             os.mkdir(os.path.join(temp_dir, 'current'))
             open(os.path.join(temp_dir, 'current', 'complete'), 'a').close()
             theargs.blastdir = temp_dir
@@ -304,12 +316,8 @@ class TestCelppRunner(unittest.TestCase):
             os.makedirs(d_import_dir)
             open(os.path.join(d_import_dir, 'complete'), 'a').close()
 
-            compinchi_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
-                                         'stage.1.compinchi')
-            os.makedirs(compinchi_dir)
-            open(os.path.join(compinchi_dir, 'complete'), 'a').close()
-
             theargs.blastnfilter = 'echo'
+            theargs.postanalysis = 'true'
             self.assertEqual(celpprunner.run_stages(theargs), 0)
 
         finally:
@@ -332,50 +340,76 @@ class TestCelppRunner(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
-    def test_run_stages_blast_and_pdbprep_no_error(self):
+    def test_run_stages_blast_and_proteinligprep_no_error(self):
         temp_dir = tempfile.mkdtemp()
 
         try:
             theargs = D3RParameters()
+            theargs.pdbdb = '/pdbdb'
             theargs.celppdir = os.path.join(temp_dir)
-            theargs.stage = 'blast,pdbprep'
+            theargs.stage = 'blast,proteinligprep'
             os.mkdir(os.path.join(temp_dir, 'current'))
-            open(os.path.join(temp_dir, 'current', 'complete'), 'a').close()
+            open(os.path.join(temp_dir, 'current', D3RTask.COMPLETE_FILE),
+                 'a').close()
             theargs.blastdir = temp_dir
             d_import_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
                                         'stage.1.dataimport')
             os.makedirs(d_import_dir)
-            open(os.path.join(d_import_dir, 'complete'), 'a').close()
-
-            compinchi_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
-                                         'stage.1.compinchi')
-            os.makedirs(compinchi_dir)
-            open(os.path.join(compinchi_dir, 'complete'), 'a').close()
+            open(os.path.join(d_import_dir,
+                              D3RTask.COMPLETE_FILE), 'a').close()
 
             theargs.blastnfilter = 'echo'
-            theargs.pdbprep = 'echo'
+            theargs.postanalysis = 'true'
+            theargs.proteinligprep = 'echo'
             self.assertEqual(celpprunner.run_stages(theargs), 0)
 
         finally:
             shutil.rmtree(temp_dir)
 
-    def test_run_stages_blast_and_pdbprep_blast_has_error(self):
+    def test_run_stages_blast_and_proteinligprep_blast_has_error(self):
         temp_dir = tempfile.mkdtemp()
 
         try:
             theargs = D3RParameters()
             theargs.celppdir = os.path.join(temp_dir)
-            theargs.stage = 'blast,pdbprep'
+            theargs.stage = 'blast,proteinligprep'
             os.mkdir(os.path.join(temp_dir, 'current'))
             open(os.path.join(temp_dir, 'current', 'complete'), 'a').close()
             theargs.blastdir = temp_dir
             d_import_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
                                         'stage.1.dataimport')
             os.makedirs(d_import_dir)
-            open(os.path.join(d_import_dir, 'error'), 'a').close()
+            open(os.path.join(d_import_dir, D3RTask.ERROR_FILE), 'a').close()
             theargs.blastnfilter = 'echo'
-            theargs.pdbprep = 'echo'
+            theargs.proteinligprep = 'echo'
             self.assertEqual(celpprunner.run_stages(theargs), 1)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_run_stages_blast_and_proteinligprep_and_glide_no_error(self):
+        temp_dir = tempfile.mkdtemp()
+
+        try:
+            theargs = D3RParameters()
+            theargs.pdbdb = '/pdbdb'
+            theargs.celppdir = os.path.join(temp_dir)
+            theargs.stage = 'blast,proteinligprep,glide'
+            os.mkdir(os.path.join(temp_dir, 'current'))
+            open(os.path.join(temp_dir, 'current', D3RTask.COMPLETE_FILE),
+                 'a').close()
+            theargs.blastdir = temp_dir
+            d_import_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
+                                        'stage.1.dataimport')
+            os.makedirs(d_import_dir)
+            open(os.path.join(d_import_dir,
+                              D3RTask.COMPLETE_FILE), 'a').close()
+
+            theargs.blastnfilter = 'echo'
+            theargs.postanalysis = 'true'
+            theargs.proteinligprep = 'echo'
+            theargs.glide = 'echo'
+            self.assertEqual(celpprunner.run_stages(theargs), 0)
 
         finally:
             shutil.rmtree(temp_dir)
@@ -399,6 +433,23 @@ class TestCelppRunner(unittest.TestCase):
                                         'dataset.week.' +
                                         str(celp_week[0]))
             self.assertEquals(os.path.isdir(expected_dir), True)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_run_stages_customweekdir_set(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            theargs = D3RParameters()
+            theargs.celppdir = temp_dir
+            theargs.customweekdir = True
+            theargs.createweekdir = True
+            theargs.stage = ''
+            try:
+                self.assertEquals(celpprunner.run_stages(theargs), 0)
+                self.fail('Expected NotImplementedError')
+            except NotImplementedError:
+                pass
 
         finally:
             shutil.rmtree(temp_dir)

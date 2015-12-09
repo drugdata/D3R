@@ -6,7 +6,6 @@ import logging
 import subprocess
 import shlex
 import smtplib
-import urllib
 import platform
 from email.mime.text import MIMEText
 
@@ -41,6 +40,12 @@ class UnsetFileNameError(TaskException):
 
 class UnsetNameError(TaskException):
     """Exception to denote name is unset
+    """
+    pass
+
+
+class UnsetCommandError(TaskException):
+    """Exception to denote command is unset
     """
     pass
 
@@ -493,11 +498,41 @@ class D3RTask(object):
 
         return D3RTask.UNKNOWN_STATUS
 
-    def run_external_command(self, command_name, cmd_to_run):
+    def run_external_command(self, command_name, cmd_to_run,
+                             command_failure_is_fatal):
         """Runs external command line process
+
+        Method runs external process logging the command
+        run to email log.  Standard output and error are
+        written to current working directory `command_name`.stdout
+        and `command_name`.stderr respectively and if process.
+
+        :param command_name: Name of command, human readable version
+                             used as prefix for .stderr and .stdout
+                             files
+        :param cmd_to_run: command with arguments to run,
+                        passed to subprocess.Popen
+        :param command_failure_is_fatal: True means if process
+               fails with nonzero exit code or there is an
+               exception then status of task is set to
+               D3RTask.ERROR_STATUS and failure message appended
+               to email log and task.set_error is set
+        :return: exit code of process
+        :raise: UnsetNameError if command_name is None
+        :raise: UnsetCommandError if cmd_to_run is None
         """
+        if command_name is None:
+            raise UnsetNameError('Command name must be set')
+
+        if cmd_to_run is None:
+            raise UnsetCommandError('Command must be set')
+
+        if command_failure_is_fatal is None:
+            command_failure_is_fatal = True
+
         logger.info("Running command " + cmd_to_run)
-        self.set_email_log('Running command: ' + cmd_to_run + '\n')
+
+        self.append_to_email_log('Running command: ' + cmd_to_run + '\n')
         try:
             p = subprocess.Popen(shlex.split(cmd_to_run),
                                  stdout=subprocess.PIPE,
@@ -508,418 +543,24 @@ class D3RTask(object):
             self.set_error("Caught Exception trying to run " +
                            cmd_to_run + " : " + str(e))
             self.end()
-            return
+            return 1
 
         out, err = p.communicate()
 
         self.write_to_file(err, command_name + '.stderr')
         self.write_to_file(out, command_name + '.stdout')
 
-        if p.returncode == 0:
-            self.set_status(D3RTask.COMPLETE_STATUS)
-        else:
-            self.set_status(D3RTask.ERROR_STATUS)
-            self.set_error("Non zero exit code: " + str(p.returncode) +
-                           "received. Standard out: " + out +
-                           " Standard error : " + err)
+        if p.returncode != 0:
+            if command_failure_is_fatal:
+                self.set_status(D3RTask.ERROR_STATUS)
+                self.set_error("Non zero exit code: " + str(p.returncode) +
+                               " received. Standard out: " + out +
+                               " Standard error: " + err)
+            else:
+                self.append_to_email_log("Although considered non fatal " +
+                                         "for processing of stage a " +
+                                         "non zero exit code: " +
+                                         str(p.returncode) +
+                                         "received. Standard out: " + out +
+                                         " Standard error : " + err)
         return p.returncode
-
-
-class DataImportTask(D3RTask):
-    """Represents DataImport Task
-
-       """
-    NONPOLYMER_TSV = "new_release_structure_nonpolymer.tsv"
-    SEQUENCE_TSV = "new_release_structure_sequence.tsv"
-    CRYSTALPH_TSV = "new_release_crystallization_pH.tsv"
-
-    def __init__(self, path, args):
-        super(DataImportTask, self).__init__(path, args)
-        self.set_name('dataimport')
-        self.set_stage(1)
-        self.set_status(D3RTask.UNKNOWN_STATUS)
-
-    def get_nonpolymer_tsv(self):
-        """Returns path to new_release_structure_nonpolymer.tsv file
-        :return: full path to DataImportTask.NONPOLYMER_TSV file
-        """
-        return os.path.join(self.get_dir(),
-                            DataImportTask.NONPOLYMER_TSV)
-
-    def get_sequence_tsv(self):
-        """Returns path to new_release_structure_sequence.tsv file
-        :return: full path to DataImportTask.SEQUENCE_TSV file
-        """
-        return os.path.join(self.get_dir(),
-                            DataImportTask.SEQUENCE_TSV)
-
-    def get_crystalph_tsv(self):
-        """Returns path to new_release_crystallization_pH.tsv file
-        :return: full path to DataImportTask.CRYSTALPH_TSV file
-        """
-        return os.path.join(self.get_dir(),
-                            DataImportTask.CRYSTALPH_TSV)
-
-
-class MakeBlastDBTask(D3RTask):
-    """Represents Blastable database
-
-       This object does not follow the standard D3RTask
-       structure.  This is because the blastable database
-       is created externally in a legacy structure.
-
-       """
-
-    def __init__(self, path, args):
-        """Constructor
-
-           Constructor sets name to makeblastdb and ignores
-           path set in <path> variable and instead sets
-           path to args.blastdir. stage is set to 1
-
-        """
-        self.set_args(args)
-        self.set_path(args.blastdir)
-        self.set_name('makeblastdb')
-        self.set_stage(1)
-        self.set_status(D3RTask.UNKNOWN_STATUS)
-
-    def create_dir(self):
-        """Creates path set in get_path()
-
-           """
-        the_path = os.path.join(self._path, self.get_dir_name())
-        os.makedirs(the_path)
-        return the_path
-
-    def get_dir_name(self):
-        """Will always return current
-        :return: 'current' string
-        """
-        return 'current'
-
-
-class BlastNFilterTask(D3RTask):
-    """Performs blast and filter of sequences
-
-    """
-
-    def __init__(self, path, args):
-        super(BlastNFilterTask, self).__init__(path, args)
-        self.set_name('blastnfilter')
-        self.set_stage(2)
-        self.set_status(D3RTask.UNKNOWN_STATUS)
-
-    def _parse_blastnfilter_output_for_hit_stats(self):
-        """Examines output directory of blastnfilter.py for stats on run
-
-           This method looks at the output directory and counts the number
-           of .csv files found.  Each .csv file corresponds to a target.
-           Within each .csv file the entries under Test Information correspond
-           to candidates.  This method will output number of candidates for
-           that target by calling get_candidate_count_from_csv method
-        """
-
-        txt_list = self.get_txt_files()
-        target_list = '\n\nTarget\n'
-        for entry in txt_list:
-            target_list = (target_list + entry.replace('.txt', '') + '\n')
-
-        return '\n# targets found: ' + str(len(txt_list)) + '\n' + target_list
-
-    def get_txt_files(self):
-        """ Gets txt files in task directory (just the names) skiping summary.txt
-        :return:list of txt file names
-        """
-        out_dir = self.get_dir()
-        txt_list = []
-        for entry in os.listdir(out_dir):
-            if entry == 'summary.txt':
-                continue
-
-            if entry.endswith('.txt'):
-                txt_list.append(entry)
-
-        return txt_list
-
-    def can_run(self):
-        """Determines if task can actually run
-
-           This method first verifies the `MakeBlastDBTask` task
-           `DataImportTask`, `CompInchiDownloadTask` all have
-           `D3RTask.COMPLETE_STATUS` for status.  The method then
-           verifies a `BlastNFilterTask` does not already exist.
-             If above is not true then self.set_error() is set
-             with information about the issue
-           :return: True if can run otherwise False
-        """
-        self._can_run = False
-        self._error = None
-        # check blast
-        make_blastdb = MakeBlastDBTask(self._path, self._args)
-        make_blastdb.update_status_from_filesystem()
-        if make_blastdb.get_status() != D3RTask.COMPLETE_STATUS:
-            logger.info('Cannot run ' + self.get_name() + ' task ' +
-                        'because ' + make_blastdb.get_name() + ' task' +
-                        'has a status of ' + make_blastdb.get_status())
-            self.set_error(make_blastdb.get_name() + ' task has ' +
-                           make_blastdb.get_status() + ' status')
-            return False
-
-        # check data import
-        data_import = DataImportTask(self._path, self._args)
-        data_import.update_status_from_filesystem()
-        if data_import.get_status() != D3RTask.COMPLETE_STATUS:
-            logger.info('Cannot run ' + self.get_name() + ' task ' +
-                        'because ' + data_import.get_name() + ' task' +
-                        'has a status of ' + data_import.get_status())
-            self.set_error(data_import.get_name() + ' task has ' +
-                           data_import.get_status() + ' status')
-            return False
-
-        # check compinchi complete
-        compinchi = CompInchiDownloadTask(self._path, self._args)
-        compinchi.update_status_from_filesystem()
-        if compinchi.get_status() != D3RTask.COMPLETE_STATUS:
-            logger.info('Cannot run ' + self.get_name() + ' task ' +
-                        'because ' + compinchi.get_name() + ' task ' +
-                        'has a status of ' + compinchi.get_status())
-            self.set_error(compinchi.get_name() + ' task has ' +
-                           compinchi.get_status() + ' status')
-            return False
-
-        # check blast is not complete and does not exist
-
-        self.update_status_from_filesystem()
-        if self.get_status() == D3RTask.COMPLETE_STATUS:
-            logger.debug("No work needed for " + self.get_name() +
-                         " task")
-            return False
-
-        if self.get_status() != D3RTask.NOTFOUND_STATUS:
-            logger.warning(self.get_name() + " task was already " +
-                           "attempted, but there was a problem")
-            self.set_error(self.get_dir_name() + ' already exists and ' +
-                           'status is ' + self.get_status())
-            return False
-        self._can_run = True
-        return True
-
-    def run(self):
-        """Runs blastnfilter task after verifying dataimport was good
-
-           Method requires can_run() to be called before hand with
-           successful outcome
-           Otherwise method invokes D3RTask.start then this method
-           creates a directory and invokes blastnfilter script.  Upon
-           completion results are analyzed and success or error status
-           is set appropriately and D3RTask.end is invoked
-           """
-        super(BlastNFilterTask, self).run()
-
-        if self._can_run is False:
-            logger.debug(
-                self.get_dir_name() + ' cannot run cause _can_run flag '
-                                      'is False')
-            return
-
-        data_import = DataImportTask(self._path, self._args)
-
-        make_blastdb = MakeBlastDBTask(self._path, self._args)
-
-        compinchi = CompInchiDownloadTask(self._path, self._args)
-
-        cmd_to_run = (self.get_args().blastnfilter + ' --nonpolymertsv ' +
-                      data_import.get_nonpolymer_tsv() +
-                      ' --sequencetsv ' +
-                      data_import.get_sequence_tsv() +
-                      ' --pdbblastdb ' +
-                      make_blastdb.get_dir() +
-                      ' --compinchi ' +
-                      compinchi.get_components_inchi_file() +
-                      ' --outdir ' + self.get_dir())
-
-        blastnfilter_name = os.path.basename(self.get_args().blastnfilter)
-
-        self.run_external_command(blastnfilter_name, cmd_to_run)
-
-        try:
-            # examine output to get candidate hit count DR-12
-            hit_stats = self._parse_blastnfilter_output_for_hit_stats()
-            if hit_stats is not None:
-                self.append_to_email_log(hit_stats)
-        except Exception:
-            logger.exception("Error caught exception")
-
-        # assess the result
-        self.end()
-
-
-class PDBPrepTask(D3RTask):
-    """Performs preparation of PDB and inchi files
-
-    """
-
-    def __init__(self, path, args):
-        super(PDBPrepTask, self).__init__(path, args)
-        self.set_name('pdbprep')
-        self.set_stage(3)
-        self.set_status(D3RTask.UNKNOWN_STATUS)
-
-    def can_run(self):
-        """Determines if task can actually run
-
-           This method first verifies the `BlastNFilterTask` task
-           has `D3RTask.COMPLETE_STATUS` for
-           status.  The method then verifies a `PDBPrepTask` does
-           not already exist.  If above is not true then self.set_error()
-           is set with information about the issue
-           :return: True if can run otherwise False
-        """
-        self._can_run = False
-        self._error = None
-        # check blast
-        blastnfilter = BlastNFilterTask(self._path, self._args)
-        blastnfilter.update_status_from_filesystem()
-        if blastnfilter.get_status() != D3RTask.COMPLETE_STATUS:
-            logger.info('Cannot run ' + self.get_name() + 'task ' +
-                        'because ' + blastnfilter.get_name() + 'task' +
-                        'has a status of ' + blastnfilter.get_status())
-            self.set_error(blastnfilter.get_name() + ' task has ' +
-                           blastnfilter.get_status() + ' status')
-            return False
-
-        # check this task is not complete and does not exist
-
-        self.update_status_from_filesystem()
-        if self.get_status() == D3RTask.COMPLETE_STATUS:
-            logger.debug("No work needed for " + self.get_name() +
-                         " task")
-            return False
-
-        if self.get_status() != D3RTask.NOTFOUND_STATUS:
-            logger.warning(self.get_name() + " task was already " +
-                           "attempted, but there was a problem")
-            self.set_error(self.get_dir_name() + ' already exists and ' +
-                           'status is ' + self.get_status())
-            return False
-        self._can_run = True
-        return True
-
-    def run(self):
-        """Runs pdbprep task after verifying blastnfilter was good
-
-           Method requires can_run() to be called before hand with
-           successful outcome
-           Otherwise method invokes D3RTask.start then this method
-           creates a directory and invokes blastnfilter script.  Upon
-           completion results are analyzed and success or error status
-           is set appropriately and D3RTask.end is invoked
-           """
-        super(PDBPrepTask, self).run()
-
-        if self._can_run is False:
-            logger.debug(
-                self.get_dir_name() + ' cannot run cause _can_run flag '
-                                      'is False')
-            return
-
-        blastnfilter = BlastNFilterTask(self._path, self._args)
-        txt_file_list = blastnfilter.get_txt_files()
-
-        if len(txt_file_list) is 0:
-            logger.debug(self.get_dir_name() + ' no txt files found')
-            self.end()
-            return
-
-        cmd_to_run = (self.get_args().pdbprep + ' --txtfiles ' +
-                      ",".join(txt_file_list) +
-                      ' --txtdir ' +
-                      blastnfilter.get_dir() +
-                      ' --outdir ' + self.get_dir())
-
-        pdbprep_name = os.path.basename(self.get_args().pdbprep)
-
-        self.run_external_command(pdbprep_name, cmd_to_run)
-        # assess the result
-        self.end()
-
-
-class CompInchiDownloadTask(D3RTask):
-    """Downloads Components-inchi.inchi file
-    """
-
-    def __init__(self, path, args):
-        super(CompInchiDownloadTask, self).__init__(path, args)
-        self.set_name('compinchi')
-        self.set_stage(1)
-        self.set_status(D3RTask.UNKNOWN_STATUS)
-        self._maxretries = 3
-
-    def get_components_inchi_file(self):
-        return os.path.join(self.get_dir(), 'Components-inchi.ich')
-
-    def can_run(self):
-        """Determines if task can actually run
-
-           The method verifies a `CompInchiDownloadTask` does
-           not already exist.  If above is not true then self.set_error()
-           is set with information about the issue
-           :return: True if can run otherwise False
-        """
-        self._can_run = False
-        self._error = None
-
-        # check this task is not complete and does not exist
-
-        self.update_status_from_filesystem()
-        if self.get_status() == D3RTask.COMPLETE_STATUS:
-            logger.debug("No work needed for " + self.get_name() +
-                         " task")
-            return False
-
-        if self.get_status() != D3RTask.NOTFOUND_STATUS:
-            logger.warning(self.get_name() + " task was already " +
-                           "attempted, but there was a problem")
-            self.set_error(self.get_dir_name() + ' already exists and ' +
-                           'status is ' + self.get_status())
-            return False
-        self._can_run = True
-        return True
-
-    def run(self):
-        """Downloads Components-inchi.ich
-
-           Downloads data from url specified in self._args.compinchi to
-           get_components_inchi_file()/Components-inchi.ich file.  Download
-           will be retried up to self._maxretries time which is set in
-           constructor.  After which set_error() will be set with message
-           if file is still unable to be downloaded.
-           """
-        super(CompInchiDownloadTask, self).run()
-
-        if self._can_run is False:
-            logger.debug(
-                self.get_dir_name() + ' cannot run cause _can_run flag '
-                                      'is False')
-            return
-        download_path = self.get_components_inchi_file()
-        count = 1
-        while count <= self._maxretries:
-            logger.debug('Try # ' + str(count) + ' of ' +
-                         str(self._maxretries) + ' to download ' +
-                         download_path + ' from ' + self._args.compinchi)
-            try:
-                (f, info) = urllib.urlretrieve(self._args.compinchi,
-                                               filename=download_path)
-                self.end()
-                return
-            except Exception:
-                logger.exception('Caught Exception trying to download file')
-            count += 1
-
-        self.set_error('Unable to download file from ' +
-                       self._args.compinchi)
-
-        # assess the result
-        self.end()
