@@ -62,7 +62,7 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Topic :: Scientific/Engineering :: Chemistry'
     ],
-    scripts = ['d3r/celpprunner.py', 'd3r/blastnfilter.py', 'd3r/postanalysis.py'],
+    scripts = ['d3r/celpprunner.py', 'd3r/blastnfilter.py', 'd3r/postanalysis.py', 'd3r/proteinligprep.py','d3r/glidedocking.py'],
     test_suite='tests',
     tests_require=test_requirements
 )
