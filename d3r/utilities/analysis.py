@@ -144,7 +144,7 @@ class OutputAnalysis(object):
     targets = {}                    # {'PDB ID' : (sequence_count, no. of blast hits, no. of candidates, no. elected)
 
     def __init__(self, query = None):
-        if query != None:
+        if query is not None:
             self.query = query
 
     def count_hits(self):

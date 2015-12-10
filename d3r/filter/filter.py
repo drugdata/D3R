@@ -1,12 +1,14 @@
 __author__ = 'robswift'
 
 from Bio import Alphabet
+from filtering_sets import stabilisers, buffers, ions, excipients
 
 
 class BaseFilter(object):
     """
 
     """
+
     def __init__(self, query):
         """
         The filter class is initiated with unique target structures (target objects) contained in the targets list. If
@@ -23,8 +25,9 @@ class QueryFilter(BaseFilter):
     """
 
     """
-    sequence_threshold = 1
+
     dockable_ligand_threshold = 1
+    sequence_threshold = 1
 
     def __init__(self, *args, **kwargs):
         super(QueryFilter, self).__init__(*args, **kwargs)
@@ -45,18 +48,6 @@ class QueryFilter(BaseFilter):
         if self.query.dock_count == 0:
             self.query.set_reason(6)
 
-    def filter_by_dockable_ligand_count(self, threshold = None):
-        """
-        Remove query structures with too many dockable ligands. The default behavior removes query structures with
-        more than one dockable ligand. Each query object whose number of dockable ligands is greater than the input
-        threshold will be labeled'tosser'.
-        :param threshold: (int) threshold value for the number of unique dockable ligands in each query. Default = 1.
-        """
-        if threshold == None:
-            threshold = QueryFilter.dockable_ligand_threshold
-            if self.query.dock_count > threshold:
-                self.query.set_reason(4)
-
     def filter_by_sequence_count(self, threshold = None):
         if threshold == None:
             threshold = QueryFilter.sequence_threshold
@@ -68,6 +59,19 @@ class QueryFilter(BaseFilter):
             if not Alphabet._verify_alphabet(seq_rec.seq):
                 self.query.set_reason(11)
                 break
+
+    def filter_by_dockable_ligand_count(self, threshold=None):
+        """
+        Remove query structures with too many dockable ligands. The default behavior removes query structures with
+        more than one dockable ligand. Each query object whose number of dockable ligands is greater than the input
+        threshold will be labeled'tosser'.
+        :param threshold: (int) threshold value for the number of unique dockable ligands in each query. Default = 1.
+        """
+        if threshold is None:
+            threshold = QueryFilter.dockable_ligand_threshold
+            if self.query.dock_count > threshold:
+                self.query.set_reason(4)
+
 
 class HitFilter(BaseFilter):
     """
@@ -84,12 +88,13 @@ class HitFilter(BaseFilter):
     identity_threshold = 0.95
     coverage_threshold = 0.90
     sequence_threshold = 4
+    dockable_ligand_threshold = 1
     method = 'x-ray diffraction'
 
     def __init__(self, *args, **kwargs):
         super(HitFilter, self).__init__(*args, **kwargs)
 
-    def filter_by_identity(self, threshold = None):
+    def filter_by_identity(self, threshold=None):
         """
         Remove hit structures whose sequences are insufficiently identical to the query sequence. This is measured by
         percent identity, where percent identity is the fraction of the BLAST alignment identical to the query. In the
@@ -100,7 +105,7 @@ class HitFilter(BaseFilter):
         structure is also labeled 'tosser.'
         :param threshold: (float) percent identity threshold. Default = 0.95
         """
-        if threshold == None:
+        if threshold is None:
             threshold = HitFilter.identity_threshold
             for hit in self.query.hits:
                 query_alignments = []
@@ -171,7 +176,7 @@ class HitFilter(BaseFilter):
         Method types can include:
             'x-ray diffraction', 'solution nmr', 'solid-state nmr', 'electron microscopy', 'electron crystallography',
             'fiber diffraction', 'neutron diffraction', 'solution scattering'.
-        :param method_type: (string) an experimental structure determination method used to solve wwPDB structures.
+        :param method: (string) an experimental structure determination method used to solve wwPDB structures.
         Default = 'x-ray diffraction'
         """
         if not method: method = HitFilter.method
@@ -180,6 +185,19 @@ class HitFilter(BaseFilter):
                 hit.set_reason(7)
         if len([hit for hit in self.query.hits if hit.triage]) == len(self.query.hits):
             self.query.set_reason(8)
+
+    def filter_by_dockable_ligand_count(self, threshold=None):
+        """
+        Remove query structures with too many dockable ligands. The default behavior removes query structures with
+        more than one dockable ligand. Each query object whose number of dockable ligands is greater than the input
+        threshold will be labeled'tosser'.
+        :param threshold: (int) threshold value for the number of unique dockable ligands in each query. Default = 1.
+        """
+        if threshold is None:
+            threshold = HitFilter.dockable_ligand_threshold
+            for hit in self.query.hits:
+                if hit.dock_count > threshold:
+                    hit.set_reason(4)
 
 
 class CandidateFilter(BaseFilter):
@@ -195,26 +213,33 @@ class CandidateFilter(BaseFilter):
         super(CandidateFilter, self).__init__(*args, **kwargs)
 
     def filter_for_most_similar(self):
-        # sort the hits list by decreasing MCSS size and increasing resolution
+        # sort the hit list by decreasing MCSS size and increasing resolution
         # the most similar will be at the front of the list, the least similar will be at the end of the list.
         hits = [hit for hit in self.query.hits if not hit.triage and hit.largest_mcss]
         if hits:
-            hits.sort(key=lambda hit: (int(hit.largest_mcss.size), float(hit.resolution)), reverse = True)
-            hits[0].set_retain_reason(1) # picks off the largest mcss with the highest resolution crystal structure
-
+            hits.sort(key=lambda hit: (int(hit.largest_mcss.size), float(hit.resolution)), reverse=True)
+            # hits[0].set_retain_reason(1)    # picks off the largest mcss with the highest resolution crystal structure
+            lowest = hits[0].resolution     # lowest resolution
+            largest = hits[0].largest_mcss  # largest maximum common substructure
+            for hit in hits:
+                if hit.resolution > lowest or hit.largest_mcss < largest:
+                    break
+                else:
+                    hit.set_retain_reason(1)
 
     def filter_for_least_similar(self):
         # sort the hits by increasing MCSS size and increasing resolution
         hits = [hit for hit in self.query.hits if not hit.triage and hit.smallest_mcss]
         if hits:
             hits.sort(key=lambda hit: (int(hit.smallest_mcss.size), float(hit.resolution)))
-            hits[0].set_retain_reason(2) # picks off the smallest mcss with the highest resolution crystal structure
-            #smallest = hits[0].smallest_mcss.size
-            #for hit in hits:
-            #    if hit.smallest_mcss.size > smallest:
-            #        break
-            #    else:
-            #        hit.set_retain_reason(2)
+            # hits[0].set_retain_reason(2)   # picks off the smallest mcss with the highest resolution crystal structure
+            lowest = hits[0].resolution       # lowest resolution
+            smallest = hits[0].smallest_mcss  # largest maximum common substructure
+            for hit in hits:
+                if hit.resolution > lowest or hit.smallest_mcss > smallest:
+                    break
+                else:
+                    hit.set_retain_reason(2)
 
     def filter_holo(self):
         hits = [hit for hit in self.query.hits if hit.resolution and not hit.triage and hit.dock_count > 0]
@@ -228,12 +253,24 @@ class CandidateFilter(BaseFilter):
                     hit.set_retain_reason(3)
 
     def filter_apo(self):
+        """
+        Hits are only considered apo if: i) the number of dockable ligands is 0 and ii) all the non-dockable ligands
+        may only be buffers, ions, excipients, or stabilisers (the sets in filter.filtering_sets.py).
+        """
+        allowable_apo = set()
+        allowable_apo.update(stabilisers)
+        allowable_apo.update(buffers)
+        allowable_apo.update(ions)
+        allowable_apo.update(excipients)
         hits = [hit for hit in self.query.hits if hit.resolution and not hit.triage and hit.dock_count == 0]
         if hits:
             hits.sort(key=lambda hit: hit.resolution)
             lowest = hits[0].resolution
             for hit in hits:
-                if hit.resolution > lowest:
-                    break
-                else:
-                    hit.set_retain_reason(4)
+                # check that the no. of non-dockable ligands that are either buffers, ions, excipients, or stabilizers
+                # is identical to the number of non-dockable ligands.
+                if len([lig for lig in hit.do_not_call if lig.resname in allowable_apo]) == len(hit.do_not_call):
+                    if hit.resolution > lowest:
+                        break
+                    else:
+                        hit.set_retain_reason(4)

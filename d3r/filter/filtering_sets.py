@@ -1,14 +1,16 @@
 __author__ = 'robswift'
 
-metals = set([' CP', 'NFU', 'NFR', 'NFE', 'NFV', 'FSO', 'WCC', 'TCN', 'FS2', 'PDV', 'CPT', 'OEC', 'XCC', 'NFS', 'C7P',
-          'TBR', 'NFC', 'CUB', 'VA3', 'FV1', 'IME', 'FC6', 'RU7', 'TBY', 'REI', 'REJ', 'CNB', 'MM1', 'MM2', 'MM6',
-          'MM5', 'YBT', 'CN1', 'CLF', 'CLP', 'NC1', 'V4O', 'HC0', 'VO3', 'CFM', 'CZL', 'CON', 'TBR', 'ICS', 'HCN',
-          'CFN', 'CFC', 'HF3', 'ZRC', 'F3S', 'SRM', 'HDD', 'CUA', 'RU8', 'B22', 'BEF'])
+metals = set(['CP', 'NFU', 'NFR', 'NFE', 'NFV', 'FSO', 'WCC', 'TCN', 'FS2', 'PDV', 'CPT', 'OEC', 'XCC', 'NFS', 'C7P',
+              'TBR', 'NFC', 'CUB', 'VA3', 'FV1', 'IME', 'FC6', 'RU7', 'TBY', 'REI', 'REJ', 'CNB', 'MM1', 'MM2', 'MM6',
+              'MM5', 'YBT', 'CN1', 'CLF', 'CLP', 'NC1', 'V4O', 'HC0', 'VO3', 'CFM', 'CZL', 'CON', 'TBR', 'ICS', 'HCN',
+              'CFN', 'CFC', 'HF3', 'ZRC', 'F3S', 'SRM', 'HDD', 'CUA', 'RU8', 'B22', 'BEF', 'AG1', 'SF4', 'NCO', '0KA',
+              'FNE', 'QPT'])
 
-stabilisers = set(['B3P', 'PGE', '6JZ', '15P', 'PE3', 'XPE', '7PE', 'M2M', '13P', '3PP', 'PX4', '3OL', 'OC9', 'AE3', '6JZ',
-               'XPE', '211', 'ODI', 'DIA', 'PG5', 'CXE', 'ME2', 'P4G', 'TOE', 'PG5', 'PE8', 'ZPG', 'PE3', 'MXE'])
+stabilisers = set(['B3P', 'PGE', '6JZ', '15P', 'PE3', 'XPE', '7PE', 'M2M', '13P', '3PP', 'PX4', '3OL', 'OC9', 'AE3',
+                   '6JZ', 'XPE', '211', 'ODI', 'DIA', 'PG5', 'CXE', 'ME2', 'P4G', 'TOE', 'PG5', 'PE8', 'ZPG', 'PE3',
+                   'MXE', ])
 
-buffers = set(['MPO', 'NHE', 'CXS', 'T3A', '3CX', '3FX', 'PIN'])
+buffers = set(["MPO", "NHE", "CXS", "T3A", "3CX", "3FX", "PIN", "MES", "EPE", "TRS", "BTB", "144", ])
 
 cofactors = set(["ATP", "ADP", "AMP", "ANP", "GTP", "GDP", "GNP", "UMP", "TTP", "TMP", "MGD", "H2U", "ADN", "APC", "M2G",
              "OMG", "OMC", "UDP", "UMP", "5GP", "5MU", "5MC", "2MG", "1MA", "NAD", "NAP", "NDP", "FAD", "FMN", "BH4",
@@ -17,24 +19,26 @@ cofactors = set(["ATP", "ADP", "AMP", "ANP", "GTP", "GDP", "GNP", "UMP", "TTP", 
              "SXN", "U", "G", "QUY", "UDG", "CBY", "ST9", "25A", " A", " C", "B12", "HAS", "BPH", "BPB", "IPE", 'PLP',
              'H4B', 'PMP', 'PLP', 'TPP', 'TDP', 'COO', 'PQN', 'BCR', 'XAT', ])
 
-#excipients = set("SO4", "SUL", " CL", " BR", " CA", " MG", " NI", " MN", " CU", "PO4", " CD", "NH4", " CO", " NA", "  K",
-#              " ZN", " FE", "AZI", "A", "Ad", "C", "Cd", "CD", "CD2", "G", "Gd", "T", "Td", "A", "Ar", "Cr", "G", "Gr",
-#              "U", "Ur", "YG", "I", "Ir", "CR", "CR2", "CR3", "CAC", "CO2", "CO3", "CYN", "FS4", "MO6", "NCO", "NO3",
-#              "SCN", "SF4", " SE", " PB", "AU", "AU1", "AU3", "BR", "BR1", "CA", "CA2", "CL", "CL1", "CMP", "CO", "CO3",
-#              "CPR", "CS", "CS1", "CU", "CU1", "CU2", "AG", "AG1", "AL", "AL3", "F", "F1", "FE", "FE2", "FE3", "IR",
-#              "IR3", "K", "K1", "KR", "FUC", "MAN", "GAL", "MAL", "NAG", "GOL", "MPD", "BGC", "PEG", "EDO", "GLC",
-#              "PG4", "BOG", "HTO", "ACX", "BMA", "FUC-a-L", "GAL-b-D", "GLC-b-D", "GCU", "GCU-b-D", "CEG", "CEG-b-D",
-#              "MAN-b-D", "NAG-b-D", "RIB", "FRC", "FRU", "XYS", "XLS", "C8E", "CE9", "CRY", "DOX", "EGL", "F6P", "NDG",
-#              "NGA", "P6G", "SIA", "SUC", "XYS", "1PE", "OLC", "POP", "MES", "EPE", "PYR", "GLC", "CIT", "FLC", "TAR",
-#              "HC4", "MYR", "HED", "DTT", "BME", "TRS", "MPD", "ABA", "ACE", "ACT", "CME", "CSD", "CSO", "DMS", "EOH",
-#              "FMT", "GTT", "HED", "IMD", "IOH", "IPA", "LDA", "LLP", "MYR", "PEP", "PYR", "PXY", "OXE", "TMT", "TMZ",
-#              "2CV", "PLQ", "TAM", "1PG", "12P", "XP4", "PL3", "PE4", "PEU", "MPG", "B8M", "BOM", "B7M", "2PE", "STE",
-#              "DME", "PLM", "PG0", "PE5", "PG6", "P33", "HEZ", "F23", "DTV", "SDS", "DTU", "DTD", "MRD", "MRY", "P33",
-#              "BU1", "LHG", "D10", "OCT", "LI1", "ETE", "TZZ", "DEP", "DKA", "OLA", "MRD", "ACD", "MLR", "POG", "BTB",
-#              "PC1", "ACY", " DT", "3GD", "MAE", "CA3", "144", "CP", "0KA", "A71", "UVW", "BET", "PBU", "UAP", "SER",
-#              "CDL", "CEY", "LMN", "J7Z", "DA", "SIN", "  I", "PLC", "BME-BME", "FNE", "FUM", "MAK", " CP", "PAE",
-#              "DTL", "HLT", "ASC", "FPP", "FII", "D1D", "PCT", "TTN", "HDA", "EDO-EDO", "PGA", "XXD", "INS", "217",
-#              "BHL", "16D", "HSE", "OPE", "HCS", "SOR", "SKM", "KIV", "FCN", "TRA", "TRC", "MTL", "MZP", "KDG", "DHK")
+ions = set(["NH4", "SO4", "SUL", "CL", "BR", "CA", "MG", "NI", "MN", "CU", "PO4", "CD", "CO", "ZN", "FE", "AZI", "K",
+            "NA", "CD", "GD", "CR", "IR", "CAC", "AU", "CO3", "CYN", "SCN", "NO3", " PB", "AU", "AU3", "BR", "CA", "CL",
+            "CS", "CU", "CU1", "AG", "AL", "F", "FE", "FE2", "IR", "IR3", "K", "POP", "RU", "SR"])
+
+noble_gas = set(["KR", "AR", ])
+
+nucleic = set(["A", "C", "G", "U", "DT", "DA", "I"])
+
+covalent_mods = set(["CS1", "MSE", "CME", "CSO", "LLP", "IAS", ])
+
+fragments = set(["ACE", "ACT", "DMS", "EOH", "FMT", "IMD", "DTT", "BME", "IPA", "HED", "PEP", "PYR", "PXY", "OXE",
+                 "TMT", "TMZ", "PLQ", "TAM", "HEZ", "DTV", "DTU", "DTD", "MRD", "MRY", "BU1", "D10", "OCT", "ETE",
+                 "TZZ", "DEP", "BTB", "ACY", "MAE", "144", "CP", "UVW", "BET", "UAP", "SER", "SIN", "FUM", "MAK",
+                 "PAE", "DTL", "HLT", "ASC", "D1D", "PCT", "TTN", "HDA", "PGA", "XXD", "INS", "217", "BHL", "16D",
+                 "HSE", "OPE", "HCS", "SOR", "SKM", "KIV", "FCN", "TRA", "TRC", "MZP", "KDG", "DHK"])
+
+excipients = set(["CO2", "SE", "GOL", "PEG", "EDO", "PG4", "C8E", "CE9", "BME", "1PE", "OLC",
+                  "MYR", "LDA", "2CV", "1PG", "12P", "XP4", "PL3", "PE4", "PEU", "MPG", "B8M", "BOM", "2PE", "PG0",
+                  "PE5", "PG6", "P33", "DTV", "SDS", "DTU", "DTD", "MRD", "MRY", "BU1", "LHG", "D10", "OCT", "LT1",
+                  "ETE", "BTB", "PC1", "ACT", "ACY", "3GD", "CDL", "PLC", "D1D"])
 
 junk = set(['AS8', 'PS9', 'CYI', 'NOB', 'DPO', 'MDN', 'APC', 'ACP', 'LPT', 'PBL', 'LFA', 'PGW', 'DD9', 'PGV', 'UPL', 'PEF',
         'MC3', 'LAP', 'PEE', 'D12', 'CXE', 'T1A', 'TBA', 'NET', 'NEH', 'P2N', 'PON', 'PIS', 'PPV', 'DPO', 'PSL', 'TLA',
@@ -72,7 +76,7 @@ saccharide = set(['NAG', 'MAN', 'BMA', 'FUC', 'GAL', 'BGC', 'GLC', 'NDG', 'BOG',
               'C5X', 'C4X', 'C3X', 'BXF', 'BMX', 'BGS', 'BGP', 'B8D', 'B16', 'AOG', 'ALL', 'AFR', 'AFO', 'AFD', 'AF1',
               'ACG', 'ABD', 'ABC', 'AAO', 'A1Q', '6SA', '5MM', '5DI', '50A', '4NN', '48Z', '46Z', '46M', '46D', '3MG',
               '3MF', '3LR', '3FM', '2M5', '293', '291', '289', '27C', '1JB', '1GN', '1BW', '18T', '15L', '14T', '0YT',
-              '0XY', '0V4', '0TS', '0NZ', '0MK', '0BD', '045', 'BCN', 'LMT', 'DMU'])
+              '0XY', '0V4', '0TS', '0NZ', '0MK', '0BD', '045', 'BCN', 'LMT', 'DMU', 'MLR', 'DTL', 'SOR', 'MTL'])
 
 do_not_call = set(['CP','NFU','NFR','NFE','NFV','FSO','WCC','TCN','FS2','PDV','CPT','OEC','XCC','NFS','C7P', 'TBR','NFC',
                'CUB','VA3','FV1','IME','FC6','RU7','TBY','REI','REJ','CNB','MM1','MM2','MM6', 'MM5','YBT','CN1','CLF',
@@ -94,4 +98,5 @@ do_not_call = set(['CP','NFU','NFR','NFE','NFV','FSO','WCC','TCN','FS2','PDV','C
                'FII','D1D','PCT','TTN','HDA','PGA','XXD', 'INS','217','BHL','16D','HSE','OPE','HCS','SOR','SKM','KIV',
                'FCN','TRA','TRC','MTL','KDG', 'DHK','Ar', 'IOD', '35N', 'HGB', '3UQ', 'UNX', 'GSH', 'DGD', 'LMG',
                'LMT', 'CAD', 'CUA', 'DMU', 'PEK', 'PGV', 'PSC', 'TGL', 'COO', 'BCR', 'XAT', 'MOE', 'P4C', 'PP9', 'Z0P',
-                'YZY', 'LMU', 'MLA', 'GAI', 'XE', 'ARS', 'SPM', 'RU8', 'B22', 'BEF', 'DHL',])
+               'YZY', 'LMU', 'MLA', 'GAI', 'XE', 'ARS', 'SPM', 'RU8', 'B22', 'BEF', 'DHL', 'HG', 'MBO', 'ARC', 'OH',
+               'FES', "RU", "IAS", 'QPT', 'SR'])
