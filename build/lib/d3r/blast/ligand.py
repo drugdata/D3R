@@ -15,11 +15,12 @@ class Ligand(object):
     @staticmethod
     def set_inchi_component(compinchi):
         """
-        Each ligand resname
-        Each PDB ID is mapped to a list of sequences, one sequence for each of its chains. This information is stored
-        in a class-wide default dictionary pdb_dict, with the following structure
-        pdb_dict = { 'pdbid_chainid' : Bio.SeqRecord }
-        :param compinchi: path to the PDB sequences stored in FASTA format, i.e. "pdb_seqres.txt"
+        Each ligand resname is mapped to a InChi string. This information is stored in a class-wide dictionary
+        inchi_component with the following structure
+        inchi_component = { 'resname' : 'inchi' },
+        where 'resname' is the resname used by the PDB for that ligand and 'inchi' is the corresponding PDB InChi
+        string.
+        :param compinchi: path to the wwPDB file Components-inchi.ich
         """
         try:
             handle = open(compinchi, 'r')
@@ -34,8 +35,10 @@ class Ligand(object):
             handle.close()
         except IOError:
             sys.exit(1)
+        if len(Ligand.inchi_component.keys()) < 20000:
+            raise IOError('There is a problem with Components-inchi.ich.')
 
-    def __init__(self, resname = None, inchi = None):
+    def __init__(self, resname=None, inchi=None):
         self.resname = resname
         self.inchi = inchi
         self.label = None
@@ -52,7 +55,7 @@ class Ligand(object):
         :return: Boolean
         """
         if not inchi and not self.inchi:
-            print "Please set an inchi string"
+            print("Please set an inchi string")
             return False
         elif not inchi and self.inchi:
             inchi = self.inchi

@@ -10,6 +10,7 @@ from d3r.filter.filter import HitFilter
 from d3r.filter.filter import CandidateFilter
 import out_put
 
+
 def split_input(options):
     """
     Split out and return command line options
@@ -27,6 +28,7 @@ def split_input(options):
     fasta = os.path.join(blast_dir, 'pdb_seqres.txt')
     compinchi = os.path.abspath(options.compinchi)
     return non_polymer, polymer, ph, out_dir, blast_dir, pdb_db, pdb_path, fasta, compinchi
+
 
 def blast_the_query(query, pdb_db, pdb_path, fasta, out_dir, compinchi):
     """
@@ -51,6 +53,7 @@ def blast_the_query(query, pdb_db, pdb_path, fasta, out_dir, compinchi):
         query.fill_sequences()
     return query
 
+
 def calculate_mcss(query):
     """
     Calculates the maximum common substructure (MCSS) between each dockable-query ligand and each dockable-BLAST-hit
@@ -68,6 +71,7 @@ def calculate_mcss(query):
                         hit_ligand.set_mcss(query_ligand, mcss_mol)
             hit.set_maxmin_mcss()
 
+
 def query_filter(query):
     """
     Runs query filtering operations
@@ -81,18 +85,21 @@ def query_filter(query):
     filter.filter_by_inchi_error()
     filter.filter_by_sequence_type()
 
+
 def hit_filter(query):
     """
     Runs blast hit filtering operations
     :param query:
     :return:
     """
-    filter = HitFilter(query)
-    filter.filter_by_coverage()
-    filter.filter_by_identity()
-    filter.filter_by_sequence_count()
-    filter.filter_apo()
-    filter.filter_by_method()
+    h_filter = HitFilter(query)
+    h_filter.filter_by_coverage()
+    h_filter.filter_by_identity()
+    h_filter.filter_by_sequence_count()
+    h_filter.filter_by_dockable_ligand_count()
+    h_filter.filter_apo()
+    h_filter.filter_by_method()
+
 
 def candidate_filter(queries):
     """
@@ -100,11 +107,12 @@ def candidate_filter(queries):
     :param queries:
     :return:
     """
-    filter = CandidateFilter(queries)
-    filter.filter_holo()
-    filter.filter_apo()
-    filter.filter_for_most_similar()
-    filter.filter_for_least_similar()
+    c_filter = CandidateFilter(queries)
+    c_filter.filter_holo()
+    c_filter.filter_apo()
+    c_filter.filter_for_most_similar()
+    c_filter.filter_for_least_similar()
+
 
 def run(options):
     """
@@ -127,3 +135,4 @@ def run(options):
         out_analysis.set_query(query)
         out_put.writer(out_dir, query, True)
     out_analysis.print_to_file(out_dir)
+

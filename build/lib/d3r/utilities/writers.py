@@ -135,6 +135,7 @@ class WriteText(object):
     This is the new txt writer that meets the format that Shuai wanted.
     """
     def __init__(self, out_dir):
+        self.query = None
         self.out_dir = out_dir
         self.handle = None
         self.most_similar = []
@@ -184,6 +185,16 @@ class WriteText(object):
                 out.append('inchi, {inchi}'.format(inchi=lig.inchi))
             for l in out: self.handle.write("%s\n" % l)
 
+    def write_hits(self):
+        for hit in self.most_similar:
+            self.write_largest(hit)
+        for hit in self.least_similar:
+            self.write_smallest(hit)
+        for hit in self.highest_res:
+            self.write_holo(hit)
+        for hit in self.apo:
+            self.write_apo(hit)
+
     def write_largest(self, hit):
         out = []
         for lig in hit.dock:
@@ -209,16 +220,6 @@ class WriteText(object):
         out = []
         out.append("apo, {pdb_id}".format(pdb_id=hit.pdb_id))
         for l in out: self.handle.write("%s\n" %l)
-
-    def write_hits(self):
-        for hit in self.most_similar:
-            self.write_largest(hit)
-        for hit in self.least_similar:
-            self.write_smallest(hit)
-        for hit in self.highest_res:
-            self.write_holo(hit)
-        for hit in self.apo:
-            self.write_apo(hit)
 
     def reinitialize(self, query):
         self.most_similar = []
@@ -248,79 +249,79 @@ class WriteText(object):
                         self.apo.append(hit)
 
 
-class WriteTxt(Writer):
-    """
-    Writes a txt file that describes a query and the corresponding blast hits elected for docking. This is the old
-    class that is less useful for Shuai.
-    """
-    def __init__(self, *args, **kwargs):
-        super(WriteTxt, self).__init__(*args, **kwargs)
-        self.most_similar = []
-        self.least_similar = []
-        self.highest_res = []
-        self.apo = []
-        self.reasons = {
-            1: 'The BLAST hit is bound to the ligand with the largest maximum common substructure',
-            2: 'The BLAST hit is bound to the ligand with the smallest maximum common substructure',
-            3: 'The BLAST hit is the highest resolution structure',
-            4: 'The BLAST hit is the highest resolution apo structure',
-        }
-
-    def write_txt(self, query):
-        self.reinitialize(query)
-        self.categorize()
-        self.open_file()
-        self.write_query()
-        self.write_hits()
-        self.close_file()
-
-    def write_query(self):
-        self.write_query_header()
-        self.write_query_chains()
-        self.write_query_ligands()
-        self.write_blank_lines(1)
-
-    def write_hits(self):
-        for hit in self.most_similar:
-            self.write_hit(hit)
-        for hit in self.least_similar:
-            self.write_hit(hit)
-        for hit in self.highest_res:
-            self.write_hit(hit)
-        for hit in self.apo:
-            self.write_hit(hit)
-
-    def reinitialize(self, query):
-        self.most_similar = []
-        self.least_similar = []
-        self.highest_res = []
-        self.apo = []
-        self.query = query
-
-    def open_file(self):
-        f = os.path.join(self.out_dir, '{stem}.txt'.format(stem=self.query.pdb_id))
-        self.handle = open(f, 'w')
-
-    def close_file(self):
-        self.handle.close()
-
-    def categorize(self):
-        assigned = []
-        for hit in self.query.hits:
-            if hit.retain:
-                for reason in hit.reasons_to_retain:
-                    if reason == self.reasons[1] and hit.pdb_id not in assigned:
-                        self.most_similar.append(hit)
-                        assigned.append(hit.pdb_id)
-                    if reason == self.reasons[2] and hit.pdb_id not in assigned:
-                        self.least_similar.append(hit)
-                        assigned.append(hit.pdb_id)
-                    if reason == self.reasons[3] and hit.pdb_id not in assigned:
-                        self.highest_res.append(hit)
-                        assigned.append(hit.pdb_id)
-                    if reason == self.reasons[4] and hit.pdb_id not in assigned:
-                        self.apo.append(hit)
-                        assigned.append(hit.pdb_id)
+# class WriteTxt(Writer):
+#    """
+#    Writes a txt file that describes a query and the corresponding blast hits elected for docking. This is the old
+#    class that is less useful for Shuai.
+#    """
+#    def __init__(self, *args, **kwargs):
+#        super(WriteTxt, self).__init__(*args, **kwargs)
+#        self.most_similar = []
+#        self.least_similar = []
+#        self.highest_res = []
+#        self.apo = []
+#        self.reasons = {
+#            1: 'The BLAST hit is bound to the ligand with the largest maximum common substructure',
+#            2: 'The BLAST hit is bound to the ligand with the smallest maximum common substructure',
+#            3: 'The BLAST hit is the highest resolution structure',
+#            4: 'The BLAST hit is the highest resolution apo structure',
+#        }
+#
+#    def write_txt(self, query):
+#        self.reinitialize(query)
+#        self.categorize()
+#        self.open_file()
+#        self.write_query()
+#        self.write_hits()
+#        self.close_file()
+#
+#    def write_query(self):
+#        self.write_query_header()
+#        self.write_query_chains()
+#        self.write_query_ligands()
+#        self.write_blank_lines(1)
+#
+#    def write_hits(self):
+#        for hit in self.most_similar:
+#            self.write_hit(hit)
+#        for hit in self.least_similar:
+#            self.write_hit(hit)
+#        for hit in self.highest_res:
+#            self.write_hit(hit)
+#        for hit in self.apo:
+#            self.write_hit(hit)
+#
+#    def reinitialize(self, query):
+#        self.most_similar = []
+#        self.least_similar = []
+#        self.highest_res = []
+#        self.apo = []
+#        self.query = query
+#
+#    def open_file(self):
+#        f = os.path.join(self.out_dir, '{stem}.txt'.format(stem=self.query.pdb_id))
+#        self.handle = open(f, 'w')
+#
+#    def close_file(self):
+#        self.handle.close()
+#
+#    def categorize(self):
+#        assigned = []
+#        for hit in self.query.hits:
+#            if hit.retain:
+#                for reason in hit.reasons_to_retain:
+#                    if reason == self.reasons[1] and hit.pdb_id not in assigned:
+#                        self.most_similar.append(hit)
+#                        assigned.append(hit.pdb_id)
+#                    if reason == self.reasons[2] and hit.pdb_id not in assigned:
+#                        self.least_similar.append(hit)
+#                        assigned.append(hit.pdb_id)
+#                    if reason == self.reasons[3] and hit.pdb_id not in assigned:
+#                        self.highest_res.append(hit)
+#                        assigned.append(hit.pdb_id)
+#                    if reason == self.reasons[4] and hit.pdb_id not in assigned:
+#                        self.apo.append(hit)
+#                        assigned.append(hit.pdb_id)
 
 class WriteLog(Writer):
     """
