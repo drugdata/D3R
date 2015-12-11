@@ -91,6 +91,16 @@ class TestUtil(unittest.TestCase):
         self.assertEqual(celp_week[0], 1)
         self.assertEqual(celp_week[1], 2016)
 
+        # try 12-18-2015
+        celp_week = util.get_celpp_week_of_year_from_date(date(2015, 12, 18))
+        self.assertEqual(celp_week[0], 52)
+        self.assertEqual(celp_week[1], 2015)
+
+        # try 12-25-2015
+        celp_week = util.get_celpp_week_of_year_from_date(date(2015, 12, 25))
+        self.assertEqual(celp_week[0], 53)
+        self.assertEqual(celp_week[1], 2015)
+
         # try 12-31-2015
         celp_week = util.get_celpp_week_of_year_from_date(date(2015, 12, 31))
         self.assertEqual(celp_week[0], 53)
