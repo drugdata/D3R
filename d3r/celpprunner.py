@@ -406,7 +406,8 @@ def main():
               Verifies stage.2.blastnfilter exists and has 'complete'
               file.  If complete, this stage runs which invokes program
               set in --proteinligprep flag to prepare pdb and inchi files
-              storing output in stage.3.proteinligprep
+              storing output in stage.3.proteinligprep.  --pdbdb flag
+              must also be set when calling this stage.
 
               If --stage 'glide'
 

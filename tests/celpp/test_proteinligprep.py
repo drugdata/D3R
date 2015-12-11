@@ -111,11 +111,34 @@ class TestProteinLigPrepTask(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
+    def test_run_fails_cause_pdbdb_not_set(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            params.proteinligprep = 'false'
+            blastnfilter = BlastNFilterTask(temp_dir, params)
+            blastnfilter.create_dir()
+            open(os.path.join(blastnfilter.get_dir(), D3RTask.COMPLETE_FILE),
+                 'a').close()
+            proteinligprep = ProteinLigPrepTask(temp_dir, params)
+            proteinligprep.run()
+            self.assertEqual(proteinligprep.get_error(),
+                             'pdbdb not set')
+            # test files get created
+            self.assertEqual(os.path.isdir(proteinligprep.get_dir()),
+                             True)
+            errfile = os.path.join(proteinligprep.get_dir(),
+                                  D3RTask.ERROR_FILE)
+            self.assertEqual(os.path.isfile(errfile), True)
+        finally:
+            shutil.rmtree(temp_dir)
+
     def test_run_fails_cause_proteinligprep_fails(self):
         temp_dir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
             params.proteinligprep = 'false'
+            params.pdbdb = '/foo'
             blastnfilter = BlastNFilterTask(temp_dir, params)
             blastnfilter.create_dir()
             open(os.path.join(blastnfilter.get_dir(), D3RTask.COMPLETE_FILE),
@@ -145,6 +168,7 @@ class TestProteinLigPrepTask(unittest.TestCase):
         try:
             params = D3RParameters()
             params.proteinligprep = '/bin/doesnotexist'
+            params.pdbdb = '/foo'
             blastnfilter = BlastNFilterTask(temp_dir, params)
             blastnfilter.create_dir()
             open(os.path.join(blastnfilter.get_dir(), D3RTask.COMPLETE_FILE),
@@ -155,7 +179,8 @@ class TestProteinLigPrepTask(unittest.TestCase):
             self.assertEqual(proteinligprep.get_error(),
                              'Caught Exception trying to run ' +
                              '/bin/doesnotexist --candidatedir ' +
-                             blastnfilter.get_dir() + ' --outdir ' +
+                             blastnfilter.get_dir() + ' --pdbdb ' +
+                             '/foo --outdir ' +
                              proteinligprep.get_dir() +
                              ' : [Errno 2] No such file or directory')
 
@@ -171,6 +196,7 @@ class TestProteinLigPrepTask(unittest.TestCase):
         try:
             params = D3RParameters()
             params.proteinligprep = 'true'
+            params.pdbdb = '/foo'
             blastnfilter = BlastNFilterTask(temp_dir, params)
             blastnfilter.create_dir()
             open(os.path.join(blastnfilter.get_dir(), D3RTask.COMPLETE_FILE),
