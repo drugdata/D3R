@@ -141,8 +141,7 @@ class OutputAnalysis(object):
     """
 
     """
-    targets = {}                    # {'PDB ID' : (sequence_count, no. of blast hits, no. of candidates, no. elected,
-                                    #              pdb_ids)
+    targets = {}                    # {'PDB ID' : (sequence_count, no. of blast hits, no. of candidates, no. elected)
 
     def __init__(self, query = None):
         if query is not None:
@@ -157,17 +156,13 @@ class OutputAnalysis(object):
     def elected_count(self):
         return len([hit for hit in self.query.hits if hit.retain])
 
-    def pdb_ids(self):
-        return ','.join([hit.pdb_id for hit in self.query.hits if hit.retain])
-
     def set_target_dict(self):
         pdb_id = self.query.pdb_id
         seq_count = self.query.sequence_count
         hit_count = self.count_hits()
         candidate_count = self.candidate_count()
         elected_count = self.elected_count()
-        pdb_ids = self.pdb_ids()
-        OutputAnalysis.targets[pdb_id] = (seq_count, hit_count, candidate_count, elected_count, pdb_ids)
+        OutputAnalysis.targets[pdb_id] = (seq_count, hit_count, candidate_count, elected_count)
 
     def print_filter_criteria(self, out_dir):
         handle = open(os.path.join(out_dir, 'summary.txt'), 'a')
@@ -187,9 +182,8 @@ class OutputAnalysis(object):
         out = ['OUTPUT SUMMARY']
         out.append('  Targets found:{no:>26}'.format(no=len(OutputAnalysis.targets.keys())))
         for query in OutputAnalysis.targets.keys():
-            sc, hc, cc, ec, pdb_ids = OutputAnalysis.targets[query]
+            sc, hc, cc, ec = OutputAnalysis.targets[query]
             out.append('  Target: {id}|Sequences: {sc}|Hits: {hc}|'
-                       'Candidates: {cc}|Elected:{ec}|PDBids: {pdbs}'.format(id=query, sc=sc, hc=hc, cc=cc, ec=ec,
-                                                                             pdbs=pdb_ids))
+                       'Candidates: {cc}|Elected:{ec}'.format(id=query, sc=sc, hc=hc, cc=cc, ec=ec))
         for l in out: handle.write("%s\n" %l)
         handle.close()
