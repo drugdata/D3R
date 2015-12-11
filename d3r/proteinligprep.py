@@ -7,7 +7,7 @@ import logging
 import time
 
 logger = logging.getLogger()
-logging.basicConfig( format  = '%(asctime)s: %(message)s', datefmt = '%m/%d/%y %I:%M:%S', filename = 'final.log', filemode = 'w', level   = logging.INFO )
+logging.basicConfig( format  = '%(asctime)s: %(message)s', datefmt = '%m/%d/%y %I:%M:%S', filename = 'final.log', filemode = 'w', level   = logging.DEBUG )
 
 #s2_result_path = "/data/celpp/2015/dataset.week.47/stage.2.blastnfilter"
 #pdb_protein_location = "/data/pdb.extracted"
@@ -38,9 +38,12 @@ def extract_info_from_s2(stage_2_out):
                 pass
         #if not 
         if not info_value_2:
-            info_dic[info_title] = info_value_1
+            #just use the first item if there are multiple entries (use the highest resolution one)
+            if info_title not in info_dic:
+                info_dic[info_title] = info_value_1
         else:
-            info_dic[info_title] = (info_value_1,info_value_2) 
+            if info_title not in info_dic:
+                info_dic[info_title] = (info_value_1,info_value_2) 
     return info_dic
 
 #copy all the txt files from the output stage 2 location and create folder for each of this named by the query entry
@@ -52,6 +55,7 @@ def get_center(protein_file, ligname):
     x = y = z = 0
     for xyz_line in xyz_lines:
         if "HETATM" in xyz_line and ligname in xyz_line:
+            #logging.debug("Check the get center of this protein: %s for this ligand: %s"%(protein_file, ligname))
             atom_name = xyz_line[12:16]
             if atom_name in atom_list:
                 multi_ligand = True
@@ -62,12 +66,13 @@ def get_center(protein_file, ligname):
                 z+= float(xyz_line[46:54])
     if not multi_ligand:
         lig_center = "%8.3f, %8.3f, %8.3f"%(x/len(atom_list), y/len(atom_list), z/len(atom_list))
+        logging.debug("Ligand center for this case:%s is %s"%(protein_file, lig_center))
         return lig_center
     else:
+        logging.debug("Fatal error: Found multiple ligand for this protein:%s"%protein_file)
         return False
 
 def ligand_prepare(ligand_smile, out_lig_file):
-    print "Something wrong...", ligand_smile, out_lig_file
     commands.getoutput("$SCHRODINGER/ligprep -WAIT -i 0 -nt -s 1 -g -ismi %s -omae %s"%(ligand_smile, out_lig_file) ) 
     return os.path.isfile(out_lig_file)
 
@@ -114,7 +119,7 @@ def main_proteinprep ( s2_result_path, pdb_protein_path, working_folder ):
     #get the infromation from stage 2 output
         commands.getoutput("cp %s ."%single_stage_2_out)
         query_dic = extract_info_from_s2(query_pro + ".txt")
-        print "QQQQQQQQQQQQQQQQQ", query_dic
+        #print "QQQQQQQQQQQQQQQQQ", query_dic
         #raw_input()
     
     ######################
@@ -133,7 +138,7 @@ def main_proteinprep ( s2_result_path, pdb_protein_path, working_folder ):
             os.chdir(current_dir_layer_1)
             continue
         else:
-            print "Comes to here for this case!!!!!!!!"
+            logging.info("============Start to work in this query protein: %s============"%query_pro)
             #raw_input()
         ######################
         #step 2, if there is a largest protein then copy this portein to this folder and generate the center of the ligand
@@ -204,7 +209,7 @@ def main_proteinprep ( s2_result_path, pdb_protein_path, working_folder ):
                     else:
                         #have only id info 
                         rest_protein_id = query_dic[rest_protein]
-                    print "DDDDDDDDDDDDDDDDD", query_dic, rest_protein, rest_protein_id
+                    #print "DDDDDDDDDDDDDDDDD", query_dic, rest_protein, rest_protein_id
                     rest_protein_folder_name = rest_protein_id[1:3]
                     rest_ent_file = "pdb" + rest_protein_id  + ".ent"
                     rest_pdbloc = os.path.join(pdb_protein_path, rest_protein_folder_name, rest_ent_file)
@@ -246,19 +251,24 @@ def main_proteinprep ( s2_result_path, pdb_protein_path, working_folder ):
 if ("__main__") == (__name__):
     from optparse import OptionParser
     parser = OptionParser()
-    parser.add_option("-p", "--pdbloc", metavar = "PATH", help = "PDB DATABANK which we will dock into")
-    parser.add_option("-l", "--locs2", metavar="PATH", help = "PATH where we could find the stage 2 output")
-    parser.add_option("-w", "--wfolder", metavar = "PATH", help = "PATH where we run stage 3")
+    parser.add_option("-p", "--pdbdb", metavar = "PATH", help = "PDB DATABANK which we will dock into")
+    parser.add_option("-c", "--candidatedir", metavar="PATH", help = "PATH where we could find the stage 2 output")
+    parser.add_option("-o", "--outdir", metavar = "PATH", help = "PATH where we run stage 3")
     #parser.add_option("-s", "--sleep", metavar = "VALUE", help = "Sleep time for protein prep")
     #parser.add_option("-u", "--update", default = False, action = "store_true", help = "update the protein generation and docking step")
     logger = logging.getLogger()
-    logging.basicConfig( format  = '%(asctime)s: %(message)s', datefmt = '%m/%d/%y %I:%M:%S', filename = 'final.log', filemode = 'w', level   = logging.INFO )
+    logging.basicConfig( format  = '%(asctime)s: %(message)s', datefmt = '%m/%d/%y %I:%M:%S', filename = 'final.log', filemode = 'w', level   = logging.DEBUG )
     (opt, args) = parser.parse_args()
-    pdb_location = opt.pdbloc
-    stage_2_result = opt.locs2
-    stage_3_result = opt.wfolder
+    pdb_location = opt.pdbdb
+    stage_2_result = opt.candidatedir
+    stage_3_result = opt.outdir
     #sleep_time = opt.sleep
+    #running under this dir
+    running_dir = os.getcwd()
     main_proteinprep(stage_2_result, pdb_location, stage_3_result)
+    #move the final log file to the result dir
+    log_file_path = os.path.join(running_dir, 'final.log')
+    commands.getoutput("mv %s %s"%(log_file_path,stage_3_result))
     
     
     
