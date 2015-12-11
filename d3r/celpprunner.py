@@ -272,7 +272,7 @@ def _parse_arguments(desc, args):
                         help='Path to PostAnalysis script')
     parser.add_argument("--proteinligprep", default='proteinligprep.py',
                         help='Path to proteinligprep script')
-    parser.add_argument("--glide", default='glide.py',
+    parser.add_argument("--glide", default='glidedocking.py',
                         help='Path to glide docking script')
     parser.add_argument("--pdbdb", default='/data/pdb',
                         help='Path to PDB database files')
