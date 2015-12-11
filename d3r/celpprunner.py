@@ -278,7 +278,7 @@ def _parse_arguments(desc, args):
                         help='Path to PDB database files')
     parser.add_argument("--compinchi",
                         default='http://ligand-expo.rcsb.org/' +
-                        'dictionaries/Components-inchi.ich',
+                        'dictionaries',
                         help='URL to download Components-inchi.ich' +
                              ' file for' +
                              'task stage.1.compinchi')
