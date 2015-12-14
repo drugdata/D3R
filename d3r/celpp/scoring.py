@@ -4,14 +4,15 @@ import os
 import logging
 
 from d3r.celpp.task import D3RTask
-from d3r.celpp.proteinligprep import ProteinLigPrepTask
 
 logger = logging.getLogger(__name__)
+
 
 class PathNotDirectoryError(Exception):
     """Path is not a directory Error
     """
     pass
+
 
 class ScoringTaskFactory(object):
     """Factory class to generate ScoringTask objects
@@ -21,8 +22,8 @@ class ScoringTaskFactory(object):
        ScoringTask objects for all eligible docking tasks
     """
     DOCKSTAGE = 4
-    STAGE_FOUR_PREFIX = D3RTask.STAGE_DIRNAME_PREFIX + '.' +\
-                        str(DOCKSTAGE) + '.'
+    STAGE_FOUR_PREFIX = (D3RTask.STAGE_DIRNAME_PREFIX + '.' +
+                         str(DOCKSTAGE) + '.')
     SCORING_SUFFIX = 'scoring'
     WEB_DATA_SUFFIX = 'webdata'
 
@@ -77,7 +78,7 @@ class ScoringTaskFactory(object):
             if os.path.isdir(full_path):
                 if entry.startswith(ScoringTaskFactory.STAGE_FOUR_PREFIX):
                     if entry.endswith(ScoringTaskFactory.WEB_DATA_SUFFIX):
-                        logger.debug('Skipping '+ entry + ' due to suffix')
+                        logger.debug('Skipping ' + entry + ' due to suffix')
                         continue
 
                     # we have a valid docking path

@@ -134,6 +134,6 @@ class MakeBlastDBTask(D3RTask):
         # Run makeblastdb
         cmd_to_run = ('makeblastdb -in ' + MakeBlastDBTask.PDB_SEQRES_TXT +
                       ' -out pdb_db -dbtype prot')
-
+        logger.debug('Need to run ' + cmd_to_run)
         self.end()
         return

@@ -15,7 +15,6 @@ from d3r.celpp.proteinligprep import ProteinLigPrepTask
 from d3r.celpp.dataimport import DataImportTask
 from d3r.celpp.glide import GlideTask
 from d3r.celpp.scoring import ScoringTaskFactory
-from d3r.celpp.scoring import ScoringTask
 
 from lockfile.pidlockfile import PIDLockFile
 
@@ -160,6 +159,7 @@ def run_stages(theargs):
             lock.release()
 
     return 0
+
 
 def run_tasks(task_list):
     """Runs a specific stage
@@ -320,7 +320,7 @@ def main():
               The stage(s) run are defined via the required --stage flag.
 
               To run multiple stages serially just pass a comma delimited
-              list to the --stage flag. Example: --stage blast,pdbprep
+              list to the --stage flag. Example: --stage import,blast
 
               NOTE:  When running multiple stages serially the program will
                      exit as soon as a task in a stage fails and subsequent
