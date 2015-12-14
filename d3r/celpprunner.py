@@ -304,7 +304,7 @@ def _parse_arguments(desc, args):
 
 def main():
     desc = """
-              Runs the 5 stages (import, blast, proteinligprep, dock, & score)
+              Runs the 5 stages (import, blast, proteinligprep, glide, & score)
               of CELPP processing pipeline (http://www.drugdesigndata.org)
 
               CELPP processing pipeline relies on a set of directories
