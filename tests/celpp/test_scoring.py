@@ -15,7 +15,6 @@ import shutil
 import os
 from d3r.celpp.task import D3RParameters
 from d3r.celpp.task import D3RTask
-from d3r.celpp.blastnfilter import BlastNFilterTask
 from d3r.celpp.scoring import ScoringTaskFactory
 from d3r.celpp.scoring import ScoringTask
 from d3r.celpp.scoring import PathNotDirectoryError
@@ -39,7 +38,7 @@ class TestScoring(unittest.TestCase):
             path = os.path.join(temp_dir, 'doesnotexist')
             stf = ScoringTaskFactory(path, params)
             try:
-                task_list = stf.get_scoring_tasks()
+                stf.get_scoring_tasks()
                 self.fail('Expected PathNotDirectoryError')
             except PathNotDirectoryError:
                 pass
@@ -66,7 +65,7 @@ class TestScoring(unittest.TestCase):
 
         scoring = ScoringTask('/blah', 'foo.scoring',
                               docktask, params)
-        self.assertEquals(scoring.get_name(),'foo.scoring')
+        self.assertEquals(scoring.get_name(), 'foo.scoring')
         self.assertEquals(scoring.get_stage(), 5)
 
     def test_can_run(self):
@@ -171,7 +170,7 @@ class TestScoring(unittest.TestCase):
             self.assertEqual(os.path.isdir(scoring.get_dir()),
                              True)
             errfile = os.path.join(scoring.get_dir(),
-                                  D3RTask.ERROR_FILE)
+                                   D3RTask.ERROR_FILE)
             self.assertEqual(os.path.isfile(errfile), True)
         finally:
             shutil.rmtree(temp_dir)
@@ -196,10 +195,11 @@ class TestScoring(unittest.TestCase):
             self.assertEqual(os.path.isdir(scoring.get_dir()),
                              True)
             errfile = os.path.join(scoring.get_dir(),
-                                  D3RTask.ERROR_FILE)
+                                   D3RTask.ERROR_FILE)
             self.assertEqual(os.path.isfile(errfile), True)
         finally:
             shutil.rmtree(temp_dir)
+
     def test_run_fails_cause_scoring_fails(self):
         temp_dir = tempfile.mkdtemp()
         try:
@@ -220,14 +220,14 @@ class TestScoring(unittest.TestCase):
                              ' Standard error: ')
             # test file gets created
             errfile = os.path.join(scoring.get_dir(),
-                                  D3RTask.ERROR_FILE)
+                                   D3RTask.ERROR_FILE)
             self.assertEqual(os.path.isfile(errfile), True)
 
             stderr = os.path.join(scoring.get_dir(),
-                                   'false.stderr')
+                                  'false.stderr')
             self.assertEqual(os.path.isfile(stderr), True)
             stdout = os.path.join(scoring.get_dir(),
-                                   'false.stdout')
+                                  'false.stdout')
             self.assertEqual(os.path.isfile(stdout), True)
         finally:
             shutil.rmtree(temp_dir)
@@ -257,7 +257,7 @@ class TestScoring(unittest.TestCase):
 
             # test files get created
             errfile = os.path.join(scoring.get_dir(),
-                                  D3RTask.ERROR_FILE)
+                                   D3RTask.ERROR_FILE)
             self.assertEqual(os.path.isfile(errfile), True)
         finally:
             shutil.rmtree(temp_dir)
@@ -280,20 +280,21 @@ class TestScoring(unittest.TestCase):
             self.assertEqual(scoring.get_error(), None)
             # test files get created
             errfile = os.path.join(scoring.get_dir(),
-                                  D3RTask.ERROR_FILE)
+                                   D3RTask.ERROR_FILE)
             self.assertEqual(os.path.isfile(errfile), False)
 
             compfile = os.path.join(scoring.get_dir(),
                                     D3RTask.COMPLETE_FILE)
             self.assertEqual(os.path.isfile(compfile), True)
             stderr = os.path.join(scoring.get_dir(),
-                                   'true.stderr')
+                                  'true.stderr')
             self.assertEqual(os.path.isfile(stderr), True)
             stdout = os.path.join(scoring.get_dir(),
-                                   'true.stdout')
+                                  'true.stdout')
             self.assertEqual(os.path.isfile(stdout), True)
         finally:
             shutil.rmtree(temp_dir)
+
     def tearDown(self):
         pass
 

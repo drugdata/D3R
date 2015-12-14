@@ -106,7 +106,7 @@ class TestGlideTask(unittest.TestCase):
             self.assertEqual(os.path.isdir(glide.get_dir()),
                              True)
             errfile = os.path.join(glide.get_dir(),
-                                  D3RTask.ERROR_FILE)
+                                   D3RTask.ERROR_FILE)
             self.assertEqual(os.path.isfile(errfile), True)
         finally:
             shutil.rmtree(temp_dir)
@@ -128,14 +128,14 @@ class TestGlideTask(unittest.TestCase):
                              ' Standard error: ')
             # test file gets created
             errfile = os.path.join(glide.get_dir(),
-                                  D3RTask.ERROR_FILE)
+                                   D3RTask.ERROR_FILE)
             self.assertEqual(os.path.isfile(errfile), True)
 
             stderr = os.path.join(glide.get_dir(),
-                                   'false.stderr')
+                                  'false.stderr')
             self.assertEqual(os.path.isfile(stderr), True)
             stdout = os.path.join(glide.get_dir(),
-                                   'false.stdout')
+                                  'false.stdout')
             self.assertEqual(os.path.isfile(stdout), True)
         finally:
             shutil.rmtree(temp_dir)
@@ -161,7 +161,7 @@ class TestGlideTask(unittest.TestCase):
 
             # test files get created
             errfile = os.path.join(glide.get_dir(),
-                                  D3RTask.ERROR_FILE)
+                                   D3RTask.ERROR_FILE)
             self.assertEqual(os.path.isfile(errfile), True)
         finally:
             shutil.rmtree(temp_dir)
@@ -182,20 +182,21 @@ class TestGlideTask(unittest.TestCase):
             self.assertEqual(glide.get_error(), None)
             # test files get created
             errfile = os.path.join(glide.get_dir(),
-                                  D3RTask.ERROR_FILE)
+                                   D3RTask.ERROR_FILE)
             self.assertEqual(os.path.isfile(errfile), False)
 
             compfile = os.path.join(glide.get_dir(),
                                     D3RTask.COMPLETE_FILE)
             self.assertEqual(os.path.isfile(compfile), True)
             stderr = os.path.join(glide.get_dir(),
-                                   'true.stderr')
+                                  'true.stderr')
             self.assertEqual(os.path.isfile(stderr), True)
             stdout = os.path.join(glide.get_dir(),
-                                   'true.stdout')
+                                  'true.stdout')
             self.assertEqual(os.path.isfile(stdout), True)
         finally:
             shutil.rmtree(temp_dir)
+
     def tearDown(self):
         pass
 
