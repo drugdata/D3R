@@ -20,6 +20,17 @@ Features
 
  * Works with Python 2.6, 2.7, 3.0, 3.2, 3.4
 
+Requires
+--------
+
+ * argparse
+ * lockfile
+ * psutil
+ * biopython
+ * xlsxwriter
+ * NCBI Blast (https://blast.ncbi.nlm.nih.gov/Blast.cgi?PAGE_TYPE=BlastDocs&DOC_TYPE=Download)
+ * rdkit (needed by blastnfilter.py and proteinligprep.py)
+
 Installation
 ------------
 
