@@ -172,41 +172,41 @@ Run
               must also be set when calling this stage.
 
 
-positional arguments:
-  celppdir              Base celpp directory
+  positional arguments:
+    celppdir              Base celpp directory
 
-optional arguments:
-  -h, --help            show this help message and exit
-  --blastdir BLASTDIR   Parent directory of blastdb. There should exist a
-                        "current" symlink or directory that contains the db.
-                        NOTE: Required parameter for blast stage
-  --email EMAIL         Comma delimited list of email addresses
-  --createweekdir       Create new celpp week directory before running stages
-  --customweekdir       Use directory set in celppdir instead of looking for
-                        latest weekdir. --createweekdir will create a
-                        dataset.week.# dir under celppdir
-  --stage STAGE         Comma delimited list of stages to run. Valid STAGES =
-                        {import, blast, proteinligprep, glide, scoring}
-  --blastnfilter BLASTNFILTER
-                        Path to BlastnFilter script
-  --postanalysis POSTANALYSIS
-                        Path to PostAnalysis script
-  --proteinligprep PROTEINLIGPREP
-                        Path to proteinligprep script
-  --glide GLIDE         Path to glide docking script
-  --scoring SCORING     Path to scoring script
-  --pdbdb PDBDB         Path to PDB database files
-  --compinchi COMPINCHI
-                        URL to download Components-inchi.ich file fortask
-                        stage.1.compinchi
-  --pdbfileurl PDBFILEURL
-                        URL to download new_release_structure_nonpolymer.tsv,n
-                        ew_release_structure_sequence.tsv, and
-                        new_release_crystallization_pH.tsv files for task
-                        stage.1.dataimport
-  --log {DEBUG,INFO,WARNING,ERROR,CRITICAL}
-                        Set the logging level
-  --smtp SMTP           Sets smtpserver to use
-  --smtpport SMTPPORT   Sets smtp server port
-  --version             show program's version number and exit
+  optional arguments:
+    -h, --help            show this help message and exit
+    --blastdir BLASTDIR   Parent directory of blastdb. There should exist a
+                          "current" symlink or directory that contains the db.
+                          NOTE: Required parameter for blast stage
+    --email EMAIL         Comma delimited list of email addresses
+    --createweekdir       Create new celpp week directory before running stages
+    --customweekdir       Use directory set in celppdir instead of looking for
+                          latest weekdir. --createweekdir will create a
+                          dataset.week.# dir under celppdir
+    --stage STAGE         Comma delimited list of stages to run. Valid STAGES =
+                          {import, blast, proteinligprep, glide, scoring}
+    --blastnfilter BLASTNFILTER
+                          Path to BlastnFilter script
+    --postanalysis POSTANALYSIS
+                          Path to PostAnalysis script
+    --proteinligprep PROTEINLIGPREP
+                          Path to proteinligprep script
+    --glide GLIDE         Path to glide docking script
+    --scoring SCORING     Path to scoring script
+    --pdbdb PDBDB         Path to PDB database files
+    --compinchi COMPINCHI
+                          URL to download Components-inchi.ich file fortask
+                          stage.1.compinchi
+    --pdbfileurl PDBFILEURL
+                          URL to download new_release_structure_nonpolymer.tsv,n
+                          ew_release_structure_sequence.tsv, and
+                          new_release_crystallization_pH.tsv files for task
+                          stage.1.dataimport
+    --log {DEBUG,INFO,WARNING,ERROR,CRITICAL}
+                          Set the logging level
+    --smtp SMTP           Sets smtpserver to use
+    --smtpport SMTPPORT   Sets smtp server port
+    --version             show program's version number and exit
 
