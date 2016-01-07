@@ -38,15 +38,20 @@ Run
 
 .. code:: bash
   
-  celpprunner.py -h
-  usage: celpprunner.py [-h] [--blastdir BLASTDIR] [--email EMAIL] --stage
-                      {blast,dock,score} --blastnfilter BLASTNFILTER
+  usage: celpprunner.py [-h] [--blastdir BLASTDIR] [--email EMAIL]
+                      [--createweekdir] [--customweekdir] --stage STAGE
+                      [--blastnfilter BLASTNFILTER]
+                      [--postanalysis POSTANALYSIS]
+                      [--proteinligprep PROTEINLIGPREP] [--glide GLIDE]
+                      [--scoring SCORING] [--pdbdb PDBDB]
+                      [--compinchi COMPINCHI] [--pdbfileurl PDBFILEURL]
                       [--log {DEBUG,INFO,WARNING,ERROR,CRITICAL}]
                       [--smtp SMTP] [--smtpport SMTPPORT] [--version]
                       celppdir
 
-              Runs last 3 stages (blast, dock, & score) of CELPP
-              processing pipeline (http://www.drugdesigndata.org)
+              Runs the 5 stages (import, blast, proteinligprep, glide,
+              & scoring) of CELPP processing pipeline
+              (http://www.drugdesigndata.org)
 
               CELPP processing pipeline relies on a set of directories
               with specific structure. The pipeline runs a set of stages
@@ -58,8 +63,15 @@ Run
 
               stage.<stage number>.<task name>
 
-              Only 1 stage is run per invocation of this program and the
-              stage to be run is defined via the required --stage flag.
+              The stage(s) run are defined via the required --stage flag.
+
+              To run multiple stages serially just pass a comma delimited
+              list to the --stage flag. Example: --stage import,blast
+
+              NOTE:  When running multiple stages serially the program will
+                     not run subsequent stages if a task in a stage fails.
+                     Also note order matters, ie putting blast,import will
+                     cause celpprunner.py to run blast stage first.
 
               This program drops a pid lockfile
               (celpprunner.<stage>.lockpid) in celppdir to prevent duplicate
@@ -95,8 +107,36 @@ Run
               that year the dataset.week.# with highest #.  The output
               directories created will be put within this directory.
 
+              If specified --createweekdir flag will instruct this
+              program to create a new directory for the current
+              celpp week/year before invoking running any stage
+              processing.
+
+              NOTE: CELPP weeks start on Friday and end on Thursday
+                    and week # follows ISO8601 rules so week numbers
+                    at the end and start of the year are a bit
+                    wonky.
+
               Breakdown of behavior of program is defined by
               value passed with --stage flag:
+
+              If --stage 'import'
+
+              In this stage 4 files are downloaded from urls specified
+              by --compinchi and --pdbfileurl flags on the commandline
+              into stage.1.dataimport directory.
+
+              The tsv files are (--pdbfileurl flag sets url to
+              download these files from):
+
+              new_release_structure_nonpolymer.tsv
+              new_release_structure_sequence.tsv
+              new_release_crystallization_pH.tsv
+
+              The ich file is (--compinchi flat sets url to
+              download this file from):
+
+              Components-inchi.ich
 
               If --stage 'blast'
 
@@ -105,42 +145,68 @@ Run
               'current' symlink/directory must exist and within that a
               'complete' file must also reside. If both conditions
               are met then the 'blast' stage is run and output stored
-              in stage.2.blastnfilter
+              in stage.2.blastnfilter.  Requires --pdbdb to be set
+              to a directory with valid PDB database files.
 
-              If --stage 'dock'
+              If --stage 'proteinligprep'
 
-              Verifies stage2.blastnfilter exists and has a 'complete'
-              file within it.  If complete, this program will run fred
-              docking and store output in stage.3.fred.  As new
-              algorithms are incorporated additional stage.3.<algo> will
-              be created and run.
+              Verifies stage.2.blastnfilter exists and has 'complete'
+              file.  If complete, this stage runs which invokes program
+              set in --proteinligprep flag to prepare pdb and inchi files
+              storing output in stage.3.proteinligprep.  --pdbdb flag
+              must also be set when calling this stage.
 
-              If --stage 'score'
+              If --stage 'glide'
 
-              Finds all stage.3.<algo> directories with 'complete' files
-              in them and invokes appropriate scoring algorithm storing
-              results in stage.4.<algo>.scoring.
-              
+              Verifies stage3.proteinligprep exists and has a 'complete'
+              file within it.  If complete, this stage runs which invokes
+              program set in --glide flag to perform docking via glide
+              storing output in stage.4.glide
 
-  positional arguments:
-    celppdir              Base celpp directory
+              If --stage 'scoring'
 
-  optional arguments:
-    -h, --help            show this help message and exit
-    --blastdir BLASTDIR   Parent directory of blastdb. There should exist a
-                          "current" symlink or directory that contains the db.
-    --email EMAIL         Comma delimited list of email addresses
-    --stage {blast,dock,score}
-                          Stage to run blast = blastnfilter (2), dock = fred &
-                          other docking algorithms (3), score = scoring (4)
-    --blastnfilter BLASTNFILTER
-                          Path to BlastnFilter script
-    --log {DEBUG,INFO,WARNING,ERROR,CRITICAL}
-                          Set the logging level
-    --smtp SMTP           Sets smtpserver to use
-    --smtpport SMTPPORT   Sets smtp server port
-    --version             show program's version number and exit
+              Finds all stage.4.<algo> directories with 'complete' files
+              in them which do not end in name 'webdata' and runs
+              script set via --scoring parameter storing the result of
+              the script into stage.5.<algo>.scoring. --pdbdb flag
+              must also be set when calling this stage.
 
 
-* TODO
-learn github more
+positional arguments:
+  celppdir              Base celpp directory
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --blastdir BLASTDIR   Parent directory of blastdb. There should exist a
+                        "current" symlink or directory that contains the db.
+                        NOTE: Required parameter for blast stage
+  --email EMAIL         Comma delimited list of email addresses
+  --createweekdir       Create new celpp week directory before running stages
+  --customweekdir       Use directory set in celppdir instead of looking for
+                        latest weekdir. --createweekdir will create a
+                        dataset.week.# dir under celppdir
+  --stage STAGE         Comma delimited list of stages to run. Valid STAGES =
+                        {import, blast, proteinligprep, glide, scoring}
+  --blastnfilter BLASTNFILTER
+                        Path to BlastnFilter script
+  --postanalysis POSTANALYSIS
+                        Path to PostAnalysis script
+  --proteinligprep PROTEINLIGPREP
+                        Path to proteinligprep script
+  --glide GLIDE         Path to glide docking script
+  --scoring SCORING     Path to scoring script
+  --pdbdb PDBDB         Path to PDB database files
+  --compinchi COMPINCHI
+                        URL to download Components-inchi.ich file fortask
+                        stage.1.compinchi
+  --pdbfileurl PDBFILEURL
+                        URL to download new_release_structure_nonpolymer.tsv,n
+                        ew_release_structure_sequence.tsv, and
+                        new_release_crystallization_pH.tsv files for task
+                        stage.1.dataimport
+  --log {DEBUG,INFO,WARNING,ERROR,CRITICAL}
+                        Set the logging level
+  --smtp SMTP           Sets smtpserver to use
+  --smtpport SMTPPORT   Sets smtp server port
+  --version             show program's version number and exit
+
