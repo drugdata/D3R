@@ -20,6 +20,7 @@ from d3r import celpprunner
 from d3r.celpp.task import D3RParameters
 from d3r.celpp import util
 from d3r.celpp.task import D3RTask
+from d3r.celpp.scoring import ScoringTaskFactory
 
 
 class DummyTask(D3RTask):
@@ -122,13 +123,15 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEqual(result.loglevel, 'WARNING')
         self.assertEqual(result.blastnfilter, 'blastnfilter.py')
         self.assertEqual(result.proteinligprep, 'proteinligprep.py')
+        self.assertEqual(result.scoring, 'scoring.py')
         theargs = ['foo', '--stage', 'dock,glide', '--email', 'b@b.com,h@h',
                    '--blastdir', 'b', '--log', 'ERROR',
                    '--blastnfilter', '/bin/blastnfilter.py',
                    '--proteinligprep', '/bin/proteinligprep.py',
                    '--postanalysis', '/bin/postanalysis.py',
                    '--glide', '/bin/glide.py',
-                   '--customweekdir']
+                   '--customweekdir',
+                   '--scoring', '/bin/scoring.py']
         result = celpprunner._parse_arguments('hi', theargs)
         self.assertEqual(result.stage, 'dock,glide')
         self.assertEqual(result.celppdir, 'foo')
@@ -139,6 +142,7 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEqual(result.proteinligprep, '/bin/proteinligprep.py')
         self.assertEquals(result.postanalysis, '/bin/postanalysis.py')
         self.assertEquals(result.glide, '/bin/glide.py')
+        self.assertEquals(result.scoring, '/bin/scoring.py')
         self.assertEquals(result.customweekdir, True)
 
     def test_run_tasks_passing_none_and_empty_list(self):
@@ -261,6 +265,55 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEquals(len(task_list), 1)
         self.assertEquals(task_list[0].get_dir(),
                           os.path.join('foo', 'stage.4.glide'))
+
+    def test_get_task_list_for_stage_for_scoring_stage_with_nonefound(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            params.latest_weekly = temp_dir
+            try:
+                celpprunner.get_task_list_for_stage(params, 'scoring')
+            except NotImplementedError as e:
+                self.assertEqual(e.message, 'uh oh no tasks for scoring stage')
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_task_list_for_stage_for_scoring_stage_with_onefound(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            params.latest_weekly = temp_dir
+            glidedir = os.path.join(temp_dir,
+                                    ScoringTaskFactory.STAGE_FOUR_PREFIX +
+                                    'glide')
+            os.mkdir(glidedir)
+            open(os.path.join(glidedir, D3RTask.COMPLETE_FILE), 'a').close()
+            task_list = celpprunner.get_task_list_for_stage(params, 'scoring')
+            self.assertEqual(len(task_list), 1)
+            self.assertEqual(task_list[0].get_name(), 'glide.scoring')
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_task_list_for_stage_for_scoring_stage_with_twofound(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            params.latest_weekly = temp_dir
+            glidedir = os.path.join(temp_dir,
+                                    ScoringTaskFactory.STAGE_FOUR_PREFIX +
+                                    'glide')
+            os.mkdir(glidedir)
+            open(os.path.join(glidedir, D3RTask.COMPLETE_FILE), 'a').close()
+            freddir = os.path.join(temp_dir,
+                                   ScoringTaskFactory.STAGE_FOUR_PREFIX +
+                                   'fred')
+            os.mkdir(freddir)
+            open(os.path.join(freddir, D3RTask.COMPLETE_FILE), 'a').close()
+
+            task_list = celpprunner.get_task_list_for_stage(params, 'scoring')
+            self.assertEqual(len(task_list), 2)
+        finally:
+            shutil.rmtree(temp_dir)
 
     def test_run_stages_no_weekly_datasetfound(self):
         temp_dir = tempfile.mkdtemp()
