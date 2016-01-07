@@ -5,12 +5,11 @@ import tempfile
 import os.path
 
 """
-test_proteinligprep
+test_scoring
 --------------------------------
 
-Tests for `proteinligprep` module.
+Tests for `scoring` module.
 """
-
 import shutil
 import os
 from d3r.celpp.task import D3RParameters
@@ -53,6 +52,113 @@ class TestScoring(unittest.TestCase):
             stf = ScoringTaskFactory(temp_dir, params)
             task_list = stf.get_scoring_tasks()
             self.assertEquals(len(task_list), 0)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_scoring_tasks_on_dir_with_lower_stages_dirs(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            os.mkdir(os.path.join(temp_dir, 'stage.1.dataimport'))
+            os.mkdir(os.path.join(temp_dir, 'stage.2.blastnfilter'))
+
+            stf = ScoringTaskFactory(temp_dir, params)
+            task_list = stf.get_scoring_tasks()
+            self.assertEquals(len(task_list), 0)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_scoring_tasks_on_dir_with_webdata_dir(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            os.mkdir(os.path.join(temp_dir,
+                                  ScoringTaskFactory.STAGE_FOUR_PREFIX +
+                                  ScoringTaskFactory.WEB_DATA_SUFFIX))
+
+            stf = ScoringTaskFactory(temp_dir, params)
+            task_list = stf.get_scoring_tasks()
+            self.assertEquals(len(task_list), 0)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_scoring_tasks_on_with_valid_algo_dir(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+
+            glidedir = os.path.join(temp_dir,
+                                    ScoringTaskFactory.STAGE_FOUR_PREFIX +
+                                    'glide')
+            os.mkdir(glidedir)
+            open(os.path.join(glidedir, D3RTask.COMPLETE_FILE), 'a').close()
+            stf = ScoringTaskFactory(temp_dir, params)
+            task_list = stf.get_scoring_tasks()
+            self.assertEquals(len(task_list), 1)
+            self.assertEquals(task_list[0].get_name(), 'glide.scoring')
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_scoring_tasks_on_with_two_valid_algo_dir(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            glidedir = os.path.join(temp_dir,
+                                    ScoringTaskFactory.STAGE_FOUR_PREFIX +
+                                    'glide')
+            os.mkdir(glidedir)
+            open(os.path.join(glidedir, D3RTask.COMPLETE_FILE), 'a').close()
+
+            freddir = os.path.join(temp_dir,
+                                   ScoringTaskFactory.STAGE_FOUR_PREFIX +
+                                   'fred')
+            os.mkdir(freddir)
+            open(os.path.join(freddir, D3RTask.COMPLETE_FILE), 'a').close()
+
+            stf = ScoringTaskFactory(temp_dir, params)
+            task_list = stf.get_scoring_tasks()
+            self.assertEquals(len(task_list), 2)
+            self.assertNotEquals(task_list[0].get_name(),
+                                 task_list[1].get_name())
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_scoring_tasks_on_with_one_invalid_algo(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            glidedir = os.path.join(temp_dir,
+                                    ScoringTaskFactory.STAGE_FOUR_PREFIX +
+                                    'glide')
+            os.mkdir(glidedir)
+            open(os.path.join(glidedir, D3RTask.ERROR_FILE), 'a').close()
+
+            stf = ScoringTaskFactory(temp_dir, params)
+            task_list = stf.get_scoring_tasks()
+            self.assertEquals(len(task_list), 0)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_scoring_tasks_on_with_one_valid_and_one_invalid_algo(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            glidedir = os.path.join(temp_dir,
+                                    ScoringTaskFactory.STAGE_FOUR_PREFIX +
+                                    'glide')
+            os.mkdir(glidedir)
+            open(os.path.join(glidedir, D3RTask.ERROR_FILE), 'a').close()
+            freddir = os.path.join(temp_dir,
+                                   ScoringTaskFactory.STAGE_FOUR_PREFIX +
+                                   'fred')
+            os.mkdir(freddir)
+            open(os.path.join(freddir, D3RTask.COMPLETE_FILE), 'a').close()
+
+            stf = ScoringTaskFactory(temp_dir, params)
+            task_list = stf.get_scoring_tasks()
+            self.assertEquals(len(task_list), 1)
+            self.assertEquals(task_list[0].get_name(), 'fred.scoring')
         finally:
             shutil.rmtree(temp_dir)
 
