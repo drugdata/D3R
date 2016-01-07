@@ -74,6 +74,7 @@ class ScoringTaskFactory(object):
         path_list = os.listdir(path)
 
         for entry in path_list:
+            logger.debug('Checking if ' + entry + ' is a docking task')
             full_path = os.path.join(path, entry)
             if os.path.isdir(full_path):
                 if entry.startswith(ScoringTaskFactory.STAGE_FOUR_PREFIX):
@@ -85,11 +86,12 @@ class ScoringTaskFactory(object):
                     docktask = D3RTask(path, self.get_args())
                     docktask.set_stage(ScoringTaskFactory.DOCKSTAGE)
                     docktask.set_name(entry[
-                                      len(ScoringTaskFactory.STAGE_FOUR_PREFIX)
-                                      + 1:])
+                                      len(ScoringTaskFactory
+                                          .STAGE_FOUR_PREFIX):])
                     stask = ScoringTask(path,
                                         docktask.get_name() + '.' +
                                         ScoringTaskFactory.SCORING_SUFFIX,
+                                        docktask,
                                         self.get_args())
                     if stask.can_run():
                         logger.debug('Adding task ' + stask.get_name())
@@ -127,9 +129,9 @@ class ScoringTask(D3RTask):
         self._error = None
         self._docktask.update_status_from_filesystem()
         if self._docktask.get_status() != D3RTask.COMPLETE_STATUS:
-            logger.info('Cannot run ' + self.get_name() + 'task ' +
-                        'because ' + self._docktask.get_name() + 'task' +
-                        'has a status of ' + self._docktask.get_status())
+            logger.info('Cannot run ' + self.get_name() + ' task ' +
+                        'because ' + self._docktask.get_name() + ' task' +
+                        ' has a status of ' + self._docktask.get_status())
             self.set_error(self._docktask.get_name() + ' task has ' +
                            self._docktask.get_status() + ' status')
             return False
