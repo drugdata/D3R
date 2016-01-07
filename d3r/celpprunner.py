@@ -65,7 +65,26 @@ def _get_lock(theargs, stage):
 
 def _setup_logging(theargs):
     """Sets up the logging for application
-       """
+
+    Loggers are setup for:
+    d3r.celpprunner
+    d3r.celpp.blastnfilter
+    d3r.celpp.dataimport
+    d3r.celpp.glide
+    d3r.celpp.makeblastdb
+    d3r.celpp.proteinligprep
+    d3r.celpp.scoring
+    d3r.celpp.task
+    d3r.celpp.util
+
+    NOTE:  If new modules are added please add their loggers to this
+    function
+
+    The loglevel is set by theargs.loglevel and the format is set
+    by LOG_FORMAT set at the top of this module.
+    :param: theargs should have .loglevel set to one of the
+    following strings: DEBUG, INFO, WARNING, ERROR, CRITICAL
+    """
     theargs.logformat = LOG_FORMAT
     theargs.numericloglevel = logging.NOTSET
     if theargs.loglevel == 'DEBUG':
@@ -81,7 +100,17 @@ def _setup_logging(theargs):
 
     logger.setLevel(theargs.numericloglevel)
     logging.basicConfig(format=theargs.logformat)
-    logging.getLogger('d3r.task').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.blastnfilter')\
+        .setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.dataimport').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.glide').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.makeblastdb')\
+        .setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.proteinligprep')\
+        .setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.scoring').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.task').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.util').setLevel(theargs.numericloglevel)
 
 
 def set_andor_create_latest_weekly_parameter(theargs):
@@ -274,6 +303,8 @@ def _parse_arguments(desc, args):
                         help='Path to proteinligprep script')
     parser.add_argument("--glide", default='glidedocking.py',
                         help='Path to glide docking script')
+    parser.add_argument("--scoring", default='scoring.py',
+                        help='Path to scoring script')
     parser.add_argument("--pdbdb", default='/data/pdb',
                         help='Path to PDB database files')
     parser.add_argument("--compinchi",
@@ -323,8 +354,9 @@ def main():
               list to the --stage flag. Example: --stage import,blast
 
               NOTE:  When running multiple stages serially the program will
-                     exit as soon as a task in a stage fails and subsequent
-                     stages will NOT be run.
+                     not run subsequent stages if a task in a stage fails.
+                     Also note order matters, ie putting blast,import will
+                     cause celpprunner.py to run blast stage first.
 
               This program drops a pid lockfile
               (celpprunner.<stage>.lockpid) in celppdir to prevent duplicate
