@@ -258,7 +258,7 @@ def get_task_list_for_stage(theargs, stage_name):
         # use util function call to get all scoring tasks
         # append them to the task_list
         score_task_factory = ScoringTaskFactory(theargs.latest_weekly, theargs)
-        task_list.append(score_task_factory.get_scoring_tasks())
+        task_list.extend(score_task_factory.get_scoring_tasks())
 
     if len(task_list) is 0:
         raise NotImplementedError(
@@ -293,7 +293,7 @@ def _parse_arguments(desc, args):
                              "will create a dataset.week.# dir under celppdir")
     parser.add_argument("--stage", required=True, help='Comma delimited list' +
                         ' of stages to run.  Valid STAGES = ' +
-                        '{import, blast, proteinligprep, glide} '
+                        '{import, blast, proteinligprep, glide, scoring} '
                         )
     parser.add_argument("--blastnfilter", default='blastnfilter.py',
                         help='Path to BlastnFilter script')
@@ -335,8 +335,9 @@ def _parse_arguments(desc, args):
 
 def main():
     desc = """
-              Runs the 5 stages (import, blast, proteinligprep, glide, & score)
-              of CELPP processing pipeline (http://www.drugdesigndata.org)
+              Runs the 5 stages (import, blast, proteinligprep, glide,
+              & scoring) of CELPP processing pipeline
+              (http://www.drugdesigndata.org)
 
               CELPP processing pipeline relies on a set of directories
               with specific structure. The pipeline runs a set of stages
@@ -448,12 +449,13 @@ def main():
               program set in --glide flag to perform docking via glide
               storing output in stage.4.glide
 
-              If --stage 'score'
+              If --stage 'scoring'
 
               Finds all stage.4.<algo> directories with 'complete' files
               in them which do not end in name 'webdata' and runs
               script set via --scoring parameter storing the result of
-              the script into stage.5.<algo>.scoring.
+              the script into stage.5.<algo>.scoring. --pdbdb flag
+              must also be set when calling this stage.
               """
 
     theargs = _parse_arguments(desc, sys.argv[1:])
