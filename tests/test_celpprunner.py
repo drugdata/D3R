@@ -78,32 +78,37 @@ class TestCelppRunner(unittest.TestCase):
         theargs = D3RParameters()
         theargs.loglevel = 'INFO'
         celpprunner._setup_logging(theargs)
-        self.assertEqual(logging.getLogger('d3r.task').getEffectiveLevel(),
+        self.assertEqual(logging.getLogger('d3r.celpp.task')
+                         .getEffectiveLevel(),
                          logging.INFO)
         self.assertEqual(theargs.numericloglevel, logging.INFO)
         logger.debug('test')
 
         theargs.loglevel = 'DEBUG'
         celpprunner._setup_logging(theargs)
-        self.assertEqual(logging.getLogger('d3r.task').getEffectiveLevel(),
+        self.assertEqual(logging.getLogger('d3r.celpp.task')
+                         .getEffectiveLevel(),
                          logging.DEBUG)
         self.assertEqual(theargs.numericloglevel, logging.DEBUG)
 
         theargs.loglevel = 'WARNING'
         celpprunner._setup_logging(theargs)
-        self.assertEqual(logging.getLogger('d3r.task').getEffectiveLevel(),
+        self.assertEqual(logging.getLogger('d3r.celpp.task')
+                         .getEffectiveLevel(),
                          logging.WARNING)
         self.assertEqual(theargs.numericloglevel, logging.WARNING)
 
         theargs.loglevel = 'ERROR'
         celpprunner._setup_logging(theargs)
-        self.assertEqual(logging.getLogger('d3r.task').getEffectiveLevel(),
+        self.assertEqual(logging.getLogger('d3r.celpp.task')
+                         .getEffectiveLevel(),
                          logging.ERROR)
         self.assertEqual(theargs.numericloglevel, logging.ERROR)
 
         theargs.loglevel = 'CRITICAL'
         celpprunner._setup_logging(theargs)
-        self.assertEqual(logging.getLogger('d3r.task').getEffectiveLevel(),
+        self.assertEqual(logging.getLogger('d3r.celpp.task')
+                         .getEffectiveLevel(),
                          logging.CRITICAL)
         self.assertEqual(theargs.numericloglevel, logging.CRITICAL)
 
