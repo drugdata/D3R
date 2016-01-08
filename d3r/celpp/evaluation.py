@@ -14,7 +14,7 @@ class PathNotDirectoryError(Exception):
     pass
 
 
-class ScoringTaskFactory(object):
+class EvaluationTaskFactory(object):
     """Factory class to generate ScoringTask objects
 
        This factory examines a celpp week directory for
@@ -24,7 +24,7 @@ class ScoringTaskFactory(object):
     DOCKSTAGE = 4
     STAGE_FOUR_PREFIX = (D3RTask.STAGE_DIRNAME_PREFIX + '.' +
                          str(DOCKSTAGE) + '.')
-    SCORING_SUFFIX = 'scoring'
+    SCORING_SUFFIX = 'evaluation'
     WEB_DATA_SUFFIX = 'webdata'
 
     def __init__(self, path, theargs):
@@ -77,22 +77,22 @@ class ScoringTaskFactory(object):
             logger.debug('Checking if ' + entry + ' is a docking task')
             full_path = os.path.join(path, entry)
             if os.path.isdir(full_path):
-                if entry.startswith(ScoringTaskFactory.STAGE_FOUR_PREFIX):
-                    if entry.endswith(ScoringTaskFactory.WEB_DATA_SUFFIX):
+                if entry.startswith(EvaluationTaskFactory.STAGE_FOUR_PREFIX):
+                    if entry.endswith(EvaluationTaskFactory.WEB_DATA_SUFFIX):
                         logger.debug('Skipping ' + entry + ' due to suffix')
                         continue
 
                     # we have a valid docking path
                     docktask = D3RTask(path, self.get_args())
-                    docktask.set_stage(ScoringTaskFactory.DOCKSTAGE)
+                    docktask.set_stage(EvaluationTaskFactory.DOCKSTAGE)
                     docktask.set_name(entry[
-                                      len(ScoringTaskFactory
+                                      len(EvaluationTaskFactory
                                           .STAGE_FOUR_PREFIX):])
-                    stask = ScoringTask(path,
-                                        docktask.get_name() + '.' +
-                                        ScoringTaskFactory.SCORING_SUFFIX,
-                                        docktask,
-                                        self.get_args())
+                    stask = EvaluationTask(path,
+                                           docktask.get_name() + '.' +
+                                           EvaluationTaskFactory.SCORING_SUFFIX,
+                                           docktask,
+                                           self.get_args())
                     if stask.can_run():
                         logger.debug('Adding task ' + stask.get_name())
                         scoring_tasks.append(stask)
@@ -103,13 +103,13 @@ class ScoringTaskFactory(object):
         return scoring_tasks
 
 
-class ScoringTask(D3RTask):
-    """Performs Scoring
+class EvaluationTask(D3RTask):
+    """Performs evaluation
 
     """
 
     def __init__(self, path, name, docktask, args):
-        super(ScoringTask, self).__init__(path, args)
+        super(EvaluationTask, self).__init__(path, args)
         self.set_name(name)
         self.set_stage(5)
         self.set_status(D3RTask.UNKNOWN_STATUS)
@@ -154,7 +154,7 @@ class ScoringTask(D3RTask):
         return True
 
     def run(self):
-        """Runs ScoringTask after verifying dock was good
+        """Runs EvaluationTask after verifying dock was good
 
            Method requires can_run() to be called before hand with
            successful outcome
@@ -163,7 +163,7 @@ class ScoringTask(D3RTask):
            completion results are analyzed and success or error status
            is set appropriately and D3RTask.end is invoked
            """
-        super(ScoringTask, self).run()
+        super(EvaluationTask, self).run()
 
         if self._can_run is False:
             logger.debug(
@@ -172,10 +172,10 @@ class ScoringTask(D3RTask):
             return
 
         try:
-            logger.debug('scoring set to ' +
-                         self.get_args().scoring)
+            logger.debug('evaluation set to ' +
+                         self.get_args().evaluation)
         except AttributeError:
-            self.set_error('scoring not set')
+            self.set_error('evaluation not set')
             self.end()
             return
 

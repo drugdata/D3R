@@ -14,7 +14,7 @@ from d3r.celpp.blastnfilter import BlastNFilterTask
 from d3r.celpp.proteinligprep import ProteinLigPrepTask
 from d3r.celpp.dataimport import DataImportTask
 from d3r.celpp.glide import GlideTask
-from d3r.celpp.scoring import ScoringTaskFactory
+from d3r.celpp.evaluation import EvaluationTaskFactory
 
 from lockfile.pidlockfile import PIDLockFile
 
@@ -73,7 +73,7 @@ def _setup_logging(theargs):
     d3r.celpp.glide
     d3r.celpp.makeblastdb
     d3r.celpp.proteinligprep
-    d3r.celpp.scoring
+    d3r.celpp.evaluation
     d3r.celpp.task
     d3r.celpp.util
 
@@ -108,7 +108,7 @@ def _setup_logging(theargs):
         .setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.celpp.proteinligprep')\
         .setLevel(theargs.numericloglevel)
-    logging.getLogger('d3r.celpp.scoring').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.evaluation').setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.celpp.task').setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.celpp.util').setLevel(theargs.numericloglevel)
 
@@ -254,11 +254,11 @@ def get_task_list_for_stage(theargs, stage_name):
     if stage_name == 'glide':
         task_list.append(GlideTask(theargs.latest_weekly, theargs))
 
-    if stage_name == 'scoring':
-        # use util function call to get all scoring tasks
+    if stage_name == 'evaluation':
+        # use util function call to get all evaluation tasks
         # append them to the task_list
-        score_task_factory = ScoringTaskFactory(theargs.latest_weekly, theargs)
-        task_list.extend(score_task_factory.get_scoring_tasks())
+        eval_task_factory = EvaluationTaskFactory(theargs.latest_weekly, theargs)
+        task_list.extend(eval_task_factory.get_evaluation_tasks())
 
     if len(task_list) is 0:
         raise NotImplementedError(
@@ -293,7 +293,7 @@ def _parse_arguments(desc, args):
                              "will create a dataset.week.# dir under celppdir")
     parser.add_argument("--stage", required=True, help='Comma delimited list' +
                         ' of stages to run.  Valid STAGES = ' +
-                        '{import, blast, proteinligprep, glide, scoring} '
+                        '{import, blast, proteinligprep, glide, evaluation} '
                         )
     parser.add_argument("--blastnfilter", default='blastnfilter.py',
                         help='Path to BlastnFilter script')
@@ -303,8 +303,8 @@ def _parse_arguments(desc, args):
                         help='Path to proteinligprep script')
     parser.add_argument("--glide", default='glidedocking.py',
                         help='Path to glide docking script')
-    parser.add_argument("--scoring", default='scoring.py',
-                        help='Path to scoring script')
+    parser.add_argument("--evaluation", default='evaluation.py',
+                        help='Path to evaluation script')
     parser.add_argument("--pdbdb", default='/data/pdb',
                         help='Path to PDB database files')
     parser.add_argument("--compinchi",
@@ -336,7 +336,7 @@ def _parse_arguments(desc, args):
 def main():
     desc = """
               Runs the 5 stages (import, blast, proteinligprep, glide,
-              & scoring) of CELPP processing pipeline
+              & evaluation) of CELPP processing pipeline
               (http://www.drugdesigndata.org)
 
               CELPP processing pipeline relies on a set of directories
@@ -449,12 +449,12 @@ def main():
               program set in --glide flag to perform docking via glide
               storing output in stage.4.glide
 
-              If --stage 'scoring'
+              If --stage 'evaluation'
 
               Finds all stage.4.<algo> directories with 'complete' files
               in them which do not end in name 'webdata' and runs
-              script set via --scoring parameter storing the result of
-              the script into stage.5.<algo>.scoring. --pdbdb flag
+              script set via --evaluation parameter storing the result of
+              the script into stage.5.<algo>.evaluation. --pdbdb flag
               must also be set when calling this stage.
               """
 

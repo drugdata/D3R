@@ -20,7 +20,7 @@ from d3r import celpprunner
 from d3r.celpp.task import D3RParameters
 from d3r.celpp import util
 from d3r.celpp.task import D3RTask
-from d3r.celpp.scoring import ScoringTaskFactory
+from d3r.celpp.evaluation import EvaluationTaskFactory
 
 
 class DummyTask(D3RTask):
@@ -123,7 +123,7 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEqual(result.loglevel, 'WARNING')
         self.assertEqual(result.blastnfilter, 'blastnfilter.py')
         self.assertEqual(result.proteinligprep, 'proteinligprep.py')
-        self.assertEqual(result.scoring, 'scoring.py')
+        self.assertEqual(result.evaluation, 'evaluation.py')
         theargs = ['foo', '--stage', 'dock,glide', '--email', 'b@b.com,h@h',
                    '--blastdir', 'b', '--log', 'ERROR',
                    '--blastnfilter', '/bin/blastnfilter.py',
@@ -131,7 +131,7 @@ class TestCelppRunner(unittest.TestCase):
                    '--postanalysis', '/bin/postanalysis.py',
                    '--glide', '/bin/glide.py',
                    '--customweekdir',
-                   '--scoring', '/bin/scoring.py']
+                   '--evaluation', '/bin/evaluation.py']
         result = celpprunner._parse_arguments('hi', theargs)
         self.assertEqual(result.stage, 'dock,glide')
         self.assertEqual(result.celppdir, 'foo')
@@ -142,7 +142,7 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEqual(result.proteinligprep, '/bin/proteinligprep.py')
         self.assertEquals(result.postanalysis, '/bin/postanalysis.py')
         self.assertEquals(result.glide, '/bin/glide.py')
-        self.assertEquals(result.scoring, '/bin/scoring.py')
+        self.assertEquals(result.evaluation, '/bin/evaluation.py')
         self.assertEquals(result.customweekdir, True)
 
     def test_run_tasks_passing_none_and_empty_list(self):
@@ -272,9 +272,9 @@ class TestCelppRunner(unittest.TestCase):
             params = D3RParameters()
             params.latest_weekly = temp_dir
             try:
-                celpprunner.get_task_list_for_stage(params, 'scoring')
+                celpprunner.get_task_list_for_stage(params, 'evaluation')
             except NotImplementedError as e:
-                self.assertEqual(e.message, 'uh oh no tasks for scoring stage')
+                self.assertEqual(e.message, 'uh oh no tasks for evaluation stage')
         finally:
             shutil.rmtree(temp_dir)
 
@@ -284,13 +284,13 @@ class TestCelppRunner(unittest.TestCase):
             params = D3RParameters()
             params.latest_weekly = temp_dir
             glidedir = os.path.join(temp_dir,
-                                    ScoringTaskFactory.STAGE_FOUR_PREFIX +
+                                    EvaluationTaskFactory.STAGE_FOUR_PREFIX +
                                     'glide')
             os.mkdir(glidedir)
             open(os.path.join(glidedir, D3RTask.COMPLETE_FILE), 'a').close()
-            task_list = celpprunner.get_task_list_for_stage(params, 'scoring')
+            task_list = celpprunner.get_task_list_for_stage(params, 'evaluation')
             self.assertEqual(len(task_list), 1)
-            self.assertEqual(task_list[0].get_name(), 'glide.scoring')
+            self.assertEqual(task_list[0].get_name(), 'glide.evaluation')
         finally:
             shutil.rmtree(temp_dir)
 
@@ -300,17 +300,17 @@ class TestCelppRunner(unittest.TestCase):
             params = D3RParameters()
             params.latest_weekly = temp_dir
             glidedir = os.path.join(temp_dir,
-                                    ScoringTaskFactory.STAGE_FOUR_PREFIX +
+                                    EvaluationTaskFactory.STAGE_FOUR_PREFIX +
                                     'glide')
             os.mkdir(glidedir)
             open(os.path.join(glidedir, D3RTask.COMPLETE_FILE), 'a').close()
             freddir = os.path.join(temp_dir,
-                                   ScoringTaskFactory.STAGE_FOUR_PREFIX +
+                                   EvaluationTaskFactory.STAGE_FOUR_PREFIX +
                                    'fred')
             os.mkdir(freddir)
             open(os.path.join(freddir, D3RTask.COMPLETE_FILE), 'a').close()
 
-            task_list = celpprunner.get_task_list_for_stage(params, 'scoring')
+            task_list = celpprunner.get_task_list_for_stage(params, 'evaluation')
             self.assertEqual(len(task_list), 2)
         finally:
             shutil.rmtree(temp_dir)

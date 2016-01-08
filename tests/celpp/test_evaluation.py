@@ -5,28 +5,28 @@ import tempfile
 import os.path
 
 """
-test_scoring
+test_evaluation
 --------------------------------
 
-Tests for `scoring` module.
+Tests for `evaluation` module.
 """
 import shutil
 import os
 from d3r.celpp.task import D3RParameters
 from d3r.celpp.task import D3RTask
-from d3r.celpp.scoring import ScoringTaskFactory
-from d3r.celpp.scoring import ScoringTask
-from d3r.celpp.scoring import PathNotDirectoryError
+from d3r.celpp.evaluation import EvaluationTaskFactory
+from d3r.celpp.evaluation import EvaluationTask
+from d3r.celpp.evaluation import PathNotDirectoryError
 
 
-class TestScoring(unittest.TestCase):
+class TestEvaluation(unittest.TestCase):
     def setUp(self):
         pass
 
-    def test_scoringtaskfactory_constructor(self):
+    def test_evaluationtaskfactory_constructor(self):
         params = D3RParameters()
         params.hi = True
-        stf = ScoringTaskFactory('/foo', params)
+        stf = EvaluationTaskFactory('/foo', params)
         self.assertEquals(stf.get_args().hi, True)
         self.assertEquals(stf.get_path(), '/foo')
 
@@ -35,7 +35,7 @@ class TestScoring(unittest.TestCase):
         try:
             params = D3RParameters()
             path = os.path.join(temp_dir, 'doesnotexist')
-            stf = ScoringTaskFactory(path, params)
+            stf = EvaluationTaskFactory(path, params)
             try:
                 stf.get_scoring_tasks()
                 self.fail('Expected PathNotDirectoryError')
@@ -49,7 +49,7 @@ class TestScoring(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
-            stf = ScoringTaskFactory(temp_dir, params)
+            stf = EvaluationTaskFactory(temp_dir, params)
             task_list = stf.get_scoring_tasks()
             self.assertEquals(len(task_list), 0)
         finally:
@@ -62,7 +62,7 @@ class TestScoring(unittest.TestCase):
             os.mkdir(os.path.join(temp_dir, 'stage.1.dataimport'))
             os.mkdir(os.path.join(temp_dir, 'stage.2.blastnfilter'))
 
-            stf = ScoringTaskFactory(temp_dir, params)
+            stf = EvaluationTaskFactory(temp_dir, params)
             task_list = stf.get_scoring_tasks()
             self.assertEquals(len(task_list), 0)
         finally:
@@ -73,10 +73,10 @@ class TestScoring(unittest.TestCase):
         try:
             params = D3RParameters()
             os.mkdir(os.path.join(temp_dir,
-                                  ScoringTaskFactory.STAGE_FOUR_PREFIX +
-                                  ScoringTaskFactory.WEB_DATA_SUFFIX))
+                                  EvaluationTaskFactory.STAGE_FOUR_PREFIX +
+                                  EvaluationTaskFactory.WEB_DATA_SUFFIX))
 
-            stf = ScoringTaskFactory(temp_dir, params)
+            stf = EvaluationTaskFactory(temp_dir, params)
             task_list = stf.get_scoring_tasks()
             self.assertEquals(len(task_list), 0)
         finally:
@@ -88,14 +88,14 @@ class TestScoring(unittest.TestCase):
             params = D3RParameters()
 
             glidedir = os.path.join(temp_dir,
-                                    ScoringTaskFactory.STAGE_FOUR_PREFIX +
+                                    EvaluationTaskFactory.STAGE_FOUR_PREFIX +
                                     'glide')
             os.mkdir(glidedir)
             open(os.path.join(glidedir, D3RTask.COMPLETE_FILE), 'a').close()
-            stf = ScoringTaskFactory(temp_dir, params)
+            stf = EvaluationTaskFactory(temp_dir, params)
             task_list = stf.get_scoring_tasks()
             self.assertEquals(len(task_list), 1)
-            self.assertEquals(task_list[0].get_name(), 'glide.scoring')
+            self.assertEquals(task_list[0].get_name(), 'glide.evaluation')
         finally:
             shutil.rmtree(temp_dir)
 
@@ -104,18 +104,18 @@ class TestScoring(unittest.TestCase):
         try:
             params = D3RParameters()
             glidedir = os.path.join(temp_dir,
-                                    ScoringTaskFactory.STAGE_FOUR_PREFIX +
+                                    EvaluationTaskFactory.STAGE_FOUR_PREFIX +
                                     'glide')
             os.mkdir(glidedir)
             open(os.path.join(glidedir, D3RTask.COMPLETE_FILE), 'a').close()
 
             freddir = os.path.join(temp_dir,
-                                   ScoringTaskFactory.STAGE_FOUR_PREFIX +
+                                   EvaluationTaskFactory.STAGE_FOUR_PREFIX +
                                    'fred')
             os.mkdir(freddir)
             open(os.path.join(freddir, D3RTask.COMPLETE_FILE), 'a').close()
 
-            stf = ScoringTaskFactory(temp_dir, params)
+            stf = EvaluationTaskFactory(temp_dir, params)
             task_list = stf.get_scoring_tasks()
             self.assertEquals(len(task_list), 2)
             self.assertNotEquals(task_list[0].get_name(),
@@ -129,12 +129,12 @@ class TestScoring(unittest.TestCase):
         try:
             params = D3RParameters()
             glidedir = os.path.join(temp_dir,
-                                    ScoringTaskFactory.STAGE_FOUR_PREFIX +
+                                    EvaluationTaskFactory.STAGE_FOUR_PREFIX +
                                     'glide')
             os.mkdir(glidedir)
             open(os.path.join(glidedir, D3RTask.ERROR_FILE), 'a').close()
 
-            stf = ScoringTaskFactory(temp_dir, params)
+            stf = EvaluationTaskFactory(temp_dir, params)
             task_list = stf.get_scoring_tasks()
             self.assertEquals(len(task_list), 0)
         finally:
@@ -145,20 +145,20 @@ class TestScoring(unittest.TestCase):
         try:
             params = D3RParameters()
             glidedir = os.path.join(temp_dir,
-                                    ScoringTaskFactory.STAGE_FOUR_PREFIX +
+                                    EvaluationTaskFactory.STAGE_FOUR_PREFIX +
                                     'glide')
             os.mkdir(glidedir)
             open(os.path.join(glidedir, D3RTask.ERROR_FILE), 'a').close()
             freddir = os.path.join(temp_dir,
-                                   ScoringTaskFactory.STAGE_FOUR_PREFIX +
+                                   EvaluationTaskFactory.STAGE_FOUR_PREFIX +
                                    'fred')
             os.mkdir(freddir)
             open(os.path.join(freddir, D3RTask.COMPLETE_FILE), 'a').close()
 
-            stf = ScoringTaskFactory(temp_dir, params)
+            stf = EvaluationTaskFactory(temp_dir, params)
             task_list = stf.get_scoring_tasks()
             self.assertEquals(len(task_list), 1)
-            self.assertEquals(task_list[0].get_name(), 'fred.scoring')
+            self.assertEquals(task_list[0].get_name(), 'fred.evaluation')
         finally:
             shutil.rmtree(temp_dir)
 
@@ -167,11 +167,11 @@ class TestScoring(unittest.TestCase):
         # no dock task found so it cannot run
         docktask = D3RTask('/blah', params)
         docktask.set_name('foo')
-        docktask.set_stage(ScoringTaskFactory.DOCKSTAGE)
+        docktask.set_stage(EvaluationTaskFactory.DOCKSTAGE)
 
-        scoring = ScoringTask('/blah', 'foo.scoring',
+        scoring = EvaluationTask('/blah', 'foo.evaluation',
                               docktask, params)
-        self.assertEquals(scoring.get_name(), 'foo.scoring')
+        self.assertEquals(scoring.get_name(), 'foo.evaluation')
         self.assertEquals(scoring.get_stage(), 5)
 
     def test_can_run(self):
@@ -181,9 +181,9 @@ class TestScoring(unittest.TestCase):
             # no dock task found so it cannot run
             docktask = D3RTask(temp_dir, params)
             docktask.set_name('foo')
-            docktask.set_stage(ScoringTaskFactory.DOCKSTAGE)
+            docktask.set_stage(EvaluationTaskFactory.DOCKSTAGE)
 
-            scoring = ScoringTask(temp_dir, 'foo.scoring',
+            scoring = EvaluationTask(temp_dir, 'foo.evaluation',
                                   docktask, params)
             self.assertEqual(scoring.can_run(), False)
             self.assertEqual(scoring.get_error(),
@@ -192,11 +192,11 @@ class TestScoring(unittest.TestCase):
             # docktask  running
             docktask = D3RTask(temp_dir, params)
             docktask.set_name('foo')
-            docktask.set_stage(ScoringTaskFactory.DOCKSTAGE)
+            docktask.set_stage(EvaluationTaskFactory.DOCKSTAGE)
             docktask.create_dir()
             open(os.path.join(docktask.get_dir(), D3RTask.START_FILE),
                  'a').close()
-            scoring = ScoringTask(temp_dir, 'foo.scoring',
+            scoring = EvaluationTask(temp_dir, 'foo.evaluation',
                                   docktask, params)
             self.assertEqual(scoring.can_run(), False)
             self.assertEqual(scoring.get_error(),
@@ -206,7 +206,7 @@ class TestScoring(unittest.TestCase):
             error_file = os.path.join(docktask.get_dir(),
                                       D3RTask.ERROR_FILE)
             open(error_file, 'a').close()
-            scoring = ScoringTask(temp_dir, 'foo.scoring',
+            scoring = EvaluationTask(temp_dir, 'foo.evaluation',
                                   docktask, params)
             self.assertEqual(scoring.can_run(), False)
             self.assertEqual(scoring.get_error(),
@@ -216,13 +216,13 @@ class TestScoring(unittest.TestCase):
             os.remove(error_file)
             open(os.path.join(docktask.get_dir(),
                               D3RTask.COMPLETE_FILE), 'a').close()
-            scoring = ScoringTask(temp_dir, 'foo.scoring',
+            scoring = EvaluationTask(temp_dir, 'foo.evaluation',
                                   docktask, params)
             self.assertEqual(scoring.can_run(), True)
             self.assertEqual(scoring.get_error(), None)
 
             # scoring task exists already
-            scoring = ScoringTask(temp_dir, 'foo.scoring',
+            scoring = EvaluationTask(temp_dir, 'foo.evaluation',
                                   docktask, params)
             scoring.create_dir()
             self.assertEqual(scoring.can_run(), False)
@@ -231,7 +231,7 @@ class TestScoring(unittest.TestCase):
                              ' already exists and status is unknown')
 
             # scoring task already complete
-            scoring = ScoringTask(temp_dir, 'foo.scoring',
+            scoring = EvaluationTask(temp_dir, 'foo.evaluation',
                                   docktask, params)
             open(os.path.join(scoring.get_dir(),
                               D3RTask.COMPLETE_FILE), 'a').close()
@@ -248,8 +248,8 @@ class TestScoring(unittest.TestCase):
             # return immediately cause can_run is false
             docktask = D3RTask(temp_dir, params)
             docktask.set_name('foo')
-            docktask.set_stage(ScoringTaskFactory.DOCKSTAGE)
-            scoring = ScoringTask(temp_dir, 'foo.scoring',
+            docktask.set_stage(EvaluationTaskFactory.DOCKSTAGE)
+            scoring = EvaluationTask(temp_dir, 'foo.evaluation',
                                   docktask, params)
             scoring.run()
             self.assertEqual(scoring.get_error(),
@@ -263,15 +263,15 @@ class TestScoring(unittest.TestCase):
             params = D3RParameters()
             docktask = D3RTask(temp_dir, params)
             docktask.set_name('foo')
-            docktask.set_stage(ScoringTaskFactory.DOCKSTAGE)
+            docktask.set_stage(EvaluationTaskFactory.DOCKSTAGE)
             docktask.create_dir()
             open(os.path.join(docktask.get_dir(), D3RTask.COMPLETE_FILE),
                  'a').close()
-            scoring = ScoringTask(temp_dir, 'foo.scoring',
+            scoring = EvaluationTask(temp_dir, 'foo.evaluation',
                                   docktask, params)
             scoring.run()
             self.assertEqual(scoring.get_error(),
-                             'scoring not set')
+                             'evaluation not set')
             # test files get created
             self.assertEqual(os.path.isdir(scoring.get_dir()),
                              True)
@@ -285,14 +285,14 @@ class TestScoring(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
-            params.scoring = 'true'
+            params.evaluation = 'true'
             docktask = D3RTask(temp_dir, params)
             docktask.set_name('foo')
-            docktask.set_stage(ScoringTaskFactory.DOCKSTAGE)
+            docktask.set_stage(EvaluationTaskFactory.DOCKSTAGE)
             docktask.create_dir()
             open(os.path.join(docktask.get_dir(), D3RTask.COMPLETE_FILE),
                  'a').close()
-            scoring = ScoringTask(temp_dir, 'foo.scoring',
+            scoring = EvaluationTask(temp_dir, 'foo.evaluation',
                                   docktask, params)
             scoring.run()
             self.assertEqual(scoring.get_error(),
@@ -310,15 +310,15 @@ class TestScoring(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
-            params.scoring = 'false'
+            params.evaluation = 'false'
             params.pdbdb = '/data/pdb'
             docktask = D3RTask(temp_dir, params)
             docktask.set_name('foo')
-            docktask.set_stage(ScoringTaskFactory.DOCKSTAGE)
+            docktask.set_stage(EvaluationTaskFactory.DOCKSTAGE)
             docktask.create_dir()
             open(os.path.join(docktask.get_dir(), D3RTask.COMPLETE_FILE),
                  'a').close()
-            scoring = ScoringTask(temp_dir, 'foo.scoring',
+            scoring = EvaluationTask(temp_dir, 'foo.evaluation',
                                   docktask, params)
             scoring.run()
             self.assertEqual(scoring.get_error(),
@@ -342,15 +342,15 @@ class TestScoring(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
-            params.scoring = '/bin/doesnotexist'
+            params.evaluation = '/bin/doesnotexist'
             params.pdbdb = '/data/pdb'
             docktask = D3RTask(temp_dir, params)
             docktask.set_name('foo')
-            docktask.set_stage(ScoringTaskFactory.DOCKSTAGE)
+            docktask.set_stage(EvaluationTaskFactory.DOCKSTAGE)
             docktask.create_dir()
             open(os.path.join(docktask.get_dir(), D3RTask.COMPLETE_FILE),
                  'a').close()
-            scoring = ScoringTask(temp_dir, 'foo.scoring',
+            scoring = EvaluationTask(temp_dir, 'foo.evaluation',
                                   docktask, params)
             scoring.run()
             self.assertEqual(scoring.get_error(),
@@ -372,15 +372,15 @@ class TestScoring(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
-            params.scoring = 'true'
+            params.evaluation = 'true'
             params.pdbdb = '/data/pdb'
             docktask = D3RTask(temp_dir, params)
             docktask.set_name('foo')
-            docktask.set_stage(ScoringTaskFactory.DOCKSTAGE)
+            docktask.set_stage(EvaluationTaskFactory.DOCKSTAGE)
             docktask.create_dir()
             open(os.path.join(docktask.get_dir(), D3RTask.COMPLETE_FILE),
                  'a').close()
-            scoring = ScoringTask(temp_dir, 'foo.scoring',
+            scoring = EvaluationTask(temp_dir, 'foo.evaluation',
                                   docktask, params)
             scoring.run()
             self.assertEqual(scoring.get_error(), None)
