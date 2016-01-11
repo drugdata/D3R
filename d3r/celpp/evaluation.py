@@ -54,16 +54,16 @@ class EvaluationTaskFactory(object):
         """
         return self._path
 
-    def get_scoring_tasks(self):
-        """Generate ScoringTasks
+    def get_evaluation_tasks(self):
+        """Generate EvaluationTasks
 
            This method examines the path directory
            set via the constructor or set_path() method
            for all stage 4 tasks excluding tasks
-           that end with 'webdata'  A ScoringTask
+           that end with 'webdata'  A EvaluationTask
            object is created for each of these tasks
            and returned in a list.
-           :return: list of ScoringTask objects or empty list if none found
+           :return: list of EvaluationTask objects or empty list if none found
         """
         path = self.get_path()
         logger.debug('Examining ' + path + ' for docking tasks')
@@ -159,7 +159,7 @@ class EvaluationTask(D3RTask):
            Method requires can_run() to be called before hand with
            successful outcome
            Otherwise method invokes D3RTask.start then this method
-           creates a directory and invokes scoring script.  Upon
+           creates a directory and invokes evaluation script.  Upon
            completion results are analyzed and success or error status
            is set appropriately and D3RTask.end is invoked
            """
@@ -189,16 +189,16 @@ class EvaluationTask(D3RTask):
 
         #
         # --pdbdb <path to pdb.extracted> --dockdir <stage.4.glide> \
-        # --outdir <path to stage.5.glide.scoring>
+        # --outdir <path to stage.5.glide.evaluation>
         #
-        cmd_to_run = (self.get_args().scoring + ' --pdbdb ' +
+        cmd_to_run = (self.get_args().evaluation + ' --pdbdb ' +
                       self.get_args().pdbdb + ' --dockdir ' +
                       self._docktask.get_dir() +
                       ' --outdir ' + self.get_dir())
 
-        scoring_name = os.path.basename(self.get_args().scoring)
+        eval_name = os.path.basename(self.get_args().evaluation)
 
-        self.run_external_command(scoring_name, cmd_to_run,
+        self.run_external_command(eval_name, cmd_to_run,
                                   True)
         # assess the result
         self.end()

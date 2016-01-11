@@ -289,7 +289,8 @@ def _parse_arguments(desc, args):
     parser.add_argument("--customweekdir",
                         action='store_true',
                         help="Use directory set in celppdir instead of " +
-                             "looking for latest weekdir.  --createweekdir " +
+                             "looking for latest weekdir.  NOTE: " +
+                             "--createweekdir " +
                              "will create a dataset.week.# dir under celppdir")
     parser.add_argument("--stage", required=True, help='Comma delimited list' +
                         ' of stages to run.  Valid STAGES = ' +
@@ -385,7 +386,7 @@ def main():
               Notification of stage start and end will be sent to
               addresses set via --email flag.
 
-              Regardless of the stage specified, this program will
+              Unless --customweekdir is set, this program will
               examine the 'celppdir' (last argument passed on
               commandline) to find the latest directory with this path:
               <year>/dataset.week.#
@@ -393,7 +394,10 @@ def main():
               that year the dataset.week.# with highest #.  The output
               directories created will be put within this directory.
 
-              If specified --createweekdir flag will instruct this
+              Setting --customweekdir will cause program to use 'celppdir'
+              path.
+
+              Setting the --createweekdir flag will instruct this
               program to create a new directory for the current
               celpp week/year before invoking running any stage
               processing.
