@@ -61,9 +61,13 @@ def get_center(protein_file, ligname):
                 multi_ligand = True
             else:
                 atom_list.append(atom_name)
-                x += float(xyz_line[30:38])
-                y+= float(xyz_line[38:46])
-                z+= float(xyz_line[46:54])
+                try:
+                    x += float(xyz_line[30:38])
+                    y+= float(xyz_line[38:46])
+                    z+= float(xyz_line[46:54])
+                except:
+                    logging.debug("Fatal error: Cannot find the XYZ coordinate for this protein:%s"%protein_file)
+                    return False
     if not multi_ligand:
         lig_center = "%8.3f, %8.3f, %8.3f"%(x/len(atom_list), y/len(atom_list), z/len(atom_list))
         logging.debug("Ligand center for this case:%s is %s"%(protein_file, lig_center))
@@ -236,14 +240,14 @@ def main_proteinprep ( s2_result_path, pdb_protein_path, working_folder ):
                     logging.info("Succsessfully split this protein:%s, go to preparation step"%(all_protein_full_name))
                     prepared_protein_maegz = all_protein + ".maegz"
                     #pass the wizard sleep time here
-                    preparation_result = prepare_protein(out_receptor,prepared_protein_maegz, 1 )
+                    preparation_result = prepare_protein(out_receptor,prepared_protein_maegz, 180 )
                     if not preparation_result:
                         logging.info("Unable to prepare this protein:%s"%(out_split))
                     else:
-                        logging.info("Succsessfully prepared this protein:%s"%(prepared_protein_maegz))
                         #convert into pdb format
-                        out_prepare_pdb = all_protein_full_name + "_prepared.pdb"
+                        out_prepare_pdb = all_protein + "_prepared.pdb"
                         commands.getoutput("$SCHRODINGER/utilities/pdbconvert -imae %s -opdb %s"%(prepared_protein_maegz, out_prepare_pdb))
+                        logging.info("Succsessfully prepared this protein:%s"%(out_prepare_pdb))
         os.chdir(current_dir_layer_1)
                     
                 
@@ -269,8 +273,4 @@ if ("__main__") == (__name__):
     #move the final log file to the result dir
     log_file_path = os.path.join(running_dir, 'final.log')
     commands.getoutput("mv %s %s"%(log_file_path,stage_3_result))
-    
-    
-    
-
 
