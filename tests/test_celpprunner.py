@@ -123,7 +123,7 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEqual(result.loglevel, 'WARNING')
         self.assertEqual(result.blastnfilter, 'blastnfilter.py')
         self.assertEqual(result.proteinligprep, 'proteinligprep.py')
-        self.assertEqual(result.evaluation, 'evaluation.py')
+        self.assertEqual(result.evaluation, 'evaluate.py')
         theargs = ['foo', '--stage', 'dock,glide', '--email', 'b@b.com,h@h',
                    '--blastdir', 'b', '--log', 'ERROR',
                    '--blastnfilter', '/bin/blastnfilter.py',

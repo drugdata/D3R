@@ -304,7 +304,7 @@ def _parse_arguments(desc, args):
                         help='Path to proteinligprep script')
     parser.add_argument("--glide", default='glidedocking.py',
                         help='Path to glide docking script')
-    parser.add_argument("--evaluation", default='evaluation.py',
+    parser.add_argument("--evaluation", default='evaluate.py',
                         help='Path to evaluation script')
     parser.add_argument("--pdbdb", default='/data/pdb',
                         help='Path to PDB database files')
