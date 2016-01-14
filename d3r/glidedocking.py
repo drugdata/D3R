@@ -84,13 +84,13 @@ def main_glide (stage_3_result, stage_4_working, update= True):
                 logging.info("Trying to get the grid file...")
                 if update: 
                     out_grid = grid(grid_center, possible_protein) 
-                    time.sleep(200)
+                    #time.sleep(200)
                 else:
                     #check if there is old grid
                     out_grid = possible_protein.split(".")[0] + ".zip"
                     if not os.path.isfile(out_grid):
                         out_grid = grid(grid_center, possible_protein)
-                        time.sleep(200)
+                        #time.sleep(200)
                 logging.info("Finish grid generation...")
                 logging.info("Trying to dock...")
                 if update:
@@ -103,7 +103,6 @@ def main_glide (stage_3_result, stage_4_working, update= True):
                 ##################
                 os.chdir(current_dir_layer_2)
         os.chdir(current_dir)
-        #raw_input()
         ##################
 
 if ("__main__") == (__name__):
