@@ -116,8 +116,7 @@ class MakeBlastDBTask(D3RTask):
         download_path = self.get_pdb_seqres_txt_gz()
         url = self._args.pdbsequrl
         try:
-            util.download_url_to_file(url + '/' +
-                                      MakeBlastDBTask.PDB_SEQRES_TXT_GZ,
+            util.download_url_to_file(url,
                                       download_path,
                                       self._maxretries,
                                       self._retrysleep)
