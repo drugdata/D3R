@@ -351,12 +351,16 @@ class TestBlastNFilterTask(unittest.TestCase):
             blasttask = BlastNFilterTask(temp_dir, params)
             blasttask._can_run = True
             blasttask.run()
-            self.assertEqual(blasttask.get_status(), D3RTask.ERROR_STATUS)
-            self.assertNotEqual(blasttask.get_error(), None)
+            self.assertEqual(blasttask.get_status(), D3RTask.COMPLETE_STATUS)
+            self.assertEqual(blasttask.get_error(), None)
+            complete_file = os.path.join(blasttask.get_dir(),
+                                         D3RTask.COMPLETE_FILE)
+
+            self.assertEqual(os.path.isfile(complete_file), True)
             error_file = os.path.join(blasttask.get_dir(),
                                       D3RTask.ERROR_FILE)
 
-            self.assertEqual(os.path.isfile(error_file), True)
+            self.assertEqual(os.path.isfile(error_file), False)
 
             std_err_file = os.path.join(blasttask.get_dir(),
                                         'false.stderr')
