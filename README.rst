@@ -30,6 +30,7 @@ Requires
  * xlsxwriter
  * NCBI Blast (https://blast.ncbi.nlm.nih.gov/Blast.cgi?PAGE_TYPE=BlastDocs&DOC_TYPE=Download)
  * rdkit (needed by blastnfilter.py and proteinligprep.py)
+ * schrodinger (needed by proteinligprep.py and glidedocking.py)
 
 Installation
 ------------
@@ -49,19 +50,19 @@ Run
 
 .. code:: bash
   
-  usage: celpprunner.py [-h] [--blastdir BLASTDIR] [--email EMAIL]
+usage: celpprunner.py [-h] [--blastdir BLASTDIR] [--email EMAIL]
                       [--createweekdir] [--customweekdir] --stage STAGE
                       [--blastnfilter BLASTNFILTER]
                       [--postanalysis POSTANALYSIS]
                       [--proteinligprep PROTEINLIGPREP] [--glide GLIDE]
-                      [--scoring SCORING] [--pdbdb PDBDB]
+                      [--evaluation EVALUATION] [--pdbdb PDBDB]
                       [--compinchi COMPINCHI] [--pdbfileurl PDBFILEURL]
                       [--log {DEBUG,INFO,WARNING,ERROR,CRITICAL}]
                       [--smtp SMTP] [--smtpport SMTPPORT] [--version]
                       celppdir
 
               Runs the 5 stages (import, blast, proteinligprep, glide,
-              & scoring) of CELPP processing pipeline
+              & evaluation) of CELPP processing pipeline
               (http://www.drugdesigndata.org)
 
               CELPP processing pipeline relies on a set of directories
@@ -110,7 +111,7 @@ Run
               Notification of stage start and end will be sent to
               addresses set via --email flag.
 
-              Regardless of the stage specified, this program will
+              Unless --customweekdir is set, this program will
               examine the 'celppdir' (last argument passed on
               commandline) to find the latest directory with this path:
               <year>/dataset.week.#
@@ -118,7 +119,10 @@ Run
               that year the dataset.week.# with highest #.  The output
               directories created will be put within this directory.
 
-              If specified --createweekdir flag will instruct this
+              Setting --customweekdir will cause program to use 'celppdir'
+              path.
+
+              Setting the --createweekdir flag will instruct this
               program to create a new directory for the current
               celpp week/year before invoking running any stage
               processing.
@@ -174,50 +178,51 @@ Run
               program set in --glide flag to perform docking via glide
               storing output in stage.4.glide
 
-              If --stage 'scoring'
+              If --stage 'evaluation'
 
               Finds all stage.4.<algo> directories with 'complete' files
               in them which do not end in name 'webdata' and runs
-              script set via --scoring parameter storing the result of
-              the script into stage.5.<algo>.scoring. --pdbdb flag
+              script set via --evaluation parameter storing the result of
+              the script into stage.5.<algo>.evaluation. --pdbdb flag
               must also be set when calling this stage.
+              
 
-
-  positional arguments:
-    celppdir              Base celpp directory
-
-  optional arguments:
-    -h, --help            show this help message and exit
-    --blastdir BLASTDIR   Parent directory of blastdb. There should exist a
-                          "current" symlink or directory that contains the db.
-                          NOTE: Required parameter for blast stage
-    --email EMAIL         Comma delimited list of email addresses
-    --createweekdir       Create new celpp week directory before running stages
-    --customweekdir       Use directory set in celppdir instead of looking for
-                          latest weekdir. --createweekdir will create a
-                          dataset.week.# dir under celppdir
-    --stage STAGE         Comma delimited list of stages to run. Valid STAGES =
-                          {import, blast, proteinligprep, glide, scoring}
-    --blastnfilter BLASTNFILTER
-                          Path to BlastnFilter script
-    --postanalysis POSTANALYSIS
-                          Path to PostAnalysis script
-    --proteinligprep PROTEINLIGPREP
-                          Path to proteinligprep script
-    --glide GLIDE         Path to glide docking script
-    --scoring SCORING     Path to scoring script
-    --pdbdb PDBDB         Path to PDB database files
-    --compinchi COMPINCHI
-                          URL to download Components-inchi.ich file fortask
-                          stage.1.compinchi
-    --pdbfileurl PDBFILEURL
-                          URL to download new_release_structure_nonpolymer.tsv,n
-                          ew_release_structure_sequence.tsv, and
-                          new_release_crystallization_pH.tsv files for task
-                          stage.1.dataimport
-    --log {DEBUG,INFO,WARNING,ERROR,CRITICAL}
-                          Set the logging level
-    --smtp SMTP           Sets smtpserver to use
-    --smtpport SMTPPORT   Sets smtp server port
-    --version             show program's version number and exit
+    positional arguments:
+      celppdir              Base celpp directory
+    
+    optional arguments:
+      -h, --help            show this help message and exit
+      --blastdir BLASTDIR   Parent directory of blastdb. There should exist a
+                            "current" symlink or directory that contains the db.
+                            NOTE: Required parameter for blast stage
+      --email EMAIL         Comma delimited list of email addresses
+      --createweekdir       Create new celpp week directory before running stages
+      --customweekdir       Use directory set in celppdir instead of looking for
+                            latest weekdir. NOTE: --createweekdir will create a
+                            dataset.week.# dir under celppdir
+      --stage STAGE         Comma delimited list of stages to run. Valid STAGES =
+                            {import, blast, proteinligprep, glide, evaluation}
+      --blastnfilter BLASTNFILTER
+                            Path to BlastnFilter script
+      --postanalysis POSTANALYSIS
+                            Path to PostAnalysis script
+      --proteinligprep PROTEINLIGPREP
+                            Path to proteinligprep script
+      --glide GLIDE         Path to glide docking script
+      --evaluation EVALUATION
+                            Path to evaluation script
+      --pdbdb PDBDB         Path to PDB database files
+      --compinchi COMPINCHI
+                            URL to download Components-inchi.ich file fortask
+                            stage.1.compinchi
+      --pdbfileurl PDBFILEURL
+                            URL to download new_release_structure_nonpolymer.tsv
+                            ,new_release_structure_sequence.tsv, and
+                            new_release_crystallization_pH.tsv files for task
+                            stage.1.dataimport
+      --log {DEBUG,INFO,WARNING,ERROR,CRITICAL}
+                            Set the logging level
+      --smtp SMTP           Sets smtpserver to use
+      --smtpport SMTPPORT   Sets smtp server port
+      --version             show program's version number and exit
 
