@@ -3,13 +3,21 @@ __author__ = 'robswift'
 import os
 import sys
 import re
+import logging
+
 from Bio.Alphabet import IUPAC
 from Bio import SeqIO
-from Bio.PDB import *
-from base import Base
-from ligand import Ligand
+from d3r.blast.base import Base
+from d3r.blast.ligand import Ligand
 from d3r.filter import filtering_sets as filtering_sets
 from d3r.blast.hit_sequence import HitSequence
+
+logger = logging.getLogger(__name__)
+
+try:
+    from Bio.PDB import *
+except ImportError:
+    logger.exception('Unable to import Bio.PDB Hit class may not work')
 
 
 class RegDict(dict):
