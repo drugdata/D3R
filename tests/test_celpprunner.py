@@ -274,7 +274,8 @@ class TestCelppRunner(unittest.TestCase):
             try:
                 celpprunner.get_task_list_for_stage(params, 'evaluation')
             except NotImplementedError as e:
-                self.assertEqual(e.message, 'uh oh no tasks for evaluation stage')
+                self.assertEqual(e.message,
+                                 'uh oh no tasks for evaluation stage')
         finally:
             shutil.rmtree(temp_dir)
 
@@ -288,7 +289,8 @@ class TestCelppRunner(unittest.TestCase):
                                     'glide')
             os.mkdir(glidedir)
             open(os.path.join(glidedir, D3RTask.COMPLETE_FILE), 'a').close()
-            task_list = celpprunner.get_task_list_for_stage(params, 'evaluation')
+            task_list = celpprunner.get_task_list_for_stage(params,
+                                                            'evaluation')
             self.assertEqual(len(task_list), 1)
             self.assertEqual(task_list[0].get_name(), 'glide.evaluation')
         finally:
@@ -310,7 +312,8 @@ class TestCelppRunner(unittest.TestCase):
             os.mkdir(freddir)
             open(os.path.join(freddir, D3RTask.COMPLETE_FILE), 'a').close()
 
-            task_list = celpprunner.get_task_list_for_stage(params, 'evaluation')
+            task_list = celpprunner.get_task_list_for_stage(params,
+                                                            'evaluation')
             self.assertEqual(len(task_list), 2)
         finally:
             shutil.rmtree(temp_dir)
