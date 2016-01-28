@@ -4,12 +4,17 @@ import sys
 from rdkit import Chem
 from rdkit.Chem import rdFMCS
 from mcss import MCSS
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class Ligand(object):
     """
 
     """
-
+    # timeout in seconds for rdkit to find maximum common substructure
+    FINDMCS_TIMEOUT = 60
     inchi_component = {}
 
     @staticmethod
@@ -34,6 +39,7 @@ class Ligand(object):
                     continue
             handle.close()
         except IOError:
+            logger.exception('Caught exception attempting to open or parse Components.inchi.ich file')
             sys.exit(1)
         if len(Ligand.inchi_component.keys()) < 20000:
             raise IOError('There is a problem with Components-inchi.ich.')
@@ -56,6 +62,7 @@ class Ligand(object):
         """
         if not inchi and not self.inchi:
             print("Please set an inchi string")
+            logger.error('No inchi string set')
             return False
         elif not inchi and self.inchi:
             inchi = self.inchi
@@ -63,6 +70,7 @@ class Ligand(object):
             self.rd_mol = Chem.MolFromInchi(format(inchi), removeHs=False, sanitize=False, treatWarningAsError=True)
             return True
         except:
+            logger.exception('Unable to create rdkt.Chem.rdmol Mol object')
             return False
 
     def set_rd_mol_from_resname(self, resname):
@@ -78,6 +86,7 @@ class Ligand(object):
             self.inchi = inchi
             return True
         except:
+            logger.exception('Unable to create rdkit.Chem.rdmol from resname')
             return False
 
     def mcss(self, reference):
@@ -94,10 +103,11 @@ class Ligand(object):
         :return: the MCSS (rd mol object) or None
         """
         try:
-            res = rdFMCS.FindMCS([reference.rd_mol, self.rd_mol])
+            res = rdFMCS.FindMCS([reference.rd_mol, self.rd_mol], timeout=Ligand.FINDMCS_TIMEOUT)
             mcss = Chem.MolFromSmarts(res.smartsString)
             return mcss
         except:
+            logger.exception('Caught exception attempting to run rdkit FindMCS or MolFromSmarts')
             return None
 
     def set_mcss(self, reference, mcss_mol):
