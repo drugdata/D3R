@@ -90,7 +90,8 @@ class EvaluationTaskFactory(object):
                                           .STAGE_FOUR_PREFIX):])
                     stask = EvaluationTask(path,
                                            docktask.get_name() + '.' +
-                                           EvaluationTaskFactory.SCORING_SUFFIX,
+                                           EvaluationTaskFactory.
+                                           SCORING_SUFFIX,
                                            docktask,
                                            self.get_args())
                     if stask.can_run():

@@ -170,7 +170,7 @@ class TestEvaluation(unittest.TestCase):
         docktask.set_stage(EvaluationTaskFactory.DOCKSTAGE)
 
         evaluation = EvaluationTask('/blah', 'foo.evaluation',
-                              docktask, params)
+                                    docktask, params)
         self.assertEquals(evaluation.get_name(), 'foo.evaluation')
         self.assertEquals(evaluation.get_stage(), 5)
 
@@ -184,7 +184,7 @@ class TestEvaluation(unittest.TestCase):
             docktask.set_stage(EvaluationTaskFactory.DOCKSTAGE)
 
             evaluation = EvaluationTask(temp_dir, 'foo.evaluation',
-                                  docktask, params)
+                                        docktask, params)
             self.assertEqual(evaluation.can_run(), False)
             self.assertEqual(evaluation.get_error(),
                              'foo task has notfound status')
@@ -197,7 +197,7 @@ class TestEvaluation(unittest.TestCase):
             open(os.path.join(docktask.get_dir(), D3RTask.START_FILE),
                  'a').close()
             evaluation = EvaluationTask(temp_dir, 'foo.evaluation',
-                                  docktask, params)
+                                        docktask, params)
             self.assertEqual(evaluation.can_run(), False)
             self.assertEqual(evaluation.get_error(),
                              'foo task has start status')
@@ -207,7 +207,7 @@ class TestEvaluation(unittest.TestCase):
                                       D3RTask.ERROR_FILE)
             open(error_file, 'a').close()
             evaluation = EvaluationTask(temp_dir, 'foo.evaluation',
-                                  docktask, params)
+                                        docktask, params)
             self.assertEqual(evaluation.can_run(), False)
             self.assertEqual(evaluation.get_error(),
                              'foo task has error status')
@@ -217,13 +217,13 @@ class TestEvaluation(unittest.TestCase):
             open(os.path.join(docktask.get_dir(),
                               D3RTask.COMPLETE_FILE), 'a').close()
             evaluation = EvaluationTask(temp_dir, 'foo.evaluation',
-                                  docktask, params)
+                                        docktask, params)
             self.assertEqual(evaluation.can_run(), True)
             self.assertEqual(evaluation.get_error(), None)
 
             # evaluation task exists already
             evaluation = EvaluationTask(temp_dir, 'foo.evaluation',
-                                  docktask, params)
+                                        docktask, params)
             evaluation.create_dir()
             self.assertEqual(evaluation.can_run(), False)
             self.assertEqual(evaluation.get_error(),
@@ -232,7 +232,7 @@ class TestEvaluation(unittest.TestCase):
 
             # evaluation task already complete
             evaluation = EvaluationTask(temp_dir, 'foo.evaluation',
-                                  docktask, params)
+                                        docktask, params)
             open(os.path.join(evaluation.get_dir(),
                               D3RTask.COMPLETE_FILE), 'a').close()
             self.assertEqual(evaluation.can_run(), False)
@@ -250,7 +250,7 @@ class TestEvaluation(unittest.TestCase):
             docktask.set_name('foo')
             docktask.set_stage(EvaluationTaskFactory.DOCKSTAGE)
             evaluation = EvaluationTask(temp_dir, 'foo.evaluation',
-                                  docktask, params)
+                                        docktask, params)
             evaluation.run()
             self.assertEqual(evaluation.get_error(),
                              'foo task has notfound status')
@@ -268,7 +268,7 @@ class TestEvaluation(unittest.TestCase):
             open(os.path.join(docktask.get_dir(), D3RTask.COMPLETE_FILE),
                  'a').close()
             evaluation = EvaluationTask(temp_dir, 'foo.evaluation',
-                                  docktask, params)
+                                        docktask, params)
             evaluation.run()
             self.assertEqual(evaluation.get_error(),
                              'evaluation not set')
@@ -293,7 +293,7 @@ class TestEvaluation(unittest.TestCase):
             open(os.path.join(docktask.get_dir(), D3RTask.COMPLETE_FILE),
                  'a').close()
             evaluation = EvaluationTask(temp_dir, 'foo.evaluation',
-                                  docktask, params)
+                                        docktask, params)
             evaluation.run()
             self.assertEqual(evaluation.get_error(),
                              'pdbdb not set')
@@ -319,7 +319,7 @@ class TestEvaluation(unittest.TestCase):
             open(os.path.join(docktask.get_dir(), D3RTask.COMPLETE_FILE),
                  'a').close()
             evaluation = EvaluationTask(temp_dir, 'foo.evaluation',
-                                  docktask, params)
+                                        docktask, params)
             evaluation.run()
             self.assertEqual(evaluation.get_error(),
                              'Non zero exit code: 1 received. Standard out: ' +
@@ -351,7 +351,7 @@ class TestEvaluation(unittest.TestCase):
             open(os.path.join(docktask.get_dir(), D3RTask.COMPLETE_FILE),
                  'a').close()
             evaluation = EvaluationTask(temp_dir, 'foo.evaluation',
-                                  docktask, params)
+                                        docktask, params)
             evaluation.run()
             self.assertEqual(evaluation.get_error(),
                              'Caught Exception trying to run ' +
@@ -381,7 +381,7 @@ class TestEvaluation(unittest.TestCase):
             open(os.path.join(docktask.get_dir(), D3RTask.COMPLETE_FILE),
                  'a').close()
             evaluation = EvaluationTask(temp_dir, 'foo.evaluation',
-                                  docktask, params)
+                                        docktask, params)
             evaluation.run()
             self.assertEqual(evaluation.get_error(), None)
             # test files get created

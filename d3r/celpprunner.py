@@ -257,7 +257,8 @@ def get_task_list_for_stage(theargs, stage_name):
     if stage_name == 'evaluation':
         # use util function call to get all evaluation tasks
         # append them to the task_list
-        eval_task_factory = EvaluationTaskFactory(theargs.latest_weekly, theargs)
+        eval_task_factory = EvaluationTaskFactory(theargs.latest_weekly,
+                                                  theargs)
         task_list.extend(eval_task_factory.get_evaluation_tasks())
 
     if len(task_list) is 0:
