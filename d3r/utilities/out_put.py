@@ -2,8 +2,8 @@ __author__ = 'robswift'
 
 import os
 import sys
-from writers import WriteLog
-from writers import WriteText
+from d3r.utilities.writers import WriteLog
+from d3r.utilities.writers import WriteText
 from d3r.utilities.analysis import InputAnalysis
 from d3r.utilities.analysis import OutputAnalysis
 
