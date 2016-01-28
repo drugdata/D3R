@@ -1,7 +1,7 @@
 __author__ = 'robswift'
 
 from Bio import Alphabet
-from filtering_sets import stabilisers, buffers, ions, excipients
+from d3r.filter.filtering_sets import stabilisers, buffers, ions, excipients
 
 
 class BaseFilter(object):
