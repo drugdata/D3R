@@ -1,12 +1,17 @@
 __author__ = 'robswift'
 
 import sys
-from rdkit import Chem
-from rdkit.Chem import rdFMCS
-from mcss import MCSS
+
+from d3r.blast.mcss import MCSS
 import logging
 
 logger = logging.getLogger(__name__)
+
+try:
+    from rdkit import Chem
+    from rdkit.Chem import rdFMCS
+except ImportError:
+    logger.exception('Unable to import rdkit Ligand class will not work')
 
 
 class Ligand(object):
