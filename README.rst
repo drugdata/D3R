@@ -50,7 +50,7 @@ Run
 
 .. code:: bash
   
-usage: celpprunner.py [-h] [--blastdir BLASTDIR] [--email EMAIL]
+  usage: celpprunner.py [-h] [--blastdir BLASTDIR] [--email EMAIL]
                       [--createweekdir] [--customweekdir] --stage STAGE
                       [--blastnfilter BLASTNFILTER]
                       [--postanalysis POSTANALYSIS]
@@ -60,35 +60,35 @@ usage: celpprunner.py [-h] [--blastdir BLASTDIR] [--email EMAIL]
                       [--log {DEBUG,INFO,WARNING,ERROR,CRITICAL}]
                       [--smtp SMTP] [--smtpport SMTPPORT] [--version]
                       celppdir
-
+  
               Runs the 5 stages (import, blast, proteinligprep, glide,
               & evaluation) of CELPP processing pipeline
               (http://www.drugdesigndata.org)
-
+  
               CELPP processing pipeline relies on a set of directories
               with specific structure. The pipeline runs a set of stages
               Each stage has a numerical value and a name. The numerical
               value denotes order and the stage name identifies separate
               tasks to run in the stage.
-
+  
               The filesystem structure of the stage is:
-
+  
               stage.<stage number>.<task name>
-
+  
               The stage(s) run are defined via the required --stage flag.
-
+  
               To run multiple stages serially just pass a comma delimited
               list to the --stage flag. Example: --stage import,blast
-
+  
               NOTE:  When running multiple stages serially the program will
                      not run subsequent stages if a task in a stage fails.
                      Also note order matters, ie putting blast,import will
                      cause celpprunner.py to run blast stage first.
-
+  
               This program drops a pid lockfile
               (celpprunner.<stage>.lockpid) in celppdir to prevent duplicate
               invocation.
-
+  
               When run, this program will examine the stage and see
               if work can be done.  If stage is complete or previous
               steps have not completed, the program will exit silently.
@@ -97,20 +97,20 @@ usage: celpprunner.py [-h] [--blastdir BLASTDIR] [--email EMAIL]
               report the error via email using addresses set in --email
               flag. Errors will also be reported via stderr/stdout.
               The program will also exit with nonzero exit code.
-
+  
               This program utilizes simple token files to denote stage
               completion.  If within the stage directory there is a:
-
+  
               'complete' file - then stage is done and no other
                                 checking is done.
-
+  
               'error' file - then stage failed.
-
+  
               'start' file - then stage is running.
-
+  
               Notification of stage start and end will be sent to
               addresses set via --email flag.
-
+  
               Unless --customweekdir is set, this program will
               examine the 'celppdir' (last argument passed on
               commandline) to find the latest directory with this path:
@@ -118,43 +118,43 @@ usage: celpprunner.py [-h] [--blastdir BLASTDIR] [--email EMAIL]
               The program will find the latest <year> and within
               that year the dataset.week.# with highest #.  The output
               directories created will be put within this directory.
-
+  
               Setting --customweekdir will cause program to use 'celppdir'
               path.
-
+  
               Setting the --createweekdir flag will instruct this
               program to create a new directory for the current
               celpp week/year before invoking running any stage
               processing.
-
+  
               NOTE: CELPP weeks start on Friday and end on Thursday
                     and week # follows ISO8601 rules so week numbers
                     at the end and start of the year are a bit
                     wonky.
-
+  
               Breakdown of behavior of program is defined by
               value passed with --stage flag:
-
+  
               If --stage 'import'
-
+  
               In this stage 4 files are downloaded from urls specified
               by --compinchi and --pdbfileurl flags on the commandline
               into stage.1.dataimport directory.
-
+  
               The tsv files are (--pdbfileurl flag sets url to
               download these files from):
-
+  
               new_release_structure_nonpolymer.tsv
               new_release_structure_sequence.tsv
               new_release_crystallization_pH.tsv
-
+  
               The ich file is (--compinchi flat sets url to
               download this file from):
-
+  
               Components-inchi.ich
-
+  
               If --stage 'blast'
-
+  
               Verifies stage.1.dataimport exists and has 'complete'
               file.  Also the --blastdir path must exist and within a
               'current' symlink/directory must exist and within that a
@@ -186,10 +186,10 @@ usage: celpprunner.py [-h] [--blastdir BLASTDIR] [--email EMAIL]
               the script into stage.5.<algo>.evaluation. --pdbdb flag
               must also be set when calling this stage.
               
-
+  
     positional arguments:
       celppdir              Base celpp directory
-    
+      
     optional arguments:
       -h, --help            show this help message and exit
       --blastdir BLASTDIR   Parent directory of blastdb. There should exist a
