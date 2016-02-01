@@ -2,8 +2,8 @@
 Drug Design Data Resource CELPP Runner
 ===============================
 
-.. image:: https://img.shields.io/travis/nbcrrolls/D3R.svg
-        :target: https://travis-ci.org/nbcrrolls/D3R
+.. image:: https://img.shields.io/travis/drugdata/D3R.svg
+        :target: https://travis-ci.org/drugdata/D3R
 
 .. image:: https://img.shields.io/pypi/v/D3R.svg
         :target: https://pypi.python.org/pypi/D3R
@@ -12,8 +12,6 @@ Drug Design Data Resource CELPP Runner
 Drug Design Data Resource is a suite of software to enable 
 filtering, docking, and scoring of new sequences from wwpdb.
 
-* Free software: BSD license
-* Documentation: https://D3R.readthedocs.org.
 
 Features
 --------
@@ -39,7 +37,7 @@ Pip install is coming, but in the meantime:
 
 .. code:: bash
 
-  git clone https://github.com/nbcrrolls/D3R
+  git clone https://github.com/drugdata/D3R
   cd D3R
   make install
 
