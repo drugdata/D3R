@@ -118,7 +118,6 @@ class TestCelppRunner(unittest.TestCase):
         result = celpprunner._parse_arguments('hi', theargs)
         self.assertEqual(result.stage, 'blast')
         self.assertEqual(result.celppdir, 'foo')
-        self.assertEqual(result.blastdir, None)
         self.assertEqual(result.email, None)
         self.assertEqual(result.loglevel, 'WARNING')
         self.assertEqual(result.blastnfilter, 'blastnfilter.py')
@@ -126,7 +125,7 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEqual(result.evaluation, 'evaluate.py')
         self.assertEqual(result.makeblastdb, 'makeblastdb')
         theargs = ['foo', '--stage', 'dock,glide', '--email', 'b@b.com,h@h',
-                   '--blastdir', 'b', '--log', 'ERROR',
+                   '--log', 'ERROR',
                    '--blastnfilter', '/bin/blastnfilter.py',
                    '--proteinligprep', '/bin/proteinligprep.py',
                    '--postanalysis', '/bin/postanalysis.py',
@@ -137,7 +136,6 @@ class TestCelppRunner(unittest.TestCase):
         result = celpprunner._parse_arguments('hi', theargs)
         self.assertEqual(result.stage, 'dock,glide')
         self.assertEqual(result.celppdir, 'foo')
-        self.assertEqual(result.blastdir, 'b')
         self.assertEqual(result.email, 'b@b.com,h@h')
         self.assertEqual(result.loglevel, 'ERROR')
         self.assertEqual(result.blastnfilter, '/bin/blastnfilter.py')
@@ -358,8 +356,6 @@ class TestCelppRunner(unittest.TestCase):
             os.mkdir(os.path.join(temp_dir, 'stage.1.makeblastdb'))
             open(os.path.join(temp_dir, 'stage.1.makeblastdb',
                               'complete'), 'a').close()
-            theargs.blastdir = temp_dir
-
             self.assertEquals(celpprunner.run_stages(theargs), 1)
 
         finally:
@@ -376,7 +372,6 @@ class TestCelppRunner(unittest.TestCase):
             os.mkdir(os.path.join(temp_dir, 'stage.1.makeblastdb'))
             open(os.path.join(temp_dir, 'stage.1.makeblastdb', 'complete'),
                  'a').close()
-            theargs.blastdir = temp_dir
             d_import_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
                                         'stage.1.dataimport')
             os.makedirs(d_import_dir)
@@ -396,9 +391,9 @@ class TestCelppRunner(unittest.TestCase):
             theargs = D3RParameters()
             theargs.celppdir = os.path.join(temp_dir)
             theargs.stage = 'blast'
-            os.mkdir(os.path.join(temp_dir, 'current'))
-            open(os.path.join(temp_dir, 'current', 'error'), 'a').close()
-            theargs.blastdir = temp_dir
+            os.mkdir(os.path.join(temp_dir, 'stage.1.makeblastdb'))
+            open(os.path.join(temp_dir, 'stage.1.makeblastdb', 'error'),
+                 'a').close()
             os.mkdir(os.path.join(temp_dir, '2015'))
             os.mkdir(os.path.join(temp_dir, '2015', 'dataset.week.1'))
             self.assertEqual(celpprunner.run_stages(theargs), 1)
@@ -418,7 +413,6 @@ class TestCelppRunner(unittest.TestCase):
             open(os.path.join(temp_dir, 'stage.1.makeblastdb',
                               D3RTask.COMPLETE_FILE),
                  'a').close()
-            theargs.blastdir = temp_dir
             d_import_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
                                         'stage.1.dataimport')
             os.makedirs(d_import_dir)
@@ -443,7 +437,6 @@ class TestCelppRunner(unittest.TestCase):
             os.mkdir(os.path.join(temp_dir, 'stage.1.makeblastdb'))
             open(os.path.join(temp_dir, 'stage.1.makeblastdb', 'complete'),
                  'a').close()
-            theargs.blastdir = temp_dir
             d_import_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
                                         'stage.1.dataimport')
             os.makedirs(d_import_dir)
@@ -467,7 +460,6 @@ class TestCelppRunner(unittest.TestCase):
             open(os.path.join(temp_dir, 'stage.1.makeblastdb',
                               D3RTask.COMPLETE_FILE),
                  'a').close()
-            theargs.blastdir = temp_dir
             d_import_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
                                         'stage.1.dataimport')
             os.makedirs(d_import_dir)
