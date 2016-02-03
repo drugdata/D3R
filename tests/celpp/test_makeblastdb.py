@@ -7,10 +7,10 @@ __author__ = 'churas'
 import unittest
 
 """
-test_blastnfilter
+test_makeblastdb
 --------------------------------
 
-Tests for `blastnfilter` module.
+Tests for `makeblastdb` module.
 """
 
 from d3r.celpp.task import D3RParameters
@@ -26,18 +26,12 @@ class TestMakeBlastDBTask(unittest.TestCase):
 
     def test_constructor(self):
         params = D3RParameters()
-        try:
-            task = MakeBlastDBTask('blah', params)
-            self.fail("Expected AttributeError")
-        except AttributeError:
-            pass
-        params.blastdir = '/foo'
-        task = MakeBlastDBTask('blah', params)
+        task = MakeBlastDBTask('/foo', params)
         self.assertEqual(task.get_name(), 'makeblastdb')
         self.assertEqual(task.get_stage(), 1)
         self.assertEqual(task.get_status(), D3RTask.UNKNOWN_STATUS)
         self.assertEqual(task.get_path(), '/foo')
-        self.assertEqual(task.get_dir_name(), 'current')
+        self.assertEqual(task.get_dir_name(), 'stage.1.makeblastdb')
         test_task.try_update_status_from_filesystem(self, task)
 
     def tearDown(self):
