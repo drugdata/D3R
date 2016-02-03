@@ -291,9 +291,9 @@ def main_score (stage_4_result, pdb_protein_path, stage_5_working, update= True)
                         score_dic[scoreable_path_local][structure_type] = rmsd
                 except:
                     logging.info("RMSD cannot be calculate for the ligand: %s"%top_ligand)
-        #Finshi scoring, come back to the folder with pdbid
+        # Finsih scoring, come back to the folder with pdbid
         os.chdir(current_dir_layer_2)
-        #Finshi scoring for this pdbid, come back to the main folder
+        # Finsih scoring for this pdbid, come back to the main folder
         os.chdir(current_dir)
         ##################
     pickle.dump(score_dic, pickle_out)
@@ -303,23 +303,31 @@ def main_score (stage_4_result, pdb_protein_path, stage_5_working, update= True)
 if ("__main__") == (__name__):
     from optparse import OptionParser
     parser = OptionParser()
-    parser.add_option("-s", "--structuredir", metavar="PATH", help = "PATH where we could find the stage 4 output")
-    parser.add_option("-o", "--outdir", metavar = "PATH", help = "PATH where we run stage 5")
-    #parser.add_option("-u", "--update", action = "store_true",  help = "Update the docking result", default = False) 
-    parser.add_option("-p", "--pdbdb", metavar = "PATH", help = "PDB DATABANK which we will get the crystal structure")
+    parser.add_option("-d", "--dockdir", metavar="PATH",
+                      help="PATH where we could find the stage 4 docking "
+                           "output")
+
+    parser.add_option("-o", "--outdir", metavar="PATH",
+                      help="PATH where we run stage 5")
+
+    parser.add_option("-p", "--pdbdb", metavar="PATH",
+                      help="PDB DATABANK which we will "
+                           "get the crystal structure")
     logger = logging.getLogger()
-    logging.basicConfig( format  = '%(asctime)s: %(message)s', datefmt = '%m/%d/%y %I:%M:%S', filename = 'final.log', filemode = 'w', level   = logging.INFO )
+    logging.basicConfig(format='%(asctime)s: %(message)s',
+                        datefmt='%m/%d/%y %I:%M:%S', filename='final.log',
+                        filemode='w', level=logging.INFO)
     (opt, args) = parser.parse_args()
-    stage_4_result = opt.structuredir
+    stage_4_result = opt.dockdir
     stage_5_result = opt.outdir
     pdbloc = opt.pdbdb
-    #running under this dir
+    # running under this dir
     running_dir = os.getcwd()
     pickle_result = main_score(stage_4_result, pdbloc, stage_5_result, )
     pickle_loc = os.path.join(running_dir, "RMSD.pickle")
     txt_result = layout_result(pickle_loc, "RMSD.txt")
-    #move the final log file to the result dir
+    # move the final log file to the result dir
     log_file_path = os.path.join(running_dir, 'final.log')
-    commands.getoutput("mv %s %s"%(log_file_path, stage_5_result))
+    commands.getoutput("mv %s %s" % (log_file_path, stage_5_result))
     pickle_file_path = os.path.join(running_dir, 'RMSD.pickle')
-    commands.getoutput("mv %s %s"%(pickle_file_path, stage_5_result))
+    commands.getoutput("mv %s %s" % (pickle_file_path, stage_5_result))
