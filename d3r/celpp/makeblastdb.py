@@ -13,10 +13,8 @@ logger = logging.getLogger(__name__)
 class MakeBlastDBTask(D3RTask):
     """Represents Blastable database
 
-       This object does not follow the standard D3RTask
-       structure.  This is because the blastable database
-       is created externally in a legacy structure.
-
+       Downloads pdb_seqres.txt from rcsb, gunzips it and
+       runs NCBI makeblastdb to generate a blast database
        """
 
     PDB_SEQRES_TXT = "pdb_seqres.txt"
@@ -25,13 +23,9 @@ class MakeBlastDBTask(D3RTask):
     def __init__(self, path, args):
         """Constructor
 
-           Constructor sets name to makeblastdb and ignores
-           path set in <path> variable and instead sets
-           path to args.blastdir. stage is set to 1
-
+           Constructor sets name to makeblastdb and stage is set to 1
         """
-        self.set_args(args)
-        self.set_path(args.blastdir)
+        super(MakeBlastDBTask, self).__init__(path, args)
         self.set_name('makeblastdb')
         self.set_stage(1)
         self.set_status(D3RTask.UNKNOWN_STATUS)
@@ -49,20 +43,6 @@ class MakeBlastDBTask(D3RTask):
         :return: full path to MakeBlastDBTask.PDB_SEQRES_TXT file
         """
         return os.path(self.get_dir(), MakeBlastDBTask.PDB_SEQRES_TXT)
-
-    def create_dir(self):
-        """Creates path set in get_path()
-
-           """
-        the_path = os.path.join(self._path, self.get_dir_name())
-        os.makedirs(the_path)
-        return the_path
-
-    def get_dir_name(self):
-        """Will always return current
-        :return: 'current' string
-        """
-        return 'current'
 
     def can_run(self):
         """Determines if task can run
@@ -100,21 +80,29 @@ class MakeBlastDBTask(D3RTask):
         """
         self(MakeBlastDBTask, self).run()
 
-        try:
-            logger.debug('pdbsequrl set to ' + self._args.pdbsequrl)
-        except AttributeError:
-            self.set_error('cannot download files cause pdbsequrl not set')
-            self.end()
-            return
-
         if self._can_run is False:
             logger.debug(self.get_dir_name() +
                          ' cannot run cause _can_run flag ' +
                          'is False')
             return
 
+        try:
+            logger.debug('pdbsequrl set to ' + self.get_args().pdbsequrl)
+        except AttributeError:
+            self.set_error('cannot download files cause pdbsequrl not set')
+            self.end()
+            return
+
+        try:
+            logger.debug('makeblastdb set to ' + self.get_args().makeblastdb)
+        except AttributeError:
+            self.set_error('cannot make blast database cause '
+                           'makeblastdb not set')
+            self.end()
+            return
+
         download_path = self.get_pdb_seqres_txt_gz()
-        url = self._args.pdbsequrl
+        url = self.get_args().pdbsequrl
         try:
             util.download_url_to_file(url,
                                       download_path,
@@ -131,8 +119,14 @@ class MakeBlastDBTask(D3RTask):
         util.gunzip_file(download_path, self.get_pdb_seqres_txt())
 
         # Run makeblastdb
-        cmd_to_run = ('makeblastdb -in ' + MakeBlastDBTask.PDB_SEQRES_TXT +
-                      ' -out pdb_db -dbtype prot')
-        logger.debug('Need to run ' + cmd_to_run)
+        cmd_to_run = (self.get_args().makeblastdb + ' -in ' +
+                      self.get_pdb_seqres_txt() +
+                      ' -out ' + os.path.join(self.get_dir(), 'pdb_db') +
+                      ' -dbtype prot')
+
+        makeblastdb_name = os.path.basename(self.get_args().makeblastdb)
+
+        self.run_external_command(makeblastdb_name, cmd_to_run, True)
+
+        # assess the result
         self.end()
-        return
