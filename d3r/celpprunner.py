@@ -277,10 +277,6 @@ def _parse_arguments(desc, args):
     parser = argparse.ArgumentParser(description=desc,
                                      formatter_class=help_formatter)
     parser.add_argument("celppdir", help='Base celpp directory')
-    parser.add_argument("--blastdir", help='Parent directory of ' +
-                        ' blastdb.  There should exist a "current" ' +
-                        ' symlink or directory that contains the db.' +
-                        ' NOTE: Required parameter for blast stage')
     parser.add_argument("--email", dest="email",
                         help='Comma delimited list of email addresses')
     parser.add_argument("--createweekdir",
@@ -435,12 +431,11 @@ def main():
               If --stage 'blast'
 
               Verifies stage.1.dataimport exists and has 'complete'
-              file.  Also the --blastdir path must exist and within a
-              'current' symlink/directory must exist and within that a
-              'complete' file must also reside. If both conditions
-              are met then the 'blast' stage is run and output stored
-              in stage.2.blastnfilter.  Requires --pdbdb to be set
-              to a directory with valid PDB database files.
+              file.  Also stage.1.makeblastdb exists and has 'complete'
+              file.  If both conditions are met then the 'blast' stage
+              is run and output stored in stage.2.blastnfilter.
+              Requires --pdbdb to be set to a directory with valid PDB
+              database files.
 
               If --stage 'proteinligprep'
 
@@ -469,11 +464,6 @@ def main():
     theargs = _parse_arguments(desc, sys.argv[1:])
     theargs.program = sys.argv[0]
     theargs.version = d3r.__version__
-    try:
-        if os.path.basename(theargs.blastdir) is 'current':
-            theargs.blastdir = os.path.dirname(theargs.blastdir)
-    except AttributeError:
-        pass
 
     _setup_logging(theargs)
 
