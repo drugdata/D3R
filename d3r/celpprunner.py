@@ -322,6 +322,9 @@ def _parse_arguments(desc, args):
                              ',new_release_structure_sequence.tsv' +
                              ', and new_release_crystallization_pH.tsv' +
                              ' files for task stage.1.dataimport')
+    parser.add_argument("--makeblastdb", default='makeblastdb',
+                        help='Path to NCBI Blast makeblastdb program '
+                             'ie /usr/bin/makeblastdb')
     parser.add_argument("--log", dest="loglevel", choices=['DEBUG',
                         'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
                         help="Set the logging level",
