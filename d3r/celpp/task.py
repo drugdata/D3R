@@ -56,12 +56,6 @@ class UnsetStageError(TaskException):
     pass
 
 
-class UnsetBlastDirError(TaskException):
-    """Exception to denote blastdir in D3RParameters is unset
-    """
-    pass
-
-
 class TaskUnableToStartError(TaskException):
     """Exception to denote when task cannot start due to failure
     """
