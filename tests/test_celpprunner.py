@@ -124,6 +124,7 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEqual(result.blastnfilter, 'blastnfilter.py')
         self.assertEqual(result.proteinligprep, 'proteinligprep.py')
         self.assertEqual(result.evaluation, 'evaluate.py')
+        self.assertEqual(result.makeblastdb, 'makeblastdb')
         theargs = ['foo', '--stage', 'dock,glide', '--email', 'b@b.com,h@h',
                    '--blastdir', 'b', '--log', 'ERROR',
                    '--blastnfilter', '/bin/blastnfilter.py',
@@ -131,7 +132,8 @@ class TestCelppRunner(unittest.TestCase):
                    '--postanalysis', '/bin/postanalysis.py',
                    '--glide', '/bin/glide.py',
                    '--customweekdir',
-                   '--evaluation', '/bin/evaluation.py']
+                   '--evaluation', '/bin/evaluation.py',
+                   '--makeblastdb', '/bin/makeblastdb']
         result = celpprunner._parse_arguments('hi', theargs)
         self.assertEqual(result.stage, 'dock,glide')
         self.assertEqual(result.celppdir, 'foo')
@@ -144,6 +146,7 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEquals(result.glide, '/bin/glide.py')
         self.assertEquals(result.evaluation, '/bin/evaluation.py')
         self.assertEquals(result.customweekdir, True)
+        self.assertEqual(result.makeblastdb, '/bin/makeblastdb')
 
     def test_run_tasks_passing_none_and_empty_list(self):
         self.assertEquals(celpprunner.run_tasks(None), 3)
@@ -352,8 +355,9 @@ class TestCelppRunner(unittest.TestCase):
             theargs.stage = 'blast'
             os.mkdir(os.path.join(temp_dir, '2015'))
             os.mkdir(os.path.join(temp_dir, '2015', 'dataset.week.1'))
-            os.mkdir(os.path.join(temp_dir, 'current'))
-            open(os.path.join(temp_dir, 'current', 'complete'), 'a').close()
+            os.mkdir(os.path.join(temp_dir, 'stage.1.makeblastdb'))
+            open(os.path.join(temp_dir, 'stage.1.makeblastdb',
+                              'complete'), 'a').close()
             theargs.blastdir = temp_dir
 
             self.assertEquals(celpprunner.run_stages(theargs), 1)
@@ -369,8 +373,9 @@ class TestCelppRunner(unittest.TestCase):
             theargs.celppdir = os.path.join(temp_dir)
             theargs.stage = 'blast'
             theargs.pdbdb = '/pdbdb'
-            os.mkdir(os.path.join(temp_dir, 'current'))
-            open(os.path.join(temp_dir, 'current', 'complete'), 'a').close()
+            os.mkdir(os.path.join(temp_dir, 'stage.1.makeblastdb'))
+            open(os.path.join(temp_dir, 'stage.1.makeblastdb', 'complete'),
+                 'a').close()
             theargs.blastdir = temp_dir
             d_import_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
                                         'stage.1.dataimport')
@@ -409,8 +414,9 @@ class TestCelppRunner(unittest.TestCase):
             theargs.pdbdb = '/pdbdb'
             theargs.celppdir = os.path.join(temp_dir)
             theargs.stage = 'blast,proteinligprep'
-            os.mkdir(os.path.join(temp_dir, 'current'))
-            open(os.path.join(temp_dir, 'current', D3RTask.COMPLETE_FILE),
+            os.mkdir(os.path.join(temp_dir, 'stage.1.makeblastdb'))
+            open(os.path.join(temp_dir, 'stage.1.makeblastdb',
+                              D3RTask.COMPLETE_FILE),
                  'a').close()
             theargs.blastdir = temp_dir
             d_import_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
@@ -434,8 +440,9 @@ class TestCelppRunner(unittest.TestCase):
             theargs = D3RParameters()
             theargs.celppdir = os.path.join(temp_dir)
             theargs.stage = 'blast,proteinligprep'
-            os.mkdir(os.path.join(temp_dir, 'current'))
-            open(os.path.join(temp_dir, 'current', 'complete'), 'a').close()
+            os.mkdir(os.path.join(temp_dir, 'stage.1.makeblastdb'))
+            open(os.path.join(temp_dir, 'stage.1.makeblastdb', 'complete'),
+                 'a').close()
             theargs.blastdir = temp_dir
             d_import_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
                                         'stage.1.dataimport')
@@ -456,8 +463,9 @@ class TestCelppRunner(unittest.TestCase):
             theargs.pdbdb = '/pdbdb'
             theargs.celppdir = os.path.join(temp_dir)
             theargs.stage = 'blast,proteinligprep,glide'
-            os.mkdir(os.path.join(temp_dir, 'current'))
-            open(os.path.join(temp_dir, 'current', D3RTask.COMPLETE_FILE),
+            os.mkdir(os.path.join(temp_dir, 'stage.1.makeblastdb'))
+            open(os.path.join(temp_dir, 'stage.1.makeblastdb',
+                              D3RTask.COMPLETE_FILE),
                  'a').close()
             theargs.blastdir = temp_dir
             d_import_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
