@@ -197,7 +197,7 @@ class TestBlastNFilterTask(unittest.TestCase):
                            os.path.join(temp_dir, 'stage.1.dataimport',
                                         'new_release_structure_sequence.tsv'))
             echo_out.index(' --pdbblastdb ' +
-                           os.path.join(temp_dir, 'current'))
+                           os.path.join(temp_dir, 'stage.1.makeblastdb'))
             echo_out.index(' --compinchi ' +
                            os.path.join(temp_dir, 'stage.1.dataimport',
                                         'Components-inchi.ich'))
