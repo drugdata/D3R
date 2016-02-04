@@ -15,6 +15,7 @@ from d3r.celpp.proteinligprep import ProteinLigPrepTask
 from d3r.celpp.dataimport import DataImportTask
 from d3r.celpp.glide import GlideTask
 from d3r.celpp.evaluation import EvaluationTaskFactory
+from d3r.celpp.makeblastdb import MakeBlastDBTask
 
 from lockfile.pidlockfile import PIDLockFile
 
@@ -242,6 +243,9 @@ def get_task_list_for_stage(theargs, stage_name):
 
     logger.debug('Getting task list for ' + stage_name)
 
+    if stage_name == 'makedb':
+        task_list.append(MakeBlastDBTask(theargs.latest_weekly, theargs))
+
     if stage_name == 'import':
         task_list.append(DataImportTask(theargs.latest_weekly, theargs))
 
@@ -291,7 +295,8 @@ def _parse_arguments(desc, args):
                              "will create a dataset.week.# dir under celppdir")
     parser.add_argument("--stage", required=True, help='Comma delimited list' +
                         ' of stages to run.  Valid STAGES = ' +
-                        '{import, blast, proteinligprep, glide, evaluation} '
+                        '{makedb, import, blast, proteinligprep, glide, '
+                        'evaluation} '
                         )
     parser.add_argument("--blastnfilter", default='blastnfilter.py',
                         help='Path to BlastnFilter script')
@@ -321,6 +326,10 @@ def _parse_arguments(desc, args):
     parser.add_argument("--makeblastdb", default='makeblastdb',
                         help='Path to NCBI Blast makeblastdb program '
                              'ie /usr/bin/makeblastdb')
+    parser.add_argument("--pdbsequrl",
+                        default='ftp://ftp.rcsb.org/pub/pdb/derived_data/'
+                                'pdb_seqres.txt.gz',
+                        help='ftp url to download rcsb sequences file')
     parser.add_argument("--log", dest="loglevel", choices=['DEBUG',
                         'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
                         help="Set the logging level",
@@ -336,7 +345,7 @@ def _parse_arguments(desc, args):
 
 def main():
     desc = """
-              Runs the 5 stages (import, blast, proteinligprep, glide,
+              Runs the 6 stages (makedb, import, blast, proteinligprep, glide,
               & evaluation) of CELPP processing pipeline
               (http://www.drugdesigndata.org)
 
@@ -409,6 +418,14 @@ def main():
 
               Breakdown of behavior of program is defined by
               value passed with --stage flag:
+
+              If --stage 'makedb'
+
+              In this stage the file pdb_seqres.txt.gz is downloaded from
+              an ftp site set by --pdbsequrl.
+              This file is then gunzipped and NCBI makeblastdb
+              (set by --makeblastdb) is run on it to create a blast
+              database.  The files are stored in stage.1.makeblastdb
 
               If --stage 'import'
 
