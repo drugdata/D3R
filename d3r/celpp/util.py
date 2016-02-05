@@ -191,7 +191,10 @@ def download_url_to_file(url, download_path, num_retries,
 
 def gunzip_file(gzip_file, dest_file):
     """Uses Python gzip library to uncompress gzip file
-        TODO NEED TO IMPROVE THIS IMPLEMENTATION
+
+       :param gzip_file: path to file to gunzip
+       :param dest_file: gunzip destination file
+       :raises IOError: If there was a problem with operation
     """
     f_in = gzip.open(gzip_file, 'rb')
     f_out = open(dest_file, 'wb')
