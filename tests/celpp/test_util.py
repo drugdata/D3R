@@ -5,6 +5,7 @@
 import unittest
 import tempfile
 import os.path
+import gzip
 
 """
 test_task
@@ -231,6 +232,43 @@ class TestUtil(unittest.TestCase):
                                       os.path.join(temp_dir, 'boo2'), 0, 0)
             self.assertEquals(os.path.isfile(os.path.join(temp_dir, 'boo2')),
                               True)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_gunzip_file(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+
+            # try invalid input
+            try:
+                util.gunzip_file(os.path.join(temp_dir, 'nonexistantfile'),
+                                 os.path.join(temp_dir, 'ha'))
+                self.fail('Expected IOError')
+            except IOError:
+                pass
+
+            # try invalid output
+            foogz = os.path.join(temp_dir, 'foo.gz')
+            f = gzip.open(foogz, 'wb')
+            f.write('hello\n')
+            f.flush()
+            f.close()
+            try:
+
+                util.gunzip_file(foogz,
+                                 os.path.join(temp_dir, 'ha', 'ha'))
+                self.fail('Expected IOError')
+            except IOError:
+                pass
+
+            # try valid zip file
+            util.gunzip_file(foogz,
+                             os.path.join(temp_dir, 'foo'))
+
+            f = open(os.path.join(temp_dir, 'foo'), 'r')
+            self.assertEqual(f.readline(), 'hello\n')
+            f.close()
 
         finally:
             shutil.rmtree(temp_dir)
