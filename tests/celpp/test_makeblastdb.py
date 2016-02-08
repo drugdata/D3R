@@ -114,6 +114,41 @@ class TestMakeBlastDBTask(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
+    def test_can_run_where_task_is_complete(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = MakeBlastDBTask(temp_dir, params)
+            task.create_dir()
+            open(os.path.join(task.get_dir(), 'complete'), 'a').close()
+            self.assertEqual(task.can_run(), False)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_can_run_where_task_failed(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = MakeBlastDBTask(temp_dir, params)
+            task.create_dir()
+            open(os.path.join(task.get_dir(), 'error'), 'a').close()
+            self.assertEqual(task.can_run(), False)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_run_where_can_run_is_false(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = MakeBlastDBTask(temp_dir, params)
+            task.create_dir()
+            open(os.path.join(task.get_dir(), 'error'), 'a').close()
+            task.run()
+
+            self.assertEqual(task._can_run, False)
+        finally:
+            shutil.rmtree(temp_dir)
+
     def test_run_where_pdbsequrl_is_not_set(self):
         temp_dir = tempfile.mkdtemp()
         try:
