@@ -14,6 +14,7 @@ import logging
 import os
 import os.path
 import shutil
+import gzip
 from datetime import date
 
 from d3r import celpprunner
@@ -353,9 +354,10 @@ class TestCelppRunner(unittest.TestCase):
             theargs.stage = 'blast'
             os.mkdir(os.path.join(temp_dir, '2015'))
             os.mkdir(os.path.join(temp_dir, '2015', 'dataset.week.1'))
-            os.mkdir(os.path.join(temp_dir, 'stage.1.makeblastdb'))
-            open(os.path.join(temp_dir, 'stage.1.makeblastdb',
-                              'complete'), 'a').close()
+            makedb_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
+                                      'stage.1.makeblastdb')
+            os.makedirs(makedb_dir)
+            open(os.path.join(makedb_dir, 'complete'), 'a').close()
             self.assertEquals(celpprunner.run_stages(theargs), 1)
 
         finally:
@@ -369,9 +371,12 @@ class TestCelppRunner(unittest.TestCase):
             theargs.celppdir = os.path.join(temp_dir)
             theargs.stage = 'blast'
             theargs.pdbdb = '/pdbdb'
-            os.mkdir(os.path.join(temp_dir, 'stage.1.makeblastdb'))
-            open(os.path.join(temp_dir, 'stage.1.makeblastdb', 'complete'),
-                 'a').close()
+
+            makedb_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
+                                      'stage.1.makeblastdb')
+            os.makedirs(makedb_dir)
+            open(os.path.join(makedb_dir, 'complete'), 'a').close()
+
             d_import_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
                                         'stage.1.dataimport')
             os.makedirs(d_import_dir)
@@ -409,10 +414,12 @@ class TestCelppRunner(unittest.TestCase):
             theargs.pdbdb = '/pdbdb'
             theargs.celppdir = os.path.join(temp_dir)
             theargs.stage = 'blast,proteinligprep'
-            os.mkdir(os.path.join(temp_dir, 'stage.1.makeblastdb'))
-            open(os.path.join(temp_dir, 'stage.1.makeblastdb',
-                              D3RTask.COMPLETE_FILE),
-                 'a').close()
+
+            makedb_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
+                                      'stage.1.makeblastdb')
+            os.makedirs(makedb_dir)
+            open(os.path.join(makedb_dir, 'complete'), 'a').close()
+
             d_import_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
                                         'stage.1.dataimport')
             os.makedirs(d_import_dir)
@@ -448,24 +455,32 @@ class TestCelppRunner(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
-    def test_run_stages_blast_and_proteinligprep_and_glide_no_error(self):
+    def test_run_stages_makedb_blast_proteinligprep_glide_no_error(self):
         temp_dir = tempfile.mkdtemp()
 
         try:
             theargs = D3RParameters()
             theargs.pdbdb = '/pdbdb'
             theargs.celppdir = os.path.join(temp_dir)
-            theargs.stage = 'blast,proteinligprep,glide'
-            os.mkdir(os.path.join(temp_dir, 'stage.1.makeblastdb'))
-            open(os.path.join(temp_dir, 'stage.1.makeblastdb',
-                              D3RTask.COMPLETE_FILE),
-                 'a').close()
+
+            theargs.stage = 'makedb,blast,proteinligprep,glide'
+
             d_import_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
                                         'stage.1.dataimport')
             os.makedirs(d_import_dir)
             open(os.path.join(d_import_dir,
                               D3RTask.COMPLETE_FILE), 'a').close()
 
+            fakegz = os.path.join(temp_dir, 'fake.gz')
+
+            f = gzip.open(fakegz, 'wb')
+            f.write('hello\n')
+            f.flush()
+            f.close()
+
+            theargs.pdbsequrl = 'file://'+fakegz
+
+            theargs.makeblastdb = 'echo'
             theargs.blastnfilter = 'echo'
             theargs.postanalysis = 'true'
             theargs.proteinligprep = 'echo'
