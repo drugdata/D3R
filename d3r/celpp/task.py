@@ -80,7 +80,6 @@ class D3RTask(object):
     # Put at start of subject line in all emails sent from D3RTask
     SUBJECT_LINE_PREFIX = "[d3rcelpp] "
 
-
     STAGE_DIRNAME_PREFIX = "stage"
 
     START_FILE = "start"
