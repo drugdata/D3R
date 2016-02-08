@@ -56,12 +56,15 @@ class BlastNFilterTask(D3RTask):
         """
         out_dir = self.get_dir()
         txt_list = []
-        for entry in os.listdir(out_dir):
-            if entry == BlastNFilterTask.SUMMARY_TXT:
-                continue
+        try:
+            for entry in os.listdir(out_dir):
+                if entry == BlastNFilterTask.SUMMARY_TXT:
+                    continue
 
-            if entry.endswith('.txt'):
-                txt_list.append(entry)
+                if entry.endswith('.txt'):
+                    txt_list.append(entry)
+        except OSError:
+            logger.warning('Caught exception trying to look for .txt files')
 
         return txt_list
 
