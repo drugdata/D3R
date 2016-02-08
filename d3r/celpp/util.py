@@ -203,3 +203,36 @@ def gunzip_file(gzip_file, dest_file):
     f_out.flush()
     f_out.close()
     f_in.close()
+
+def append_string_to_file(dest_file, the_string):
+    """Appends text in `the_string` to file set by `dest_file`
+
+       Opens file specified by `dest_file` in append mode and
+       writes `the_string` contents to the file.  Function then
+       flushes and closes file.
+
+       :param dest_file: File to append data to
+       :param the_string: Data to append to file
+       :raises IOError: If there is an issue writing data to the file
+       :raises TypeError: If `dest_file` is None
+    """
+    f = open(dest_file, 'a')
+    f.write(the_string)
+    f.flush()
+    f.close()
+
+def get_file_line_count(the_file):
+    """Counts number of lines in file
+
+       Opens file and counts number of lines in
+       file
+       :param the_file: file to examine
+       :raises TypeError: if `the_file` is None
+       :raises IOError: if there is an issue reading the file
+    """
+    f = open(the_file, 'r')
+    counter = 0
+    for line in f:
+        counter += 1
+    f.close()
+    return counter

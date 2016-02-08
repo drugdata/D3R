@@ -273,6 +273,76 @@ class TestUtil(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
+    def test_append_string_to_file(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            try:
+                # Try with double None
+                util.append_string_to_file(None, None)
+                self.fail('Expected TypeError')
+            except TypeError:
+                pass
+
+            try:
+                # Try with value set to None
+                util.append_string_to_file(os.path.join(temp_dir, 'foo'),
+                                           None)
+            except TypeError:
+                pass
+
+            # try on non existant file
+            util.append_string_to_file(os.path.join(temp_dir, 'non'), 'hi')
+            f = open(os.path.join(temp_dir, 'non'))
+            self.assertEqual(f.readline(), 'hi')
+            f.close()
+
+            # try on empty file
+            open(os.path.join(temp_dir,'empty'), 'a').close()
+            util.append_string_to_file(os.path.join(temp_dir, 'empty'), 'hi')
+            f = open(os.path.join(temp_dir, 'empty'))
+            self.assertEqual(f.readline(), 'hi')
+            f.close()
+
+            # try on file with data
+            util.append_string_to_file(os.path.join(temp_dir, 'empty'), 'how')
+            f = open(os.path.join(temp_dir, 'empty'))
+            self.assertEqual(f.readline(), 'hihow')
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_file_line_count(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            try:
+                # Try with double None
+                util.get_file_line_count(None)
+                self.fail('Expected TypeError')
+            except TypeError:
+                pass
+
+            try:
+                # try on non existant file
+                util.get_file_line_count(os.path.join(temp_dir, 'non'))
+            except IOError:
+                pass
+
+            # try on empty file
+            open(os.path.join(temp_dir,'empty'), 'a').close()
+            self.assertEqual(util.get_file_line_count(os.path.join(temp_dir,
+                                                                   'empty')),
+                             0)
+
+            # try on file with data
+            util.append_string_to_file(os.path.join(temp_dir, 'three'),
+                                       'h\no\nw\n')
+            self.assertEqual(util.get_file_line_count(os.path.join(temp_dir,
+                                                                   'three')),
+                             3)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
     def tearDown(self):
         pass
 
