@@ -448,9 +448,10 @@ def main():
               If --stage 'blast'
 
               Verifies stage.1.dataimport exists and has 'complete'
-              file.  Also stage.1.makeblastdb exists and has 'complete'
-              file.  If both conditions are met then the 'blast' stage
-              is run and output stored in stage.2.blastnfilter.
+              file.  Also verifies stage.1.makeblastdb exists and has
+              'complete' file.  If both conditions are met then the
+              'blast' stage is run and output stored in
+              stage.2.blastnfilter.
               Requires --pdbdb to be set to a directory with valid PDB
               database files.
 
