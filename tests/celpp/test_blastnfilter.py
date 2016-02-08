@@ -48,7 +48,12 @@ class TestBlastNFilterTask(unittest.TestCase):
         try:
             params = D3RParameters()
             blast_task = BlastNFilterTask(temp_dir, params)
+
+            # try missing directory
+            self.assertEquals(len(blast_task.get_txt_files()), 0)
+
             blast_task.create_dir()
+
             # try empty directory
             self.assertEquals(len(blast_task.get_txt_files()), 0)
 
@@ -402,6 +407,8 @@ class TestBlastNFilterTask(unittest.TestCase):
             blasttask = BlastNFilterTask(temp_dir, params)
 
             blasttask.create_dir()
+
+            # no summary.txt file
             self.assertEquals(blasttask
                               ._parse_blastnfilter_output_for_hit_stats(),
                               '\n# txt files found: 0\n\nOutput from ' +
