@@ -16,7 +16,7 @@ filtering, docking, and scoring of new sequences from wwpdb.
 Features
 --------
 
- * Works with Python 2.6, 2.7, 3.0, 3.2, 3.4
+ * Works with Python 2.6, 2.7, 3.3, 3.4
 
 Requires
 --------
