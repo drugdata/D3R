@@ -161,7 +161,7 @@ class TestUtil(unittest.TestCase):
                 pass
 
             # try path already exists as dir
-            os.makedirs(os.path.join(temp_dir, '2015', 'dataset.week.1'), 0775)
+            os.makedirs(os.path.join(temp_dir, '2015', 'dataset.week.1'))
             util.create_celpp_week_dir((1, 2015), temp_dir)
 
             # try path already exists as file so it will fail
