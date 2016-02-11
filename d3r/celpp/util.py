@@ -136,7 +136,7 @@ def create_celpp_week_dir(celpp_week_tuple, celppdir):
         return
 
     logger.debug('Creating ' + dir_to_create)
-    os.makedirs(dir_to_create, mode=0775)
+    os.makedirs(dir_to_create, mode=0o775)
 
 
 def download_url_to_file(url, download_path, num_retries,
