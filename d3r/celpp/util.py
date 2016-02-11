@@ -136,7 +136,11 @@ def create_celpp_week_dir(celpp_week_tuple, celppdir):
         return
 
     logger.debug('Creating ' + dir_to_create)
-    os.makedirs(dir_to_create, 0775)
+    try:
+        os.makedirs(dir_to_create, 0775)
+    except SyntaxError:
+        logger.debug('Caught syntax error, must be using newer version of python')
+        os.makedirs(dir_to_create, mode=0775)
 
 
 def download_url_to_file(url, download_path, num_retries,
