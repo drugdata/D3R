@@ -57,9 +57,6 @@ setup(
         'Environment :: Console',
         'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.2',
-        'Programming Language :: Python :: 3.4',
         'Topic :: Scientific/Engineering :: Chemistry'
     ],
     scripts = ['d3r/celpprunner.py', 'd3r/blastnfilter.py', 'd3r/postanalysis.py', 'd3r/proteinligprep.py',
