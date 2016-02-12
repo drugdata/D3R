@@ -1,25 +1,36 @@
 __author__ = 'robswift'
 
 import sys
-from rdkit import Chem
-from rdkit.Chem import rdFMCS
-from mcss import MCSS
+
+from d3r.blast.mcss import MCSS
+import logging
+
+logger = logging.getLogger(__name__)
+
+try:
+    from rdkit import Chem
+    from rdkit.Chem import rdFMCS
+except ImportError:
+    logger.exception('Unable to import rdkit Ligand class will not work')
+
 
 class Ligand(object):
     """
 
     """
-
+    # timeout in seconds for rdkit to find maximum common substructure
+    FINDMCS_TIMEOUT = 60
     inchi_component = {}
 
     @staticmethod
     def set_inchi_component(compinchi):
         """
-        Each ligand resname
-        Each PDB ID is mapped to a list of sequences, one sequence for each of its chains. This information is stored
-        in a class-wide default dictionary pdb_dict, with the following structure
-        pdb_dict = { 'pdbid_chainid' : Bio.SeqRecord }
-        :param compinchi: path to the PDB sequences stored in FASTA format, i.e. "pdb_seqres.txt"
+        Each ligand resname is mapped to a InChi string. This information is stored in a class-wide dictionary
+        inchi_component with the following structure
+        inchi_component = { 'resname' : 'inchi' },
+        where 'resname' is the resname used by the PDB for that ligand and 'inchi' is the corresponding PDB InChi
+        string.
+        :param compinchi: path to the wwPDB file Components-inchi.ich
         """
         try:
             handle = open(compinchi, 'r')
@@ -33,9 +44,12 @@ class Ligand(object):
                     continue
             handle.close()
         except IOError:
+            logger.exception('Caught exception attempting to open or parse Components.inchi.ich file')
             sys.exit(1)
+        if len(Ligand.inchi_component.keys()) < 20000:
+            raise IOError('There is a problem with Components-inchi.ich.')
 
-    def __init__(self, resname = None, inchi = None):
+    def __init__(self, resname=None, inchi=None):
         self.resname = resname
         self.inchi = inchi
         self.label = None
@@ -52,7 +66,8 @@ class Ligand(object):
         :return: Boolean
         """
         if not inchi and not self.inchi:
-            print "Please set an inchi string"
+            print("Please set an inchi string")
+            logger.error('No inchi string set')
             return False
         elif not inchi and self.inchi:
             inchi = self.inchi
@@ -60,6 +75,7 @@ class Ligand(object):
             self.rd_mol = Chem.MolFromInchi(format(inchi), removeHs=False, sanitize=False, treatWarningAsError=True)
             return True
         except:
+            logger.exception('Unable to create rdkt.Chem.rdmol Mol object')
             return False
 
     def set_rd_mol_from_resname(self, resname):
@@ -75,6 +91,7 @@ class Ligand(object):
             self.inchi = inchi
             return True
         except:
+            logger.exception('Unable to create rdkit.Chem.rdmol from resname')
             return False
 
     def mcss(self, reference):
@@ -91,10 +108,11 @@ class Ligand(object):
         :return: the MCSS (rd mol object) or None
         """
         try:
-            res = rdFMCS.FindMCS([reference.rd_mol, self.rd_mol])
+            res = rdFMCS.FindMCS([reference.rd_mol, self.rd_mol], timeout=Ligand.FINDMCS_TIMEOUT)
             mcss = Chem.MolFromSmarts(res.smartsString)
             return mcss
         except:
+            logger.exception('Caught exception attempting to run rdkit FindMCS or MolFromSmarts')
             return None
 
     def set_mcss(self, reference, mcss_mol):

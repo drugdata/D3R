@@ -19,8 +19,7 @@ Tests for `dataimport` module.
 from d3r.celpp.task import D3RParameters
 from d3r.celpp.task import D3RTask
 from d3r.celpp.dataimport import DataImportTask
-
-
+from d3r.celpp import util
 from tests.celpp import test_task
 
 
@@ -233,6 +232,15 @@ class TestDataImportTask(unittest.TestCase):
 
             task.run()
             self.assertEquals(task.get_error(), None)
+
+            # check line count is 1 now which indicates
+            # standard was added
+            self.assertEqual(util.get_file_line_count(
+                task.get_nonpolymer_tsv()), 1)
+            self.assertEqual(util.get_file_line_count(
+                task.get_sequence_tsv()), 1)
+            self.assertEqual(util.get_file_line_count(
+                task.get_crystalph_tsv()), 1)
         finally:
             shutil.rmtree(temp_dir)
 

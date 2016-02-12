@@ -8,9 +8,9 @@ from Bio.Alphabet import IUPAC
 from Bio.Seq import Seq
 from Bio import SeqIO
 from Bio.SeqRecord import SeqRecord
-from base import Base
-from hit import Hit
-from ligand import Ligand
+from d3r.blast.base import Base
+from d3r.blast.hit import Hit
+from d3r.blast.ligand import Ligand
 
 class Query(Base):
     """

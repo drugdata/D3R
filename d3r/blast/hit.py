@@ -1,14 +1,23 @@
 __author__ = 'robswift'
 
 import os
+import sys
 import re
+import logging
+
 from Bio.Alphabet import IUPAC
 from Bio import SeqIO
-from Bio.PDB import *
-from base import Base
-from ligand import Ligand
+from d3r.blast.base import Base
+from d3r.blast.ligand import Ligand
 from d3r.filter import filtering_sets as filtering_sets
 from d3r.blast.hit_sequence import HitSequence
+
+logger = logging.getLogger(__name__)
+
+try:
+    from Bio.PDB import *
+except ImportError:
+    logger.exception('Unable to import Bio.PDB Hit class may not work')
 
 
 class RegDict(dict):
@@ -39,7 +48,12 @@ class Hit(Base):
         pdb_dict = { 'pdbid_chainid' : Bio.SeqRecord }
         :param fasta: path to the PDB sequences stored in FASTA format, i.e. "pdb_seqres.txt"
         """
-        fasta_handle = open(fasta, 'r')
+        try:
+            fasta_handle = open(fasta, 'r')
+        except IOError:
+            print("could not open {file}".format(file=fasta))
+            sys.exit(1)
+
         for record in SeqIO.parse(fasta_handle, "fasta"):
             # only add protein sequences
             if 'mol:protein' in record.description:
@@ -131,8 +145,8 @@ class Hit(Base):
         try:
             handle = open(pdb_file, 'r')
             handle.close()
-        except IOError, e:
-            print "Problems when assigning the ligand for wwPDB ID: %s\n%s" % (self.pdb_id, e)
+        except IOError as e:
+            print("Problems when assigning the ligand for wwPDB ID: {f1}\n{er}".format(f1=self.pdb_id, er=e))
             return False
         try:
             parser = PDBParser()
@@ -291,8 +305,8 @@ class Hit(Base):
         :return: Boolean
         """
         if not self.pdb_id or not self.pdb:
-            print "Before the set_expt_method method is called, the pdb_id attribute must be set, and the read_pdb " \
-                  "method must be called."
+            print("Before the set_expt_method method is called, the pdb_id attribute must be set, and the read_pdb "
+                  "method must be called.")
             return False
         try:
             self.exp_method = self.pdb.header['structure_method']

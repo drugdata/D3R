@@ -2,16 +2,17 @@ __author__ = 'robswift'
 
 import os
 import sys
-from writers import WriteLog
-from writers import WriteText
+from d3r.utilities.writers import WriteLog
+from d3r.utilities.writers import WriteText
 from d3r.utilities.analysis import InputAnalysis
 from d3r.utilities.analysis import OutputAnalysis
 
-def writer(out_dir, filtrate, log_file = False):
+def writer(out_dir, filtrate, log_file=False):
     """
     Writes out a txt file describing queries and their corresponding docking hits and writes out a blastnfilter log
     :param out_dir: (string) the absolute path to the directory where the log file will be written
     :param filtrate: a list of d3r.blast.Query objects
+    :param log_file: (boolean) indicates whether or not a log file should be written
     """
     if not os.access(out_dir, os.W_OK):
         print "%s is not writeable" % out_dir

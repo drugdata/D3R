@@ -4,6 +4,8 @@ __author__ = 'churas'
 
 import logging
 import os
+import traceback
+import sys
 from d3r.celpp.task import D3RTask
 from d3r.celpp import util
 
@@ -20,6 +22,23 @@ class DataImportTask(D3RTask):
     SEQUENCE_TSV = "new_release_structure_sequence.tsv"
     CRYSTALPH_TSV = "new_release_crystallization_pH.tsv"
     COMPINCHI_ICH = "Components-inchi.ich"
+
+    # standard to append to NON_POLYMER_TSV file
+    NONPOLYMER_TSV_STANDARD = "1FCZ    156     InChI=1S/C24H26O3/c1-23(2)13-" \
+                              "14-24(3,4)20-15-18(10-11-19(20)23)21(25)12-7-" \
+                              "16-5-8-17(9-6-16)22(26)27/h5-12,15H,13-14H2,1" \
+                              "-4H3,(H,26,27)/b12-7+\n"
+
+    # standard to append to CRYSTALPH_TSV
+    CRYSTALPH_TSV_STANDARD = "1FCZ	7\n"
+
+    # standard to append to SEQUENCE_TSV
+    SEQUENCE_TSV_STANDARD = "1FCZ    1       SPQLEELITKVSKAHQETFPSLCQLGKYTTN" \
+                            "SSADHRVQLDLGLWDKFSELATKCIIKIVEFAKRLPGFTGLSIADQI" \
+                            "TLLKAACLDILMLRICTRYTPEQDTMTFSDGLTLNRTQMHNAGFGPL" \
+                            "TDLVFAFAGQLLPLEMDDTETGLLSAICLICGDRMDLEEPEKVDKLQ" \
+                            "EPLLEALRLYARRRRPSQPYMFPRMLMKITDLRGISTKGAERAITLK" \
+                            "MEIPGPMPPLIREMLE\n"
 
     def __init__(self, path, args):
         super(DataImportTask, self).__init__(path, args)
@@ -53,6 +72,44 @@ class DataImportTask(D3RTask):
     def get_components_inchi_file(self):
         return os.path.join(self.get_dir(),
                             DataImportTask.COMPINCHI_ICH)
+
+    def append_standard_to_files(self):
+        """Appends standard 1FCZ to tsv files as mapped below
+
+           NONPOLYMER_TSV_STANDARD is appended to get_nonpolymer_tsv()
+           CRYSTALPH_TSV_STANDARD is appended to get_crystalph_tsv()
+           SEQUENCE_TSV_STANDARD is appended to get_sequence_tsv()
+        """
+        logger.debug('Appending 1FCZ standard to tsv files')
+        try:
+            util.append_string_to_file(self.get_nonpolymer_tsv(),
+                                       DataImportTask.NONPOLYMER_TSV_STANDARD)
+            util.append_string_to_file(self.get_sequence_tsv(),
+                                       DataImportTask.SEQUENCE_TSV_STANDARD)
+            util.append_string_to_file(self.get_crystalph_tsv(),
+                                       DataImportTask.CRYSTALPH_TSV_STANDARD)
+
+            self.append_to_email_log('\nAppending 1FCZ standard to tsv files\n')
+            nonpoly_count = util.get_file_line_count(self.get_nonpolymer_tsv())
+            seq_count = util.get_file_line_count(self.get_sequence_tsv())
+            crystal_count = util.get_file_line_count(self.get_crystalph_tsv())
+            inchi_count = util.get_file_line_count(self.get_components_inchi_file())
+
+            self.append_to_email_log('Line counts:\n')
+            self.append_to_email_log(str(inchi_count) + ' ' +
+                                     DataImportTask.COMPINCHI_ICH + '\n')
+
+            self.append_to_email_log(str(nonpoly_count) + ' ' +
+                                     DataImportTask.NONPOLYMER_TSV + '\n')
+
+            self.append_to_email_log(str(seq_count) + ' ' +
+                                     DataImportTask.SEQUENCE_TSV + '\n')
+
+            self.append_to_email_log(str(crystal_count) + ' ' +
+                                     DataImportTask.CRYSTALPH_TSV + '\n')
+
+        except IOError:
+            logger.exception('Error appending standard to file')
 
     def can_run(self):
         """Determines if task can actually run
@@ -143,6 +200,9 @@ class DataImportTask(D3RTask):
                                       download_path,
                                       self._maxretries,
                                       self._retrysleep)
+
+            self.append_standard_to_files()
+
             self.end()
             return
         except Exception:

@@ -56,12 +56,15 @@ class BlastNFilterTask(D3RTask):
         """
         out_dir = self.get_dir()
         txt_list = []
-        for entry in os.listdir(out_dir):
-            if entry == BlastNFilterTask.SUMMARY_TXT:
-                continue
+        try:
+            for entry in os.listdir(out_dir):
+                if entry == BlastNFilterTask.SUMMARY_TXT:
+                    continue
 
-            if entry.endswith('.txt'):
-                txt_list.append(entry)
+                if entry.endswith('.txt'):
+                    txt_list.append(entry)
+        except OSError:
+            logger.warning('Caught exception trying to look for .txt files')
 
         return txt_list
 
@@ -156,10 +159,10 @@ class BlastNFilterTask(D3RTask):
 
         blastnfilter_name = os.path.basename(self.get_args().blastnfilter)
 
-        ret_code = self.run_external_command(blastnfilter_name,
-                                             cmd_to_run, True)
-        if ret_code == 0:
-            self.set_status(D3RTask.COMPLETE_STATUS)
+        self.run_external_command(blastnfilter_name,
+                                  cmd_to_run, False)
+
+        self.set_status(D3RTask.COMPLETE_STATUS)
 
         cmd_to_run = (self.get_args().postanalysis + ' --compinchi ' +
                       data_import.get_components_inchi_file() + ' ' +

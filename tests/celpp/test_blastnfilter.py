@@ -48,7 +48,12 @@ class TestBlastNFilterTask(unittest.TestCase):
         try:
             params = D3RParameters()
             blast_task = BlastNFilterTask(temp_dir, params)
+
+            # try missing directory
+            self.assertEquals(len(blast_task.get_txt_files()), 0)
+
             blast_task.create_dir()
+
             # try empty directory
             self.assertEquals(len(blast_task.get_txt_files()), 0)
 
@@ -84,7 +89,6 @@ class TestBlastNFilterTask(unittest.TestCase):
         try:
             # try where makeblastdb is not complete
             params = D3RParameters()
-            params.blastdir = tempDir
             blastTask = BlastNFilterTask(tempDir, params)
             self.assertEqual(blastTask.can_run(), False)
 
@@ -152,7 +156,6 @@ class TestBlastNFilterTask(unittest.TestCase):
             params = D3RParameters()
             params.blastnfilter = '/bin/echo'
             params.postanalysis = os.path.join(temp_dir, 'foo.py')
-            params.blastdir = temp_dir
             params.pdbdb = '/pdbdb'
             blasttask = BlastNFilterTask(temp_dir, params)
             blasttask._can_run = True
@@ -197,7 +200,7 @@ class TestBlastNFilterTask(unittest.TestCase):
                            os.path.join(temp_dir, 'stage.1.dataimport',
                                         'new_release_structure_sequence.tsv'))
             echo_out.index(' --pdbblastdb ' +
-                           os.path.join(temp_dir, 'current'))
+                           os.path.join(temp_dir, 'stage.1.makeblastdb'))
             echo_out.index(' --compinchi ' +
                            os.path.join(temp_dir, 'stage.1.dataimport',
                                         'Components-inchi.ich'))
@@ -233,7 +236,6 @@ class TestBlastNFilterTask(unittest.TestCase):
             params = D3RParameters()
             params.blastnfilter = 'true'
             params.postanalysis = '/bin/echo'
-            params.blastdir = temp_dir
             params.pdbdb = '/pdbdb'
             blasttask = BlastNFilterTask(temp_dir, params)
             blasttask._can_run = True
@@ -283,7 +285,6 @@ class TestBlastNFilterTask(unittest.TestCase):
             foo_script = os.path.join(temp_dir, 'foo.py')
             params.blastnfilter = foo_script
             params.postanalysis = '/bin/echo'
-            params.blastdir = temp_dir
             params.pdbdb = '/pdbdb'
             blasttask = BlastNFilterTask(temp_dir, params)
             blasttask._can_run = True
@@ -346,17 +347,20 @@ class TestBlastNFilterTask(unittest.TestCase):
             params = D3RParameters()
             params.blastnfilter = 'false'
             params.postanalysis = 'true'
-            params.blastdir = temp_dir
             params.pdbdb = '/pdbdb'
             blasttask = BlastNFilterTask(temp_dir, params)
             blasttask._can_run = True
             blasttask.run()
-            self.assertEqual(blasttask.get_status(), D3RTask.ERROR_STATUS)
-            self.assertNotEqual(blasttask.get_error(), None)
+            self.assertEqual(blasttask.get_status(), D3RTask.COMPLETE_STATUS)
+            self.assertEqual(blasttask.get_error(), None)
+            complete_file = os.path.join(blasttask.get_dir(),
+                                         D3RTask.COMPLETE_FILE)
+
+            self.assertEqual(os.path.isfile(complete_file), True)
             error_file = os.path.join(blasttask.get_dir(),
                                       D3RTask.ERROR_FILE)
 
-            self.assertEqual(os.path.isfile(error_file), True)
+            self.assertEqual(os.path.isfile(error_file), False)
 
             std_err_file = os.path.join(blasttask.get_dir(),
                                         'false.stderr')
@@ -377,7 +381,6 @@ class TestBlastNFilterTask(unittest.TestCase):
             params = D3RParameters()
             params.blastnfilter = 'falseasdfasdf'
             params.postanalysis = 'true'
-            params.blastdir = temp_dir
             params.pdbdb = '/pdbdb'
             blasttask = BlastNFilterTask(temp_dir, params)
             blasttask._can_run = True
@@ -392,7 +395,6 @@ class TestBlastNFilterTask(unittest.TestCase):
         params = D3RParameters()
         params.blastnfilter = 'false'
         params.postanalysis = 'false'
-        params.blastdir = '/foo'
         params.pdbdb = '/pdbdb'
         blasttask = BlastNFilterTask(None, params)
         blasttask._can_run = False
@@ -402,10 +404,11 @@ class TestBlastNFilterTask(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
-            params.blastdir = temp_dir
             blasttask = BlastNFilterTask(temp_dir, params)
 
             blasttask.create_dir()
+
+            # no summary.txt file
             self.assertEquals(blasttask
                               ._parse_blastnfilter_output_for_hit_stats(),
                               '\n# txt files found: 0\n\nOutput from ' +

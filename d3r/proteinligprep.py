@@ -193,7 +193,7 @@ def main_proteinprep ( s2_result_path, pdb_protein_path, working_folder ):
             ligand_smile = smile_file.readlines()
             smile_file.close()
         else:
-            logging.info( "Convert from inchi:%s to smile failed"%s(ligand_inchi))
+            logging.info( "Convert from inchi:%s to smile failed"%(ligand_inchi))
         #finish generating the smiles, then try to prepared the ligand 
         ##############ligand prep step starts here##############
         #if not ligand_prepare(ligand_smile, "ligand.mae"):
