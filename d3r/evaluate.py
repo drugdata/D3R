@@ -12,6 +12,25 @@ import numpy
 logger = logging.getLogger()
 logging.basicConfig( format  = '%(asctime)s: %(message)s', datefmt = '%m/%d/%y %I:%M:%S', filename = 'final.log', filemode = 'w', level   = logging.INFO )
 
+def merge_two_pdb (receptor, ligand, complex_pdb):
+    complex_lines = []
+    f1 = open(receptor, "r")
+    protein_lines = f1.readlines()
+    f1.close()
+    for p_line in protein_lines:
+        if p_line [:6] not in ["CONECT", "ENDMDL", "END   "]:
+            complex_lines.append(p_line)
+    complex_lines.append("TER   \n")
+    f2 = open(ligand, "r")
+    ligand_lines = f2.readlines()
+    f2.close()
+    for l_line in ligand_lines:
+        if l_line [:6] not in ["REMARK", "MODEL ", "CONECT", "ENDMDL", "END   "]:
+            complex_lines.append(l_line) 
+    f3 = open(complex_pdb, "w")
+    f3.writelines(complex_lines)
+    f3.close()
+
 def heavy_atom (mol):
 #check the heavy atom numbers
     heavy_atom_numbers = 0
@@ -222,7 +241,6 @@ def main_score (stage_4_result, pdb_protein_path, stage_5_working, update= True)
         os.chdir(scoreable_path_local)
         if scoreable_path_local not in score_dic:
             score_dic[scoreable_path_local] = {}
-        print "SSSSSSSSSSSSS", score_dic
         #now we are in folders named by pdbid
         current_dir_layer_2 = os.getcwd()
         ##################
@@ -257,8 +275,8 @@ def main_score (stage_4_result, pdb_protein_path, stage_5_working, update= True)
         #go to score dic and do score 
         os.chdir("score")    
         logging.info("=============Start working in this case:%s=========="%scoreable_path_local)
-        #2, align all maegz file onto the crystal structure and split right after alignment
-        #get all the protein and align the protein to the crystal structure
+        #2, split the maegz file into pdb files and combine receptor with ligand
+            #align the complex onto the crystal structure and split into ligands with receptor
         all_docked_structures = glob.glob("*.maegz") 
         previous_files = glob.glob("rot-*.maegz")
         for item in previous_files:
@@ -271,26 +289,45 @@ def main_score (stage_4_result, pdb_protein_path, stage_5_working, update= True)
             os.chdir(current_dir_layer_2)
             os.chdir(current_dir)
             continue    
+        else:
+            # store all the crystal ligands
+            crystal_ligand_list = glob.glob("crystal_ligand*.pdb")
         for all_docked_structure in all_docked_structures:
             structure_type = all_docked_structure.split("_")[0]
-            aligned_sturture = structure_align("crystal.pdb", all_docked_structure)
+            #first split, then combine together, then do the aligend
+            all_docked_structure_title = all_docked_structure.split(".")[0]
+            all_docked_structure_pdb = all_docked_structure_title + ".pdb"
+            commands.getoutput("$SCHRODINGER/run split_structure.py -many_files -m ligand %s %s"%(all_docked_structure, all_docked_structure_pdb))
+            # should get largest_dock_pv_receptor1.pdb and largest_dock_pv_ligand1.pdb, may get largest_dock_pv_ligand2.pdb
+            #now combine receptor and ligand
+            all_docked_structure_receptor = all_docked_structure_title + "_receptor1.pdb"
+            #here, just focus on the first ligand now, probably will come back to get all other ligands sliu 2/12/2016
+            all_docked_structure_ligand = all_docked_structure_title + "_ligand1.pdb"
+            all_docked_structure_complex = all_docked_structure_title + "_complex1.pdb"
+            merge_two_pdb(all_docked_structure_receptor, all_docked_structure_ligand, all_docked_structure_complex)
+            if not os.path.isfile(all_docked_structure_complex):
+                logging.info("Could not get combined complex file:%s"%all_docked_structure_complex)
+                continue
+            aligned_sturture = structure_align("crystal.pdb", all_docked_structure_complex)
             if aligned_sturture:
                 commands.getoutput("$SCHRODINGER/run split_structure.py -many_files -m ligand %s %s"%(aligned_sturture,aligned_sturture))
                 aligned_title = aligned_sturture.split(".")[0]
                 #get the splitted ligand and protein
-                ligand_list = glob.glob("%s_ligand*.maegz"%aligned_title)
+                ligand_list = glob.glob("%s_ligand*.pdb"%aligned_title)
                 #just use the first ligand here
-                top_ligand = "%s_ligand1.maegz"%aligned_title
-                top_ligand_pdb = top_ligand.split(".")[0]+".pdb"
-                #convert to pdb file
-                commands.getoutput("$SCHRODINGER/utilities/pdbconvert -imae %s -opdb %s"%(top_ligand, top_ligand_pdb)) 
+                top_ligand_pdb = "%s_ligand1.pdb"%aligned_title
                 try:
-                    rmsd = main_rmsd("crystal_ligand1.pdb", "%s"%top_ligand_pdb)        
-                    logging.info( "RMSD for the first ligand: %s is : %s"%(top_ligand, rmsd))
+                    #change to the rmsd list style, becaue the crystal structure may have multiple ligand
+                        #choose the lowest rmsd to store.
+                    rmsd_list = []
+                    for crystal_ligand in crystal_ligand_list:
+                        rmsd = main_rmsd("%s"%crystal_ligand, "%s"%top_ligand_pdb)        
+                        rmsd_list.append(rmsd)
+                        logging.info( "RMSD for the first ligand: %s comparing with crystal ligand :%s, is : %s"%(top_ligand_pdb, crystal_ligand, rmsd))
                     if structure_type not in score_dic[scoreable_path_local]:
-                        score_dic[scoreable_path_local][structure_type] = rmsd
+                        score_dic[scoreable_path_local][structure_type] = min(rmsd_list)
                 except:
-                    logging.info("RMSD cannot be calculate for the ligand: %s"%top_ligand)
+                    logging.info("RMSD cannot be calculate for the ligand: %s"%top_ligand_pdb)
         #Finshi scoring, come back to the folder with pdbid
         os.chdir(current_dir_layer_2)
         #Finshi scoring for this pdbid, come back to the main folder
