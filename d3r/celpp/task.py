@@ -9,6 +9,9 @@ import smtplib
 import platform
 from email.mime.text import MIMEText
 
+from d3r.celpp.uploader import FtpFileUploader
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -109,6 +112,13 @@ class D3RTask(object):
         self._duration = -1
         self._email_log = None
 
+        try:
+            logger.debug('ftpconfig set to ' + args.ftpconfig)
+            self._file_uploader = FtpFileUploader(args.ftpconfig)
+        except AttributeError:
+            logger.debug('ftpconfig not set')
+            self._file_uploader = None
+
     def get_args(self):
         return self._args
 
@@ -156,6 +166,27 @@ class D3RTask(object):
 
     def set_error(self, error):
         self._error = error
+
+    def get_file_uploader(self):
+        """Gets the file uploader
+        """
+        return self._file_uploader
+
+    def set_file_uploader(self, file_uploader):
+        """Sets file uploader
+        """
+        self._file_uploader = file_uploader
+
+    def get_uploadable_files(self):
+        """Returns a list of files that can be uploaded to remote server
+
+           Provides a way for a D3RTask to define what files should
+           uploaded to remote server by any D3RTaskUploader.  The default
+           implementation returns an empty list
+           :returns: list of files that can be uploaded.  The files should
+           have full paths
+        """
+        return []
 
     def _get_smtp_server(self):
         """Gets smtplib server for localhost
@@ -278,6 +309,23 @@ class D3RTask(object):
             logger.debug('No email set, skipping email notification ' +
                          str(e))
 
+    def _upload_task(self):
+        """Uploads files related to task with FileUploader passed in
+
+
+           :return: None
+        """
+        if self.get_file_uploader() is None:
+            return
+        try:
+            uploadable_files = self.get_uploadable_files()
+            self.get_file_uploader().upload_files(uploadable_files)
+            summary = self.get_file_uploader().get_upload_summary()
+            self.append_to_email_log('\n' + summary + '\n')
+        except:
+            logger.exception('Caught exception trying to upload files')
+
+
     def start(self):
         """Denotes start of task
 
@@ -335,6 +383,8 @@ class D3RTask(object):
                                   D3RTask.ERROR_FILE), 'a').close()
             except:
                 logger.exception('Caught exception')
+
+        self._upload_task()
 
         if self.get_status() == D3RTask.ERROR_STATUS:
             try:
