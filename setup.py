@@ -19,7 +19,8 @@ requirements = [
     "lockfile",
     "psutil",
     "biopython",
-    "xlsxwriter"
+    "xlsxwriter",
+    "ftpretty"
 ]
 
 test_requirements = [
@@ -27,7 +28,8 @@ test_requirements = [
     "lockfile",
     "psutil",
     "biopython",
-    "xlsxwriter"
+    "xlsxwriter",
+    "ftpretty"
 ]
 
 setup(
