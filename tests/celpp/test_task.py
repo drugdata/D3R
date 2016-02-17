@@ -24,6 +24,53 @@ from d3r.celpp.task import UnsetNameError
 from d3r.celpp.task import UnsetCommandError
 from d3r.celpp.task import UnsetFileNameError
 from d3r.celpp.task import D3RTask
+from d3r.celpp.uploader import FileUploader
+
+class MockException(Exception):
+    pass
+
+
+class MockFileUploader(FileUploader):
+    """Fake FileUploader
+    """
+    def __init__(self):
+        self._upload_files_except_object = None
+        self._upload_summary_except_object = None
+        self._upload_summary = None
+        self._upload_files = None
+
+
+    def set_upload_files(self, val):
+        self._upload_files = val
+
+    def set_upload_files_exception(self, except_object):
+        self._upload_files_except_object = except_object
+
+    def upload_files(self, list_of_files):
+        """
+
+        :param list_of_files:
+        :return:
+        """
+        if self._upload_files_except_object is not None:
+            raise self._upload_files_except_object
+        return self._upload_files
+
+    def set_upload_summary(self, val):
+        self._upload_summary = val
+
+    def set_upload_summary_exception(self, except_object):
+        self._upload_summary_except_object = except_object
+
+    def get_upload_summary(self):
+        """
+
+        :return: String set in set_upload_summary()
+        """
+        if self._upload_summary_except_object is not None:
+            raise self._upload_summary_except_object
+
+        return self._upload_summary
 
 
 class TestD3rTask(unittest.TestCase):
@@ -44,12 +91,18 @@ class TestD3rTask(unittest.TestCase):
         task.set_stage(4)
         task.set_status(D3RTask.START_STATUS)
         task.set_error('error')
+        task.set_file_uploader('yah')
 
         self.assertEqual(task.get_name(), 'foo')
         self.assertEqual(task.get_path(), 'blah')
         self.assertEqual(task.get_stage(), 4)
         self.assertEqual(task.get_status(), D3RTask.START_STATUS)
         self.assertEqual(task.get_error(), 'error')
+        self.assertEqual(task.get_file_uploader(), 'yah')
+
+        params.ftpconfig = '/somefile'
+        task = D3RTask('/path', params)
+        self.assertNotEqual(task.get_file_uploader(), None)
 
     def test_get_dir_name(self):
         params = D3RParameters()
@@ -98,9 +151,49 @@ class TestD3rTask(unittest.TestCase):
 
         self.assertEqual(task.get_dir(), '/blah/stage.1.foo')
 
+    def test_get_uploadable_files(self):
+        task = D3RTask(None, D3RParameters())
+        self.assertEqual(task.get_uploadable_files(), [])
+
     def test_can_run(self):
         task = D3RTask(None, D3RParameters())
         self.assertEqual(task.can_run(), False)
+
+    def test_upload_task(self):
+        task = D3RTask(None, D3RParameters())
+        self.assertEqual(task._file_uploader, None)
+        # try calling upload_task where _file_uploader is None
+        task._upload_task()
+
+        # try calling upload_task where _file_uploader is NOT None
+        params = D3RParameters()
+        params.ftpconfig = 'foo'
+        task = D3RTask(None, params)
+        self.assertNotEqual(task._file_uploader, None)
+        # try calling upload_task where _file_uploader is None
+        task._upload_task()
+
+        # try calling upload_task where _file_uploader.upload_files
+        # throws exception
+        uploader = MockFileUploader()
+        uploader.set_upload_files_exception(MockException('hi'))
+        task = D3RTask(None, D3RParameters())
+        task.set_file_uploader(uploader)
+        task._upload_task()
+
+        # try calling where upload_summary throws exception
+        uploader.set_upload_files_exception(None)
+        uploader.set_upload_summary_exception(MockException('boo'))
+        task._upload_task()
+
+        # try calling where upload_summary returns None
+        uploader.set_upload_summary_exception(None)
+        uploader.set_upload_summary(None)
+        task._upload_task()
+
+        uploader.set_upload_summary('hello')
+        task._upload_task()
+        self.assertEqual(task._email_log, '\nhello\n')
 
     def test_run(self):
         params = D3RParameters()
