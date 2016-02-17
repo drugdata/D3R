@@ -17,6 +17,7 @@ from d3r.celpp.glide import GlideTask
 from d3r.celpp.evaluation import EvaluationTaskFactory
 from d3r.celpp.makeblastdb import MakeBlastDBTask
 
+
 from lockfile.pidlockfile import PIDLockFile
 
 # create logger
@@ -338,6 +339,12 @@ def _parse_arguments(desc, args):
                         default='localhost')
     parser.add_argument('--smtpport', dest='smtpport',
                         help='Sets smtp server port', default='25')
+    parser.add_argument('--ftpconfig', dest='ftpconfig', help='File containing'
+                        ' configuration to connect to ftp server.  If set, data'
+                        ' from stages run during this invocation will be uploaded'
+                        ' after the stage completes.  Format is same as ncftp config'
+                        ' files')
+
     parser.add_argument('--version', action='version',
                         version=('%(prog)s ' + d3r.__version__))
     return parser.parse_args(args, namespace=parsed_arguments)
