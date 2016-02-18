@@ -102,7 +102,7 @@ class TestD3rTask(unittest.TestCase):
 
         params.ftpconfig = '/somefile'
         task = D3RTask('/path', params)
-        self.assertNotEqual(task.get_file_uploader(), None)
+        self.assertEqual(task.get_file_uploader(), None)
 
     def test_get_dir_name(self):
         params = D3RParameters()
@@ -169,7 +169,7 @@ class TestD3rTask(unittest.TestCase):
         params = D3RParameters()
         params.ftpconfig = 'foo'
         task = D3RTask(None, params)
-        self.assertNotEqual(task._file_uploader, None)
+        self.assertEqual(task._file_uploader, None)
         # try calling upload_task where _file_uploader is None
         task._upload_task()
 

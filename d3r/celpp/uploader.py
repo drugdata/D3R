@@ -99,13 +99,13 @@ class FtpFileUploader(FileUploader):
                 split_line = line.split(' ')
                 if len(split_line) == 2:
                     if split_line[0] == 'host':
-                        self.set_ftp_host(split_line[1])
+                        self.set_ftp_host(split_line[1].rstrip())
                     elif split_line[0] == 'user':
-                        self.set_ftp_user(split_line[1])
+                        self.set_ftp_user(split_line[1].rstrip())
                     elif split_line[0] == 'pass':
-                        self.set_ftp_pass(split_line[1])
+                        self.set_ftp_password(split_line[1].rstrip())
                     elif split_line[0] == 'path':
-                        self.set_ftp_remote_dir(split_line[1])
+                        self.set_ftp_remote_dir(split_line[1].rstrip())
         finally:
             if f is not None:
                 f.close()
@@ -168,9 +168,15 @@ class FtpFileUploader(FileUploader):
 
     def _disconnect(self):
         if self._ftp is None:
+            logger.debug('ftp connection is None, just returning')
+            return
+
+        if self._alt_ftp_con is not None:
+            logger.debug('external ftp connection used, skipping close')
             return
 
         try:
+            logger.debug('Attempting to close ftp connection')
             self._ftp.close()
         except:
             logger.exception('Caught exception attempting to close connection')
