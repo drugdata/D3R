@@ -9,6 +9,11 @@ from ftpretty import ftpretty
 logger = logging.getLogger(__name__)
 
 
+class InvalidFtpConfigException(Exception):
+    """Thrown when an invalid ftp configution is passed to FtpFileUploader
+    """
+    pass
+
 class FileUploader(object):
     """Defines interface for uploading files
     """
@@ -42,19 +47,68 @@ class FtpFileUploader(FileUploader):
         """Constructor
 
         """
-        # TODO need to parse ftp_config file
         self._connect_timeout = 60
         self._ftp = None
         self._files_transferred = 0
         self._bytes_transferred = 0
         self._duration = 0
-        if ftp_config is None:
-            return
-        # self._ftp_remote_dir = ftp_remote_dir
-        # self._ftp_host = ftp_host
-        # self._ftp_user = ftp_user
-        # self._ftp_pass = ftp_pass
+        self._alt_ftp_con = None
+        self._ftp_host = None
+        self._ftp_user = None
+        self._ftp_pass = None
+        self._remote_dir = None
 
+        if ftp_config is not None:
+            self._parse_config(ftp_config)
+
+
+    def _parse_config(self, ftp_config):
+        """Parses ftp config file for user credentials
+
+           The parsed values are stored internally in this
+           class.
+
+           Expected format of `ftp_config` file
+
+           host <HOST>
+           user <USERNAME>
+           pass <PASSWORD>
+           path <BASE PATH ON REMOTE SERVER ie /foo>
+
+           Example:
+
+           host ftp.box.com
+           user bob@bob.com
+           pass 12345
+           path /upload
+
+           The above format matches the standard used
+           by NCFTP with the exception of `path` which
+           is custom to this class
+
+           :param ftp_config: Path to ftp config file
+           :raises IOError: If there was an error opening the file
+        """
+        if ftp_config is None:
+            raise InvalidFtpConfigException('No ftp file specified')
+
+        f = None
+        try:
+            f = open(ftp_config, 'r')
+            for line in f:
+                split_line = line.split(' ')
+                if len(split_line) == 2:
+                    if split_line[0] == 'host':
+                        self.set_ftp_host(split_line[1])
+                    elif split_line[0] == 'user':
+                        self.set_ftp_user(split_line[1])
+                    elif split_line[0] == 'pass':
+                        self.set_ftp_pass(split_line[1])
+                    elif split_line[0] == 'path':
+                        self.set_ftp_remote_dir(split_line[1])
+        finally:
+            if f is not None:
+                f.close()
 
     def set_ftp_connection(self, ftp_con):
         """Lets caller use library other then ftpretty for ftp connections
@@ -83,7 +137,7 @@ class FtpFileUploader(FileUploader):
     def get_ftp_host(self):
         """Gets ftp host
         """
-        return self._host
+        return self._ftp_host
 
     def set_ftp_user(self, ftp_user):
         self._ftp_user = ftp_user
