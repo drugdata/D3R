@@ -83,6 +83,9 @@ class TestBlastNFilterTask(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
+    def test_get_uploadable_files(self):
+        self.assertEqual('Need to ', 'test this')
+
     def test_can_run(self):
         tempDir = tempfile.mkdtemp()
 
