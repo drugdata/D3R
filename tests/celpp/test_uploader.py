@@ -6,9 +6,9 @@ import unittest
 import tempfile
 import shutil
 import os.path
+from mock import Mock
 
 from d3r.celpp.uploader import FtpFileUploader
-from d3r.celpp.uploader import InvalidFtpConfigException
 """
 test_uploader
 ----------------------------------
@@ -17,11 +17,15 @@ Tests for `uploader` module.
 """
 
 
+class MockFtp(object):
+    """Dummy ftp connection
+    """
+
+
 class TestFtpFileUploader(unittest.TestCase):
 
     def setUp(self):
         pass
-
 
     def test_constructor(self):
         # test passing None which means we set everything manually
@@ -31,6 +35,7 @@ class TestFtpFileUploader(unittest.TestCase):
         self.assertEqual(foo.get_ftp_password(), None)
         self.assertEqual(foo.get_ftp_user(), None)
         self.assertEqual(foo.get_ftp_remote_dir(), None)
+        self.assertEqual(foo.get_error_msg(), None)
 
         temp_dir = tempfile.mkdtemp()
         try:
@@ -124,7 +129,6 @@ class TestFtpFileUploader(unittest.TestCase):
         foo._connect()
         self.assertEqual(foo._ftp, 'hi')
 
-
     def test_disconnect(self):
         # test disconnect where _ftp is None
         foo = FtpFileUploader(None)
@@ -140,21 +144,209 @@ class TestFtpFileUploader(unittest.TestCase):
         # test disconnect where _ftp is set and
         # _alt_ftp_con is None
         foo = FtpFileUploader(None)
-        foo.set_ftp_connection('hi')
+        mockftp = MockFtp()
+        mockftp.close = Mock(side_effect=Exception())
+        foo.set_ftp_connection(mockftp)
         foo._connect()
         foo._alt_ftp_con = None
         foo._disconnect()
+        mockftp.close.assert_any_call()
+
+    def test_upload_file_where_file_is_none(self):
+
+        # test where file is None
+        ftpspec = ["put"]
+        mockftp = Mock(spec=ftpspec)
+        foo = FtpFileUploader(None)
+        foo.set_ftp_connection(mockftp)
+        foo._connect()
+        foo._upload_file(None)
+
+    def test_upload_file_where_file_does_not_exist(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            ftpspec = ["put"]
+            mockftp = Mock(spec=ftpspec)
+            foo = FtpFileUploader(None)
+            foo.set_ftp_connection(mockftp)
+            foo._connect()
+            foo._upload_file(os.path.join(temp_dir, 'nonexist'))
+            mockftp.assert_not_called()
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_upload_file_that_raises_exception(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+
+            mockftp = MockFtp()
+            mockftp.put = Mock(side_effect=IOError('hi'))
+            foo = FtpFileUploader(None)
+            foo.set_ftp_connection(mockftp)
+            foo._connect()
+            valid_file = os.path.join(temp_dir, 'file')
+            f = open(valid_file, 'a')
+            f.write('12')
+            f.flush()
+            f.close()
+            try:
+                foo._upload_file(valid_file)
+                self.fail('Expected IOError')
+            except IOError:
+                pass
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_upload_file_on_valid_file(self):
+
+        temp_dir = tempfile.mkdtemp()
+        try:
+            mockftp = MockFtp()
+            mockftp.put = Mock(return_value=3)
+            foo = FtpFileUploader(None)
+            foo.set_ftp_connection(mockftp)
+            foo.set_ftp_remote_dir('/remote')
+            foo._connect()
+            valid_file = os.path.join(temp_dir, 'file')
+            f = open(valid_file, 'a')
+            f.write('12')
+            f.flush()
+            f.close()
+            foo._upload_file(valid_file)
+            mockftp.put.assert_called_with(valid_file,
+                                           os.path.join('/remote',
+                                                        valid_file))
+            self.assertEqual(foo._bytes_transferred, 3)
+            self.assertEqual(foo._files_transferred, 1)
+            foo._upload_file(valid_file)
+            self.assertEqual(foo._bytes_transferred, 6)
+            self.assertEqual(foo._files_transferred, 2)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_upload_files_file_list_is_none(self):
+        foo = FtpFileUploader(None)
+        self.assertEqual(foo.upload_files(None), True)
+        self.assertEqual(foo.get_error_msg(),
+                         'List of files passed in was None')
+        self.assertEqual(foo.get_upload_summary(),
+                         'List of files passed in was None\n'
+                         '0 (0 bytes) files uploaded in 0 '
+                         'seconds to host Unset:Unset')
+
+    def test_upload_files_file_list_is_empty(self):
+        foo = FtpFileUploader(None)
+        self.assertEqual(foo.upload_files([]), True)
+        self.assertEqual(foo.get_error_msg(),
+                         'No files to upload')
+        self.assertEqual(foo.get_upload_summary(),
+                         'No files to upload\n'
+                         '0 (0 bytes) files uploaded in 0 '
+                         'seconds to host Unset:Unset')
+
+    def test_upload_files_connect_raises_exception(self):
+        foo = FtpFileUploader(None)
+        foo.set_ftp_host('ftp.box.com')
+        foo.set_ftp_remote_dir('/hi')
+        self.assertEqual(foo.upload_files(['hi']), False)
+        self.assertEqual(foo.get_error_msg(), 'Unable to connect to ftp host')
+        self.assertEqual(foo.get_upload_summary(),
+                         'Unable to connect to ftp host\n'
+                         '0 (0 bytes) files uploaded in 0 '
+                         'seconds to host ftp.box.com:/hi')
 
 
+    def test_upload_files_one_valid_file(self):
+        mockftp = MockFtp()
+        mockftp.put = Mock(return_value=3)
+        mockftp.close = Mock(return_value=None)
+        foo = FtpFileUploader(None)
+        foo.set_ftp_connection(mockftp)
 
-    def test_upload_file(self):
-        self.assertEqual(1, 2)
+        foo.set_ftp_remote_dir('/remote')
+        foo.set_ftp_host('hosty')
+        temp_dir = tempfile.mkdtemp()
+        try:
+            valid_file = os.path.join(temp_dir, 'valid')
+            f = open(valid_file, 'a')
+            f.write('hi')
+            f.flush()
+            f.close()
+
+            self.assertEqual(foo.upload_files([valid_file]), True)
+            self.assertEqual(foo.get_error_msg(), None)
+            self.assertEqual(foo.get_upload_summary(),
+                             '1 (3 bytes) files uploaded in 0 '
+                             'seconds to host hosty:/remote')
+            mockftp.put.assert_called_with(valid_file,
+                                           os.path.join('/remote',
+                                                        valid_file))
+            mockftp.close.assert_not_called()
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_upload_files_multiple_valid_files(self):
+        mockftp = MockFtp()
+        mockftp.put = Mock(return_value=3)
+        mockftp.close = Mock(return_value=None)
+        foo = FtpFileUploader(None)
+        foo.set_ftp_connection(mockftp)
+
+        foo.set_ftp_remote_dir('/remote')
+        foo.set_ftp_host('hosty')
+        temp_dir = tempfile.mkdtemp()
+        try:
+            valid_file = os.path.join(temp_dir, 'valid')
+            f = open(valid_file, 'a')
+            f.write('hi')
+            f.flush()
+            f.close()
+            afile = os.path.join(temp_dir,'hi')
+            open(afile, 'a').close()
+
+            self.assertEqual(foo.upload_files([valid_file, afile]), True)
+            self.assertEqual(foo.get_error_msg(), None)
+            self.assertEqual(foo.get_upload_summary(),
+                             '2 (6 bytes) files uploaded in 0 '
+                             'seconds to host hosty:/remote')
+
+            self.assertEqual(mockftp.put.call_count, 2)
+
+            mockftp.close.assert_not_called()
+        finally:
+            shutil.rmtree(temp_dir)
 
 
+    def test_upload_files_where_file_upload_raises_exception(self):
+        mockftp = MockFtp()
+        mockftp.put = Mock(side_effect=IOError('hi'))
+        mockftp.close = Mock(return_value=None)
+        foo = FtpFileUploader(None)
+        foo.set_ftp_connection(mockftp)
 
-            # test upload_files
+        foo.set_ftp_remote_dir('/remote')
+        foo.set_ftp_host('hosty')
+        temp_dir = tempfile.mkdtemp()
+        try:
+            valid_file = os.path.join(temp_dir, 'valid')
+            f = open(valid_file, 'a')
+            f.write('hi')
+            f.flush()
+            f.close()
 
-            # test get_upload_summary
+            self.assertEqual(foo.upload_files([valid_file]), False)
+            self.assertEqual(foo.get_error_msg(), 'Error during upload')
+            self.assertEqual(foo.get_upload_summary(),
+                             'Error during upload\n'
+                             '0 (0 bytes) files uploaded in 0 '
+                             'seconds to host hosty:/remote')
+            mockftp.put.assert_called_with(valid_file,
+                                           os.path.join('/remote',
+                                                        valid_file))
+        finally:
+            shutil.rmtree(temp_dir)
+
 
     def tearDown(self):
         pass

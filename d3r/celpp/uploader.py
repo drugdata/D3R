@@ -57,6 +57,7 @@ class FtpFileUploader(FileUploader):
         self._ftp_user = None
         self._ftp_pass = None
         self._remote_dir = None
+        self._error_msg = None
 
         if ftp_config is not None:
             self._parse_config(ftp_config)
@@ -157,8 +158,14 @@ class FtpFileUploader(FileUploader):
     def get_connect_timeout(self):
         return self._connect_timeout
 
+    def get_error_msg(self):
+        return self._error_msg
+
     def _connect(self):
         if self._alt_ftp_con is None:
+            logger.debug('Connecting to ' +
+                         self.get_ftp_host() + ' with user ' +
+                         self.get_ftp_user())
             self._ftp = ftpretty(self.get_ftp_host(),
                                  self.get_ftp_user(),
                                  self.get_ftp_password(),
@@ -197,10 +204,12 @@ class FtpFileUploader(FileUploader):
             logger.warning(file + ' is not a file')
             return
 
-        self._ftp.put(file, os.path.join(self.get_ftp_remote_dir(),
-                                         file))
-
-        self._bytes_transferred += os.path.getsize(file)
+        logger.debug('Uploading file: ' + file)
+        size = self._ftp.put(file,
+                             os.path.join(self.get_ftp_remote_dir(),
+                                          file))
+        logger.debug('  Uploaded ' + str(size) + ' bytes')
+        self._bytes_transferred += size
         self._files_transferred += 1
 
     def upload_files(self, list_of_files):
@@ -225,22 +234,28 @@ class FtpFileUploader(FileUploader):
            /home/joe/data.2 => /foo/home/joe/data.2
            /var/blah.txt => /foo/var/blah.txt
 
-           For each file this method first verifies the
-           parent directory on the remote server exists.
-           if not, the method attempts to create the
-           necessary directories before attempting an
-           upload.
+           ftpretty is used for ftp upload and it makes
+           sure the directories exist on remote server
+           before uploading.
+
+           This method will return False as soon as an
+           ftp upload raises an exception.
 
            :returns: True upon success, False otherwise
         """
+        self._error_msg = None
+        self._bytes_transferred = 0
+        self._files_transferred = 0
         start_time = int(time.time())
         try:
             if list_of_files is None:
                 logger.warning('list of files is None')
+                self._error_msg = 'List of files passed in was None'
                 return True
 
             if len(list_of_files) is 0:
                 logger.debug('No files to upload')
+                self._error_msg = 'No files to upload'
                 return True
 
             # Try to connect
@@ -248,29 +263,53 @@ class FtpFileUploader(FileUploader):
                 self._connect()
             except:
                 logger.exception('Unable to connect to ftp host')
+                self._error_msg = 'Unable to connect to ftp host'
                 return False
 
             try:
+                logger.debug('Uploading ' + str(len(list_of_files)) + ' files')
                 for file in list_of_files:
                     self._upload_file(file)
             except:
                 logger.exception('Caught exception')
+                self._error_msg = 'Error during upload'
                 return False
             finally:
                 self._disconnect()
             return True
         finally:
             self._duration = int(time.time())  - start_time
+            logger.debug('End of upload_files operation took ' +
+                         str(self._duration) + ' seconds')
 
     def get_upload_summary(self):
         """Gets summary of previous `upload_files` invocation
-            This method SHOULD be overridden in subclass
-            :raises: NotImplementedError
-            :returns: Human readable string summary
-        """
-        logger.debug('Running dummy get_upload_summary method')
 
-        return (str(self._files_transferred) + ' (' +
-                str(self._bytes_transferred) + ' bytes) files uploaded in ' +
-                str(self._duration) + ' seconds to host ' +
-                self.get_ftp_host() + ':' + self.get_ftp_remote_dir())
+            :returns: Human readable string summary of format
+            # files (# bytes) files uploaded in # seconds to host HOST:REMOTE_DIR
+        """
+        summary = ''
+        if self._error_msg is not None:
+            summary = self._error_msg + '\n'
+
+        try:
+            logger.debug('ftp host: ' + self.get_ftp_host())
+            host = self.get_ftp_host()
+        except TypeError:
+            logger.exception('Ftp host not set')
+            host = 'Unset'
+
+        try:
+            logger.debug('remote dir: ' + self.get_ftp_remote_dir())
+            remote_dir = self.get_ftp_remote_dir()
+        except TypeError:
+            logger.exception('remote dir not set')
+            remote_dir = 'Unset'
+
+        summary += (str(self._files_transferred) + ' (' +
+                    str(self._bytes_transferred) +
+                    ' bytes) files uploaded in ' +
+                    str(self._duration) + ' seconds to host ' +
+                    host + ':' + remote_dir)
+        logger.debug('upload summary: ' + summary)
+        return summary
