@@ -23,6 +23,10 @@ class TestProteinLigPrepTask(unittest.TestCase):
     def setUp(self):
         pass
 
+
+    def test_get_uploadable_files(self):
+        self.assertEqual('need to ', 'test this')
+
     def test_can_run(self):
         temp_dir = tempfile.mkdtemp()
         try:

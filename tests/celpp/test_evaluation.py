@@ -23,6 +23,9 @@ class TestEvaluation(unittest.TestCase):
     def setUp(self):
         pass
 
+    def test_get_uploadable_files(self):
+        self.assertEqual('need to ', 'test this')
+
     def test_evaluationtaskfactory_constructor(self):
         params = D3RParameters()
         params.hi = True
