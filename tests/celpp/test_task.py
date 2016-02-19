@@ -154,6 +154,7 @@ class TestD3rTask(unittest.TestCase):
     def test_get_uploadable_files(self):
         task = D3RTask(None, D3RParameters())
         self.assertEqual(task.get_uploadable_files(), [])
+        self.assertEqual(' Test with directories with stderr/stdout files', '')
 
     def test_can_run(self):
         task = D3RTask(None, D3RParameters())

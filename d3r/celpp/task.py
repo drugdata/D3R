@@ -94,6 +94,8 @@ class D3RTask(object):
     UNKNOWN_STATUS = "unknown"
     NOTFOUND_STATUS = "notfound"
     ERROR_STATUS = "error"
+    STDERR_SUFFIX = ".stderr"
+    STDOUT_SUFFIX = ".stdout"
 
     def __init__(self, path, args):
         """Constructor
@@ -186,7 +188,33 @@ class D3RTask(object):
            :returns: list of files that can be uploaded.  The files should
            have full paths
         """
-        return []
+        file_list = []
+
+        try:
+            out_dir = self.get_dir()
+        except:
+            logger.exception('Unable to get dir for task')
+            return file_list
+        try:
+            for entry in os.listdir(out_dir):
+                if not os.path.isfile(os.path.join(out_dir, entry)):
+                    continue
+
+                if entry.endswith(D3RTask.STDERR_SUFFIX):
+                    file_list.append(os.path.join(out_dir, entry))
+                elif entry.endswith(D3RTask.STDOUT_SUFFIX):
+                    file_list.append(os.path.join(out_dir, entry))
+
+            error_file = os.path.join(out_dir, D3RTask.ERROR_FILE)
+            if os.path.isfile(error_file):
+                logger.debug('Found error file adding to list')
+                file_list.append(error_file)
+
+        except OSError:
+            logger.warning('Caught exception looking for error and stderr/stdout files')
+
+        return file_list
+
 
     def _get_smtp_server(self):
         """Gets smtplib server for localhost
@@ -597,8 +625,8 @@ class D3RTask(object):
 
         out, err = p.communicate()
 
-        self.write_to_file(err, command_name + '.stderr')
-        self.write_to_file(out, command_name + '.stdout')
+        self.write_to_file(err, command_name + D3RTask.STDERR_SUFFIX)
+        self.write_to_file(out, command_name + D3RTask.STDOUT_SUFFIX)
 
         if p.returncode != 0:
             if command_failure_is_fatal:
