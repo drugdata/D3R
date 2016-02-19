@@ -29,7 +29,8 @@ test_requirements = [
     "psutil",
     "biopython",
     "xlsxwriter",
-    "ftpretty"
+    "ftpretty",
+    "mock"
 ]
 
 setup(
