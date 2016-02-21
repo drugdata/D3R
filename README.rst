@@ -3,7 +3,7 @@ Drug Design Data Resource CELPP Runner
 ======================================
 
 .. image:: https://img.shields.io/travis/drugdata/D3R.svg
-        :target: https://travis-ci.org/drugdata/D3R
+        :target: https://travis-ci.org/drugdata/D3R.svg?branch=master
 
 .. image:: https://img.shields.io/pypi/v/D3R.svg
         :target: https://pypi.python.org/pypi/D3R
