@@ -88,7 +88,7 @@ class BlastNFilterTask(D3RTask):
 
         out_dir = self.get_dir()
         # add txt files
-        file_list.extend(self.get_txt_files(), True)
+        file_list.extend(self.get_txt_files(True))
 
         summary_file = os.path.join(out_dir,
                                     BlastNFilterTask.SUMMARY_TXT)

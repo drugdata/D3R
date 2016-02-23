@@ -84,7 +84,79 @@ class TestBlastNFilterTask(unittest.TestCase):
             shutil.rmtree(temp_dir)
 
     def test_get_uploadable_files(self):
-        self.assertEqual('Need to ', 'test this')
+        temp_dir = tempfile.mkdtemp()
+        try:
+            # test where directory doesn't even exist
+            params = D3RParameters()
+            task = BlastNFilterTask(temp_dir, params)
+            self.assertEqual(task.get_uploadable_files(), [])
+
+            # test on empty dir
+            task.create_dir()
+
+            # test with blastn filter log
+            logfile = os.path.join(task.get_dir(),
+                                   BlastNFilterTask.BLASTNFILTER_LOG)
+            open(logfile, 'a').close()
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 1)
+            self.assertEqual(flist[0], logfile)
+
+            # test with dockable.xslx
+            dockable = os.path.join(task.get_dir(),
+                                   BlastNFilterTask.DOCKABLE_XSLX)
+            open(dockable, 'a').close()
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 2)
+            flist.index(dockable)
+
+            # test with summary.txt
+            summary = os.path.join(task.get_dir(),
+                                   BlastNFilterTask.SUMMARY_TXT)
+            open(summary, 'a').close()
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 3)
+            flist.index(summary)
+
+            # test with 1 txt file
+            txt_one = os.path.join(task.get_dir(),
+                                   '1fcz.txt')
+            open(txt_one, 'a').close()
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 4)
+            flist.index(txt_one)
+
+            # test with 2 txt files
+            txt_two = os.path.join(task.get_dir(),
+                                   '4asd.txt')
+            open(txt_two, 'a').close()
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 5)
+            flist.index(txt_two)
+
+            # test with additional stderr/stdout files
+            errfile = os.path.join(task.get_dir(),
+                                   'blastnfilter.py.stderr')
+            open(errfile, 'a').close()
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 6)
+            flist.index(errfile)
+
+            outfile = os.path.join(task.get_dir(),
+                                   'blastnfilter.py.stdout')
+            open(outfile, 'a').close()
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 7)
+            flist.index(outfile)
+            flist.index(errfile)
+            flist.index(txt_two)
+            flist.index(txt_one)
+            flist.index(summary)
+            flist.index(dockable)
+            flist.index(logfile)
+
+        finally:
+            shutil.rmtree(temp_dir)
 
     def test_can_run(self):
         tempDir = tempfile.mkdtemp()
