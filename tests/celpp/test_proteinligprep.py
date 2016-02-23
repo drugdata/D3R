@@ -25,7 +25,91 @@ class TestProteinLigPrepTask(unittest.TestCase):
 
 
     def test_get_uploadable_files(self):
-        self.assertEqual('need to ', 'test this')
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = ProteinLigPrepTask(temp_dir, params)
+            # try with no dir
+            self.assertEqual(task.get_uploadable_files(), [])
+
+            # try with empty dir
+            task.create_dir()
+            self.assertEqual(task.get_uploadable_files(), [])
+
+            # try with final log
+            final_log = os.path.join(task.get_dir(),
+                                     ProteinLigPrepTask.FINAL_LOG)
+            open(final_log, 'a').close()
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 1)
+            flist.index(final_log)
+
+            # try with pbid folder that is empty
+            pbdid = os.path.join(task.get_dir(), '4abc')
+            os.mkdir(pbdid)
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 1)
+
+            # try with pbdid folder with ligand.mae
+            ligand = os.path.join(pbdid, 'ligand.mae')
+            open(ligand, 'a').close()
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 2)
+            flist.index(ligand)
+
+            # try with pbdid folder with largest.maegz
+            largest = os.path.join(pbdid, 'largest.maegz')
+            open(largest, 'a').close()
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 3)
+            flist.index(largest)
+
+            # try with pbdid folder with smallest.maegz
+            smallest = os.path.join(pbdid, 'smallest.maegz')
+            open(smallest, 'a').close()
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 4)
+            flist.index(smallest)
+
+            # try with pbdid folder with apo.maegz
+            apo = os.path.join(pbdid, 'apo.maegz')
+            open(apo, 'a').close()
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 5)
+            flist.index(apo)
+
+            # try with pbdid folder with holo.maegz
+            holo = os.path.join(pbdid, 'holo.maegz')
+            open(holo, 'a').close()
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 6)
+            flist.index(holo)
+
+            # add error out files and try with second pbdid folder
+            # with ligand.mae
+            errfile = os.path.join(task.get_dir(), 'proteinligprep.py.stderr')
+            open(errfile, 'a').close()
+            outfile = os.path.join(task.get_dir(), 'proteinligprep.py.stdout')
+            open(outfile, 'a').close()
+
+            pbdtwo = os.path.join(task.get_dir(), '3zaa')
+            os.mkdir(pbdtwo)
+            ligandtwo = os.path.join(pbdtwo, 'ligand.mae')
+            open(ligandtwo, 'a').close()
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 9)
+            flist.index(errfile)
+            flist.index(outfile)
+            flist.index(ligand)
+            flist.index(ligandtwo)
+            flist.index(apo)
+            flist.index(largest)
+            flist.index(final_log)
+            flist.index(holo)
+            flist.index(smallest)
+
+        finally:
+            shutil.rmtree(temp_dir)
 
     def test_can_run(self):
         temp_dir = tempfile.mkdtemp()
