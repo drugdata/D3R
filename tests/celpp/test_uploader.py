@@ -34,7 +34,7 @@ class TestFtpFileUploader(unittest.TestCase):
         self.assertEqual(foo.get_ftp_host(), None)
         self.assertEqual(foo.get_ftp_password(), None)
         self.assertEqual(foo.get_ftp_user(), None)
-        self.assertEqual(foo.get_ftp_remote_dir(), None)
+        self.assertEqual(foo.get_ftp_remote_dir(), '')
         self.assertEqual(foo.get_error_msg(), None)
 
         temp_dir = tempfile.mkdtemp()
@@ -52,7 +52,7 @@ class TestFtpFileUploader(unittest.TestCase):
             self.assertEqual(foo.get_ftp_host(), None)
             self.assertEqual(foo.get_ftp_password(), None)
             self.assertEqual(foo.get_ftp_user(), None)
-            self.assertEqual(foo.get_ftp_remote_dir(), None)
+            self.assertEqual(foo.get_ftp_remote_dir(), '')
 
             # test getters and setters
             foo.set_connect_timeout(10)
@@ -82,7 +82,7 @@ class TestFtpFileUploader(unittest.TestCase):
             self.assertEqual(foo.get_ftp_host(), None)
             self.assertEqual(foo.get_ftp_password(), None)
             self.assertEqual(foo.get_ftp_user(), None)
-            self.assertEqual(foo.get_ftp_remote_dir(), None)
+            self.assertEqual(foo.get_ftp_remote_dir(), '')
 
             # test passing partial config file
             f = open(os.path.join(temp_dir, 'partial'), 'a')
@@ -93,7 +93,7 @@ class TestFtpFileUploader(unittest.TestCase):
             self.assertEqual(foo.get_ftp_host(), None)
             self.assertEqual(foo.get_ftp_password(), None)
             self.assertEqual(foo.get_ftp_user(), 'bob@bob.com')
-            self.assertEqual(foo.get_ftp_remote_dir(), None)
+            self.assertEqual(foo.get_ftp_remote_dir(), '')
 
             # test passing valid config file
             f = open(os.path.join(temp_dir, 'valid'), 'a')
@@ -215,8 +215,8 @@ class TestFtpFileUploader(unittest.TestCase):
             f.close()
             foo._upload_file(valid_file)
             mockftp.put.assert_called_with(valid_file,
-                                           os.path.join('/remote',
-                                                        valid_file))
+                                           os.path.normpath('/remote' +
+                                                            valid_file))
             self.assertEqual(foo._bytes_transferred, 3)
             self.assertEqual(foo._files_transferred, 1)
             foo._upload_file(valid_file)
@@ -233,7 +233,7 @@ class TestFtpFileUploader(unittest.TestCase):
         self.assertEqual(foo.get_upload_summary(),
                          'List of files passed in was None\n'
                          '0 (0 bytes) files uploaded in 0 '
-                         'seconds to host Unset:Unset')
+                         'seconds to host Unset:')
 
     def test_upload_files_file_list_is_empty(self):
         foo = FtpFileUploader(None)
@@ -243,7 +243,7 @@ class TestFtpFileUploader(unittest.TestCase):
         self.assertEqual(foo.get_upload_summary(),
                          'No files to upload\n'
                          '0 (0 bytes) files uploaded in 0 '
-                         'seconds to host Unset:Unset')
+                         'seconds to host Unset:')
 
     def test_upload_files_connect_raises_exception(self):
         foo = FtpFileUploader(None)
@@ -280,8 +280,8 @@ class TestFtpFileUploader(unittest.TestCase):
                              '1 (3 bytes) files uploaded in 0 '
                              'seconds to host hosty:/remote')
             mockftp.put.assert_called_with(valid_file,
-                                           os.path.join('/remote',
-                                                        valid_file))
+                                           os.path.normpath('/remote' +
+                                                            valid_file))
             mockftp.close.assert_not_called()
         finally:
             shutil.rmtree(temp_dir)
@@ -342,8 +342,8 @@ class TestFtpFileUploader(unittest.TestCase):
                              '0 (0 bytes) files uploaded in 0 '
                              'seconds to host hosty:/remote')
             mockftp.put.assert_called_with(valid_file,
-                                           os.path.join('/remote',
-                                                        valid_file))
+                                           os.path.normpath('/remote' +
+                                                            valid_file))
         finally:
             shutil.rmtree(temp_dir)
 
