@@ -154,7 +154,39 @@ class TestD3rTask(unittest.TestCase):
     def test_get_uploadable_files(self):
         task = D3RTask(None, D3RParameters())
         self.assertEqual(task.get_uploadable_files(), [])
-        self.assertEqual(' Test with directories with stderr/stdout files', '')
+        temp_dir = tempfile.mkdtemp()
+        try:
+            task = D3RTask(temp_dir, D3RParameters())
+            task.set_stage(1)
+            task.set_name('foo')
+            task.create_dir()
+            self.assertEqual(task.get_uploadable_files(), [])
+
+            # add error file
+            err_file = os.path.join(task.get_dir(), D3RTask.ERROR_FILE)
+            open(err_file, 'a').close()
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 1)
+            self.assertEqual(flist[0], err_file)
+
+            # add stderr file
+            foostderr = os.path.join(task.get_dir(), 'foo.stderr')
+            open(foostderr, 'a').close()
+            flist = task.get_uploadable_files()
+            flist.index(err_file)
+            flist.index(foostderr)
+            self.assertEqual(len(flist), 2)
+
+            # add stdout file
+            foostdout = os.path.join(task.get_dir(), 'foo.stdout')
+            open(foostdout, 'a').close()
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 3)
+            flist.index(err_file)
+            flist.index(foostderr)
+            flist.index(foostdout)
+        finally:
+            shutil.rmtree(temp_dir)
 
     def test_can_run(self):
         task = D3RTask(None, D3RParameters())
