@@ -127,6 +127,12 @@ class FtpFileUploader(FileUploader):
         self._remote_dir = remote_dir
 
     def get_ftp_remote_dir(self):
+        """Gets remote directory prefix path
+           :returns: Remote directory prefix path, if value is None empty str
+                     is returned
+        """
+        if self._remote_dir is None:
+            return ''
         return self._remote_dir
 
     def set_ftp_host(self, ftp_host):
@@ -204,10 +210,12 @@ class FtpFileUploader(FileUploader):
             logger.warning(file + ' is not a file')
             return
 
-        logger.debug('Uploading file: ' + file)
-        size = self._ftp.put(file,
-                             os.path.join(self.get_ftp_remote_dir(),
-                                          file))
+        remote_path = os.path.normpath(self.get_ftp_remote_dir() +
+                                       os.sep + file)
+        logger.debug('Uploading file: ' + file + ' to ' + remote_path)
+
+        size = self._ftp.put(file, remote_path)
+
         logger.debug('  Uploaded ' + str(size) + ' bytes')
         self._bytes_transferred += size
         self._files_transferred += 1
@@ -300,8 +308,9 @@ class FtpFileUploader(FileUploader):
             host = 'Unset'
 
         try:
-            logger.debug('remote dir: ' + self.get_ftp_remote_dir())
             remote_dir = self.get_ftp_remote_dir()
+            logger.debug('remote dir: ' + remote_dir)
+
         except TypeError:
             logger.exception('remote dir not set')
             remote_dir = 'Unset'
