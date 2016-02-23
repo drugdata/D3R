@@ -78,6 +78,7 @@ def _setup_logging(theargs):
     d3r.celpp.evaluation
     d3r.celpp.task
     d3r.celpp.util
+    d3r.celpp.uploader
 
     NOTE:  If new modules are added please add their loggers to this
     function
@@ -102,6 +103,9 @@ def _setup_logging(theargs):
 
     logger.setLevel(theargs.numericloglevel)
     logging.basicConfig(format=theargs.logformat)
+
+    # There should be a line below for every package aka .py file
+    # under celpp module
     logging.getLogger('d3r.celpp.blastnfilter')\
         .setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.celpp.dataimport').setLevel(theargs.numericloglevel)
@@ -113,6 +117,8 @@ def _setup_logging(theargs):
     logging.getLogger('d3r.celpp.evaluation').setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.celpp.task').setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.celpp.util').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.uploader').setLevel(theargs.numericloglevel)
+
 
 
 def set_andor_create_latest_weekly_parameter(theargs):
@@ -340,10 +346,15 @@ def _parse_arguments(desc, args):
     parser.add_argument('--smtpport', dest='smtpport',
                         help='Sets smtp server port', default='25')
     parser.add_argument('--ftpconfig', dest='ftpconfig', help='File containing'
-                        ' configuration to connect to ftp server.  If set, data'
-                        ' from stages run during this invocation will be uploaded'
-                        ' after the stage completes.  Format is same as ncftp config'
-                        ' files')
+                        ' configuration to connect to ftp server.  If set,'
+                        ' data from stages run during this invocation will be'
+                        ' uploaded after the stage completes.  Format is same'
+                        ' as ncftp config files with one added field (path)'
+                        '\nExample:\n'
+                        'host some.ftp.com\n'
+                        'user bob\n'
+                        'pass mypass\n'
+                        'path /celpp\n')
 
     parser.add_argument('--version', action='version',
                         version=('%(prog)s ' + d3r.__version__))
