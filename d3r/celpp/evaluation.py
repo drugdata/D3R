@@ -109,12 +109,66 @@ class EvaluationTask(D3RTask):
 
     """
 
+    FINAL_LOG = 'final.log'
+    RMSD_TXT = 'RMSD.txt'
+
+    PDB_FILES = ['score' + os.sep + 'rot-largest_dock_pv_complex1.pdb',
+                 'score' + os.sep + 'rot-smallest_dock_pv_complex1.pdb',
+                 'score' + os.sep + 'rot-apo_dock_pv_complex1.pdb',
+                 'score' + os.sep + 'rot-holo_dock_pv_complex1.pdb',
+                 'score' + os.sep + 'crystal.pdb']
+
     def __init__(self, path, name, docktask, args):
         super(EvaluationTask, self).__init__(path, args)
         self.set_name(name)
         self.set_stage(5)
         self.set_status(D3RTask.UNKNOWN_STATUS)
         self._docktask = docktask
+
+
+    def get_uploadable_files(self):
+        """Returns list of files that can be uploaded to remote server
+
+           List will contain these files if found on the file system
+           plus stderr/stdout files
+
+           RMSD.txt
+           final.log
+           pbdid/score/rot-largest_dock_pv_complex1.pdb
+           pbdid/score/rot-smallest_dock_pv_complex1.pdb
+           pbdid/score/rot-apo_dock_pv_complex1.pdb
+           pbdid/score/rot-holo_dock_pv_complex1.pdb
+           pbdid/score/crystal.pdb
+
+           :returns: list of files that can be uploaded
+        """
+        # get the stderr/stdout files
+        file_list = super(EvaluationTask, self).get_uploadable_files()
+
+        out_dir = self.get_dir()
+
+        try:
+            final_log = os.path.join(out_dir, EvaluationTask.FINAL_LOG)
+            if os.path.isfile(final_log):
+                file_list.append(final_log)
+
+            rmsd = os.path.join(out_dir, EvaluationTask.RMSD_TXT)
+            if os.path.isfile(rmsd):
+                file_list.append(rmsd)
+
+            for entry in os.listdir(out_dir):
+                full_path = os.path.join(out_dir, entry)
+                if not os.path.isdir(full_path):
+                    continue
+
+                logger.debug('Looking for pdb files in ' + full_path)
+                for pdb_name in EvaluationTask.PDB_FILES:
+                    pdb = os.path.join(full_path, pdb_name)
+                    if os.path.isfile(pdb):
+                        file_list.append(pdb)
+        except OSError:
+            logger.exception('Caught exception looking for pbdid folders')
+        return file_list
 
     def can_run(self):
         """Determines if task can actually run

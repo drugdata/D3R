@@ -24,7 +24,93 @@ class TestGlideTask(unittest.TestCase):
         pass
 
     def test_get_uploadable_files(self):
-        self.assertEqual('need to ', 'test this')
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = GlideTask(temp_dir, params)
+            # try with no dir
+            self.assertEqual(task.get_uploadable_files(), [])
+
+            # try with empty dir
+            task.create_dir()
+            self.assertEqual(task.get_uploadable_files(), [])
+
+            # try with final log
+            final_log = os.path.join(task.get_dir(),
+                                     GlideTask.FINAL_LOG)
+            open(final_log, 'a').close()
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 1)
+            flist.index(final_log)
+
+            # try with empty pbdid dir
+            pbdid = os.path.join(task.get_dir(), '6fff')
+            os.mkdir(pbdid)
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 1)
+            flist.index(final_log)
+
+            # try with pbdid.txt
+            pbdidtxt = os.path.join(task.get_dir(), '6fff.txt')
+            open(pbdidtxt, 'a').close()
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 2)
+            flist.index(pbdidtxt)
+
+            # try with largest/largest_dock_pv.maegz
+            largestd = os.path.join(pbdid, 'largest')
+            os.mkdir(largestd)
+            largest = os.path.join(largestd, 'largest_dock_pv.maegz')
+            open(largest, 'a').close()
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 3)
+            flist.index(largest)
+
+            # try with smallest/smallest_dock_pv.maegz
+            smallestd = os.path.join(pbdid, 'smallest')
+            os.mkdir(smallestd)
+            smallest = os.path.join(smallestd, 'smallest_dock_pv.maegz')
+            open(smallest, 'a').close()
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 4)
+            flist.index(smallest)
+
+            # try with apo/apo_dock_pv.maegz
+            apod = os.path.join(pbdid, 'apo')
+            os.mkdir(apod)
+            apo = os.path.join(apod, 'apo_dock_pv.maegz')
+            open(apo, 'a').close()
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 5)
+            flist.index(apo)
+
+            # try with holo/holo_dock_pv.maegz
+            holod = os.path.join(pbdid, 'holo')
+            os.mkdir(holod)
+            holo = os.path.join(holod, 'holo_dock_pv.maegz')
+            open(holo, 'a').close()
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 6)
+            flist.index(holo)
+
+            # try with stderr/out files
+            errfile = os.path.join(task.get_dir(), 'glidedocking.py.stderr')
+            open(errfile, 'a').close()
+            outfile = os.path.join(task.get_dir(), 'glidedocking.py.stdout')
+            open(outfile, 'a').close()
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 8)
+            flist.index(errfile)
+            flist.index(outfile)
+            flist.index(final_log)
+            flist.index(largest)
+            flist.index(smallest)
+            flist.index(apo)
+            flist.index(holo)
+            flist.index(pbdidtxt)
+
+        finally:
+            shutil.rmtree(temp_dir)
 
     def test_can_run(self):
         temp_dir = tempfile.mkdtemp()
