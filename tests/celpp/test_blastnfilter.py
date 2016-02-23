@@ -104,7 +104,7 @@ class TestBlastNFilterTask(unittest.TestCase):
 
             # test with dockable.xslx
             dockable = os.path.join(task.get_dir(),
-                                   BlastNFilterTask.DOCKABLE_XSLX)
+                                    BlastNFilterTask.DOCKABLE_XSLX)
             open(dockable, 'a').close()
             flist = task.get_uploadable_files()
             self.assertEqual(len(flist), 2)

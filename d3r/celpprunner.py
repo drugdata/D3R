@@ -120,7 +120,6 @@ def _setup_logging(theargs):
     logging.getLogger('d3r.celpp.uploader').setLevel(theargs.numericloglevel)
 
 
-
 def set_andor_create_latest_weekly_parameter(theargs):
     """Looks at theargs parameters to get celpp week directory
 

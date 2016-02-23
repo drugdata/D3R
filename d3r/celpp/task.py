@@ -118,7 +118,8 @@ class D3RTask(object):
             logger.debug('ftpconfig set to ' + args.ftpconfig)
             self._file_uploader = FtpFileUploader(args.ftpconfig)
         except:
-            logger.exception('FtpFileUploader not set.  This may not be an error')
+            logger.exception('FtpFileUploader not set.  This may not be '
+                             'an error')
             self._file_uploader = None
 
     def get_args(self):
@@ -211,10 +212,10 @@ class D3RTask(object):
                 file_list.append(error_file)
 
         except OSError:
-            logger.warning('Caught exception looking for error and stderr/stdout files')
+            logger.warning('Caught exception looking for error and '
+                           'stderr/stdout files')
 
         return file_list
-
 
     def _get_smtp_server(self):
         """Gets smtplib server for localhost
@@ -352,7 +353,6 @@ class D3RTask(object):
             self.append_to_email_log('\n' + summary + '\n')
         except:
             logger.exception('Caught exception trying to upload files')
-
 
     def start(self):
         """Denotes start of task

@@ -125,7 +125,6 @@ class EvaluationTask(D3RTask):
         self.set_status(D3RTask.UNKNOWN_STATUS)
         self._docktask = docktask
 
-
     def get_uploadable_files(self):
         """Returns list of files that can be uploaded to remote server
 

@@ -297,7 +297,7 @@ class TestUtil(unittest.TestCase):
             f.close()
 
             # try on empty file
-            open(os.path.join(temp_dir,'empty'), 'a').close()
+            open(os.path.join(temp_dir, 'empty'), 'a').close()
             util.append_string_to_file(os.path.join(temp_dir, 'empty'), 'hi')
             f = open(os.path.join(temp_dir, 'empty'))
             self.assertEqual(f.readline(), 'hi')
@@ -328,7 +328,7 @@ class TestUtil(unittest.TestCase):
                 pass
 
             # try on empty file
-            open(os.path.join(temp_dir,'empty'), 'a').close()
+            open(os.path.join(temp_dir, 'empty'), 'a').close()
             self.assertEqual(util.get_file_line_count(os.path.join(temp_dir,
                                                                    'empty')),
                              0)

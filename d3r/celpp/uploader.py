@@ -14,6 +14,7 @@ class InvalidFtpConfigException(Exception):
     """
     pass
 
+
 class FileUploader(object):
     """Defines interface for uploading files
     """
@@ -61,7 +62,6 @@ class FtpFileUploader(FileUploader):
 
         if ftp_config is not None:
             self._parse_config(ftp_config)
-
 
     def _parse_config(self, ftp_config):
         """Parses ftp config file for user credentials
@@ -286,7 +286,7 @@ class FtpFileUploader(FileUploader):
                 self._disconnect()
             return True
         finally:
-            self._duration = int(time.time())  - start_time
+            self._duration = int(time.time()) - start_time
             logger.debug('End of upload_files operation took ' +
                          str(self._duration) + ' seconds')
 
@@ -294,7 +294,8 @@ class FtpFileUploader(FileUploader):
         """Gets summary of previous `upload_files` invocation
 
             :returns: Human readable string summary of format
-            # files (# bytes) files uploaded in # seconds to host HOST:REMOTE_DIR
+            # files (# bytes) files uploaded in # seconds to
+            host HOST:REMOTE_DIR
         """
         summary = ''
         if self._error_msg is not None:

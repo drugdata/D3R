@@ -73,7 +73,7 @@ class TestFtpFileUploader(unittest.TestCase):
     def test_parse_config(self):
         temp_dir = tempfile.mkdtemp()
         try:
-             # test passing invalid config file
+            # test passing invalid config file
             f = open(os.path.join(temp_dir, 'invalid'), 'a')
             f.write('hello\nhow\nare')
             f.flush()
@@ -256,7 +256,6 @@ class TestFtpFileUploader(unittest.TestCase):
                          '0 (0 bytes) files uploaded in 0 '
                          'seconds to host ftp.box.com:/hi')
 
-
     def test_upload_files_one_valid_file(self):
         mockftp = MockFtp()
         mockftp.put = Mock(return_value=3)
@@ -302,7 +301,7 @@ class TestFtpFileUploader(unittest.TestCase):
             f.write('hi')
             f.flush()
             f.close()
-            afile = os.path.join(temp_dir,'hi')
+            afile = os.path.join(temp_dir, 'hi')
             open(afile, 'a').close()
 
             self.assertEqual(foo.upload_files([valid_file, afile]), True)
@@ -316,7 +315,6 @@ class TestFtpFileUploader(unittest.TestCase):
             mockftp.close.assert_not_called()
         finally:
             shutil.rmtree(temp_dir)
-
 
     def test_upload_files_where_file_upload_raises_exception(self):
         mockftp = MockFtp()
@@ -346,7 +344,6 @@ class TestFtpFileUploader(unittest.TestCase):
                                                             valid_file))
         finally:
             shutil.rmtree(temp_dir)
-
 
     def tearDown(self):
         pass

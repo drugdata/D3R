@@ -73,7 +73,6 @@ class TestEvaluation(unittest.TestCase):
             self.assertEqual(len(flist), 3)
             flist.index(largest)
 
-
             # try with score/rot-smallest_doc_pv_complex1.pdb
             smallest = os.path.join(score, 'rot-smallest_dock_pv_complex1.pdb')
             open(smallest, 'a').close()
@@ -120,7 +119,6 @@ class TestEvaluation(unittest.TestCase):
             flist.index(rmsd)
         finally:
             shutil.rmtree(temp_dir)
-
 
     def test_evaluationtaskfactory_constructor(self):
         params = D3RParameters()

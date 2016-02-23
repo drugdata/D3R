@@ -26,6 +26,7 @@ from d3r.celpp.task import UnsetFileNameError
 from d3r.celpp.task import D3RTask
 from d3r.celpp.uploader import FileUploader
 
+
 class MockException(Exception):
     pass
 
@@ -38,7 +39,6 @@ class MockFileUploader(FileUploader):
         self._upload_summary_except_object = None
         self._upload_summary = None
         self._upload_files = None
-
 
     def set_upload_files(self, val):
         self._upload_files = val
