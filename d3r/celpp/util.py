@@ -204,6 +204,7 @@ def gunzip_file(gzip_file, dest_file):
     f_out.close()
     f_in.close()
 
+
 def append_string_to_file(dest_file, the_string):
     """Appends text in `the_string` to file set by `dest_file`
 
@@ -220,6 +221,7 @@ def append_string_to_file(dest_file, the_string):
     f.write(the_string)
     f.flush()
     f.close()
+
 
 def get_file_line_count(the_file):
     """Counts number of lines in file

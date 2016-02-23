@@ -19,7 +19,8 @@ requirements = [
     "lockfile",
     "psutil",
     "biopython",
-    "xlsxwriter"
+    "xlsxwriter",
+    "ftpretty"
 ]
 
 test_requirements = [
@@ -27,12 +28,14 @@ test_requirements = [
     "lockfile",
     "psutil",
     "biopython",
-    "xlsxwriter"
+    "xlsxwriter",
+    "ftpretty",
+    "mock"
 ]
 
 setup(
     name='d3r',
-    version='0.9.0',
+    version='0.10.0',
     description='Drug Design Data Resource CELPP Runner is an application to run the filtering, docking, and '
                 'evaluation of new sequences from wwpdb',
     long_description=readme + '\n\n' + history,
@@ -59,7 +62,8 @@ setup(
         'Programming Language :: Python :: 2.7',
         'Topic :: Scientific/Engineering :: Chemistry'
     ],
-    scripts = ['d3r/celpprunner.py', 'd3r/blastnfilter.py', 'd3r/postanalysis.py', 'd3r/proteinligprep.py',
+    scripts = ['d3r/celpprunner.py', 'd3r/blastnfilter.py',
+               'd3r/postanalysis.py', 'd3r/proteinligprep.py',
                'd3r/glidedocking.py', 'd3r/evaluate.py'],
     test_suite='tests',
     tests_require=test_requirements

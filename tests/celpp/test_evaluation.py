@@ -16,12 +16,109 @@ from d3r.celpp.task import D3RParameters
 from d3r.celpp.task import D3RTask
 from d3r.celpp.evaluation import EvaluationTaskFactory
 from d3r.celpp.evaluation import EvaluationTask
+from d3r.celpp.glide import GlideTask
 from d3r.celpp.evaluation import PathNotDirectoryError
 
 
 class TestEvaluation(unittest.TestCase):
     def setUp(self):
         pass
+
+    def test_get_uploadable_files(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+
+            task = EvaluationTask(temp_dir, 'glide',
+                                  GlideTask(temp_dir, params), params)
+            # try with no dir
+            self.assertEqual(task.get_uploadable_files(), [])
+
+            # try with empty dir
+            task.create_dir()
+            self.assertEqual(task.get_uploadable_files(), [])
+
+            # try with final log
+            final_log = os.path.join(task.get_dir(),
+                                     EvaluationTask.FINAL_LOG)
+            open(final_log, 'a').close()
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 1)
+            flist.index(final_log)
+
+            # try with RMSD.txt
+            rmsd = os.path.join(task.get_dir(),
+                                EvaluationTask.RMSD_TXT)
+            open(rmsd, 'a').close()
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 2)
+            flist.index(rmsd)
+
+            # try with empty pbdid dir
+            pbdid = os.path.join(task.get_dir(), '8www')
+            os.mkdir(pbdid)
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 2)
+            flist.index(rmsd)
+
+            # try with score/rot-largest_doc_pv_complex1.pdb
+            score = os.path.join(pbdid, 'score')
+            os.mkdir(score)
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 2)
+
+            largest = os.path.join(score, 'rot-largest_dock_pv_complex1.pdb')
+            open(largest, 'a').close()
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 3)
+            flist.index(largest)
+
+            # try with score/rot-smallest_doc_pv_complex1.pdb
+            smallest = os.path.join(score, 'rot-smallest_dock_pv_complex1.pdb')
+            open(smallest, 'a').close()
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 4)
+            flist.index(smallest)
+
+            # try with score/rot-apo_doc_pv_complex1.pdb
+            apo = os.path.join(score, 'rot-apo_dock_pv_complex1.pdb')
+            open(apo, 'a').close()
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 5)
+            flist.index(apo)
+
+            # try with score/rot-holo_doc_pv_complex1.pdb
+            holo = os.path.join(score, 'rot-holo_dock_pv_complex1.pdb')
+            open(holo, 'a').close()
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 6)
+            flist.index(holo)
+
+            # try with score/crystal.pdb
+            crystal = os.path.join(score, 'crystal.pdb')
+            open(crystal, 'a').close()
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 7)
+            flist.index(crystal)
+
+            # try with stderr/stdout files
+            errfile = os.path.join(task.get_dir(), 'evaluate.py.stderr')
+            open(errfile, 'a').close()
+            outfile = os.path.join(task.get_dir(), 'evaluate.py.stdout')
+            open(outfile, 'a').close()
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 9)
+            flist.index(crystal)
+            flist.index(holo)
+            flist.index(apo)
+            flist.index(smallest)
+            flist.index(largest)
+            flist.index(errfile)
+            flist.index(outfile)
+            flist.index(final_log)
+            flist.index(rmsd)
+        finally:
+            shutil.rmtree(temp_dir)
 
     def test_evaluationtaskfactory_constructor(self):
         params = D3RParameters()

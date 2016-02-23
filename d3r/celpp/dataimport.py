@@ -4,8 +4,6 @@ __author__ = 'churas'
 
 import logging
 import os
-import traceback
-import sys
 from d3r.celpp.task import D3RTask
 from d3r.celpp import util
 
@@ -89,11 +87,13 @@ class DataImportTask(D3RTask):
             util.append_string_to_file(self.get_crystalph_tsv(),
                                        DataImportTask.CRYSTALPH_TSV_STANDARD)
 
-            self.append_to_email_log('\nAppending 1FCZ standard to tsv files\n')
+            self.append_to_email_log('\nAppending 1FCZ standard to tsv'
+                                     ' files\n')
             nonpoly_count = util.get_file_line_count(self.get_nonpolymer_tsv())
             seq_count = util.get_file_line_count(self.get_sequence_tsv())
             crystal_count = util.get_file_line_count(self.get_crystalph_tsv())
-            inchi_count = util.get_file_line_count(self.get_components_inchi_file())
+            inchi_count = util.get_file_line_count(self.
+                                                   get_components_inchi_file())
 
             self.append_to_email_log('Line counts:\n')
             self.append_to_email_log(str(inchi_count) + ' ' +

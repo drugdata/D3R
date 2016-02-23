@@ -13,12 +13,63 @@ class GlideTask(D3RTask):
     """Performs glide docking
 
     """
+    MAE_FILES = ['largest' + os.sep + 'largest_dock_pv.maegz',
+                 'smallest' + os.sep + 'smallest_dock_pv.maegz',
+                 'apo' + os.sep + 'apo_dock_pv.maegz',
+                 'holo' + os.sep + 'holo_dock_pv.maegz']
+
+    FINAL_LOG = 'final.log'
+    PBDID_TXT_SUFFIX = '.txt'
 
     def __init__(self, path, args):
         super(GlideTask, self).__init__(path, args)
         self.set_name('glide')
         self.set_stage(4)
         self.set_status(D3RTask.UNKNOWN_STATUS)
+
+    def get_uploadable_files(self):
+        """Returns list of files that can be uploaded to remote server
+
+           List will contain these files if found on the file system
+           plus stderr/stdout files
+
+           final.log
+           pbdid/largest/largest_dock_pv.maegz
+           pbdid/smallest/smallest_dock_pv.maegz
+           pbdid/apo/apo_dock_pv.maegz
+           pbdid/holo/holo_dock_pv.maegz
+           pbdid/pbdid.txt
+
+           "returns: list of files that can be uploaded.
+        """
+        # get the stderr/stdout files
+        file_list = super(GlideTask, self).get_uploadable_files()
+
+        out_dir = self.get_dir()
+
+        try:
+            final_log = os.path.join(out_dir, GlideTask.FINAL_LOG)
+            if os.path.isfile(final_log):
+                file_list.append(final_log)
+
+            for entry in os.listdir(out_dir):
+                full_path = os.path.join(out_dir, entry)
+                if not os.path.isdir(full_path):
+                    continue
+
+                pbdid = full_path + GlideTask.PBDID_TXT_SUFFIX
+                logger.debug('Looking for file ' + pbdid)
+                if os.path.isfile(pbdid):
+                    file_list.append(pbdid)
+
+                logger.debug('Looking for .maegz files in ' + full_path)
+                for mae_name in GlideTask.MAE_FILES:
+                    mae = os.path.join(full_path, mae_name)
+                    if os.path.isfile(mae):
+                        file_list.append(mae)
+        except OSError:
+            logger.exception('Caught exception looking for pbdid folders')
+        return file_list
 
     def can_run(self):
         """Determines if task can actually run
