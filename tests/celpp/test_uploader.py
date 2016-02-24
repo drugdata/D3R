@@ -171,7 +171,7 @@ class TestFtpFileUploader(unittest.TestCase):
             foo.set_ftp_connection(mockftp)
             foo._connect()
             foo._upload_file(os.path.join(temp_dir, 'nonexist'))
-            mockftp.assert_not_called()
+            self.assertEqual(mockftp.call_count, 0)
 
         finally:
             shutil.rmtree(temp_dir)
