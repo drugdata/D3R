@@ -26,6 +26,7 @@ def _setup_logging(loglevel, logformat):
     logger.setLevel(loglevel)
     logging.basicConfig(format=logformat)
     logging.getLogger('d3r.blast.ligand').setLevel(loglevel)
+    logging.getLogger('d3r.utilities.run').setLevel(loglevel)
 
 
 def main(argv=[__name__]):
