@@ -200,10 +200,14 @@ def layout_result (pickle_file, txt_file):
         total_pdb += 1
     for pdbid in score_dic:
         new_line_score = ""
+        valid_line = False
         for pro_type in all_pro_type:
             if pro_type in score_dic[pdbid]:
                 new_line_score += "%-10.3f"%score_dic[pdbid][pro_type] 
-        if new_line_score:
+                valid_line = True
+            else:
+                new_line_score += "%-10s"%(" ")
+        if valid_line:
             new_line = "%-20s"%pdbid
             new_line += new_line_score
             new_line += "\n" 
@@ -304,7 +308,11 @@ def main_score (stage_4_result, pdb_protein_path, stage_5_working, update= True)
             #here, just focus on the first ligand now, probably will come back to get all other ligands sliu 2/12/2016
             all_docked_structure_ligand = all_docked_structure_title + "_ligand1.pdb"
             all_docked_structure_complex = all_docked_structure_title + "_complex1.pdb"
-            merge_two_pdb(all_docked_structure_receptor, all_docked_structure_ligand, all_docked_structure_complex)
+            #here once split, there may not have the ligand structure, because the ligand is big and schrodinger regard this ligand as a receptor, so no ligand detected... need to come back this this issue later sliu 2/25/2016, tmp fix, add an exception 
+            try:
+                merge_two_pdb(all_docked_structure_receptor, all_docked_structure_ligand, all_docked_structure_complex)
+            except:
+                logging.info("Could not merge %s and %s together, need to check"%(all_docked_structure_ligand, all_docked_structure_complex))
             if not os.path.isfile(all_docked_structure_complex):
                 logging.info("Could not get combined complex file:%s"%all_docked_structure_complex)
                 continue
