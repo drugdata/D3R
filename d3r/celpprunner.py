@@ -14,6 +14,9 @@ from d3r.celpp.blastnfilter import BlastNFilterTask
 from d3r.celpp.proteinligprep import ProteinLigPrepTask
 from d3r.celpp.dataimport import DataImportTask
 from d3r.celpp.glide import GlideTask
+from d3r.celpp.evaluation import EvaluationTaskFactory
+from d3r.celpp.makeblastdb import MakeBlastDBTask
+
 from lockfile.pidlockfile import PIDLockFile
 
 # create logger
@@ -63,7 +66,26 @@ def _get_lock(theargs, stage):
 
 def _setup_logging(theargs):
     """Sets up the logging for application
-       """
+
+    Loggers are setup for:
+    d3r.celpprunner
+    d3r.celpp.blastnfilter
+    d3r.celpp.dataimport
+    d3r.celpp.glide
+    d3r.celpp.makeblastdb
+    d3r.celpp.proteinligprep
+    d3r.celpp.evaluation
+    d3r.celpp.task
+    d3r.celpp.util
+
+    NOTE:  If new modules are added please add their loggers to this
+    function
+
+    The loglevel is set by theargs.loglevel and the format is set
+    by LOG_FORMAT set at the top of this module.
+    :param: theargs should have .loglevel set to one of the
+    following strings: DEBUG, INFO, WARNING, ERROR, CRITICAL
+    """
     theargs.logformat = LOG_FORMAT
     theargs.numericloglevel = logging.NOTSET
     if theargs.loglevel == 'DEBUG':
@@ -79,7 +101,17 @@ def _setup_logging(theargs):
 
     logger.setLevel(theargs.numericloglevel)
     logging.basicConfig(format=theargs.logformat)
-    logging.getLogger('d3r.task').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.blastnfilter')\
+        .setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.dataimport').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.glide').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.makeblastdb')\
+        .setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.proteinligprep')\
+        .setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.evaluation').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.task').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.util').setLevel(theargs.numericloglevel)
 
 
 def set_andor_create_latest_weekly_parameter(theargs):
@@ -173,6 +205,8 @@ def run_tasks(task_list):
         logger.error('Task list is empty')
         return 2
 
+    returnval = 0
+
     for task in task_list:
         logger.info("Running task " + task.get_name())
         try:
@@ -187,9 +221,9 @@ def run_tasks(task_list):
         if task.get_error() is not None:
             logger.error('Error running task ' + task.get_name() +
                          ' ' + task.get_error())
-            return 1
+            returnval = 1
 
-    return 0
+    return returnval
 
 
 def get_task_list_for_stage(theargs, stage_name):
@@ -209,6 +243,9 @@ def get_task_list_for_stage(theargs, stage_name):
 
     logger.debug('Getting task list for ' + stage_name)
 
+    if stage_name == 'makedb':
+        task_list.append(MakeBlastDBTask(theargs.latest_weekly, theargs))
+
     if stage_name == 'import':
         task_list.append(DataImportTask(theargs.latest_weekly, theargs))
 
@@ -220,6 +257,13 @@ def get_task_list_for_stage(theargs, stage_name):
 
     if stage_name == 'glide':
         task_list.append(GlideTask(theargs.latest_weekly, theargs))
+
+    if stage_name == 'evaluation':
+        # use util function call to get all evaluation tasks
+        # append them to the task_list
+        eval_task_factory = EvaluationTaskFactory(theargs.latest_weekly,
+                                                  theargs)
+        task_list.extend(eval_task_factory.get_evaluation_tasks())
 
     if len(task_list) is 0:
         raise NotImplementedError(
@@ -237,10 +281,6 @@ def _parse_arguments(desc, args):
     parser = argparse.ArgumentParser(description=desc,
                                      formatter_class=help_formatter)
     parser.add_argument("celppdir", help='Base celpp directory')
-    parser.add_argument("--blastdir", help='Parent directory of ' +
-                        ' blastdb.  There should exist a "current" ' +
-                        ' symlink or directory that contains the db.' +
-                        ' NOTE: Required parameter for blast stage')
     parser.add_argument("--email", dest="email",
                         help='Comma delimited list of email addresses')
     parser.add_argument("--createweekdir",
@@ -250,11 +290,13 @@ def _parse_arguments(desc, args):
     parser.add_argument("--customweekdir",
                         action='store_true',
                         help="Use directory set in celppdir instead of " +
-                             "looking for latest weekdir.  --createweekdir " +
+                             "looking for latest weekdir.  NOTE: " +
+                             "--createweekdir " +
                              "will create a dataset.week.# dir under celppdir")
     parser.add_argument("--stage", required=True, help='Comma delimited list' +
                         ' of stages to run.  Valid STAGES = ' +
-                        '{import, blast, proteinligprep, glide} '
+                        '{makedb, import, blast, proteinligprep, glide, '
+                        'evaluation} '
                         )
     parser.add_argument("--blastnfilter", default='blastnfilter.py',
                         help='Path to BlastnFilter script')
@@ -262,13 +304,15 @@ def _parse_arguments(desc, args):
                         help='Path to PostAnalysis script')
     parser.add_argument("--proteinligprep", default='proteinligprep.py',
                         help='Path to proteinligprep script')
-    parser.add_argument("--glide", default='glide.py',
+    parser.add_argument("--glide", default='glidedocking.py',
                         help='Path to glide docking script')
+    parser.add_argument("--evaluation", default='evaluate.py',
+                        help='Path to evaluation script')
     parser.add_argument("--pdbdb", default='/data/pdb',
                         help='Path to PDB database files')
     parser.add_argument("--compinchi",
                         default='http://ligand-expo.rcsb.org/' +
-                        'dictionaries/Components-inchi.ich',
+                        'dictionaries',
                         help='URL to download Components-inchi.ich' +
                              ' file for' +
                              'task stage.1.compinchi')
@@ -279,6 +323,13 @@ def _parse_arguments(desc, args):
                              ',new_release_structure_sequence.tsv' +
                              ', and new_release_crystallization_pH.tsv' +
                              ' files for task stage.1.dataimport')
+    parser.add_argument("--makeblastdb", default='makeblastdb',
+                        help='Path to NCBI Blast makeblastdb program '
+                             'ie /usr/bin/makeblastdb')
+    parser.add_argument("--pdbsequrl",
+                        default='ftp://ftp.rcsb.org/pub/pdb/derived_data/'
+                                'pdb_seqres.txt.gz',
+                        help='ftp url to download rcsb sequences file')
     parser.add_argument("--log", dest="loglevel", choices=['DEBUG',
                         'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
                         help="Set the logging level",
@@ -294,8 +345,9 @@ def _parse_arguments(desc, args):
 
 def main():
     desc = """
-              Runs the 5 stages (import, blast, proteinligprep, dock, & score)
-              of CELPP processing pipeline (http://www.drugdesigndata.org)
+              Runs the 6 stages (makedb, import, blast, proteinligprep, glide,
+              & evaluation) of CELPP processing pipeline
+              (http://www.drugdesigndata.org)
 
               CELPP processing pipeline relies on a set of directories
               with specific structure. The pipeline runs a set of stages
@@ -310,11 +362,12 @@ def main():
               The stage(s) run are defined via the required --stage flag.
 
               To run multiple stages serially just pass a comma delimited
-              list to the --stage flag. Example: --stage blast,pdbprep
+              list to the --stage flag. Example: --stage import,blast
 
               NOTE:  When running multiple stages serially the program will
-                     exit as soon as a task in a stage fails and subsequent
-                     stages will NOT be run.
+                     not run subsequent stages if a task in a stage fails.
+                     Also note order matters, ie putting blast,import will
+                     cause celpprunner.py to run blast stage first.
 
               This program drops a pid lockfile
               (celpprunner.<stage>.lockpid) in celppdir to prevent duplicate
@@ -342,7 +395,7 @@ def main():
               Notification of stage start and end will be sent to
               addresses set via --email flag.
 
-              Regardless of the stage specified, this program will
+              Unless --customweekdir is set, this program will
               examine the 'celppdir' (last argument passed on
               commandline) to find the latest directory with this path:
               <year>/dataset.week.#
@@ -350,7 +403,10 @@ def main():
               that year the dataset.week.# with highest #.  The output
               directories created will be put within this directory.
 
-              If specified --createweekdir flag will instruct this
+              Setting --customweekdir will cause program to use 'celppdir'
+              path.
+
+              Setting the --createweekdir flag will instruct this
               program to create a new directory for the current
               celpp week/year before invoking running any stage
               processing.
@@ -362,6 +418,14 @@ def main():
 
               Breakdown of behavior of program is defined by
               value passed with --stage flag:
+
+              If --stage 'makedb'
+
+              In this stage the file pdb_seqres.txt.gz is downloaded from
+              an ftp site set by --pdbsequrl.
+              This file is then gunzipped and NCBI makeblastdb
+              (set by --makeblastdb) is run on it to create a blast
+              database.  The files are stored in stage.1.makeblastdb
 
               If --stage 'import'
 
@@ -384,19 +448,20 @@ def main():
               If --stage 'blast'
 
               Verifies stage.1.dataimport exists and has 'complete'
-              file.  Also the --blastdir path must exist and within a
-              'current' symlink/directory must exist and within that a
-              'complete' file must also reside. If both conditions
-              are met then the 'blast' stage is run and output stored
-              in stage.2.blastnfilter.  Requires --pdbdb to be set
-              to a directory with valid PDB database files.
+              file.  Also verifies stage.1.makeblastdb exists and has
+              'complete' file.  If both conditions are met then the
+              'blast' stage is run and output stored in
+              stage.2.blastnfilter.
+              Requires --pdbdb to be set to a directory with valid PDB
+              database files.
 
               If --stage 'proteinligprep'
 
               Verifies stage.2.blastnfilter exists and has 'complete'
               file.  If complete, this stage runs which invokes program
               set in --proteinligprep flag to prepare pdb and inchi files
-              storing output in stage.3.proteinligprep
+              storing output in stage.3.proteinligprep.  --pdbdb flag
+              must also be set when calling this stage.
 
               If --stage 'glide'
 
@@ -405,21 +470,18 @@ def main():
               program set in --glide flag to perform docking via glide
               storing output in stage.4.glide
 
-              If --stage 'score'
+              If --stage 'evaluation'
 
               Finds all stage.4.<algo> directories with 'complete' files
-              in them and invokes appropriate scoring algorithm storing
-              results in stage.5.<algo>.scoring.
+              in them which do not end in name 'webdata' and runs
+              script set via --evaluation parameter storing the result of
+              the script into stage.5.<algo>.evaluation. --pdbdb flag
+              must also be set when calling this stage.
               """
 
     theargs = _parse_arguments(desc, sys.argv[1:])
     theargs.program = sys.argv[0]
     theargs.version = d3r.__version__
-    try:
-        if os.path.basename(theargs.blastdir) is 'current':
-            theargs.blastdir = os.path.dirname(theargs.blastdir)
-    except AttributeError:
-        pass
 
     _setup_logging(theargs)
 

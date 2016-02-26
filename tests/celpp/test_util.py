@@ -5,6 +5,7 @@
 import unittest
 import tempfile
 import os.path
+import gzip
 
 """
 test_task
@@ -91,6 +92,16 @@ class TestUtil(unittest.TestCase):
         self.assertEqual(celp_week[0], 1)
         self.assertEqual(celp_week[1], 2016)
 
+        # try 12-18-2015
+        celp_week = util.get_celpp_week_of_year_from_date(date(2015, 12, 18))
+        self.assertEqual(celp_week[0], 52)
+        self.assertEqual(celp_week[1], 2015)
+
+        # try 12-25-2015
+        celp_week = util.get_celpp_week_of_year_from_date(date(2015, 12, 25))
+        self.assertEqual(celp_week[0], 53)
+        self.assertEqual(celp_week[1], 2015)
+
         # try 12-31-2015
         celp_week = util.get_celpp_week_of_year_from_date(date(2015, 12, 31))
         self.assertEqual(celp_week[0], 53)
@@ -150,7 +161,7 @@ class TestUtil(unittest.TestCase):
                 pass
 
             # try path already exists as dir
-            os.makedirs(os.path.join(temp_dir, '2015', 'dataset.week.1'), 0775)
+            os.makedirs(os.path.join(temp_dir, '2015', 'dataset.week.1'))
             util.create_celpp_week_dir((1, 2015), temp_dir)
 
             # try path already exists as file so it will fail
@@ -221,6 +232,113 @@ class TestUtil(unittest.TestCase):
                                       os.path.join(temp_dir, 'boo2'), 0, 0)
             self.assertEquals(os.path.isfile(os.path.join(temp_dir, 'boo2')),
                               True)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_gunzip_file(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+
+            # try invalid input
+            try:
+                util.gunzip_file(os.path.join(temp_dir, 'nonexistantfile'),
+                                 os.path.join(temp_dir, 'ha'))
+                self.fail('Expected IOError')
+            except IOError:
+                pass
+
+            # try invalid output
+            foogz = os.path.join(temp_dir, 'foo.gz')
+            f = gzip.open(foogz, 'wb')
+            f.write('hello\n')
+            f.flush()
+            f.close()
+            try:
+
+                util.gunzip_file(foogz,
+                                 os.path.join(temp_dir, 'ha', 'ha'))
+                self.fail('Expected IOError')
+            except IOError:
+                pass
+
+            # try valid zip file
+            util.gunzip_file(foogz,
+                             os.path.join(temp_dir, 'foo'))
+
+            f = open(os.path.join(temp_dir, 'foo'), 'r')
+            self.assertEqual(f.readline(), 'hello\n')
+            f.close()
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_append_string_to_file(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            try:
+                # Try with double None
+                util.append_string_to_file(None, None)
+                self.fail('Expected TypeError')
+            except TypeError:
+                pass
+
+            try:
+                # Try with value set to None
+                util.append_string_to_file(os.path.join(temp_dir, 'foo'),
+                                           None)
+            except TypeError:
+                pass
+
+            # try on non existant file
+            util.append_string_to_file(os.path.join(temp_dir, 'non'), 'hi')
+            f = open(os.path.join(temp_dir, 'non'))
+            self.assertEqual(f.readline(), 'hi')
+            f.close()
+
+            # try on empty file
+            open(os.path.join(temp_dir,'empty'), 'a').close()
+            util.append_string_to_file(os.path.join(temp_dir, 'empty'), 'hi')
+            f = open(os.path.join(temp_dir, 'empty'))
+            self.assertEqual(f.readline(), 'hi')
+            f.close()
+
+            # try on file with data
+            util.append_string_to_file(os.path.join(temp_dir, 'empty'), 'how')
+            f = open(os.path.join(temp_dir, 'empty'))
+            self.assertEqual(f.readline(), 'hihow')
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_file_line_count(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            try:
+                # Try with double None
+                util.get_file_line_count(None)
+                self.fail('Expected TypeError')
+            except TypeError:
+                pass
+
+            try:
+                # try on non existant file
+                util.get_file_line_count(os.path.join(temp_dir, 'non'))
+            except IOError:
+                pass
+
+            # try on empty file
+            open(os.path.join(temp_dir,'empty'), 'a').close()
+            self.assertEqual(util.get_file_line_count(os.path.join(temp_dir,
+                                                                   'empty')),
+                             0)
+
+            # try on file with data
+            util.append_string_to_file(os.path.join(temp_dir, 'three'),
+                                       'h\no\nw\n')
+            self.assertEqual(util.get_file_line_count(os.path.join(temp_dir,
+                                                                   'three')),
+                             3)
 
         finally:
             shutil.rmtree(temp_dir)

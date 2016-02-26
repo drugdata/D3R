@@ -60,7 +60,7 @@ class TestProteinLigPrepTask(unittest.TestCase):
             self.assertEqual(proteinligprep.can_run(), True)
             self.assertEqual(proteinligprep.get_error(), None)
 
-            # pdbprep task exists already
+            # proteinligprep task exists already
             proteinligprep = ProteinLigPrepTask(temp_dir, params)
             proteinligprep.create_dir()
             self.assertEqual(proteinligprep.can_run(), False)
@@ -68,7 +68,7 @@ class TestProteinLigPrepTask(unittest.TestCase):
                              proteinligprep.get_dir_name() +
                              ' already exists and status is unknown')
 
-            # pdbprep already complete
+            # proteinlibprep already complete
             proteinligprep = ProteinLigPrepTask(temp_dir, params)
             open(os.path.join(proteinligprep.get_dir(),
                               D3RTask.COMPLETE_FILE), 'a').close()
@@ -106,7 +106,29 @@ class TestProteinLigPrepTask(unittest.TestCase):
             self.assertEqual(os.path.isdir(proteinligprep.get_dir()),
                              True)
             errfile = os.path.join(proteinligprep.get_dir(),
-                                  D3RTask.ERROR_FILE)
+                                   D3RTask.ERROR_FILE)
+            self.assertEqual(os.path.isfile(errfile), True)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_run_fails_cause_pdbdb_not_set(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            params.proteinligprep = 'false'
+            blastnfilter = BlastNFilterTask(temp_dir, params)
+            blastnfilter.create_dir()
+            open(os.path.join(blastnfilter.get_dir(), D3RTask.COMPLETE_FILE),
+                 'a').close()
+            proteinligprep = ProteinLigPrepTask(temp_dir, params)
+            proteinligprep.run()
+            self.assertEqual(proteinligprep.get_error(),
+                             'pdbdb not set')
+            # test files get created
+            self.assertEqual(os.path.isdir(proteinligprep.get_dir()),
+                             True)
+            errfile = os.path.join(proteinligprep.get_dir(),
+                                   D3RTask.ERROR_FILE)
             self.assertEqual(os.path.isfile(errfile), True)
         finally:
             shutil.rmtree(temp_dir)
@@ -116,6 +138,7 @@ class TestProteinLigPrepTask(unittest.TestCase):
         try:
             params = D3RParameters()
             params.proteinligprep = 'false'
+            params.pdbdb = '/foo'
             blastnfilter = BlastNFilterTask(temp_dir, params)
             blastnfilter.create_dir()
             open(os.path.join(blastnfilter.get_dir(), D3RTask.COMPLETE_FILE),
@@ -128,14 +151,14 @@ class TestProteinLigPrepTask(unittest.TestCase):
                              ' Standard error: ')
             # test file gets created
             errfile = os.path.join(proteinligprep.get_dir(),
-                                  D3RTask.ERROR_FILE)
+                                   D3RTask.ERROR_FILE)
             self.assertEqual(os.path.isfile(errfile), True)
 
             stderr = os.path.join(proteinligprep.get_dir(),
-                                   'false.stderr')
+                                  'false.stderr')
             self.assertEqual(os.path.isfile(stderr), True)
             stdout = os.path.join(proteinligprep.get_dir(),
-                                   'false.stdout')
+                                  'false.stdout')
             self.assertEqual(os.path.isfile(stdout), True)
         finally:
             shutil.rmtree(temp_dir)
@@ -145,6 +168,7 @@ class TestProteinLigPrepTask(unittest.TestCase):
         try:
             params = D3RParameters()
             params.proteinligprep = '/bin/doesnotexist'
+            params.pdbdb = '/foo'
             blastnfilter = BlastNFilterTask(temp_dir, params)
             blastnfilter.create_dir()
             open(os.path.join(blastnfilter.get_dir(), D3RTask.COMPLETE_FILE),
@@ -155,13 +179,14 @@ class TestProteinLigPrepTask(unittest.TestCase):
             self.assertEqual(proteinligprep.get_error(),
                              'Caught Exception trying to run ' +
                              '/bin/doesnotexist --candidatedir ' +
-                             blastnfilter.get_dir() + ' --outdir ' +
+                             blastnfilter.get_dir() + ' --pdbdb ' +
+                             '/foo --outdir ' +
                              proteinligprep.get_dir() +
                              ' : [Errno 2] No such file or directory')
 
             # test files get created
             errfile = os.path.join(proteinligprep.get_dir(),
-                                  D3RTask.ERROR_FILE)
+                                   D3RTask.ERROR_FILE)
             self.assertEqual(os.path.isfile(errfile), True)
         finally:
             shutil.rmtree(temp_dir)
@@ -171,6 +196,7 @@ class TestProteinLigPrepTask(unittest.TestCase):
         try:
             params = D3RParameters()
             params.proteinligprep = 'true'
+            params.pdbdb = '/foo'
             blastnfilter = BlastNFilterTask(temp_dir, params)
             blastnfilter.create_dir()
             open(os.path.join(blastnfilter.get_dir(), D3RTask.COMPLETE_FILE),
@@ -181,20 +207,21 @@ class TestProteinLigPrepTask(unittest.TestCase):
             self.assertEqual(proteinligprep.get_error(), None)
             # test files get created
             errfile = os.path.join(proteinligprep.get_dir(),
-                                  D3RTask.ERROR_FILE)
+                                   D3RTask.ERROR_FILE)
             self.assertEqual(os.path.isfile(errfile), False)
 
             compfile = os.path.join(proteinligprep.get_dir(),
                                     D3RTask.COMPLETE_FILE)
             self.assertEqual(os.path.isfile(compfile), True)
             stderr = os.path.join(proteinligprep.get_dir(),
-                                   'true.stderr')
+                                  'true.stderr')
             self.assertEqual(os.path.isfile(stderr), True)
             stdout = os.path.join(proteinligprep.get_dir(),
-                                   'true.stdout')
+                                  'true.stdout')
             self.assertEqual(os.path.isfile(stdout), True)
         finally:
             shutil.rmtree(temp_dir)
+
     def tearDown(self):
         pass
 

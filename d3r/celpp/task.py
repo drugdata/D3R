@@ -56,12 +56,6 @@ class UnsetStageError(TaskException):
     pass
 
 
-class UnsetBlastDirError(TaskException):
-    """Exception to denote blastdir in D3RParameters is unset
-    """
-    pass
-
-
 class TaskUnableToStartError(TaskException):
     """Exception to denote when task cannot start due to failure
     """
@@ -82,6 +76,10 @@ class D3RTask(object):
     stage, and status.  As well as a run() function.
 
     """
+
+    # Put at start of subject line in all emails sent from D3RTask
+    SUBJECT_LINE_PREFIX = "[d3rcelpp] "
+
     STAGE_DIRNAME_PREFIX = "stage"
 
     START_FILE = "start"
@@ -216,7 +214,8 @@ class D3RTask(object):
                        'Sincerely,\n\n' + self._get_program_name())
 
         msg = MIMEText(the_message)
-        msg['Subject'] = (self._get_time() + self.get_dir_name() +
+        msg['Subject'] = (D3RTask.SUBJECT_LINE_PREFIX + self._get_time() +
+                          self.get_dir_name() +
                           ' has started running')
         self._send_email(msg)
 
@@ -241,7 +240,8 @@ class D3RTask(object):
                        error_msg + 'Sincerely,\n\n' + self._get_program_name())
 
         msg = MIMEText(the_message)
-        msg['Subject'] = (self._get_time() + self.get_dir_name() +
+        msg['Subject'] = (D3RTask.SUBJECT_LINE_PREFIX + self._get_time() +
+                          self.get_dir_name() +
                           ' has finished with status ' + self.get_status())
         self._send_email(msg)
 

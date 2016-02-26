@@ -3,6 +3,7 @@ __author__ = 'robswift'
 from d3r.filter.filtering_sets import do_not_call
 from d3r.blast.query import Query
 
+
 def create_queries(polymer, non_polymer, ph):
     """
     Runs InPut.read_sequences and Input.read_ligands, which read in the sequence information contained in
@@ -16,6 +17,7 @@ def create_queries(polymer, non_polymer, ph):
     read_ph(ph, queries)
     read_ligands(non_polymer, queries)
     return queries
+
 
 def read_sequences(polymer):
     """
@@ -38,6 +40,7 @@ def read_sequences(polymer):
     handle.close()
     return queries
 
+
 def add_sequence(queries, seq, pdb_id, chain_id):
     """
     Adds a FASTA sequence, with a specific chain and wwPDB ID, to the appropriate target object.
@@ -55,6 +58,7 @@ def add_sequence(queries, seq, pdb_id, chain_id):
         query.set_sequence(chain_id, seq)
         queries.append(query)
     return queries
+
 
 def read_ligands(non_polymer, queries):
     """

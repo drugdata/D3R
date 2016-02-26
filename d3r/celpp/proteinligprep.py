@@ -86,6 +86,14 @@ class ProteinLigPrepTask(D3RTask):
             self.end()
             return
 
+        try:
+            logger.debug('pdbdb set to ' +
+                         self.get_args().pdbdb)
+        except AttributeError:
+            self.set_error('pdbdb not set')
+            self.end()
+            return
+
         blastnfilter = BlastNFilterTask(self._path, self._args)
 
         #
@@ -93,6 +101,7 @@ class ProteinLigPrepTask(D3RTask):
         # --outdir <path to stage.3.proteinligprep>
         cmd_to_run = (self.get_args().proteinligprep + ' --candidatedir ' +
                       blastnfilter.get_dir() +
+                      ' --pdbdb ' + self.get_args().pdbdb +
                       ' --outdir ' + self.get_dir())
 
         proteinligprep_name = os.path.basename(self.get_args().proteinligprep)
