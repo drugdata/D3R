@@ -54,7 +54,7 @@ def get_center(protein_file, ligname):
     atom_list = []
     x = y = z = 0
     for xyz_line in xyz_lines:
-        if "HETATM" in xyz_line and ligname in xyz_line:
+        if "HETATM" in xyz_line and ligname in xyz_line[17:21]:
             #logging.debug("Check the get center of this protein: %s for this ligand: %s"%(protein_file, ligname))
             atom_name = xyz_line[12:16]
             if atom_name in atom_list:
