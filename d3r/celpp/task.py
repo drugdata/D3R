@@ -511,6 +511,10 @@ class D3RTask(object):
             raise UnsetPathError('Path must be set')
 
         path_to_check = self.get_dir()
+        try:
+            logger.debug('Checking path ' + path_to_check)
+        except:
+            pass
 
         self.set_status(self._get_status_of_task_in_dir(path_to_check))
         logger.debug(self.get_name() + ' task status set to ' +
