@@ -17,6 +17,8 @@ class BlastNFilterTask(D3RTask):
 
     """
     SUMMARY_TXT = "summary.txt"
+    DOCKABLE_XSLX = "dockable.xlsx"
+    BLASTNFILTER_LOG = "blastnfilter.log"
 
     def __init__(self, path, args):
         super(BlastNFilterTask, self).__init__(path, args)
@@ -50,7 +52,7 @@ class BlastNFilterTask(D3RTask):
         return '\n# txt files found: ' + str(len(txt_list)) +\
                '\n' + summary_out
 
-    def get_txt_files(self):
+    def get_txt_files(self, addfullpath=False):
         """ Gets txt files in task directory (just the names) skiping summary.txt
         :return:list of txt file names
         """
@@ -62,11 +64,48 @@ class BlastNFilterTask(D3RTask):
                     continue
 
                 if entry.endswith('.txt'):
-                    txt_list.append(entry)
+                    if addfullpath is True:
+                        txt_list.append(os.path.join(out_dir, entry))
+                    else:
+                        txt_list.append(entry)
         except OSError:
             logger.warning('Caught exception trying to look for .txt files')
 
         return txt_list
+
+    def get_uploadable_files(self):
+        """Returns a list of files that can be uploaded to remote server
+
+           Provides a way for a D3RTask to define what files should
+           uploaded to remote server by any D3RTaskUploader.  The default
+           implementation returns an empty list
+           :returns: list of files that can be uploaded.  The files should
+           have full paths
+        """
+
+        # get the stderr/stdout files
+        file_list = super(BlastNFilterTask, self).get_uploadable_files()
+
+        out_dir = self.get_dir()
+        # add txt files
+        file_list.extend(self.get_txt_files(True))
+
+        summary_file = os.path.join(out_dir,
+                                    BlastNFilterTask.SUMMARY_TXT)
+        if os.path.isfile(summary_file):
+            file_list.append(summary_file)
+
+        dockable_file = os.path.join(out_dir,
+                                     BlastNFilterTask.DOCKABLE_XSLX)
+
+        if os.path.isfile(dockable_file):
+            file_list.append(dockable_file)
+
+        bnf_log_file = os.path.join(out_dir, BlastNFilterTask.BLASTNFILTER_LOG)
+
+        if os.path.isfile(bnf_log_file):
+            file_list.append(bnf_log_file)
+        return file_list
 
     def can_run(self):
         """Determines if task can actually run

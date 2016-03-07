@@ -3,7 +3,7 @@ Drug Design Data Resource CELPP Runner
 ======================================
 
 .. image:: https://img.shields.io/travis/drugdata/D3R.svg
-        :target: https://travis-ci.org/drugdata/D3R
+        :target: https://travis-ci.org/drugdata/D3R.svg?branch=master
 
 .. image:: https://img.shields.io/pypi/v/D3R.svg
         :target: https://pypi.python.org/pypi/D3R
@@ -26,6 +26,7 @@ Requires
  * psutil
  * biopython
  * xlsxwriter
+ * ftpretty
  * NCBI Blast (https://blast.ncbi.nlm.nih.gov/Blast.cgi?PAGE_TYPE=BlastDocs&DOC_TYPE=Download) (needed by blastnfilter.py)
  * rdkit (needed by blastnfilter.py and proteinligprep.py)
  * schrodinger (needed by proteinligprep.py and glidedocking.py)

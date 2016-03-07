@@ -76,7 +76,7 @@ def find_latest_weekly_dataset(celppdir):
     full_path = None
     for entry in os.listdir(latest_year):
         if re.match(dir_pattern, entry):
-            weekno = re.sub("dataset.week.", "", entry)
+            weekno = int(re.sub("dataset.week.", "", entry))
             if weekno > latest_weekno:
                 full_path = os.path.join(latest_year, entry)
                 if os.path.isdir(full_path):
@@ -204,6 +204,7 @@ def gunzip_file(gzip_file, dest_file):
     f_out.close()
     f_in.close()
 
+
 def append_string_to_file(dest_file, the_string):
     """Appends text in `the_string` to file set by `dest_file`
 
@@ -220,6 +221,7 @@ def append_string_to_file(dest_file, the_string):
     f.write(the_string)
     f.flush()
     f.close()
+
 
 def get_file_line_count(the_file):
     """Counts number of lines in file

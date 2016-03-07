@@ -14,11 +14,54 @@ class ProteinLigPrepTask(D3RTask):
 
     """
 
+    MAE_FILES = ['ligand.mae', 'largest.maegz', 'smallest.maegz',
+                 'apo.maegz', 'holo.maegz']
+
+    FINAL_LOG = 'final.log'
+
     def __init__(self, path, args):
         super(ProteinLigPrepTask, self).__init__(path, args)
         self.set_name('proteinligprep')
         self.set_stage(3)
         self.set_status(D3RTask.UNKNOWN_STATUS)
+
+    def get_uploadable_files(self):
+        """Returns list of files that can be uploaded to remote server
+
+           List will contain these files in addition to stderr/stdout files
+           if they are found on the filesystem
+
+           final.log
+           <pbid>/ligand.mae
+           <pdbid>/largest.maegz
+           <pdbid>/smallest.maegz
+           <pdbid>/apo.maegz
+           <pdbid>/holo.maegz
+
+           :returns: list of files that can be uploaded.
+        """
+        # get the stderr/stdout files
+        file_list = super(ProteinLigPrepTask, self).get_uploadable_files()
+
+        out_dir = self.get_dir()
+
+        try:
+            final_log = os.path.join(out_dir, ProteinLigPrepTask.FINAL_LOG)
+            if os.path.isfile(final_log):
+                file_list.append(final_log)
+
+            for entry in os.listdir(out_dir):
+                full_path = os.path.join(out_dir, entry)
+                if not os.path.isdir(full_path):
+                    continue
+                logger.debug('Looking for .maegz files in ' + full_path)
+                for mae_name in ProteinLigPrepTask.MAE_FILES:
+                    mae = os.path.join(full_path, mae_name)
+                    if os.path.isfile(mae):
+                        file_list.append(mae)
+        except OSError:
+            logger.exception('Caught exception looking for pbdid folders')
+        return file_list
 
     def can_run(self):
         """Determines if task can actually run

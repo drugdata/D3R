@@ -76,6 +76,22 @@ class TestUtil(unittest.TestCase):
             self.assertEqual(util.find_latest_weekly_dataset(temp_dir),
                              os.path.join(temp_dir, '2015',
                                           'dataset.week.3'))
+
+            # added this check to check fix for issue #13
+            os.mkdir(os.path.join(temp_dir, '2015', 'dataset.week.9'))
+            self.assertEqual(util.find_latest_weekly_dataset(temp_dir),
+                             os.path.join(temp_dir, '2015',
+                                          'dataset.week.9'))
+
+            os.mkdir(os.path.join(temp_dir, '2015', 'dataset.week'))
+            os.mkdir(os.path.join(temp_dir, '2015', 'dataset.week.'))
+
+            # added this check to check fix for issue #13
+            os.mkdir(os.path.join(temp_dir, '2015', 'dataset.week.10'))
+            self.assertEqual(util.find_latest_weekly_dataset(temp_dir),
+                             os.path.join(temp_dir, '2015',
+                                          'dataset.week.10'))
+
         finally:
             shutil.rmtree(temp_dir)
 
@@ -297,7 +313,7 @@ class TestUtil(unittest.TestCase):
             f.close()
 
             # try on empty file
-            open(os.path.join(temp_dir,'empty'), 'a').close()
+            open(os.path.join(temp_dir, 'empty'), 'a').close()
             util.append_string_to_file(os.path.join(temp_dir, 'empty'), 'hi')
             f = open(os.path.join(temp_dir, 'empty'))
             self.assertEqual(f.readline(), 'hi')
@@ -328,7 +344,7 @@ class TestUtil(unittest.TestCase):
                 pass
 
             # try on empty file
-            open(os.path.join(temp_dir,'empty'), 'a').close()
+            open(os.path.join(temp_dir, 'empty'), 'a').close()
             self.assertEqual(util.get_file_line_count(os.path.join(temp_dir,
                                                                    'empty')),
                              0)

@@ -9,6 +9,9 @@ import smtplib
 import platform
 from email.mime.text import MIMEText
 
+from d3r.celpp.uploader import FtpFileUploader
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -91,6 +94,8 @@ class D3RTask(object):
     UNKNOWN_STATUS = "unknown"
     NOTFOUND_STATUS = "notfound"
     ERROR_STATUS = "error"
+    STDERR_SUFFIX = ".stderr"
+    STDOUT_SUFFIX = ".stdout"
 
     def __init__(self, path, args):
         """Constructor
@@ -108,6 +113,14 @@ class D3RTask(object):
         self._start_time = None
         self._duration = -1
         self._email_log = None
+
+        try:
+            logger.debug('ftpconfig set to ' + args.ftpconfig)
+            self._file_uploader = FtpFileUploader(args.ftpconfig)
+        except:
+            logger.exception('FtpFileUploader not set.  This may not be '
+                             'an error')
+            self._file_uploader = None
 
     def get_args(self):
         return self._args
@@ -156,6 +169,53 @@ class D3RTask(object):
 
     def set_error(self, error):
         self._error = error
+
+    def get_file_uploader(self):
+        """Gets the file uploader
+        """
+        return self._file_uploader
+
+    def set_file_uploader(self, file_uploader):
+        """Sets file uploader
+        """
+        self._file_uploader = file_uploader
+
+    def get_uploadable_files(self):
+        """Returns a list of files that can be uploaded to remote server
+
+           Provides a way for a D3RTask to define what files should
+           uploaded to remote server by any D3RTaskUploader.  The default
+           implementation returns an empty list
+           :returns: list of files that can be uploaded.  The files should
+           have full paths
+        """
+        file_list = []
+
+        try:
+            out_dir = self.get_dir()
+        except:
+            logger.exception('Unable to get dir for task')
+            return file_list
+        try:
+            for entry in os.listdir(out_dir):
+                if not os.path.isfile(os.path.join(out_dir, entry)):
+                    continue
+
+                if entry.endswith(D3RTask.STDERR_SUFFIX):
+                    file_list.append(os.path.join(out_dir, entry))
+                elif entry.endswith(D3RTask.STDOUT_SUFFIX):
+                    file_list.append(os.path.join(out_dir, entry))
+
+            error_file = os.path.join(out_dir, D3RTask.ERROR_FILE)
+            if os.path.isfile(error_file):
+                logger.debug('Found error file adding to list')
+                file_list.append(error_file)
+
+        except OSError:
+            logger.warning('Caught exception looking for error and '
+                           'stderr/stdout files')
+
+        return file_list
 
     def _get_smtp_server(self):
         """Gets smtplib server for localhost
@@ -278,6 +338,22 @@ class D3RTask(object):
             logger.debug('No email set, skipping email notification ' +
                          str(e))
 
+    def _upload_task(self):
+        """Uploads files related to task with FileUploader passed in
+
+
+           :return: None
+        """
+        if self.get_file_uploader() is None:
+            return
+        try:
+            uploadable_files = self.get_uploadable_files()
+            self.get_file_uploader().upload_files(uploadable_files)
+            summary = self.get_file_uploader().get_upload_summary()
+            self.append_to_email_log('\n' + summary + '\n')
+        except:
+            logger.exception('Caught exception trying to upload files')
+
     def start(self):
         """Denotes start of task
 
@@ -335,6 +411,8 @@ class D3RTask(object):
                                   D3RTask.ERROR_FILE), 'a').close()
             except:
                 logger.exception('Caught exception')
+
+        self._upload_task()
 
         if self.get_status() == D3RTask.ERROR_STATUS:
             try:
@@ -433,6 +511,10 @@ class D3RTask(object):
             raise UnsetPathError('Path must be set')
 
         path_to_check = self.get_dir()
+        try:
+            logger.debug('Checking path ' + path_to_check)
+        except:
+            pass
 
         self.set_status(self._get_status_of_task_in_dir(path_to_check))
         logger.debug(self.get_name() + ' task status set to ' +
@@ -547,8 +629,8 @@ class D3RTask(object):
 
         out, err = p.communicate()
 
-        self.write_to_file(err, command_name + '.stderr')
-        self.write_to_file(out, command_name + '.stdout')
+        self.write_to_file(err, command_name + D3RTask.STDERR_SUFFIX)
+        self.write_to_file(out, command_name + D3RTask.STDOUT_SUFFIX)
 
         if p.returncode != 0:
             if command_failure_is_fatal:
