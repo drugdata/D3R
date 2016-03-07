@@ -54,7 +54,7 @@ def get_center(protein_file, ligname):
     atom_list = []
     x = y = z = 0
     for xyz_line in xyz_lines:
-        if "HETATM" in xyz_line and ligname in xyz_line:
+        if "HETATM" in xyz_line and ligname in xyz_line[17:21]:
             #logging.debug("Check the get center of this protein: %s for this ligand: %s"%(protein_file, ligname))
             atom_name = xyz_line[12:16]
             if atom_name in atom_list:
@@ -130,7 +130,7 @@ def main_proteinprep ( s2_result_path, pdb_protein_path, working_folder ):
     #step 1, check if there is a protein start with largest if not then don't need to continue
     ######################
         if not "largest" in query_dic:
-            logging.info("For this query protein: %, there is no protein sharing the largest ligand witt. Not able to generate Docking grid, pass for this case..."%query_pro)
+            logging.info("For this query protein: %s, there is no protein sharing the largest ligand witt. Not able to generate Docking grid, pass for this case..."%query_pro)
             os.chdir(current_dir_layer_1)     
             continue
         elif len(query_dic["largest"]) != 2:
@@ -138,7 +138,7 @@ def main_proteinprep ( s2_result_path, pdb_protein_path, working_folder ):
             os.chdir(current_dir_layer_1)
             continue
         elif not "inchi" in query_dic:
-            logging.info("For this query protein: %, there is no inchi info for the ligand..."%query_pro)
+            logging.info("For this query protein: %s, there is no inchi info for the ligand..."%query_pro)
             os.chdir(current_dir_layer_1)
             continue
         else:

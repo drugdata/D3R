@@ -76,7 +76,7 @@ def find_latest_weekly_dataset(celppdir):
     full_path = None
     for entry in os.listdir(latest_year):
         if re.match(dir_pattern, entry):
-            weekno = re.sub("dataset.week.", "", entry)
+            weekno = int(re.sub("dataset.week.", "", entry))
             if weekno > latest_weekno:
                 full_path = os.path.join(latest_year, entry)
                 if os.path.isdir(full_path):

@@ -76,6 +76,22 @@ class TestUtil(unittest.TestCase):
             self.assertEqual(util.find_latest_weekly_dataset(temp_dir),
                              os.path.join(temp_dir, '2015',
                                           'dataset.week.3'))
+
+            # added this check to check fix for issue #13
+            os.mkdir(os.path.join(temp_dir, '2015', 'dataset.week.9'))
+            self.assertEqual(util.find_latest_weekly_dataset(temp_dir),
+                             os.path.join(temp_dir, '2015',
+                                          'dataset.week.9'))
+
+            os.mkdir(os.path.join(temp_dir, '2015', 'dataset.week'))
+            os.mkdir(os.path.join(temp_dir, '2015', 'dataset.week.'))
+
+            # added this check to check fix for issue #13
+            os.mkdir(os.path.join(temp_dir, '2015', 'dataset.week.10'))
+            self.assertEqual(util.find_latest_weekly_dataset(temp_dir),
+                             os.path.join(temp_dir, '2015',
+                                          'dataset.week.10'))
+
         finally:
             shutil.rmtree(temp_dir)
 
