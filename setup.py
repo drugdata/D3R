@@ -65,7 +65,8 @@ setup(
     ],
     scripts = ['d3r/celpprunner.py', 'd3r/blastnfilter.py',
                'd3r/postanalysis.py', 'd3r/proteinligprep.py',
-               'd3r/glidedocking.py', 'd3r/evaluate.py'],
+               'd3r/glidedocking.py', 'd3r/evaluate.py',
+               'd3r/vinadocking.py'],
     test_suite='tests',
     tests_require=test_requirements
 )
