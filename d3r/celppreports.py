@@ -3,19 +3,17 @@
 import sys
 import os
 import argparse
-import psutil
 import logging
-from datetime import date
 
 import d3r
 from d3r.celpp import util
 from d3r.celpp.task import D3RParameters
 from d3r.celpp.blastnfilter import BlastNFilterTask
-from d3r.celpp.blastnfilter import BlastNfilterSummary
 
 # create logger
 logger = logging.getLogger('d3r.celppreports')
 LOG_FORMAT = "%(asctime)-15s %(levelname)s %(name)s %(message)s"
+
 
 def _setup_logging(theargs):
     """Sets up the logging for application
@@ -83,12 +81,13 @@ def generate_reports(theargs):
     if not os.path.isdir(theargs.outdir):
         os.makedirs(theargs.outdir)
 
-    f = open(os.path.join(theargs.outdir,'blastnfilter.summary.csv'), 'w')
+    f = open(os.path.join(theargs.outdir, 'blastnfilter.summary.csv'), 'w')
     f.write('Week #, Year, Complexes, Dockable complexes, Dockable monomers, '
             'Targets Found\n')
     for year in celpp_years:
         logger.info('Examining year ' + year)
-        for week in util.get_all_celpp_weeks(os.path.join(theargs.celppdir, year)):
+        for week in util.get_all_celpp_weeks(os.path.join(theargs.celppdir,
+                                                          year)):
             logger.debug('Examining week ' + week)
             the_dir = os.path.join(theargs.celppdir, year,
                                    util.DATA_SET_WEEK_PREFIX + week)
@@ -118,6 +117,7 @@ def _parse_arguments(desc, args):
     parser.add_argument('--version', action='version',
                         version=('%(prog)s ' + d3r.__version__))
     return parser.parse_args(args, namespace=parsed_arguments)
+
 
 def main():
     desc = """
