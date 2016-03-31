@@ -359,6 +359,137 @@ class TestUtil(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
+    def test_get_all_celpp_years(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            try:
+                util.get_all_celpp_years(os.path.join(temp_dir,
+                                                      'doesnotexist'))
+                self.fail('Expected exception')
+            except Exception:
+                pass
+
+            # try with empty dir
+            ylist = util.get_all_celpp_years(temp_dir)
+            self.assertEqual(len(ylist), 0)
+
+            # try on dir with no valid year directories
+            os.mkdir(os.path.join(temp_dir, '123'))
+            ylist = util.get_all_celpp_years(temp_dir)
+            self.assertEqual(len(ylist), 0)
+
+            # try on dir with 1 valid year
+            os.mkdir(os.path.join(temp_dir, '2017'))
+            ylist = util.get_all_celpp_years(temp_dir)
+            self.assertEqual(len(ylist), 1)
+            self.assertEqual(ylist[0], '2017')
+
+            # try on dir with multiple valid year directories
+            os.mkdir(os.path.join(temp_dir, '2016'))
+            ylist = util.get_all_celpp_years(temp_dir)
+            self.assertEqual(len(ylist), 2)
+            ylist.sort()
+            self.assertEqual(ylist[0], '2016')
+            self.assertEqual(ylist[1], '2017')
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_celpp_year_from_path(self):
+
+        # pass in None
+        try:
+            util.get_celpp_year_from_path(None)
+            self.fail('Expected exception')
+        except Exception:
+            pass
+
+        # pass in empty string
+        self.assertEqual(util.get_celpp_year_from_path(''), '0')
+
+        # pass in white space string
+        self.assertEqual(util.get_celpp_year_from_path('  '), '0')
+
+        # pass in path ending with year
+        self.assertEqual(util.get_celpp_year_from_path('/home/foo/2013'),
+                         '2013')
+
+        # pass in path with invalid subdirectory on it
+        self.assertEqual(util.get_celpp_year_from_path('/h/f/2013/cheese'),
+                         '0')
+
+        # pass in path with valid dataset week on end
+        valid_week = os.path.join('h', '2013', util.DATA_SET_WEEK_PREFIX
+                                  + '10')
+        self.assertEqual(util.get_celpp_year_from_path(valid_week), '2013')
+
+    def test_get_all_celpp_weeks(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            # try on invalid dir
+            try:
+                util.get_all_celpp_weeks(os.path.join(temp_dir,
+                                                      'doesnotexist'))
+                self.fail('Expected exception')
+            except Exception:
+                pass
+
+            # try on empty dir
+            week_list = util.get_all_celpp_weeks(temp_dir)
+            self.assertEqual(len(week_list), 0)
+
+            # try on dir with no valid weeks
+            os.mkdir(os.path.join(temp_dir, 'foo'))
+            week_list = util.get_all_celpp_weeks(temp_dir)
+            self.assertEqual(len(week_list), 0)
+
+            # try on dir with 1 valid week
+            validweek = os.path.join(temp_dir, util.DATA_SET_WEEK_PREFIX
+                                     + '12')
+            os.mkdir(validweek)
+            week_list = util.get_all_celpp_weeks(temp_dir)
+            self.assertEqual(len(week_list), 1)
+            self.assertEqual(week_list[0], '12')
+
+            # try on dir with 2 valid weeks
+            validweek = os.path.join(temp_dir, util.DATA_SET_WEEK_PREFIX
+                                     + '51')
+            os.mkdir(validweek)
+            week_list = util.get_all_celpp_weeks(temp_dir)
+            self.assertEqual(len(week_list), 2)
+            week_list.sort()
+            self.assertEqual(week_list[0], '12')
+            self.assertEqual(week_list[1], '51')
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_celpp_week_number_from_path(self):
+        try:
+            util.get_celpp_week_number_from_path(None)
+            self.fail('Expected exception')
+        except Exception:
+            pass
+
+        # try with empty string
+        foo = util.get_celpp_week_number_from_path('')
+        self.assertEqual(foo, '0')
+
+        # try with path missing dataset.week. prefix
+        foo = util.get_celpp_week_number_from_path('/h/b/hi')
+        self.assertEqual(foo, '0')
+
+        # try with valid path
+        foo = util.get_celpp_week_number_from_path('/h/b/'
+                                                   + util.DATA_SET_WEEK_PREFIX
+                                                   + '7')
+        self.assertEqual(foo, '7')
+
+        foo = util.get_celpp_week_number_from_path('/h/b/'
+                                                   + util.DATA_SET_WEEK_PREFIX
+                                                   + '12')
+        self.assertEqual(foo, '12')
+
     def tearDown(self):
         pass
 
