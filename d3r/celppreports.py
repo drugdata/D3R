@@ -14,6 +14,7 @@ from d3r.celpp.blastnfilter import BlastNFilterTask
 logger = logging.getLogger('d3r.celppreports')
 LOG_FORMAT = "%(asctime)-15s %(levelname)s %(name)s %(message)s"
 
+BLASTNFILTER_SUMMARY_CSV = 'blastnfilter.summary.csv'
 
 def _setup_logging(theargs):
     """Sets up the logging for application
@@ -81,7 +82,7 @@ def generate_reports(theargs):
     if not os.path.isdir(theargs.outdir):
         os.makedirs(theargs.outdir)
 
-    f = open(os.path.join(theargs.outdir, 'blastnfilter.summary.csv'), 'w')
+    f = open(os.path.join(theargs.outdir, BLASTNFILTER_SUMMARY_CSV), 'w')
     f.write('Week #, Year, Complexes, Dockable complexes, Dockable monomers, '
             'Targets Found\n')
     for year in celpp_years:
@@ -121,7 +122,35 @@ def _parse_arguments(desc, args):
 
 def main():
     desc = """
-              Generates reports on CELPP weekly runs
+              Generates reports on CELPP processing pipeline.
+
+              This will examine a directory containing outputs from
+              CELPP processing pipeline and generate reports about
+              those runs.
+
+              At the moment only one report is generated, which summarizes
+              candidates molecules that passed the blastnfilter stage.  The
+              data is obtained by parsing the summary.txt file located
+              within the stage.2.blastnfilter directory.
+
+              This report is saved under --outdir path and is named 
+              blastnfilter.summary.csv
+
+              This comma separated variable file contains Complexes,
+              Dockable complexes, Dockable monomers, and Targets Found
+              for each week found in the CELPP directory passed into this
+              program.
+
+              Example content of blastnfilter.summary.csv:
+
+              Week #, Year, Complexes, Dockable complexes, Dockable monomers,
+              Targets Found
+              4,2016,178,95,71,67
+              5,2016,120,80,60,30
+              .
+              .
+              .
+
               """
 
     theargs = _parse_arguments(desc, sys.argv[1:])
