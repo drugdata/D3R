@@ -20,6 +20,7 @@ import stat
 from d3r.celpp.task import D3RParameters
 from d3r.celpp.task import D3RTask
 from d3r.celpp.blastnfilter import BlastNFilterTask
+from d3r.celpp.blastnfilter import BlastNFilterSummary
 from d3r.celpp.dataimport import DataImportTask
 from d3r.celpp.makeblastdb import MakeBlastDBTask
 from tests.celpp import test_task
@@ -519,6 +520,117 @@ class TestBlastNFilterTask(unittest.TestCase):
             res.index('# txt files found: 3')
             res.index('Output from summary.txt')
 
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_blastnfilter_summary(self):
+        """Tests BlastNFilterTask.get_blastnfilter_summary call
+        """
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            blasttask = BlastNFilterTask(temp_dir, params)
+            summary = blasttask.get_blastnfilter_summary()
+            self.assertEqual(summary.get_complexes(), 0)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_blastnfilter_summary_none_for_path(self):
+        summary = BlastNFilterSummary(None)
+        self.assertEqual(summary.get_complexes(), 0)
+        self.assertEqual(summary.get_dockable_complexes(), 0)
+        self.assertEqual(summary.get_dockable_monomers(), 0)
+        self.assertEqual(summary.get_targets_found(), 0)
+        self.assertEqual(summary.get_week_number(), '0')
+        self.assertEqual(summary.get_year(), '0')
+        self.assertEqual(summary.get_csv(), '0,0,0,0,0,0')
+
+    def test_blastnfilter_summary_no_summary_file(self):
+        summary = BlastNFilterSummary('/foo')
+        self.assertEqual(summary.get_complexes(), 0)
+        self.assertEqual(summary.get_dockable_complexes(), 0)
+        self.assertEqual(summary.get_dockable_monomers(), 0)
+        self.assertEqual(summary.get_targets_found(), 0)
+        self.assertEqual(summary.get_week_number(), '0')
+        self.assertEqual(summary.get_year(), '0')
+        self.assertEqual(summary.get_csv(), '0,0,0,0,0,0')
+
+    def test_blastnfilter_summary_getters_and_setters(self):
+        summary = BlastNFilterSummary('/foo')
+
+        summary.set_complexes(5)
+        summary.set_dockable_complexes(6)
+        summary.set_dockable_monomers(7)
+        summary.set_targets_found(8)
+
+        self.assertEqual(summary.get_complexes(), 5)
+
+        self.assertEqual(summary.get_dockable_complexes(), 6)
+        self.assertEqual(summary.get_dockable_monomers(), 7)
+        self.assertEqual(summary.get_targets_found(), 8)
+        self.assertEqual(summary.get_csv(), '0,0,5,6,7,8')
+
+    def test_blastnfilter_summary_week_and_year(self):
+
+        summary = BlastNFilterSummary('/foo/2018/dataset.week.4'
+                                      '/stage.2.blastnfilter')
+        self.assertEqual(summary.get_week_number(), '4')
+        self.assertEqual(summary.get_year(), '2018')
+        self.assertEqual(summary.get_csv(), '4,2018,0,0,0,0')
+
+    def test_blastnfilter_summary_parse_summary_file_on_emptyfile(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            open(os.path.join(temp_dir,
+                              BlastNFilterTask.SUMMARY_TXT), 'a').close()
+            summary = BlastNFilterSummary(temp_dir)
+            self.assertEqual(summary.get_csv(), '0,0,0,0,0,0')
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_blastnfilter_summary_parse_summary_file_on_dir(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            os.mkdir(os.path.join(temp_dir,
+                                  BlastNFilterTask.SUMMARY_TXT))
+            summary = BlastNFilterSummary(temp_dir)
+            self.assertEqual(summary.get_csv(), '0,0,0,0,0,0')
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_blastnfilter_summary_parse_summary_file_on_validfile(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            f = open(os.path.join(temp_dir,
+                                  BlastNFilterTask.SUMMARY_TXT), 'w')
+            f.write('INPUT SUMMARY\n')
+            f.write('  entries:                             221\n')
+            f.write('  complexes:                           178\n')
+            f.write('  dockable complexes:                   95\n')
+            f.write('  monomers:                            145\n')
+            f.write('  dockable monomers:                    71\n')
+            f.write('  multimers:                            76\n')
+            f.write('  dockable multimers:                   24\n\n')
+
+            f.write('FILTERING CRITERIA\n')
+            f.write('  No. of query sequences           <=    1\n')
+            f.write('  No. of dockable ligands           =    1\n')
+            f.write('  Percent identity                 >=    0.95\n')
+            f.write('  Percent Coverage                 >=    0.9\n')
+            f.write('  No. of hit sequences             <=    4\n')
+            f.write('  Structure determination method:        '
+                    '  x-ray diffraction\n\n')
+
+            f.write('OUTPUT SUMMARY\n')
+            f.write('  Targets found:                        67\n')
+            f.write('  Target: 5fz7|Sequences: 1|Hits: 94|Candidates: 17|'
+                    'Elected:4|PDBids: 5fz7,5fyz,5a3p,5a1f\n')
+
+            f.flush()
+            f.close()
+
+            summary = BlastNFilterSummary(temp_dir)
+            self.assertEqual(summary.get_csv(), '0,0,178,95,71,67')
         finally:
             shutil.rmtree(temp_dir)
 
