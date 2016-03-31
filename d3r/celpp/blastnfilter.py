@@ -15,11 +15,17 @@ from d3r.celpp.dataimport import DataImportTask
 logger = logging.getLogger(__name__)
 
 
-class BlastNfilterSummary:
+class BlastNFilterSummary:
     """Represents summary of a BlastNFilterTask invocation
     """
     def __init__(self, path):
-        self._path = path
+
+        if path is None:
+            logger.error('Path passed into constructor is None type')
+            self._path = ''
+        else:
+            self._path = path
+
         self._complexes = 0
         self._dockable_complexes = 0
         self._dockable_monomers = 0
@@ -28,6 +34,9 @@ class BlastNfilterSummary:
 
     def _parse_summary_file(self):
         """Parses summary file to obtain needed fields in object
+
+           WARNING: This method assumes a well formed summary.txt file and
+           if its not then output maybe wonky
         """
         if not os.path.isdir(self._path):
             logger.error(self._path + ' is not a directory')
@@ -69,13 +78,13 @@ class BlastNfilterSummary:
             if re.match(complexes_pat, line):
                 self.set_complexes(re.sub("^.*: +", "", line.rstrip()))
             elif re.match(dock_complex_pat, line):
-                self.set_dockable_complexes(re.sub("^.*: +", "", line.rstrip()))
+                self.set_dockable_complexes(re.sub("^.*: +", "",
+                                                   line.rstrip()))
             elif re.match(dock_mon_pat, line):
                 self.set_dockable_monomers(re.sub("^.*: +", "", line.rstrip()))
             elif re.match(targets_pat, line):
                 self.set_targets_found(re.sub("^.*: +", "", line.rstrip()))
         f.close()
-
 
     def get_complexes(self):
         return self._complexes
@@ -103,19 +112,26 @@ class BlastNfilterSummary:
 
     def get_week_number(self):
         """Parses path for week number
+           :returns: week number as string
         """
-        if self._path is None:
-            return 0
-        return util.get_celpp_week_number_from_path(os.path.dirname(self._path))
+        return util.get_celpp_week_number_from_path(
+            os.path.dirname(self._path))
 
     def get_year(self):
-        if self._path is None:
-            return 0
+        """Parses year from path passed into constructor
+           :returns: year as string
+        """
         return util.get_celpp_year_from_path(self._path)
 
     def get_csv(self):
+        """Returns comma separated string of values parsed from summary.txt
+
+           :returns: Week #, Year, # complexes, # dockable complexes,
+                   # dockable monomers, # targets found
+        """
         return (self.get_week_number() + ',' + self.get_year() + ',' +
-                str(self.get_complexes()) + ',' + str(self.get_dockable_complexes()) +
+                str(self.get_complexes()) + ',' +
+                str(self.get_dockable_complexes()) +
                 ',' + str(self.get_dockable_monomers()) + ',' +
                 str(self.get_targets_found()))
 
@@ -139,7 +155,7 @@ class BlastNFilterTask(D3RTask):
 
            by parsing data from this object
         """
-        return BlastNfilterSummary(self.get_dir())
+        return BlastNFilterSummary(self.get_dir())
 
     def _parse_blastnfilter_output_for_hit_stats(self):
         """Examines output directory of blastnfilter.py for stats on run
