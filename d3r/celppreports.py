@@ -133,7 +133,7 @@ def main():
               data is obtained by parsing the summary.txt file located
               within the stage.2.blastnfilter directory.
 
-              This report is saved under --outdir path and is named 
+              This report is saved under --outdir path and is named
               blastnfilter.summary.csv
 
               This comma separated variable file contains Complexes,
