@@ -35,7 +35,7 @@ test_requirements = [
 
 setup(
     name='d3r',
-    version='0.11.3',
+    version='1.0.0',
     description='Drug Design Data Resource CELPP Runner is an application to run the filtering, docking, and '
                 'evaluation of new sequences from wwpdb',
     long_description=readme + '\n\n' + history,
@@ -65,7 +65,8 @@ setup(
     ],
     scripts = ['d3r/celpprunner.py', 'd3r/blastnfilter.py',
                'd3r/postanalysis.py', 'd3r/proteinligprep.py',
-               'd3r/glidedocking.py', 'd3r/evaluate.py'],
+               'd3r/glidedocking.py', 'd3r/evaluate.py',
+               'd3r/celppreports.py', 'd3r/vinadocking.py'],
     test_suite='tests',
     tests_require=test_requirements
 )

@@ -13,11 +13,37 @@ logger = logging.getLogger(__name__)
 
 DAYS_IN_WEEK = 7
 
+DATA_SET_WEEK_PREFIX = 'dataset.week.'
+
 
 class DownloadError(Exception):
     """Exception to denote error downloading data
     """
     pass
+
+
+def get_all_celpp_years(celppdir):
+    """Given a directory find all year directories within
+
+       This method looks for all directories within `celppdir`
+       that fit the structure of a year directory ####
+       or the regex ^\d\d\d\d$.
+       Full paths to those directories are returned
+       :return: List year directories, note path is NOT prefixed
+       :raises: Exception if celppdir is not a directory
+    """
+    if not os.path.isdir(celppdir):
+        raise Exception(celppdir + " is not a directory")
+
+    year_list = []
+    dir_pattern = re.compile("^\d\d\d\d$")
+    for entry in os.listdir(celppdir):
+        if re.match(dir_pattern, entry):
+            full_path = os.path.join(celppdir, entry)
+            if os.path.isdir(full_path):
+                year_list.append(entry)
+
+    return year_list
 
 
 def find_latest_year(celppdir):
@@ -32,15 +58,11 @@ def find_latest_year(celppdir):
     if not os.path.isdir(celppdir):
         raise Exception(celppdir + " is not a directory")
 
-    dir_pattern = re.compile("^\d\d\d\d$")
-
     latest_year = -1
     latest_entry = None
     full_path = None
-    for entry in os.listdir(celppdir):
-        if re.match(dir_pattern, entry):
+    for entry in get_all_celpp_years(celppdir):
             entry_year = int(entry)
-
             if entry_year > latest_year:
                 full_path = os.path.join(celppdir, entry)
                 if os.path.isdir(full_path):
@@ -53,6 +75,58 @@ def find_latest_year(celppdir):
     return latest_entry
 
 
+def get_celpp_year_from_path(dir):
+    """Given path extract the year number from it
+
+       Expects path of
+       /..../year/dataset.week.#
+       or year/dataset.week.#
+
+    :param dir: full or partial path to week
+    :return year #### from path or '0' if year extracted is not a 4
+    digit number
+    """
+    if dir is None:
+        raise Exception('Path is none')
+
+    remove_week = re.sub("\/" + DATA_SET_WEEK_PREFIX + ".*$", "", dir)
+    year = re.sub("^.*\/", "", remove_week)
+
+    dir_pattern = re.compile("^\d\d\d\d$")
+
+    if not re.match(dir_pattern, year):
+        logger.warning('Year ( ' + year + ' ) extracted from ' + dir +
+                       ' is not a 4 digit number')
+        return '0'
+    return year
+
+
+def get_all_celpp_weeks(celpp_year_dir):
+    """Given a celpp year directory get all week directories
+
+       Expects celpp_year_dir to be full path to year dir ie ####/
+       and finds all directories of format dataset.week.#
+       returning a list of the week numbers ie #
+       :returns: List of week numbers
+       :raises Exception: If celpp_year_dir is not a directory
+    """
+    if not os.path.isdir(celpp_year_dir):
+        raise Exception(celpp_year_dir + " is not a directory")
+
+    week_list = []
+
+    dir_pattern = re.compile("^" + DATA_SET_WEEK_PREFIX + "\d+$")
+
+    for entry in os.listdir(celpp_year_dir):
+        if re.match(dir_pattern, entry):
+            weeknum = re.sub(DATA_SET_WEEK_PREFIX, "", entry)
+            full_path = os.path.join(celpp_year_dir, entry)
+            if os.path.isdir(full_path):
+                week_list.append(weeknum)
+
+    return week_list
+
+
 def find_latest_weekly_dataset(celppdir):
     """Given a directory find the latest dataset
 
@@ -63,27 +137,48 @@ def find_latest_weekly_dataset(celppdir):
        :return: Directory upon success or None if no directory found
        :raises: Exception: If celppdir is not a directory
        """
-
     latest_year = find_latest_year(celppdir)
 
     if latest_year is None:
         return
 
-    dir_pattern = re.compile("^dataset.week.\d+$")
-
     latest_entry = None
-    latest_weekno = -1
+    latest_weeknum = -1
     full_path = None
-    for entry in os.listdir(latest_year):
-        if re.match(dir_pattern, entry):
-            weekno = int(re.sub("dataset.week.", "", entry))
-            if weekno > latest_weekno:
-                full_path = os.path.join(latest_year, entry)
+    for entry in get_all_celpp_weeks(latest_year):
+            weeknum = int(entry)
+            if weeknum > latest_weeknum:
+                full_path = os.path.join(latest_year,
+                                         DATA_SET_WEEK_PREFIX + entry)
                 if os.path.isdir(full_path):
-                    latest_weekno = weekno
+                    latest_weeknum = weeknum
                     latest_entry = full_path
 
     return latest_entry
+
+
+def get_celpp_week_number_from_path(dir):
+    """Given path extract the week number from it
+
+       Expects either path of
+       /..../year/dataset.week.#
+       or dataset.week.#
+
+    :param dir: full or partial path to week
+    :return the # from dataset.week.# in `dir` path or '0' if value is
+    not a 1-2 digit number
+    """
+    if dir is None:
+        raise Exception('Path is none')
+
+    weeknum = re.sub("^.*" + DATA_SET_WEEK_PREFIX, "", dir)
+
+    dir_pattern = re.compile("^\d\d?$")
+    if not re.match(dir_pattern, weeknum):
+        logger.warning('Week number ( ' + weeknum + ' ) extracted from path '
+                       + dir + ' is not a 2 digit number')
+        return '0'
+    return weeknum
 
 
 def get_celpp_week_of_year_from_date(the_date):

@@ -118,8 +118,8 @@ class D3RTask(object):
             logger.debug('ftpconfig set to ' + args.ftpconfig)
             self._file_uploader = FtpFileUploader(args.ftpconfig)
         except:
-            logger.exception('FtpFileUploader not set.  This may not be '
-                             'an error')
+            logger.debug('FtpFileUploader not set.  This may not be '
+                         'an error')
             self._file_uploader = None
 
     def get_args(self):

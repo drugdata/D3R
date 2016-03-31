@@ -4,12 +4,136 @@ __author__ = 'churas'
 
 import os
 import logging
+import re
 
+from d3r.celpp import util
 from d3r.celpp.task import D3RTask
 from d3r.celpp.makeblastdb import MakeBlastDBTask
 from d3r.celpp.dataimport import DataImportTask
 
+
 logger = logging.getLogger(__name__)
+
+
+class BlastNFilterSummary:
+    """Represents summary of a BlastNFilterTask invocation
+    """
+    def __init__(self, path):
+
+        if path is None:
+            logger.error('Path passed into constructor is None type')
+            self._path = ''
+        else:
+            self._path = path
+
+        self._complexes = 0
+        self._dockable_complexes = 0
+        self._dockable_monomers = 0
+        self._targets_found = 0
+        self._parse_summary_file()
+
+    def _parse_summary_file(self):
+        """Parses summary file to obtain needed fields in object
+
+           WARNING: This method assumes a well formed summary.txt file and
+           if its not then output maybe wonky
+        """
+        if not os.path.isdir(self._path):
+            logger.error(self._path + ' is not a directory')
+            return
+
+        # open summary.txt file and extract
+        # complexes, dockable complexes, dockable monomers and Targets found
+        # below is example summary.txt file with parts omitted
+        #
+        # INPUT SUMMARY
+        #   entries:                             135
+        #   complexes:                            83
+        #   dockable complexes:                   46
+        #   monomers:                             90
+        #   dockable monomers:                    38
+        #   multimers:                            45
+        #   dockable multimers:                    8
+        # .
+        # . <THERE IS OTHER DATA HERE>
+        # .
+        # OUTPUT SUMMARY
+        #   Targets found:                        33
+        # .
+        # .
+        summary_txt = os.path.join(self._path, BlastNFilterTask.SUMMARY_TXT)
+        if not os.path.isfile(summary_txt):
+            logger.error('No ' + summary_txt + ' file found')
+            return
+
+        complexes_pat = re.compile("^ +complexes: +")
+        dock_complex_pat = re.compile("^ +dockable complexes: +")
+        dock_mon_pat = re.compile("^ +dockable monomers: +")
+        targets_pat = re.compile("^ +Targets found: +")
+
+        logger.debug('Parsing file ' + summary_txt)
+
+        f = open(summary_txt, 'r')
+        for line in f:
+            if re.match(complexes_pat, line):
+                self.set_complexes(re.sub("^.*: +", "", line.rstrip()))
+            elif re.match(dock_complex_pat, line):
+                self.set_dockable_complexes(re.sub("^.*: +", "",
+                                                   line.rstrip()))
+            elif re.match(dock_mon_pat, line):
+                self.set_dockable_monomers(re.sub("^.*: +", "", line.rstrip()))
+            elif re.match(targets_pat, line):
+                self.set_targets_found(re.sub("^.*: +", "", line.rstrip()))
+        f.close()
+
+    def get_complexes(self):
+        return self._complexes
+
+    def set_complexes(self, val):
+        self._complexes = val
+
+    def get_dockable_complexes(self):
+        return self._dockable_complexes
+
+    def set_dockable_complexes(self, val):
+        self._dockable_complexes = val
+
+    def get_dockable_monomers(self):
+        return self._dockable_monomers
+
+    def set_dockable_monomers(self, val):
+        self._dockable_monomers = val
+
+    def get_targets_found(self):
+        return self._targets_found
+
+    def set_targets_found(self, val):
+        self._targets_found = val
+
+    def get_week_number(self):
+        """Parses path for week number
+           :returns: week number as string
+        """
+        return util.get_celpp_week_number_from_path(
+            os.path.dirname(self._path))
+
+    def get_year(self):
+        """Parses year from path passed into constructor
+           :returns: year as string
+        """
+        return util.get_celpp_year_from_path(self._path)
+
+    def get_csv(self):
+        """Returns comma separated string of values parsed from summary.txt
+
+           :returns: Week #, Year, # complexes, # dockable complexes,
+                   # dockable monomers, # targets found
+        """
+        return (self.get_week_number() + ',' + self.get_year() + ',' +
+                str(self.get_complexes()) + ',' +
+                str(self.get_dockable_complexes()) +
+                ',' + str(self.get_dockable_monomers()) + ',' +
+                str(self.get_targets_found()))
 
 
 class BlastNFilterTask(D3RTask):
@@ -25,6 +149,13 @@ class BlastNFilterTask(D3RTask):
         self.set_name('blastnfilter')
         self.set_stage(2)
         self.set_status(D3RTask.UNKNOWN_STATUS)
+
+    def get_blastnfilter_summary(self):
+        """Factory method that Generates BlastNFilterSummary object
+
+           by parsing data from this object
+        """
+        return BlastNFilterSummary(self.get_dir())
 
     def _parse_blastnfilter_output_for_hit_stats(self):
         """Examines output directory of blastnfilter.py for stats on run
