@@ -114,6 +114,25 @@ class TestMakeBlastDBTask(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
+    # test no file
+    def test_get_sequence_count_file_has_multiple_seqs(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = MakeBlastDBTask(temp_dir, params)
+            task.create_dir()
+            pdbid = task.get_set_of_pbdid_from_pdb_seqres_txt()
+            self.assertEqual(len(pdbid), 0)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    # test empty file
+
+    # test file with no > characters
+
+    # test sequence file with set of sequences, some dups
+
+
     def test_can_run_where_task_is_complete(self):
         temp_dir = tempfile.mkdtemp()
         try:
