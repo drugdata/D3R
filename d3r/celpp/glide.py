@@ -5,6 +5,7 @@ import logging
 
 from d3r.celpp.task import D3RTask
 from d3r.celpp.proteinligprep import ProteinLigPrepTask
+from d3r.celpp.evaluation import EvaluationTaskFactory
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +25,9 @@ class GlideTask(D3RTask):
     def __init__(self, path, args):
         super(GlideTask, self).__init__(path, args)
         self.set_name('glide')
-        self.set_stage(4)
+
+        prep = ProteinLigPrepTask(path, args)
+        self.set_stage(prep.get_stage() + 1)
         self.set_status(D3RTask.UNKNOWN_STATUS)
 
     def get_uploadable_files(self):
