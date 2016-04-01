@@ -577,7 +577,7 @@ class TestBlastNFilterTask(unittest.TestCase):
 
     def test_blastnfilter_summary_week_and_year(self):
 
-        blast = BlastNFilterTask('/foo',D3RParameters())
+        blast = BlastNFilterTask('/foo', D3RParameters())
         summary = BlastNFilterSummary('/foo/2018/dataset.week.4'
                                       '/' + blast.get_dir_name())
         self.assertEqual(summary.get_week_number(), '4')

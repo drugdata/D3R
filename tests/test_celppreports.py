@@ -14,7 +14,6 @@ import logging
 import os
 import os.path
 import shutil
-import re
 
 from d3r import celppreports
 from d3r.celpp.task import D3RParameters
@@ -27,7 +26,6 @@ class TestCelppReports(unittest.TestCase):
         pass
 
     def test_setup_logging(self):
-        logger = logging.getLogger('myfunlogger')
         theargs = D3RParameters()
 
         theargs.loglevel = 'DEBUG'
@@ -200,7 +198,6 @@ class TestCelppReports(unittest.TestCase):
 
         finally:
             shutil.rmtree(temp_dir)
-
 
     def tearDown(self):
         pass

@@ -512,8 +512,8 @@ def main():
 
               If --stage 'evaluation'
 
-              Finds all stage.{dockstage}.<algo> directories with '{complete}' files
-              in them which do not end in name 'webdata' and runs
+              Finds all stage.{dockstage}.<algo> directories with '{complete}'
+              files in them which do not end in name 'webdata' and runs
               script set via --evaluation parameter storing the result of
               the script into stage.{evalstage}.<algo>.evaluation. --pdbdb flag
               must also be set when calling this stage.

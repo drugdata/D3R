@@ -279,7 +279,6 @@ class TestCelppRunner(unittest.TestCase):
                                                         'proteinligprep')
         self.assertEquals(len(task_list), 1)
 
-
         self.assertEquals(task_list[0].get_dir(),
                           os.path.join('foo', TestCelppRunner.PROT_DIR_NAME))
 
@@ -468,7 +467,8 @@ class TestCelppRunner(unittest.TestCase):
             theargs.celppdir = os.path.join(temp_dir)
             theargs.stage = 'blast,proteinligprep'
             os.mkdir(os.path.join(temp_dir, TestCelppRunner.MAKEDB_DIR_NAME))
-            open(os.path.join(temp_dir, TestCelppRunner.MAKEDB_DIR_NAME, 'complete'),
+            open(os.path.join(temp_dir, TestCelppRunner.MAKEDB_DIR_NAME,
+                              'complete'),
                  'a').close()
             d_import_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
                                         TestCelppRunner.IMPORT_DIR_NAME)

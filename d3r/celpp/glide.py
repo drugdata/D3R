@@ -5,7 +5,6 @@ import logging
 
 from d3r.celpp.task import D3RTask
 from d3r.celpp.proteinligprep import ProteinLigPrepTask
-from d3r.celpp.evaluation import EvaluationTaskFactory
 
 logger = logging.getLogger(__name__)
 

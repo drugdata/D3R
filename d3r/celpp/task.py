@@ -408,7 +408,7 @@ class D3RTask(object):
             self.set_status(D3RTask.ERROR_STATUS)
             try:
                 f = open(os.path.join(self.get_dir(),
-                                  D3RTask.ERROR_FILE), 'a')
+                                      D3RTask.ERROR_FILE), 'a')
                 f.write(self.get_error() + '\n')
                 f.flush()
                 f.close()
@@ -420,7 +420,7 @@ class D3RTask(object):
         if self.get_status() == D3RTask.ERROR_STATUS:
             try:
                 err_file = os.path.join(self.get_dir(),
-                                  D3RTask.ERROR_FILE)
+                                        D3RTask.ERROR_FILE)
                 if not os.path.isfile(err_file):
                     open(err_file, 'a').close()
             except:
