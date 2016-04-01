@@ -14,6 +14,8 @@ import shutil
 import os
 from d3r.celpp.task import D3RParameters
 from d3r.celpp.task import D3RTask
+from d3r.celpp.dataimport import DataImportTask
+from d3r.celpp.blastnfilter import BlastNFilterTask
 from d3r.celpp.evaluation import EvaluationTaskFactory
 from d3r.celpp.evaluation import EvaluationTask
 from d3r.celpp.glide import GlideTask
@@ -156,8 +158,10 @@ class TestEvaluation(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
-            os.mkdir(os.path.join(temp_dir, 'stage.1.dataimport'))
-            os.mkdir(os.path.join(temp_dir, 'stage.2.blastnfilter'))
+            dataimport = DataImportTask(temp_dir, params)
+            blast = BlastNFilterTask(temp_dir, params)
+            os.mkdir(os.path.join(temp_dir, dataimport.get_dir_name()))
+            os.mkdir(os.path.join(temp_dir, blast.get_dir_name()))
 
             stf = EvaluationTaskFactory(temp_dir, params)
             task_list = stf.get_evaluation_tasks()
@@ -170,7 +174,7 @@ class TestEvaluation(unittest.TestCase):
         try:
             params = D3RParameters()
             os.mkdir(os.path.join(temp_dir,
-                                  EvaluationTaskFactory.STAGE_FOUR_PREFIX +
+                                  EvaluationTaskFactory.DOCKSTAGE_PREFIX +
                                   EvaluationTaskFactory.WEB_DATA_SUFFIX))
 
             stf = EvaluationTaskFactory(temp_dir, params)
@@ -185,7 +189,7 @@ class TestEvaluation(unittest.TestCase):
             params = D3RParameters()
 
             glidedir = os.path.join(temp_dir,
-                                    EvaluationTaskFactory.STAGE_FOUR_PREFIX +
+                                    EvaluationTaskFactory.DOCKSTAGE_PREFIX +
                                     'glide')
             os.mkdir(glidedir)
             open(os.path.join(glidedir, D3RTask.COMPLETE_FILE), 'a').close()
@@ -201,13 +205,13 @@ class TestEvaluation(unittest.TestCase):
         try:
             params = D3RParameters()
             glidedir = os.path.join(temp_dir,
-                                    EvaluationTaskFactory.STAGE_FOUR_PREFIX +
+                                    EvaluationTaskFactory.DOCKSTAGE_PREFIX +
                                     'glide')
             os.mkdir(glidedir)
             open(os.path.join(glidedir, D3RTask.COMPLETE_FILE), 'a').close()
 
             freddir = os.path.join(temp_dir,
-                                   EvaluationTaskFactory.STAGE_FOUR_PREFIX +
+                                   EvaluationTaskFactory.DOCKSTAGE_PREFIX +
                                    'fred')
             os.mkdir(freddir)
             open(os.path.join(freddir, D3RTask.COMPLETE_FILE), 'a').close()
@@ -226,7 +230,7 @@ class TestEvaluation(unittest.TestCase):
         try:
             params = D3RParameters()
             glidedir = os.path.join(temp_dir,
-                                    EvaluationTaskFactory.STAGE_FOUR_PREFIX +
+                                    EvaluationTaskFactory.DOCKSTAGE_PREFIX +
                                     'glide')
             os.mkdir(glidedir)
             open(os.path.join(glidedir, D3RTask.ERROR_FILE), 'a').close()
@@ -242,12 +246,12 @@ class TestEvaluation(unittest.TestCase):
         try:
             params = D3RParameters()
             glidedir = os.path.join(temp_dir,
-                                    EvaluationTaskFactory.STAGE_FOUR_PREFIX +
+                                    EvaluationTaskFactory.DOCKSTAGE_PREFIX +
                                     'glide')
             os.mkdir(glidedir)
             open(os.path.join(glidedir, D3RTask.ERROR_FILE), 'a').close()
             freddir = os.path.join(temp_dir,
-                                   EvaluationTaskFactory.STAGE_FOUR_PREFIX +
+                                   EvaluationTaskFactory.DOCKSTAGE_PREFIX +
                                    'fred')
             os.mkdir(freddir)
             open(os.path.join(freddir, D3RTask.COMPLETE_FILE), 'a').close()
