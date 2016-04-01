@@ -104,7 +104,7 @@ class AutoDockVinaTask(D3RTask):
 
         #
         # vinadocking.py --structuredir <path to stage.3.proteinligprep> \
-        # --outdir <path to stage.4.glide>
+        # --outdir <path to stage.4.vina>
         #
         cmd_to_run = (self.get_args().vina + ' --structuredir ' +
                       proteinligprep.get_dir() +
