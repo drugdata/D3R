@@ -22,6 +22,11 @@ from d3r.celpp.task import D3RParameters
 from d3r.celpp import util
 from d3r.celpp.task import D3RTask
 from d3r.celpp.evaluation import EvaluationTaskFactory
+from d3r.celpp.blastnfilter import BlastNFilterTask
+from d3r.celpp.dataimport import DataImportTask
+from d3r.celpp.makeblastdb import MakeBlastDBTask
+from d3r.celpp.proteinligprep import ProteinLigPrepTask
+from d3r.celpp.glide import GlideTask
 
 
 class DummyTask(D3RTask):
@@ -51,6 +56,23 @@ class DummyTask(D3RTask):
 
 
 class TestCelppRunner(unittest.TestCase):
+
+    param = D3RParameters()
+
+    blast = BlastNFilterTask('/foo', param)
+    BLAST_DIR_NAME = blast.get_dir_name()
+
+    data = DataImportTask('/foo', param)
+    IMPORT_DIR_NAME = data.get_dir_name()
+
+    makedb = MakeBlastDBTask('/foo', param)
+    MAKEDB_DIR_NAME = makedb.get_dir_name()
+
+    glide = GlideTask('/foo', param)
+    GLIDE_DIR_NAME = glide.get_dir_name()
+
+    prot = ProteinLigPrepTask('/foo', param)
+    PROT_DIR_NAME = prot.get_dir_name()
 
     def setUp(self):
         pass
@@ -249,24 +271,27 @@ class TestCelppRunner(unittest.TestCase):
         params.latest_weekly = 'foo'
         task_list = celpprunner.get_task_list_for_stage(params, 'blast')
         self.assertEquals(len(task_list), 1)
+
         self.assertEquals(task_list[0].get_dir(),
-                          os.path.join('foo', 'stage.2.blastnfilter'))
+                          os.path.join('foo', TestCelppRunner.BLAST_DIR_NAME))
 
         task_list = celpprunner.get_task_list_for_stage(params,
                                                         'proteinligprep')
         self.assertEquals(len(task_list), 1)
+
+
         self.assertEquals(task_list[0].get_dir(),
-                          os.path.join('foo', 'stage.3.proteinligprep'))
+                          os.path.join('foo', TestCelppRunner.PROT_DIR_NAME))
 
         task_list = celpprunner.get_task_list_for_stage(params, 'import')
         self.assertEquals(len(task_list), 1)
         self.assertEquals(task_list[0].get_dir(),
-                          os.path.join('foo', 'stage.1.dataimport'))
+                          os.path.join('foo', TestCelppRunner.IMPORT_DIR_NAME))
 
         task_list = celpprunner.get_task_list_for_stage(params, 'glide')
         self.assertEquals(len(task_list), 1)
         self.assertEquals(task_list[0].get_dir(),
-                          os.path.join('foo', 'stage.4.glide'))
+                          os.path.join('foo', TestCelppRunner.GLIDE_DIR_NAME))
 
     def test_get_task_list_for_stage_for_scoring_stage_with_nonefound(self):
         temp_dir = tempfile.mkdtemp()
@@ -287,7 +312,7 @@ class TestCelppRunner(unittest.TestCase):
             params = D3RParameters()
             params.latest_weekly = temp_dir
             glidedir = os.path.join(temp_dir,
-                                    EvaluationTaskFactory.STAGE_FOUR_PREFIX +
+                                    EvaluationTaskFactory.DOCKSTAGE_PREFIX +
                                     'glide')
             os.mkdir(glidedir)
             open(os.path.join(glidedir, D3RTask.COMPLETE_FILE), 'a').close()
@@ -304,12 +329,12 @@ class TestCelppRunner(unittest.TestCase):
             params = D3RParameters()
             params.latest_weekly = temp_dir
             glidedir = os.path.join(temp_dir,
-                                    EvaluationTaskFactory.STAGE_FOUR_PREFIX +
+                                    EvaluationTaskFactory.DOCKSTAGE_PREFIX +
                                     'glide')
             os.mkdir(glidedir)
             open(os.path.join(glidedir, D3RTask.COMPLETE_FILE), 'a').close()
             freddir = os.path.join(temp_dir,
-                                   EvaluationTaskFactory.STAGE_FOUR_PREFIX +
+                                   EvaluationTaskFactory.DOCKSTAGE_PREFIX +
                                    'fred')
             os.mkdir(freddir)
             open(os.path.join(freddir, D3RTask.COMPLETE_FILE), 'a').close()
@@ -355,7 +380,7 @@ class TestCelppRunner(unittest.TestCase):
             os.mkdir(os.path.join(temp_dir, '2015'))
             os.mkdir(os.path.join(temp_dir, '2015', 'dataset.week.1'))
             makedb_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
-                                      'stage.1.makeblastdb')
+                                      TestCelppRunner.MAKEDB_DIR_NAME)
             os.makedirs(makedb_dir)
             open(os.path.join(makedb_dir, 'complete'), 'a').close()
             self.assertEquals(celpprunner.run_stages(theargs), 1)
@@ -373,12 +398,12 @@ class TestCelppRunner(unittest.TestCase):
             theargs.pdbdb = '/pdbdb'
 
             makedb_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
-                                      'stage.1.makeblastdb')
+                                      TestCelppRunner.MAKEDB_DIR_NAME)
             os.makedirs(makedb_dir)
             open(os.path.join(makedb_dir, 'complete'), 'a').close()
 
             d_import_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
-                                        'stage.1.dataimport')
+                                        TestCelppRunner.IMPORT_DIR_NAME)
             os.makedirs(d_import_dir)
             open(os.path.join(d_import_dir, 'complete'), 'a').close()
 
@@ -396,8 +421,9 @@ class TestCelppRunner(unittest.TestCase):
             theargs = D3RParameters()
             theargs.celppdir = os.path.join(temp_dir)
             theargs.stage = 'blast'
-            os.mkdir(os.path.join(temp_dir, 'stage.1.makeblastdb'))
-            open(os.path.join(temp_dir, 'stage.1.makeblastdb', 'error'),
+            os.mkdir(os.path.join(temp_dir, TestCelppRunner.MAKEDB_DIR_NAME))
+            open(os.path.join(temp_dir, TestCelppRunner.MAKEDB_DIR_NAME,
+                              'error'),
                  'a').close()
             os.mkdir(os.path.join(temp_dir, '2015'))
             os.mkdir(os.path.join(temp_dir, '2015', 'dataset.week.1'))
@@ -416,12 +442,12 @@ class TestCelppRunner(unittest.TestCase):
             theargs.stage = 'blast,proteinligprep'
 
             makedb_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
-                                      'stage.1.makeblastdb')
+                                      TestCelppRunner.MAKEDB_DIR_NAME)
             os.makedirs(makedb_dir)
             open(os.path.join(makedb_dir, 'complete'), 'a').close()
 
             d_import_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
-                                        'stage.1.dataimport')
+                                        TestCelppRunner.IMPORT_DIR_NAME)
             os.makedirs(d_import_dir)
             open(os.path.join(d_import_dir,
                               D3RTask.COMPLETE_FILE), 'a').close()
@@ -441,11 +467,11 @@ class TestCelppRunner(unittest.TestCase):
             theargs = D3RParameters()
             theargs.celppdir = os.path.join(temp_dir)
             theargs.stage = 'blast,proteinligprep'
-            os.mkdir(os.path.join(temp_dir, 'stage.1.makeblastdb'))
-            open(os.path.join(temp_dir, 'stage.1.makeblastdb', 'complete'),
+            os.mkdir(os.path.join(temp_dir, TestCelppRunner.MAKEDB_DIR_NAME))
+            open(os.path.join(temp_dir, TestCelppRunner.MAKEDB_DIR_NAME, 'complete'),
                  'a').close()
             d_import_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
-                                        'stage.1.dataimport')
+                                        TestCelppRunner.IMPORT_DIR_NAME)
             os.makedirs(d_import_dir)
             open(os.path.join(d_import_dir, D3RTask.ERROR_FILE), 'a').close()
             theargs.blastnfilter = 'echo'
@@ -466,7 +492,7 @@ class TestCelppRunner(unittest.TestCase):
             theargs.stage = 'makedb,blast,proteinligprep,glide'
 
             d_import_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
-                                        'stage.1.dataimport')
+                                        TestCelppRunner.IMPORT_DIR_NAME)
             os.makedirs(d_import_dir)
             open(os.path.join(d_import_dir,
                               D3RTask.COMPLETE_FILE), 'a').close()
