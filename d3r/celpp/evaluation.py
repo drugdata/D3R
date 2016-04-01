@@ -4,6 +4,8 @@ import os
 import logging
 
 from d3r.celpp.task import D3RTask
+from d3r.celpp.task import D3RParameters
+from d3r.celpp.proteinligprep import ProteinLigPrepTask
 
 logger = logging.getLogger(__name__)
 
@@ -21,9 +23,10 @@ class EvaluationTaskFactory(object):
        all docking tasks.  The code then generates
        ScoringTask objects for all eligible docking tasks
     """
-    DOCKSTAGE = 4
-    STAGE_FOUR_PREFIX = (D3RTask.STAGE_DIRNAME_PREFIX + '.' +
-                         str(DOCKSTAGE) + '.')
+    prep = ProteinLigPrepTask('/foo', D3RParameters())
+    DOCKSTAGE = prep.get_stage() + 1
+    DOCKSTAGE_PREFIX = (D3RTask.STAGE_DIRNAME_PREFIX + '.' +
+                        str(DOCKSTAGE) + '.')
     SCORING_SUFFIX = 'evaluation'
     WEB_DATA_SUFFIX = 'webdata'
 
@@ -77,7 +80,7 @@ class EvaluationTaskFactory(object):
             logger.debug('Checking if ' + entry + ' is a docking task')
             full_path = os.path.join(path, entry)
             if os.path.isdir(full_path):
-                if entry.startswith(EvaluationTaskFactory.STAGE_FOUR_PREFIX):
+                if entry.startswith(EvaluationTaskFactory.DOCKSTAGE_PREFIX):
                     if entry.endswith(EvaluationTaskFactory.WEB_DATA_SUFFIX):
                         logger.debug('Skipping ' + entry + ' due to suffix')
                         continue
@@ -87,7 +90,7 @@ class EvaluationTaskFactory(object):
                     docktask.set_stage(EvaluationTaskFactory.DOCKSTAGE)
                     docktask.set_name(entry[
                                       len(EvaluationTaskFactory
-                                          .STAGE_FOUR_PREFIX):])
+                                          .DOCKSTAGE_PREFIX):])
                     stask = EvaluationTask(path,
                                            docktask.get_name() + '.' +
                                            EvaluationTaskFactory.
@@ -121,7 +124,7 @@ class EvaluationTask(D3RTask):
     def __init__(self, path, name, docktask, args):
         super(EvaluationTask, self).__init__(path, args)
         self.set_name(name)
-        self.set_stage(5)
+        self.set_stage(EvaluationTaskFactory.DOCKSTAGE + 1)
         self.set_status(D3RTask.UNKNOWN_STATUS)
         self._docktask = docktask
 
