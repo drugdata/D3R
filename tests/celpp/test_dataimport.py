@@ -19,6 +19,7 @@ Tests for `dataimport` module.
 from d3r.celpp.task import D3RParameters
 from d3r.celpp.task import D3RTask
 from d3r.celpp.dataimport import DataImportTask
+from d3r.celpp.makeblastdb import MakeBlastDBTask
 from d3r.celpp import util
 from tests.celpp import test_task
 
@@ -73,6 +74,30 @@ class TestDataImportTask(unittest.TestCase):
         try:
             params = D3RParameters()
             task = DataImportTask(temp_dir, params)
+
+            # no make blast db
+            self.assertEquals(task.can_run(), False)
+            self.assertEquals(task.get_error(),
+                              'makeblastdb task has notfound status')
+            self.assertEquals(task._can_run, False)
+
+            make_blast = MakeBlastDBTask(temp_dir, params)
+            make_blast.create_dir()
+
+            # make blast db failed
+            err_file = os.path.join(make_blast.get_dir(),
+                                    D3RTask.ERROR_FILE)
+            open(err_file, 'a').close()
+            self.assertEquals(task.can_run(), False)
+            self.assertEquals(task.get_error(),
+                              'makeblastdb task has error status')
+            self.assertEquals(task._can_run, False)
+
+            os.remove(err_file)
+
+            # make blast db success
+            open(os.path.join(make_blast.get_dir(),
+                              D3RTask.COMPLETE_FILE), 'a').close()
 
             self.assertEquals(task.can_run(), True)
             self.assertEquals(task.get_error(), None)
@@ -141,6 +166,11 @@ class TestDataImportTask(unittest.TestCase):
             params.pdbfileurl = 'file://' + temp_dir
             params.compinchi = 'file://' + temp_dir
 
+            make_blast = MakeBlastDBTask(temp_dir, params)
+            make_blast.create_dir()
+            open(os.path.join(make_blast.get_dir(),
+                              D3RTask.COMPLETE_FILE), 'a').close()
+
             task = DataImportTask(temp_dir, params)
             task._retrysleep = 0
             task.run()
@@ -156,6 +186,11 @@ class TestDataImportTask(unittest.TestCase):
             params = D3RParameters()
             params.pdbfileurl = 'file://' + temp_dir
             params.compinchi = 'file://' + temp_dir
+
+            make_blast = MakeBlastDBTask(temp_dir, params)
+            make_blast.create_dir()
+            open(os.path.join(make_blast.get_dir(),
+                              D3RTask.COMPLETE_FILE), 'a').close()
 
             task = DataImportTask(temp_dir, params)
             task._retrysleep = 0
@@ -175,6 +210,11 @@ class TestDataImportTask(unittest.TestCase):
             params = D3RParameters()
             params.pdbfileurl = 'file://' + temp_dir
             params.compinchi = 'file://' + temp_dir
+
+            make_blast = MakeBlastDBTask(temp_dir, params)
+            make_blast.create_dir()
+            open(os.path.join(make_blast.get_dir(),
+                              D3RTask.COMPLETE_FILE), 'a').close()
 
             task = DataImportTask(temp_dir, params)
             task._retrysleep = 0
@@ -196,6 +236,12 @@ class TestDataImportTask(unittest.TestCase):
             params = D3RParameters()
             params.pdbfileurl = 'file://' + temp_dir
             params.compinchi = 'file://' + temp_dir
+
+            make_blast = MakeBlastDBTask(temp_dir, params)
+            make_blast.create_dir()
+            open(os.path.join(make_blast.get_dir(),
+                              D3RTask.COMPLETE_FILE), 'a').close()
+
             task = DataImportTask(temp_dir, params)
             task._retrysleep = 0
             open(os.path.join(temp_dir,
@@ -218,6 +264,11 @@ class TestDataImportTask(unittest.TestCase):
             params = D3RParameters()
             params.pdbfileurl = 'file://' + temp_dir
             params.compinchi = 'file://' + temp_dir
+
+            make_blast = MakeBlastDBTask(temp_dir, params)
+            make_blast.create_dir()
+            open(os.path.join(make_blast.get_dir(),
+                              D3RTask.COMPLETE_FILE), 'a').close()
 
             task = DataImportTask(temp_dir, params)
             task._retrysleep = 0

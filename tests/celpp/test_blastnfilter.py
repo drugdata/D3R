@@ -40,7 +40,7 @@ class TestBlastNFilterTask(unittest.TestCase):
         blasttask = BlastNFilterTask('ha', params)
         self.assertEqual(blasttask.get_name(), 'blastnfilter')
         self.assertEqual(blasttask.get_path(), 'ha')
-        self.assertEqual(blasttask.get_stage(), 2)
+        self.assertEqual(blasttask.get_stage(), 3)
         self.assertEqual(blasttask.get_status(), D3RTask.UNKNOWN_STATUS)
         self.assertEqual(blasttask.get_error(), None)
 

@@ -6,6 +6,7 @@ import logging
 import os
 from d3r.celpp.task import D3RTask
 from d3r.celpp import util
+from d3r.celpp.makeblastdb import MakeBlastDBTask
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +42,8 @@ class DataImportTask(D3RTask):
     def __init__(self, path, args):
         super(DataImportTask, self).__init__(path, args)
         self.set_name('dataimport')
-        self.set_stage(1)
+        makeblast = MakeBlastDBTask('', args)
+        self.set_stage(makeblast.get_stage() + 1)
         self.set_status(D3RTask.UNKNOWN_STATUS)
         self._maxretries = 3
         self._retrysleep = 1
@@ -128,6 +130,16 @@ class DataImportTask(D3RTask):
         if self.get_status() == D3RTask.COMPLETE_STATUS:
             logger.debug("No work needed for " + self.get_name() +
                          " task")
+            return False
+
+        make_blastdb = MakeBlastDBTask(self._path, self._args)
+        make_blastdb.update_status_from_filesystem()
+        if make_blastdb.get_status() != D3RTask.COMPLETE_STATUS:
+            logger.info('Cannot run ' + self.get_name() + ' task ' +
+                        'because ' + make_blastdb.get_name() + ' task' +
+                        'has a status of ' + make_blastdb.get_status())
+            self.set_error(make_blastdb.get_name() + ' task has ' +
+                           make_blastdb.get_status() + ' status')
             return False
 
         if self.get_status() != D3RTask.NOTFOUND_STATUS:
