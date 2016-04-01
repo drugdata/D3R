@@ -147,7 +147,10 @@ class BlastNFilterTask(D3RTask):
     def __init__(self, path, args):
         super(BlastNFilterTask, self).__init__(path, args)
         self.set_name('blastnfilter')
-        self.set_stage(2)
+
+        # set the stage to be 1 higher then Data Import Stage
+        dataimport = DataImportTask(path, args)
+        self.set_stage(dataimport.get_stage() + 1)
         self.set_status(D3RTask.UNKNOWN_STATUS)
 
     def get_blastnfilter_summary(self):
