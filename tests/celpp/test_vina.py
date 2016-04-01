@@ -41,7 +41,7 @@ class TestAutoDockVinaTask(unittest.TestCase):
             outfile = os.path.join(task.get_dir(), 'vinadocking.py.stdout')
             open(outfile, 'a').close()
             flist = task.get_uploadable_files()
-            self.assertEqual(len(flist), 8)
+            self.assertEqual(len(flist), 2)
             flist.index(errfile)
             flist.index(outfile)
 
