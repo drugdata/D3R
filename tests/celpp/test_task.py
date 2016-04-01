@@ -362,16 +362,20 @@ class TestD3rTask(unittest.TestCase):
             task.end()
             self.assertEqual(task.get_error(), 'some error')
             self.assertEqual(task.get_status(), D3RTask.ERROR_STATUS)
-            self.assertEqual(os.path.isfile(os.path.join(task.get_dir(),
-                                            D3RTask.ERROR_FILE)), True)
+
+            err_file = os.path.join(task.get_dir(), D3RTask.ERROR_FILE)
+
+            self.assertEqual(os.path.isfile(err_file), True)
+            f = open(err_file, 'r')
+            err_msg = f.readline()
+            self.assertEqual(err_msg, 'some error\n')
             task.set_status(D3RTask.ERROR_STATUS)
-            os.remove(os.path.join(task.get_dir(),
-                                   D3RTask.ERROR_FILE))
+            os.remove(err_file)
             task.set_error(None)
             task.end()
             self.assertEqual(task.get_status(), D3RTask.ERROR_STATUS)
-            self.assertEqual(os.path.isfile(os.path.join(task.get_dir(),
-                                            D3RTask.ERROR_FILE)), True)
+            self.assertEqual(os.path.isfile(err_file), True)
+            self.assertEqual(os.path.getsize(err_file), 0)
 
         finally:
             shutil.rmtree(temp_dir)
