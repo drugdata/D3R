@@ -36,22 +36,22 @@ class TestDataImportTask(unittest.TestCase):
         params = D3RParameters()
         task = DataImportTask('/foo', params)
         self.assertEqual(task.get_nonpolymer_tsv(),
-                         '/foo/stage.1.dataimport' +
+                         '/foo/' + task.get_dir_name() +
                          '/new_release_structure_nonpolymer.tsv')
 
     def test_get_sequence_tsv(self):
         params = D3RParameters()
         task = DataImportTask('/foo', params)
         self.assertEqual(task.get_sequence_tsv(),
-                         '/foo/stage.1.dataimport/' +
-                         'new_release_structure_sequence.tsv')
+                         '/foo/' + task.get_dir_name() +
+                         '/new_release_structure_sequence.tsv')
 
     def test_get_crystalph_tsv(self):
         params = D3RParameters()
         task = DataImportTask('/foo', params)
         self.assertEqual(task.get_crystalph_tsv(),
-                         '/foo/stage.1.dataimport/' +
-                         'new_release_crystallization_pH.tsv')
+                         '/foo/' + task.get_dir_name() +
+                         '/new_release_crystallization_pH.tsv')
 
     def test_can_run_with_complete_file(self):
         temp_dir = tempfile.mkdtemp()
@@ -84,7 +84,7 @@ class TestDataImportTask(unittest.TestCase):
             self.assertEquals(task.can_run(), False)
             self.assertEquals(task._can_run, False)
             self.assertEquals(task.get_error(),
-                              'stage.1.dataimport already exists and ' +
+                              task.get_dir_name() + ' already exists and ' +
                               'status is ' + D3RTask.ERROR_STATUS)
 
         finally:
