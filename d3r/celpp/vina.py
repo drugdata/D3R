@@ -110,7 +110,7 @@ class AutoDockVinaTask(D3RTask):
                       proteinligprep.get_dir() +
                       ' --outdir ' + self.get_dir())
 
-        vina_name = os.path.basename(self.get_args().glide)
+        vina_name = os.path.basename(self.get_args().vina)
 
         self.run_external_command(vina_name, cmd_to_run,
                                   True)
