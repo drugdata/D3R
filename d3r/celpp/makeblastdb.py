@@ -21,6 +21,9 @@ class MakeBlastDBTask(D3RTask):
     PDB_SEQRES_TXT = "pdb_seqres.txt"
     PDB_SEQRES_TXT_GZ = (PDB_SEQRES_TXT + ".gz")
 
+    # PDBID codes are currently 4 characters so plus 1 is 5
+    LENGTH_OF_PDBID_PLUS_ONE = 5
+
     def __init__(self, path, args):
         """Constructor
 
@@ -72,8 +75,8 @@ class MakeBlastDBTask(D3RTask):
     def get_set_of_pbdid_from_pdb_seqres_txt(self):
         """Parses MakeBlastDBTask.PDB_SEQRES_TXT to get set of PBDIDs
 
-           This method parses `MakeBlastDBTask.PDB_SEQRES_TXT` fasta file to get
-           a unique set of PBDIDs from the deflines (lines starting with >)
+           This method parses `MakeBlastDBTask.PDB_SEQRES_TXT` fasta file to
+           get a unique set of PBDIDs from the deflines (lines starting with >)
 
            Format of defline:
 
@@ -102,8 +105,10 @@ class MakeBlastDBTask(D3RTask):
             for line in f:
                 if line[0] == '>':
                     underscore_pos = line.find('_')
-                    if underscore_pos != 5:
-                        logger.error('Skipping entry... defline in sequence file missing '
+                    if underscore_pos != \
+                            MakeBlastDBTask.LENGTH_OF_PDBID_PLUS_ONE:
+                        logger.error('Skipping entry... defline in sequence '
+                                     'file missing '
                                      'underscore at position 5: ' + line)
                         continue
 
