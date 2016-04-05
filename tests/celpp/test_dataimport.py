@@ -295,6 +295,85 @@ class TestDataImportTask(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
+
+    def test_get_set_of_pdbid_from_crystalph_tsv_nonexistant_file(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = DataImportTask(temp_dir, params)
+            task.create_dir()
+            pdbid_set = task.get_set_of_pdbid_in_crystalph_tsv_and_pdb_seqres()
+            self.assertEqual(len(pdbid_set), 0)
+        except:
+            shutil.rmtree(temp_dir)
+
+    def test_get_set_of_pdbid_from_crystalph_tsv_empty_file(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = DataImportTask(temp_dir, params)
+            task.create_dir()
+            open(task.get_crystalph_tsv(), 'a').close()
+            pdbid_set = task.get_set_of_pdbid_in_crystalph_tsv_and_pdb_seqres()
+            self.assertEqual(os.path.isfile(task.get_crystalph_tsv()), True)
+            self.assertEqual(len(pdbid_set), 0)
+        except:
+            shutil.rmtree(temp_dir)
+
+    def test_get_set_of_pdbid_from_crystalph_tsv_valid_entries(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = DataImportTask(temp_dir, params)
+            task.create_dir()
+            f = open(task.get_crystalph_tsv(), 'w')
+            f.write('PDB_ID  _exptl_crystal_grow.pH\n')
+            f.write('4rfr    7.5\n')
+            f.write('4X09\t6.5\n')
+            f.write('4XET\t6.2\n')
+            f.write('4XF1\t6.2\n')
+            f.write('4XF3\t6.2\n')
+            f.flush()
+            f.close()
+            pdbid_set = task.get_set_of_pdbid_in_crystalph_tsv_and_pdb_seqres()
+            self.assertEqual(os.path.isfile(task.get_crystalph_tsv()), True)
+            self.assertEqual(len(pdbid_set), 5)
+            self.assertEqual('4RFR' in pdbid_set, True)
+            self.assertEqual('4X09' in pdbid_set, True)
+            self.assertEqual('4XET' in pdbid_set, True)
+            self.assertEqual('4XF1' in pdbid_set, True)
+            self.assertEqual('4XF3' in pdbid_set, True)
+        except:
+            shutil.rmtree(temp_dir)
+
+
+    def test_get_set_of_pdbid_from_crystalph_tsv_invalid_entries(self):
+        """Header missing and 4rfr has 3 columns
+        """
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = DataImportTask(temp_dir, params)
+            task.create_dir()
+            f = open(task.get_crystalph_tsv(), 'w')
+            f.write('4X09\t6.5\n')
+            f.write('4rfr 7.5 8\n')
+            f.write('4XET\t6.2\n')
+            f.write('4XF1\t6.2\n')
+            f.write('4XF3\t6.2\n')
+            f.flush()
+            f.close()
+            pdbid_set = task.get_set_of_pdbid_in_crystalph_tsv_and_pdb_seqres()
+            self.assertEqual(os.path.isfile(task.get_crystalph_tsv()), True)
+            self.assertEqual(len(pdbid_set), 3)
+            self.assertEqual('4RFR' in pdbid_set, False)
+            self.assertEqual('4X09' in pdbid_set, False)
+            self.assertEqual('4XET' in pdbid_set, True)
+            self.assertEqual('4XF1' in pdbid_set, True)
+            self.assertEqual('4XF3' in pdbid_set, True)
+        except:
+            shutil.rmtree(temp_dir)
+
     def tearDown(self):
         pass
 

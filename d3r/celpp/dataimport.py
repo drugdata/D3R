@@ -4,6 +4,7 @@ __author__ = 'churas'
 
 import logging
 import os
+import time
 from d3r.celpp.task import D3RTask
 from d3r.celpp import util
 from d3r.celpp.makeblastdb import MakeBlastDBTask
@@ -72,6 +73,77 @@ class DataImportTask(D3RTask):
     def get_components_inchi_file(self):
         return os.path.join(self.get_dir(),
                             DataImportTask.COMPINCHI_ICH)
+
+    def get_set_of_pdbid_from_crystalph_tsv(self):
+        """Gets set of PDBID by parsing `DataImportTask.CRYSTALPH_TSV`
+
+           Parses `DataImportTask.CRYSTALPH_TSV` to build a set of PDBIDs
+           from the first 4 characters on each line minus the first line.
+
+           Format space between columns appears to be tab:
+
+            PDB_ID	_exptl_crystal_grow.pH
+            <PDBID>	<PH>
+
+
+           Example file:
+            PDB_ID	_exptl_crystal_grow.pH
+            4RFR	7.5
+            4X09	6.5
+            4XET	6.2
+            4XF1	6.2
+            4XF3	6.2
+
+           :returns: set of PDBID in uppercase
+        """
+        pdbid_set = set()
+        start_time = int(time.time())
+        logger.debug('Examing ' + self.get_crystalph_tsv() +
+                     ' to get set of PDBIDs')
+
+        if not os.path.isfile(self.get_crystalph_tsv()):
+            logger.warning('')
+            return set()
+        try:
+
+            f = open(self.get_pdb_seqres_txt(), 'r')
+
+            headerline = f.readline()
+            if not headerline.startswith('PDB_ID'):
+                logger.warning('First line in ' + self.get_crystalph_tsv() +
+                               'did NOT start with PDBID_ID ('
+                               + headerline + ')')
+            for line in f:
+                    pdbid_split = line.split()
+                    if len(pdbid_split) != 2:
+                        logger.error('Skipping entry... whitespace'
+                                     ' split resulted in:' +
+                                     str(len(pdbid_split)) +
+                                     ' instead of expected 2: ' +
+                                     line)
+                        continue
+
+                    pdbid_set.add(pdbid_split[0].upper())
+            f.close()
+            logger.debug('Found ' + str(len(pdbid_set)) +
+                         ' PDBIDs from crystalph.  Parsing took ' +
+                         str(int(time.time()) - start_time) +
+                         ' seconds.')
+            return pdbid_set
+        except:
+            logger.exception('Caught exception trying to get set of PDBIDs')
+            return set()
+        return pdbid_set
+
+    def get_set_of_pdbid_in_crystalph_tsv_and_pdb_seqres(self):
+        """Gets set of PDBIDs that are in both tsv and sequence file
+
+           Examines `DataImportTask.CRYSTALPH_TSV` and
+           `MakeBlastDBTask.PDB_SEQRES_TXT` and returns a set of PDBIDs
+           that are in both files
+           :returns: set of PDBIDs uppercase that are in both files above
+        """
+        return set()
 
     def append_standard_to_files(self):
         """Appends standard 1FCZ to tsv files as mapped below
@@ -213,6 +285,10 @@ class DataImportTask(D3RTask):
                                       self._maxretries,
                                       self._retrysleep)
 
+            # Compare TSV files with pdb_seqres.txt file to see if there
+            # are any duplicates issue #15
+
+            # Append internal standard
             self.append_standard_to_files()
 
             self.end()
