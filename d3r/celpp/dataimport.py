@@ -143,6 +143,25 @@ class DataImportTask(D3RTask):
            that are in both files
            :returns: set of PDBIDs uppercase that are in both files above
         """
+        make_blastdb = MakeBlastDBTask(self._path, self._args)
+
+        if not os.path.isfile(make_blastdb.get_pdb_seqres_txt()):
+            logger.warning('No ' + make_blastdb.get_pdb_seqres_txt() +
+                           ' file found')
+            return set()
+
+        c_pdbid_set = self.get_set_of_pdbid_in_crystalph_tsv_and_pdb_seqres()
+
+        if len(c_pdbid_set) == 0:
+            logger.warning('No PDBIds found in ' + self.get_crystalph_tsv())
+            return set()
+
+        seq_pdbid_set = make_blastdb.get_set_of_pbdid_from_pdb_seqres_txt()
+
+        if len(seq_pdbid_set) == 0:
+            logger.warning('No PDBIds found in ' +
+                           make_blastdb.get_pdb_seqres_txt())
+            return set()
         return set()
 
     def append_standard_to_files(self):
