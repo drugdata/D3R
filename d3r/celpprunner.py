@@ -111,6 +111,7 @@ def _setup_logging(theargs):
         .setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.celpp.dataimport').setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.celpp.glide').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.vina').setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.celpp.makeblastdb')\
         .setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.celpp.proteinligprep')\
@@ -266,7 +267,7 @@ def get_task_list_for_stage(theargs, stage_name):
         task_list.append(GlideTask(theargs.latest_weekly, theargs))
 
     if stage_name == 'vina':
-        task_list.append(GlideTask(theargs.latest_weekly, theargs))
+        task_list.append(AutoDockVinaTask(theargs.latest_weekly, theargs))
 
     if stage_name == 'evaluation':
         # use util function call to get all evaluation tasks
