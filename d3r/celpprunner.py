@@ -16,6 +16,7 @@ from d3r.celpp.dataimport import DataImportTask
 from d3r.celpp.glide import GlideTask
 from d3r.celpp.evaluation import EvaluationTaskFactory
 from d3r.celpp.makeblastdb import MakeBlastDBTask
+from d3r.celpp.vina import AutoDockVinaTask
 
 
 from lockfile.pidlockfile import PIDLockFile
@@ -110,6 +111,7 @@ def _setup_logging(theargs):
         .setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.celpp.dataimport').setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.celpp.glide').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.vina').setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.celpp.makeblastdb')\
         .setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.celpp.proteinligprep')\
@@ -264,6 +266,9 @@ def get_task_list_for_stage(theargs, stage_name):
     if stage_name == 'glide':
         task_list.append(GlideTask(theargs.latest_weekly, theargs))
 
+    if stage_name == 'vina':
+        task_list.append(AutoDockVinaTask(theargs.latest_weekly, theargs))
+
     if stage_name == 'evaluation':
         # use util function call to get all evaluation tasks
         # append them to the task_list
@@ -301,7 +306,7 @@ def _parse_arguments(desc, args):
                              "will create a dataset.week.# dir under celppdir")
     parser.add_argument("--stage", required=True, help='Comma delimited list' +
                         ' of stages to run.  Valid STAGES = ' +
-                        '{makedb, import, blast, proteinligprep, glide, '
+                        '{makedb, import, blast, proteinligprep, glide, vina, '
                         'evaluation} '
                         )
     parser.add_argument("--blastnfilter", default='blastnfilter.py',
@@ -312,6 +317,8 @@ def _parse_arguments(desc, args):
                         help='Path to proteinligprep script')
     parser.add_argument("--glide", default='glidedocking.py',
                         help='Path to glide docking script')
+    parser.add_argument("--vina", default='vinadocking.py',
+                        help='Path to auto dock vina docking script')
     parser.add_argument("--evaluation", default='evaluate.py',
                         help='Path to evaluation script')
     parser.add_argument("--pdbdb", default='/data/pdb',
@@ -321,14 +328,14 @@ def _parse_arguments(desc, args):
                         'dictionaries',
                         help='URL to download Components-inchi.ich' +
                              ' file for' +
-                             'task stage.1.compinchi')
+                             'task stage dataimport')
     parser.add_argument("--pdbfileurl",
                         default='http://www.wwpdb.org/files',
                         help='URL to download ' +
                              'new_release_structure_nonpolymer.tsv' +
                              ',new_release_structure_sequence.tsv' +
                              ', and new_release_crystallization_pH.tsv' +
-                             ' files for task stage.1.dataimport')
+                             ' files for task stage dataimport')
     parser.add_argument("--makeblastdb", default='makeblastdb',
                         help='Path to NCBI Blast makeblastdb program '
                              'ie /usr/bin/makeblastdb')
@@ -361,9 +368,19 @@ def _parse_arguments(desc, args):
 
 
 def main():
+    p = D3RParameters()
+    blasttask = BlastNFilterTask('', p)
+    dataimport = DataImportTask('', p)
+    glide = GlideTask('', p)
+    makedb = MakeBlastDBTask('', p)
+    prot = ProteinLigPrepTask('', p)
+    vina = AutoDockVinaTask('', p)
+
     desc = """
-              Runs the 6 stages (makedb, import, blast, proteinligprep, glide,
-              & evaluation) of CELPP processing pipeline
+              Version {version}
+
+              Runs the 7 stages (makedb, import, blast, proteinligprep, glide,
+              vina, & evaluation) of CELPP processing pipeline
               (http://www.drugdesigndata.org)
 
               CELPP processing pipeline relies on a set of directories
@@ -402,7 +419,7 @@ def main():
               This program utilizes simple token files to denote stage
               completion.  If within the stage directory there is a:
 
-              'complete' file - then stage is done and no other
+              '{complete}' file - then stage is done and no other
                                 checking is done.
 
               'error' file - then stage failed.
@@ -442,7 +459,7 @@ def main():
               an ftp site set by --pdbsequrl.
               This file is then gunzipped and NCBI makeblastdb
               (set by --makeblastdb) is run on it to create a blast
-              database.  The files are stored in stage.1.makeblastdb
+              database.  The files are stored in {makeblastdb_dirname}
 
               If --stage 'import'
 
@@ -464,37 +481,55 @@ def main():
 
               If --stage 'blast'
 
-              Verifies stage.1.dataimport exists and has 'complete'
-              file.  Also verifies stage.1.makeblastdb exists and has
-              'complete' file.  If both conditions are met then the
+              Verifies {dataimport_dirname} exists and has '{complete}'
+              file.  Also verifies {makeblastdb_dirname} exists and has
+              '{complete}' file.  If both conditions are met then the
               'blast' stage is run and output stored in
-              stage.2.blastnfilter.
+              {blast_dirname}.
               Requires --pdbdb to be set to a directory with valid PDB
               database files.
 
               If --stage 'proteinligprep'
 
-              Verifies stage.2.blastnfilter exists and has 'complete'
+              Verifies {blast_dirname} exists and has '{complete}'
               file.  If complete, this stage runs which invokes program
               set in --proteinligprep flag to prepare pdb and inchi files
-              storing output in stage.3.proteinligprep.  --pdbdb flag
+              storing output in {proteinligprep_dirname}.  --pdbdb flag
               must also be set when calling this stage.
 
               If --stage 'glide'
 
-              Verifies stage3.proteinligprep exists and has a 'complete'
+              Verifies {proteinligprep_dirname} exists and has a '{complete}'
               file within it.  If complete, this stage runs which invokes
               program set in --glide flag to perform docking via glide
-              storing output in stage.4.glide
+              storing output in {glide_dirname}
+
+              If --stage 'vina'
+
+              Verifies {proteinligprep_dirname} exists and has a '{complete}'
+              file within it.  If complete, this stage runs which invokes
+              program set in --vina flag to perform docking via AutoDock Vina
+              storing output in {vina_dirname}
 
               If --stage 'evaluation'
 
-              Finds all stage.4.<algo> directories with 'complete' files
-              in them which do not end in name 'webdata' and runs
+              Finds all stage.{dockstage}.<algo> directories with '{complete}'
+              files in them which do not end in name 'webdata' and runs
               script set via --evaluation parameter storing the result of
-              the script into stage.5.<algo>.evaluation. --pdbdb flag
+              the script into stage.{evalstage}.<algo>.evaluation. --pdbdb flag
               must also be set when calling this stage.
-              """
+
+
+              """.format(makeblastdb_dirname=makedb.get_dir_name(),
+                         dataimport_dirname=dataimport.get_dir_name(),
+                         blast_dirname=blasttask.get_dir_name(),
+                         proteinligprep_dirname=prot.get_dir_name(),
+                         glide_dirname=glide.get_dir_name(),
+                         vina_dirname=vina.get_dir_name(),
+                         dockstage=str(glide.get_stage()),
+                         evalstage=str(glide.get_stage() + 1),
+                         complete=blasttask.COMPLETE_FILE,
+                         version=d3r.__version__)
 
     theargs = _parse_arguments(desc, sys.argv[1:])
     theargs.program = sys.argv[0]

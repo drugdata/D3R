@@ -4,6 +4,7 @@ __author__ = 'churas'
 
 import os.path
 import logging
+import time
 from d3r.celpp.task import D3RTask
 from d3r.celpp import util
 
@@ -19,6 +20,9 @@ class MakeBlastDBTask(D3RTask):
 
     PDB_SEQRES_TXT = "pdb_seqres.txt"
     PDB_SEQRES_TXT_GZ = (PDB_SEQRES_TXT + ".gz")
+
+    # PDBID codes are currently 4 characters so plus 1 is 5
+    LENGTH_OF_PDBID_PLUS_ONE = 5
 
     def __init__(self, path, args):
         """Constructor
@@ -67,6 +71,58 @@ class MakeBlastDBTask(D3RTask):
         except:
             logger.exception('Caught exception trying to get sequence count')
         return '# sequence(s): Error unable to parse file'
+
+    def get_set_of_pbdid_from_pdb_seqres_txt(self):
+        """Parses MakeBlastDBTask.PDB_SEQRES_TXT to get set of PBDIDs
+
+           This method parses `MakeBlastDBTask.PDB_SEQRES_TXT` fasta file to
+           get a unique set of PBDIDs from the deflines (lines starting with >)
+
+           Format of defline:
+
+           >PBDID_# ###:##### length:###  ########
+
+           The # above changes and PBDID is the PBDID code.
+
+           This method will grab the PBDID which is 4 characters long,
+           but for safety will parse on _
+           character and return those PBDID as a set.  The PDBIDs will
+           be made uppercase with upper() string function
+
+           :returns: set of PBDIDS from sequence file where PDBIDs set
+           to upper case via upper()
+        """
+        pdbid_set = set()
+        start_time = int(time.time())
+        logger.debug('Examing ' + self.get_pdb_seqres_txt() +
+                     ' to get set of PDBIDs')
+
+        if not os.path.isfile(self.get_pdb_seqres_txt()):
+            logger.warning('')
+            return set()
+        try:
+            f = open(self.get_pdb_seqres_txt(), 'r')
+            for line in f:
+                if line[0] == '>':
+                    underscore_pos = line.find('_')
+                    if underscore_pos != \
+                            MakeBlastDBTask.LENGTH_OF_PDBID_PLUS_ONE:
+                        logger.error('Skipping entry... defline in sequence '
+                                     'file missing '
+                                     'underscore at position 5: ' + line)
+                        continue
+
+                    pdbid_set.add(line[1:underscore_pos].upper())
+            f.close()
+            logger.debug('Found ' + str(len(pdbid_set)) +
+                         ' PDBIDs from sequence.  Parsing took ' +
+                         str(int(time.time()) - start_time) +
+                         ' seconds.')
+            return pdbid_set
+        except:
+            logger.exception('Caught exception trying to get set of PDBIDs')
+            return set()
+        return pdbid_set
 
     def can_run(self):
         """Determines if task can run

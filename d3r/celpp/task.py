@@ -407,8 +407,11 @@ class D3RTask(object):
                          self.get_error())
             self.set_status(D3RTask.ERROR_STATUS)
             try:
-                open(os.path.join(self.get_dir(),
-                                  D3RTask.ERROR_FILE), 'a').close()
+                f = open(os.path.join(self.get_dir(),
+                                      D3RTask.ERROR_FILE), 'a')
+                f.write(self.get_error() + '\n')
+                f.flush()
+                f.close()
             except:
                 logger.exception('Caught exception')
 
@@ -416,8 +419,10 @@ class D3RTask(object):
 
         if self.get_status() == D3RTask.ERROR_STATUS:
             try:
-                open(os.path.join(self.get_dir(),
-                                  D3RTask.ERROR_FILE), 'a').close()
+                err_file = os.path.join(self.get_dir(),
+                                        D3RTask.ERROR_FILE)
+                if not os.path.isfile(err_file):
+                    open(err_file, 'a').close()
             except:
                 logger.exception('Caught Exception')
             self._send_end_email()

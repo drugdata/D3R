@@ -40,7 +40,7 @@ class TestBlastNFilterTask(unittest.TestCase):
         blasttask = BlastNFilterTask('ha', params)
         self.assertEqual(blasttask.get_name(), 'blastnfilter')
         self.assertEqual(blasttask.get_path(), 'ha')
-        self.assertEqual(blasttask.get_stage(), 2)
+        self.assertEqual(blasttask.get_stage(), 3)
         self.assertEqual(blasttask.get_status(), D3RTask.UNKNOWN_STATUS)
         self.assertEqual(blasttask.get_error(), None)
 
@@ -211,7 +211,7 @@ class TestBlastNFilterTask(unittest.TestCase):
             blastTask.create_dir()
             self.assertEqual(blastTask.can_run(), False)
             self.assertEqual(blastTask.get_error(),
-                             'stage.2.blastnfilter already exists and' +
+                             blastTask.get_dir_name() + ' already exists and' +
                              ' status is unknown')
 
             # try where blast is complete
@@ -266,24 +266,28 @@ class TestBlastNFilterTask(unittest.TestCase):
 
             std_out_file = os.path.join(blasttask.get_dir(),
                                         'echo.stdout')
+
+            dataimport = DataImportTask(temp_dir, params)
+            makeblast = MakeBlastDBTask(temp_dir, params)
+
             f = open(std_out_file, 'r')
             echo_out = f.read().replace('\n', '')
             echo_out.index('--nonpolymertsv ' +
-                           os.path.join(temp_dir, 'stage.1.dataimport',
+                           os.path.join(temp_dir, dataimport.get_dir_name(),
                                         'new_release_structure_nonpolymer.tsv'
                                         ))
             echo_out.index(' --sequencetsv ' +
-                           os.path.join(temp_dir, 'stage.1.dataimport',
+                           os.path.join(temp_dir, dataimport.get_dir_name(),
                                         'new_release_structure_sequence.tsv'))
             echo_out.index(' --pdbblastdb ' +
-                           os.path.join(temp_dir, 'stage.1.makeblastdb'))
+                           os.path.join(temp_dir, makeblast.get_dir_name()))
             echo_out.index(' --compinchi ' +
-                           os.path.join(temp_dir, 'stage.1.dataimport',
+                           os.path.join(temp_dir, dataimport.get_dir_name(),
                                         'Components-inchi.ich'))
             echo_out.index(' --outdir ' +
-                           os.path.join(temp_dir, 'stage.2.blastnfilter'))
+                           os.path.join(temp_dir, blasttask.get_dir_name()))
             echo_out.index(' --crystalpH ' +
-                           os.path.join(temp_dir, 'stage.1.dataimport',
+                           os.path.join(temp_dir, dataimport.get_dir_name(),
                                         'new_release_crystallization_pH.tsv'))
             echo_out.index(' --pdbdb /pdbdb ')
             f.close()
@@ -330,13 +334,14 @@ class TestBlastNFilterTask(unittest.TestCase):
 
             std_out_file = os.path.join(blasttask.get_dir(),
                                         'echo.stdout')
+            dataimport = DataImportTask(temp_dir, params)
             f = open(std_out_file, 'r')
             echo_out = f.read().replace('\n', '')
             echo_out.index('--compinchi ' +
-                           os.path.join(temp_dir, 'stage.1.dataimport',
+                           os.path.join(temp_dir, dataimport.get_dir_name(),
                                         'Components-inchi.ich'))
             echo_out.index(' ' + os.path.join(temp_dir,
-                                              'stage.2.blastnfilter'))
+                                              blasttask.get_dir_name()))
             f.close()
 
             self.assertEqual(os.path.isfile(std_out_file), True)
@@ -572,8 +577,9 @@ class TestBlastNFilterTask(unittest.TestCase):
 
     def test_blastnfilter_summary_week_and_year(self):
 
+        blast = BlastNFilterTask('/foo', D3RParameters())
         summary = BlastNFilterSummary('/foo/2018/dataset.week.4'
-                                      '/stage.2.blastnfilter')
+                                      '/' + blast.get_dir_name())
         self.assertEqual(summary.get_week_number(), '4')
         self.assertEqual(summary.get_year(), '2018')
         self.assertEqual(summary.get_csv(), '4,2018,0,0,0,0')

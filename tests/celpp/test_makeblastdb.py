@@ -8,6 +8,8 @@ import tempfile
 import unittest
 import shutil
 import gzip
+import itertools
+import string
 
 """
 test_makeblastdb
@@ -111,6 +113,152 @@ class TestMakeBlastDBTask(unittest.TestCase):
             f.close()
             self.assertEqual(task._get_sequence_count_message(),
                              '# sequence(s): 3')
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_sequence_count_file_no_file(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = MakeBlastDBTask(temp_dir, params)
+            task.create_dir()
+            pdbid = task.get_set_of_pbdid_from_pdb_seqres_txt()
+            self.assertEqual(len(pdbid), 0)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_set_of_pbdid_from_pdb_seqres_txt_no_file(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = MakeBlastDBTask(temp_dir, params)
+            task.create_dir()
+            pdbset = task.get_set_of_pbdid_from_pdb_seqres_txt()
+            self.assertEqual(len(pdbset), 0)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_set_of_pbdid_from_pdb_seqres_txt_empty_file(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = MakeBlastDBTask(temp_dir, params)
+            task.create_dir()
+            open(task.get_pdb_seqres_txt(), 'a').close()
+            self.assertEqual(os.path.isfile(task.get_pdb_seqres_txt()), True)
+            pdbset = task.get_set_of_pbdid_from_pdb_seqres_txt()
+            self.assertEqual(len(pdbset), 0)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_set_of_pbdid_from_pdb_seqres_txt_file_no_seqs(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = MakeBlastDBTask(temp_dir, params)
+            task.create_dir()
+            f = open(task.get_pdb_seqres_txt(), 'w')
+            f.write('hi\nhow\nare\nyou')
+            f.flush()
+            f.close()
+            self.assertEqual(os.path.isfile(task.get_pdb_seqres_txt()), True)
+            pdbset = task.get_set_of_pbdid_from_pdb_seqres_txt()
+            self.assertEqual(len(pdbset), 0)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_set_of_pbdid_from_pdb_seqres_txt_with_seqs(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = MakeBlastDBTask(temp_dir, params)
+            task.create_dir()
+            f = open(task.get_pdb_seqres_txt(), 'w')
+            f.write('>101m_A mol:protein length:154  MYOGLOBIN\n')
+            f.write('MVLSEGEWQLVLHVWAKVEADVAGHGQDILIRLFKSHPETLEKFDRVK'
+                    'HLKTEAEMKASEDLKKHG\n')
+            f.write('>102l_A mol:protein length:165  T4 LYSOZYME\n')
+            f.write('MNIFEMLRIDEGLRLKIYKDTEGYYTIGIGHLLTKSPSLNAAAKSELDKA'
+                    'IGRNTNGVITKDEAEKLFNQDVDAAVRGILRNAKLKPVYDSLDAVRRAAL'
+                    'INMVFQMGETGVAGFTNSLRMLQQKRWDEAAVNLAKSRWYNQTPNRAKRV'
+                    'ITTFRTGTWDAYKNL\n')
+            f.write('>102l_A mol:protein length:154  MYOGLOBIN\n')
+            f.write('MVLSEGEWQLVLHVWAKVEADVAGHGQDILIRLFKSHPETLEKFDRFKHL'
+                    'KTEAEMKASEDLKKAGVTVLTALGAILKKKGHHEAELKPLAQSHATKHKI'
+                    'PIKYLEFISEAIIHVLHSRHPGNFGADAQGAMNKALELFRKDIAAKYKELGYQG\n')
+            f.write('>103l_A mol:protein length:167  T4 LYSOZYME\n')
+            f.write('MNIFEMLRIDEGLRLKIYKDTEGYYTIGIGHLLTKSPSLNSLDAAKSELD'
+                    'KAIGRNTNGVITKDEAEKLFNQDVDAAVRGILRNAKLKPVYDSLDAVRRA'
+                    'ALINMVFQMGETGVAGFTNSLRMLQQKRWDEAAVNLAKSRWYNQTPNRAK'
+                    'RVITTFRTGTWDAYKNL\n')
+            f.write('>10jj3m_A mol:protein length:154  MYOGLOBIN\n')
+            f.write('MVLSEGEWQLVLHVWAKVEADVAGHGQDILIRLFKSHPETLEKFDRF\n')
+            f.write('>104l_A mol:protein length:166  T4 LYSOZYME\n')
+            f.write('MNIFEMLRIDEGLRLKIYKDTEGYYTIGIGHLLTKSPSLNAAKSAAE\n')
+            f.write('>104l_B mol:protein length:166  T4 LYSOZYME\n')
+            f.write('MNIFEMLRIDEGLRLKIYKDTEGYYTIGIGHLLTKSPSLNAAKSAKNL\n')
+
+            f.flush()
+            f.close()
+            self.assertEqual(os.path.isfile(task.get_pdb_seqres_txt()), True)
+            pdbset = task.get_set_of_pbdid_from_pdb_seqres_txt()
+            self.assertEqual(len(pdbset), 4)
+            self.assertEqual('101M' in pdbset, True)
+            self.assertEqual('102L' in pdbset, True)
+            self.assertEqual('103L' in pdbset, True)
+            self.assertEqual('104L' in pdbset, True)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_set_of_pbdid_from_pdb_seqres_txt_wrong_len_pdbids(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = MakeBlastDBTask(temp_dir, params)
+            task.create_dir()
+            f = open(task.get_pdb_seqres_txt(), 'w')
+            f.write('>1m_A mol:protein length:154  MYOGLOBIN\n')
+            f.write('MVLSEGEWQLVLHVWAKVEADVAGHGQDILIRLFKSHPETLEKFDRVK'
+                    'HLKTEAEMKASEDLKKHG\n')
+            f.write('>abcdel_A mol:protein length:165  T4 LYSOZYME\n')
+            f.write('MNIFEMLRIDEGLRLKIYKDTEGYYTIGIGHLLTKSPSLNAAAKSELDKA'
+                    'IGRNTNGVITKDEAEKLFNQDVDAAVRGILRNAKLKPVYDSLDAVRRAAL'
+                    'INMVFQMGETGVAGFTNSLRMLQQKRWDEAAVNLAKSRWYNQTPNRAKRV'
+                    'ITTFRTGTWDAYKNL\n')
+
+            f.flush()
+            f.close()
+            self.assertEqual(os.path.isfile(task.get_pdb_seqres_txt()), True)
+            pdbset = task.get_set_of_pbdid_from_pdb_seqres_txt()
+            self.assertEqual(len(pdbset), 0)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_set_of_pbdid_from_pdb_seqres_txt_with_400k_file(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = MakeBlastDBTask(temp_dir, params)
+            task.create_dir()
+            f = open(task.get_pdb_seqres_txt(), 'w')
+            perms = itertools.permutations(string.ascii_lowercase +
+                                           '123456789', 4)
+            counter = 0
+            try:
+                limit = 400000
+                while counter < limit:
+                    f.write('>' + ''.join(map(str, perms.next())) +
+                            '_A mol:protein length:165  T4 LYSOZYME\n')
+                    f.write('MVLSEGEWQLVLH\n')
+                    counter += 1
+            except StopIteration:
+                pass
+            f.flush()
+            f.close()
+
+            pdbset = task.get_set_of_pbdid_from_pdb_seqres_txt()
+            self.assertEqual(len(pdbset), counter)
+
         finally:
             shutil.rmtree(temp_dir)
 

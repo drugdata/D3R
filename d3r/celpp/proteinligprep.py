@@ -22,7 +22,11 @@ class ProteinLigPrepTask(D3RTask):
     def __init__(self, path, args):
         super(ProteinLigPrepTask, self).__init__(path, args)
         self.set_name('proteinligprep')
-        self.set_stage(3)
+
+        # Make stage number one higher then BlastNFilter Stage
+        blast = BlastNFilterTask(path, args)
+        self.set_stage(blast.get_stage() + 1)
+
         self.set_status(D3RTask.UNKNOWN_STATUS)
 
     def get_uploadable_files(self):

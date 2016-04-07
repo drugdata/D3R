@@ -16,6 +16,7 @@ LOG_FORMAT = "%(asctime)-15s %(levelname)s %(name)s %(message)s"
 
 BLASTNFILTER_SUMMARY_CSV = 'blastnfilter.summary.csv'
 
+
 def _setup_logging(theargs):
     """Sets up the logging for application
 
