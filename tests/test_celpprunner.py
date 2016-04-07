@@ -27,6 +27,7 @@ from d3r.celpp.dataimport import DataImportTask
 from d3r.celpp.makeblastdb import MakeBlastDBTask
 from d3r.celpp.proteinligprep import ProteinLigPrepTask
 from d3r.celpp.glide import GlideTask
+from d3r.celpp.vina import AutoDockVinaTask
 
 
 class DummyTask(D3RTask):
@@ -73,6 +74,9 @@ class TestCelppRunner(unittest.TestCase):
 
     prot = ProteinLigPrepTask('/foo', param)
     PROT_DIR_NAME = prot.get_dir_name()
+
+    vina = AutoDockVinaTask('/foo', param)
+    VINA_DIR_NAME = vina.get_dir_name()
 
     def setUp(self):
         pass
@@ -153,6 +157,7 @@ class TestCelppRunner(unittest.TestCase):
                    '--proteinligprep', '/bin/proteinligprep.py',
                    '--postanalysis', '/bin/postanalysis.py',
                    '--glide', '/bin/glide.py',
+                   '--vina', '/bin/vina.py',
                    '--customweekdir',
                    '--evaluation', '/bin/evaluation.py',
                    '--makeblastdb', '/bin/makeblastdb']
@@ -168,6 +173,7 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEquals(result.evaluation, '/bin/evaluation.py')
         self.assertEquals(result.customweekdir, True)
         self.assertEqual(result.makeblastdb, '/bin/makeblastdb')
+        self.assertEqual(result.vina, '/bin/vina.py')
 
     def test_run_tasks_passing_none_and_empty_list(self):
         self.assertEquals(celpprunner.run_tasks(None), 3)
@@ -291,6 +297,11 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEquals(len(task_list), 1)
         self.assertEquals(task_list[0].get_dir(),
                           os.path.join('foo', TestCelppRunner.GLIDE_DIR_NAME))
+
+        task_list = celpprunner.get_task_list_for_stage(params, 'vina')
+        self.assertEquals(len(task_list), 1)
+        self.assertEquals(task_list[0].get_dir(),
+                          os.path.join('foo', TestCelppRunner.VINA_DIR_NAME))
 
     def test_get_task_list_for_stage_for_scoring_stage_with_nonefound(self):
         temp_dir = tempfile.mkdtemp()
