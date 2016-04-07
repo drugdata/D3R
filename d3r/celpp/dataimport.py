@@ -106,7 +106,7 @@ class DataImportTask(D3RTask):
             return set()
         try:
 
-            f = open(self.get_pdb_seqres_txt(), 'r')
+            f = open(self.get_crystalph_tsv(), 'r')
 
             headerline = f.readline()
             if not headerline.startswith('PDB_ID'):
@@ -150,7 +150,7 @@ class DataImportTask(D3RTask):
                            ' file found')
             return set()
 
-        c_pdbid_set = self.get_set_of_pdbid_in_crystalph_tsv_and_pdb_seqres()
+        c_pdbid_set = self.get_set_of_pdbid_from_crystalph_tsv()
 
         if len(c_pdbid_set) == 0:
             logger.warning('No PDBIds found in ' + self.get_crystalph_tsv())
@@ -162,7 +162,20 @@ class DataImportTask(D3RTask):
             logger.warning('No PDBIds found in ' +
                            make_blastdb.get_pdb_seqres_txt())
             return set()
-        return set()
+
+        common_pdbid = set()
+
+        # iterate through tsv pdb ids and return any found in
+        # sequence pdb id set
+        for id in c_pdbid_set:
+            if id in seq_pdbid_set:
+                common_pdbid.add(id)
+
+        logger.debug('Found ' + str(len(common_pdbid)) + ' PDBIDs in ' +
+                     self.get_crystalph_tsv() + ' and ' +
+                     make_blastdb.get_pdb_seqres_txt())
+
+        return common_pdbid
 
     def append_standard_to_files(self):
         """Appends standard 1FCZ to tsv files as mapped below
@@ -306,6 +319,29 @@ class DataImportTask(D3RTask):
 
             # Compare TSV files with pdb_seqres.txt file to see if there
             # are any duplicates issue #15
+            try:
+                pdbs = self.get_set_of_pdbid_in_crystalph_tsv_and_pdb_seqres()
+                if len(pdbs) == 0:
+                    self.append_to_email_log('\nFound no entries in ' +
+                                             DataImportTask.CRYSTALPH_TSV +
+                                             'and ' +
+                                             MakeBlastDBTask.PDB_SEQRES_TXT +
+                                             ' files\n')
+                else:
+                    self.append_to_email_log('\nWARNING: Found ' +
+                                             str(len(pdbs)) +
+                                             ' PDBIDs in both ' +
+                                             DataImportTask.CRYSTALPH_TSV +
+                                             ' and ' +
+                                             MakeBlastDBTask.PDB_SEQRES_TXT +
+                                             ' files\n')
+            except Exception:
+                logger.exception('Caught exception comparing tsv with sequence')
+                self.append_to_email_log('\nError unable to examine ' +
+                                         DataImportTask.CRYSTALPH_TSV +
+                                         ' and/or ' +
+                                         MakeBlastDBTask.PDB_SEQRES_TXT +
+                                         ' files\n')
 
             # Append internal standard
             self.append_standard_to_files()

@@ -374,6 +374,149 @@ class TestDataImportTask(unittest.TestCase):
         except:
             shutil.rmtree(temp_dir)
 
+    def test_get_set_of_pdbid_in_crystalph_tsv_and_pdb_seqres_no_seq(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = DataImportTask(temp_dir, params)
+            task.create_dir()
+            f = open(task.get_crystalph_tsv(), 'w')
+            f.write('PDB_ID  _exptl_crystal_grow.pH\n')
+            f.write('4X09\t6.5\n')
+            f.write('4rfr\t8\n')
+            f.write('4XET\t6.2\n')
+            f.write('4XF1\t6.2\n')
+            f.write('4XF3\t6.2\n')
+            f.flush()
+            f.close()
+            pdbset = task.get_set_of_pdbid_in_crystalph_tsv_and_pdb_seqres()
+            self.assertEqual(len(pdbset), 0)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_set_of_pdbid_in_crystalph_tsv_and_pdb_seqres_no_tsv(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = DataImportTask(temp_dir, params)
+            task.create_dir()
+            makeblast = MakeBlastDBTask(temp_dir, params)
+            makeblast.create_dir()
+            f = open(makeblast.get_pdb_seqres_txt(), 'w')
+            f.write('>101m_A mol:protein length:154  MYOGLOBIN\n')
+            f.write('MVLSEGEWQLVLHVWAKVEADVAGHGQDILIRLFKSHPETLEKFDRVK'
+                    'HLKTEAEMKASEDLKKHG\n')
+            f.write('>102l_A mol:protein length:165  T4 LYSOZYME\n')
+            f.write('MNIFEMLRIDEGLRLKIYKDTEGYYTIGIGHLLTKSPSLNAAAKSELDKA'
+                    'IGRNTNGVITKDEAEKLFNQDVDAAVRGILRNAKLKPVYDSLDAVRRAAL'
+                    'INMVFQMGETGVAGFTNSLRMLQQKRWDEAAVNLAKSRWYNQTPNRAKRV'
+                    'ITTFRTGTWDAYKNL\n')
+            f.flush()
+            f.close()
+
+            pdbset = task.get_set_of_pdbid_in_crystalph_tsv_and_pdb_seqres()
+            self.assertEqual(len(pdbset), 0)
+        finally:
+            shutil.rmtree(temp_dir)
+
+
+    def test_get_set_of_pdbid_in_crystalph_tsv_and_pdb_seqres_empty_seq(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = DataImportTask(temp_dir, params)
+            task.create_dir()
+            f = open(task.get_crystalph_tsv(), 'w')
+            f.write('PDB_ID  _exptl_crystal_grow.pH\n')
+            f.write('4X09\t6.5\n')
+            f.write('4rfr\t8\n')
+            f.write('4XET\t6.2\n')
+            f.write('4XF1\t6.2\n')
+            f.write('4XF3\t6.2\n')
+            f.flush()
+            f.close()
+
+            makeblast = MakeBlastDBTask(temp_dir, params)
+            makeblast.create_dir()
+            open(makeblast.get_pdb_seqres_txt(), 'a').close()
+
+            pdbset = task.get_set_of_pdbid_in_crystalph_tsv_and_pdb_seqres()
+            self.assertEqual(len(pdbset), 0)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_set_of_pdbid_in_crystalph_tsv_and_pdb_seqres_no_hits(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = DataImportTask(temp_dir, params)
+            task.create_dir()
+            f = open(task.get_crystalph_tsv(), 'w')
+            f.write('PDB_ID  _exptl_crystal_grow.pH\n')
+            f.write('4X09\t6.5\n')
+            f.write('4rfr\t8\n')
+            f.write('4XET\t6.2\n')
+            f.write('4XF1\t6.2\n')
+            f.write('4XF3\t6.2\n')
+            f.flush()
+            f.close()
+
+            makeblast = MakeBlastDBTask(temp_dir, params)
+            makeblast.create_dir()
+            f = open(makeblast.get_pdb_seqres_txt(), 'w')
+            f.write('>101m_A mol:protein length:154  MYOGLOBIN\n')
+            f.write('MVLSEGEWQLVLHVWAKVEADVAGHGQDILIRLFKSHPETLEKFDRVK'
+                    'HLKTEAEMKASEDLKKHG\n')
+            f.write('>102l_A mol:protein length:165  T4 LYSOZYME\n')
+            f.write('MNIFEMLRIDEGLRLKIYKDTEGYYTIGIGHLLTKSPSLNAAAKSELDKA'
+                    'IGRNTNGVITKDEAEKLFNQDVDAAVRGILRNAKLKPVYDSLDAVRRAAL'
+                    'INMVFQMGETGVAGFTNSLRMLQQKRWDEAAVNLAKSRWYNQTPNRAKRV'
+                    'ITTFRTGTWDAYKNL\n')
+            f.flush()
+            f.close()
+
+            pdbset = task.get_set_of_pdbid_in_crystalph_tsv_and_pdb_seqres()
+            self.assertEqual(len(pdbset), 0)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_set_of_pdbid_in_crystalph_tsv_and_pdb_seqres_w_hits(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = DataImportTask(temp_dir, params)
+            task.create_dir()
+            f = open(task.get_crystalph_tsv(), 'w')
+            f.write('PDB_ID  _exptl_crystal_grow.pH\n')
+            f.write('4X09\t6.5\n')
+            f.write('4rfr\t8\n')
+            f.write('4XET\t6.2\n')
+            f.write('4XF1\t6.2\n')
+            f.write('4XF3\t6.2\n')
+            f.flush()
+            f.close()
+
+            makeblast = MakeBlastDBTask(temp_dir, params)
+            makeblast.create_dir()
+            f = open(makeblast.get_pdb_seqres_txt(), 'w')
+            f.write('>4rfr_A mol:protein length:154  MYOGLOBIN\n')
+            f.write('MVLSEGEWQLVLHVWAKVEADVAGHGQDILIRLFKSHPETLEKFDRVK'
+                    'HLKTEAEMKASEDLKKHG\n')
+            f.write('>102l_A mol:protein length:165  T4 LYSOZYME\n')
+            f.write('MNIFEMLRIDEGLRLKIYKDTEGYYTIGIGHLLTKSPSLNAAAKSELDKA'
+                    'IGRNTNGVITKDEAEKLFNQDVDAAVRGILRNAKLKPVYDSLDAVRRAAL'
+                    'INMVFQMGETGVAGFTNSLRMLQQKRWDEAAVNLAKSRWYNQTPNRAKRV'
+                    'ITTFRTGTWDAYKNL\n')
+            f.flush()
+            f.close()
+
+            pdbset = task.get_set_of_pdbid_in_crystalph_tsv_and_pdb_seqres()
+            self.assertEqual(len(pdbset), 1)
+            self.assertEqual('4RFR' in pdbset, True)
+        finally:
+            shutil.rmtree(temp_dir)
+
+
     def tearDown(self):
         pass
 
