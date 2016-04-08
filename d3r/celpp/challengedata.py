@@ -207,7 +207,7 @@ class ChallengeDataTask(D3RTask):
     def _copy_over_tsv_files(self, challenge_dir):
         """Copies over tsv files from `DataImportTask`
         """
-        dataimport = DataImportTask(self.get_dir(), self.get_args())
+        dataimport = DataImportTask(self.get_path(), self.get_args())
 
         crystal_dest = os.path.join(challenge_dir,
                                     DataImportTask.CRYSTALPH_TSV)
@@ -361,7 +361,7 @@ class ChallengeDataTask(D3RTask):
                 self.set_error('Unable to create ' + challenge_dir)
                 self.end()
 
-        blastnfilter = BlastNFilterTask(self.get_dir(),
+        blastnfilter = BlastNFilterTask(self.get_path(),
                                         self.get_args())
         #
         # genchallengedata.py --candidatedir <path to stage.3.blastnfilter> \
