@@ -28,6 +28,7 @@ from d3r.celpp.makeblastdb import MakeBlastDBTask
 from d3r.celpp.proteinligprep import ProteinLigPrepTask
 from d3r.celpp.glide import GlideTask
 from d3r.celpp.vina import AutoDockVinaTask
+from d3r.celpp.challengedata import ChallengeDataTask
 
 
 class DummyTask(D3RTask):
@@ -77,6 +78,9 @@ class TestCelppRunner(unittest.TestCase):
 
     vina = AutoDockVinaTask('/foo', param)
     VINA_DIR_NAME = vina.get_dir_name()
+
+    chall = ChallengeDataTask('/foo', param)
+    CHALL_DIR_NAME = chall.get_dir_name()
 
     def setUp(self):
         pass
@@ -151,6 +155,7 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEqual(result.proteinligprep, 'proteinligprep.py')
         self.assertEqual(result.evaluation, 'evaluate.py')
         self.assertEqual(result.makeblastdb, 'makeblastdb')
+        self.assertEqual(result.genchallenge, 'genchallengedata.py')
         theargs = ['foo', '--stage', 'dock,glide', '--email', 'b@b.com,h@h',
                    '--log', 'ERROR',
                    '--blastnfilter', '/bin/blastnfilter.py',
@@ -160,7 +165,8 @@ class TestCelppRunner(unittest.TestCase):
                    '--vina', '/bin/vina.py',
                    '--customweekdir',
                    '--evaluation', '/bin/evaluation.py',
-                   '--makeblastdb', '/bin/makeblastdb']
+                   '--makeblastdb', '/bin/makeblastdb',
+                   '--genchallenge', '/bin/gen.py']
         result = celpprunner._parse_arguments('hi', theargs)
         self.assertEqual(result.stage, 'dock,glide')
         self.assertEqual(result.celppdir, 'foo')
@@ -174,6 +180,8 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEquals(result.customweekdir, True)
         self.assertEqual(result.makeblastdb, '/bin/makeblastdb')
         self.assertEqual(result.vina, '/bin/vina.py')
+        self.assertEqual(result.genchallenge, '/bin/gen.py')
+
 
     def test_run_tasks_passing_none_and_empty_list(self):
         self.assertEquals(celpprunner.run_tasks(None), 3)
@@ -302,6 +310,13 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEquals(len(task_list), 1)
         self.assertEquals(task_list[0].get_dir(),
                           os.path.join('foo', TestCelppRunner.VINA_DIR_NAME))
+
+        task_list = celpprunner.get_task_list_for_stage(params,
+                                                        'challengedata')
+        self.assertEquals(len(task_list), 1)
+        self.assertEquals(task_list[0].get_dir(),
+                          os.path.join('foo', TestCelppRunner.CHALL_DIR_NAME))
+
 
     def test_get_task_list_for_stage_for_scoring_stage_with_nonefound(self):
         temp_dir = tempfile.mkdtemp()
@@ -527,6 +542,11 @@ class TestCelppRunner(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
+    def test_run_stages_makedb_through_glide(self):
+        """This should test the following stages will run
+           makedb,import,blast,challengedata,proteinligprep,glide,vina
+        """
+        self.assertEqual(1, 2)
     def test_run_stages_createweekdir_set(self):
         temp_dir = tempfile.mkdtemp()
         try:
