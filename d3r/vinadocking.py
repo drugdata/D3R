@@ -43,8 +43,7 @@ struct.write(outFile)
 def dock(ligand_pdbqt,  protein_pdbqt, grid_center,):
     center_list = grid_center.split(',')
     command = 'vina --receptor %s  --ligand %s --center_x %s --center_y %s --center_z %s --size_x 15 --size_y 15 --size_z 15 --seed 999' %(protein_pdbqt, ligand_pdbqt, center_list[0], center_list[1], center_list[2])
-    print command
-    print commands.getoutput(command)
+    commands.getoutput(command)
     #return out_dock_file
 
 def main_vina (stage_3_result, stage_4_working, update= True):
@@ -76,8 +75,9 @@ def main_vina (stage_3_result, stage_4_working, update= True):
             logging.info("Fatal error: Unable to find the center file for this case %s"%dockable_path_local)
             os.chdir(current_dir)
             continue
-        for possible_protein in ("largest.maegz", "smallest.maegz", "holo.maegz", "apo.maegz"):
+        for possible_protein in ("largest.mol2", "smallest.mol2", "holo.mol2", "apo.mol2"):
         #for possible_protein in ("smallest.maegz", "holo.maegz", "apo.maegz"):
+            
             if os.path.isfile(possible_protein):
                 logging.info( "Working on this pdb: %s"%possible_protein )
                 protein_title = possible_protein.split(".")[0]
@@ -87,28 +87,32 @@ def main_vina (stage_3_result, stage_4_working, update= True):
                 ##################
                 #do docking inside
                 commands.getoutput("cp ../%s ."%possible_protein)
-                commands.getoutput("cp ../ligand.mae .")
+                commands.getoutput("cp ../ligand.mol2 .")
                 ## Technical prep: Prepare protein and ligand
                 # First convert mae to pdb. This is a horrible, awful hack that I'll use until protein prep is implemented
-                with open('mae2Pdb.py','wb') as of:
-                    of.write(pdb2MaePyText)
+                #with open('mae2Pdb.py','wb') as of:
+                #    of.write(pdb2MaePyText)
                 # Technical prep: Prepare the ligand
-                commands.getoutput('PYTHONPATH= $SCHRODINGER/run python mae2Pdb.py ligand.mae ligand.pdb')
-                commands.getoutput('cp /soft/mgltools/latest/MGLToolsPckgs/AutoDockTools/Utilities24/prepare_ligand4.py .')
-                commands.getoutput('pythonsh prepare_ligand4.py -l ligand.pdb')
+                #commands.getoutput('PYTHONPATH= $SCHRODINGER/run python mae2Pdb.py ligand.mae ligand.pdb')
+                commands.getoutput('cp /usr/local/mgltools/MGLToolsPckgs/AutoDockTools/Utilities24/prepare_ligand4.py .')
+                #commands.getoutput('cp /soft/mgltools/latest/MGLToolsPckgs/AutoDockTools/Utilities24/prepare_ligand4.py .')
+                #commands.getoutput('pythonsh prepare_ligand4.py -l ligand.pdb')
+                commands.getoutput('/usr/local/mgltools/bin/pythonsh prepare_ligand4.py -l ligand.mol2')
                 ligandPdbqtFile = 'ligand.pdbqt'
 
                 # Technical prep: Prepare the protein
-                receptorPdbFile = '.'.join(possible_protein.split('.')[:-1]) + '.pdb'
-                commands.getoutput('PYTHONPATH= $SCHRODINGER/run python mae2Pdb.py %s %s' %(possible_protein, receptorPdbFile))
-                commands.getoutput('cp /soft/mgltools/latest/MGLToolsPckgs/AutoDockTools/Utilities24/prepare_receptor4.py .')
-                commands.getoutput('pythonsh prepare_receptor4.py -r %s' %(receptorPdbFile))
-                receptorPdbqtFile = receptorPdbFile+'qt'
+                #receptorPdbFile = '.'.join(possible_protein.split('.')[:-1]) + '.pdb'
+                receptorMol2File = '.'.join(possible_protein.split('.')[:-1]) + '.mol2'
+                #commands.getoutput('PYTHONPATH= $SCHRODINGER/run python mae2Pdb.py %s %s' %(possible_protein, receptorMol2File))
+                #commands.getoutput('cp /soft/mgltools/latest/MGLToolsPckgs/AutoDockTools/Utilities24/prepare_receptor4.py .')
+                commands.getoutput('cp /usr/local/mgltools/MGLToolsPckgs/AutoDockTools/Utilities24/prepare_receptor4.py .')
+                commands.getoutput('/usr/local/mgltools/bin/pythonsh prepare_receptor4.py -r %s' %(receptorMol2File))
+                receptorPdbqtFile = receptorMol2File.replace('.mol2','.pdbqt')
                 #generate grid
                 #logging.info("Trying to get the grid file...")
                 #if update: 
                 #    out_grid = grid(grid_center, possible_protein) 
-                #    #time.sleep(200)
+                #    #time.sleep(200) 
                 #else:
                 #    #check if there is old grid
                 #    out_grid = possible_protein.split(".")[0] + ".zip"
