@@ -187,20 +187,12 @@ def main_proteinprep ( s2_result_path, pdb_protein_path, working_folder ):
             largest_pdb_folder_name = largest_pro_id[1:3]
             largest_ent_file = "pdb" + largest_pro_id  + ".ent"
             largest_pdbloc = os.path.join(pdb_protein_path, largest_pdb_folder_name, largest_ent_file)
-            canoes = False
-            if not(canoes):
-                if not os.path.isfile(largest_pdbloc):
-                    logging.info("Unable to find the ent file associate with the largest pdb: %s at location %s"%(largest_pro_id, largest_pdbloc)) 
-                    os.chdir(current_dir_layer_1)
-                    continue
-                else:
-                    commands.getoutput("cp %s largest.pdb"%(largest_pdbloc))
-            elif canoes:
-                commands.getoutput("scp j5wagner@nif1.crbs.ucsd.edu:%s largest.pdb"%(largest_pdbloc))
-                if not(os.path.isfile("largest.pdb")):
-                    logging.info("Unable to find the ent file associate with the largest pdb: %s at location %s"%(largest_pro_id, largest_pdbloc)) 
-                    os.chdir(current_dir_layer_1)
-                    continue
+            if not os.path.isfile(largest_pdbloc):
+                logging.info("Unable to find the ent file associate with the largest pdb: %s at location %s"%(largest_pro_id, largest_pdbloc)) 
+                os.chdir(current_dir_layer_1)
+                continue
+            else:
+                commands.getoutput("cp %s largest.pdb"%(largest_pdbloc))
 
         ######################
         #step 3, get the center of the ligand in the largest pdb
@@ -266,24 +258,13 @@ def main_proteinprep ( s2_result_path, pdb_protein_path, working_folder ):
                     rest_protein_folder_name = rest_protein_id[1:3]
                     rest_ent_file = "pdb" + rest_protein_id  + ".ent"
                     rest_pdbloc = os.path.join(pdb_protein_path, rest_protein_folder_name, rest_ent_file)
-                    if not(canoes):
-                        if not os.path.isfile(rest_pdbloc):
-                            logging.info("Unable to find the ent file associate with the %s pdb with ID: %s at location %s"%(rest_protein, rest_protein_id, largest_pdbloc))
-                            os.chdir(current_dir_layer_1)
-                            continue
-                        else:
-                            rest_protein_name = rest_protein + ".pdb"
-                            commands.getoutput("cp %s %s"%(rest_pdbloc, rest_protein_name))
-                    elif canoes:
+                    if not os.path.isfile(rest_pdbloc):
+                        logging.info("Unable to find the ent file associate with the %s pdb with ID: %s at location %s"%(rest_protein, rest_protein_id, largest_pdbloc))
+                        os.chdir(current_dir_layer_1)
+                        continue
+                    else:
                         rest_protein_name = rest_protein + ".pdb"
-                        commands.getoutput("scp j5wagner@nif1.crbs.ucsd.edu:%s %s"%(rest_pdbloc, rest_protein_name))
-                        if not os.path.isfile(rest_protein_name):
-                            logging.info("Unable to find the ent file associate with the %s pdb with ID: %s at location %s"%(rest_protein, rest_protein_id, largest_pdbloc))
-                            os.chdir(current_dir_layer_1)
-                            continue
-                        else:
-                            rest_protein_name = rest_protein + ".pdb"
-                            commands.getoutput("cp %s %s"%(rest_pdbloc, rest_protein_name))
+                        commands.getoutput("cp %s %s"%(rest_pdbloc, rest_protein_name))
 
                     align_proteins ("largest.pdb", rest_protein_name, rest_protein_name)
         ######################
@@ -314,16 +295,16 @@ def main_proteinprep ( s2_result_path, pdb_protein_path, working_folder ):
                 
 
 if ("__main__") == (__name__):
-    from optparse import OptionParser
-    parser = OptionParser()
-    parser.add_option("-p", "--pdbdb", metavar = "PATH", help = "PDB DATABANK which we will dock into")
-    parser.add_option("-c", "--candidatedir", metavar="PATH", help = "PATH where we could find the stage 2 output")
-    parser.add_option("-o", "--outdir", metavar = "PATH", help = "PATH where we run stage 3")
+    from argparse import ArgumentParser
+    parser = ArgumentParser()
+    parser.add_argument("-p", "--pdbdb", metavar = "PATH", help = "PDB DATABANK which we will dock into")
+    parser.add_argument("-c", "--candidatedir", metavar="PATH", help = "PATH where we could find the stage 2 output")
+    parser.add_argument("-o", "--outdir", metavar = "PATH", help = "PATH where we run stage 3")
     #parser.add_option("-s", "--sleep", metavar = "VALUE", help = "Sleep time for protein prep")
     #parser.add_option("-u", "--update", default = False, action = "store_true", help = "update the protein generation and docking step")
     logger = logging.getLogger()
     logging.basicConfig( format  = '%(asctime)s: %(message)s', datefmt = '%m/%d/%y %I:%M:%S', filename = 'final.log', filemode = 'w', level   = logging.DEBUG )
-    (opt, args) = parser.parse_args()
+    opt = parser.parse_args()
     pdb_location = opt.pdbdb
     stage_2_result = opt.candidatedir
     stage_3_result = opt.outdir

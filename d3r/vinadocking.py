@@ -89,24 +89,31 @@ def main_vina (stage_3_result, stage_4_working, update= True):
                 commands.getoutput("cp ../%s ."%possible_protein)
                 commands.getoutput("cp ../ligand.mol2 .")
                 ## Technical prep: Prepare protein and ligand
-                # First convert mae to pdb. This is a horrible, awful hack that I'll use until protein prep is implemented
+                ## If we want to use schrodinger's prepped ligand, convert from mae to pdb
+                ## First convert mae to pdb. This is a horrible, awful hack that I'll use until protein prep is implemented
                 #with open('mae2Pdb.py','wb') as of:
                 #    of.write(pdb2MaePyText)
-                # Technical prep: Prepare the ligand
                 #commands.getoutput('PYTHONPATH= $SCHRODINGER/run python mae2Pdb.py ligand.mae ligand.pdb')
-                commands.getoutput('cp /usr/local/mgltools/MGLToolsPckgs/AutoDockTools/Utilities24/prepare_ligand4.py .')
+                ## On nif1
+                #commands.getoutput('cp /usr/local/mgltools/MGLToolsPckgs/AutoDockTools/Utilities24/prepare_ligand4.py .')
+                ## On canoes
                 #commands.getoutput('cp /soft/mgltools/latest/MGLToolsPckgs/AutoDockTools/Utilities24/prepare_ligand4.py .')
-                #commands.getoutput('pythonsh prepare_ligand4.py -l ligand.pdb')
-                commands.getoutput('/usr/local/mgltools/bin/pythonsh prepare_ligand4.py -l ligand.mol2')
+                commands.getoutput('pythonsh $MGL_ROOT/MGLToolsPckgs/AutoDockTools/Utilities24/prepare_ligand4.py -l ligand.mol2')
+                #commands.getoutput('/usr/local/mgltools/bin/pythonsh prepare_ligand4.py -l ligand.mol2')
                 ligandPdbqtFile = 'ligand.pdbqt'
 
-                # Technical prep: Prepare the protein
+                ## Technical prep: Prepare the protein
                 #receptorPdbFile = '.'.join(possible_protein.split('.')[:-1]) + '.pdb'
                 receptorMol2File = '.'.join(possible_protein.split('.')[:-1]) + '.mol2'
+                
+                ## If we want to use schrodinger's prepped ligand, convert from mae to pdb
+                ## First convert mae to pdb. This is a horrible, awful hack that I'll use until protein prep is implemented
                 #commands.getoutput('PYTHONPATH= $SCHRODINGER/run python mae2Pdb.py %s %s' %(possible_protein, receptorMol2File))
+                ## On canoes
                 #commands.getoutput('cp /soft/mgltools/latest/MGLToolsPckgs/AutoDockTools/Utilities24/prepare_receptor4.py .')
-                commands.getoutput('cp /usr/local/mgltools/MGLToolsPckgs/AutoDockTools/Utilities24/prepare_receptor4.py .')
-                commands.getoutput('/usr/local/mgltools/bin/pythonsh prepare_receptor4.py -r %s' %(receptorMol2File))
+                ## On nif1
+                #commands.getoutput('cp /usr/local/mgltools/MGLToolsPckgs/AutoDockTools/Utilities24/prepare_receptor4.py .')
+                commands.getoutput('pythonsh $MGL_ROOT/MGLToolsPckgs/AutoDockTools/Utilities24/prepare_receptor4.py -r %s' %(receptorMol2File))
                 receptorPdbqtFile = receptorMol2File.replace('.mol2','.pdbqt')
                 #generate grid
                 #logging.info("Trying to get the grid file...")
