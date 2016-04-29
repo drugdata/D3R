@@ -17,6 +17,7 @@ from d3r.celpp.glide import GlideTask
 from d3r.celpp.evaluation import EvaluationTaskFactory
 from d3r.celpp.makeblastdb import MakeBlastDBTask
 from d3r.celpp.vina import AutoDockVinaTask
+from d3r.celpp.challengedata import ChallengeDataTask
 
 
 from lockfile.pidlockfile import PIDLockFile
@@ -108,6 +109,8 @@ def _setup_logging(theargs):
     # There should be a line below for every package aka .py file
     # under celpp module
     logging.getLogger('d3r.celpp.blastnfilter')\
+        .setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.challengedata')\
         .setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.celpp.dataimport').setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.celpp.glide').setLevel(theargs.numericloglevel)
@@ -260,6 +263,9 @@ def get_task_list_for_stage(theargs, stage_name):
     if stage_name == 'blast':
         task_list.append(BlastNFilterTask(theargs.latest_weekly, theargs))
 
+    if stage_name == 'challengedata':
+        task_list.append(ChallengeDataTask(theargs.latest_weekly, theargs))
+
     if stage_name == 'proteinligprep':
         task_list.append(ProteinLigPrepTask(theargs.latest_weekly, theargs))
 
@@ -306,15 +312,17 @@ def _parse_arguments(desc, args):
                              "will create a dataset.week.# dir under celppdir")
     parser.add_argument("--stage", required=True, help='Comma delimited list' +
                         ' of stages to run.  Valid STAGES = ' +
-                        '{makedb, import, blast, proteinligprep, glide, vina, '
-                        'evaluation} '
-                        )
+                        '{makedb, import, blast, challengedata,'
+                        'proteinligprep, glide, vina, '
+                        'evaluation} ')
     parser.add_argument("--blastnfilter", default='blastnfilter.py',
                         help='Path to BlastnFilter script')
     parser.add_argument("--postanalysis", default='postanalysis.py',
                         help='Path to PostAnalysis script')
     parser.add_argument("--proteinligprep", default='proteinligprep.py',
                         help='Path to proteinligprep script')
+    parser.add_argument("--genchallenge", default='genchallengedata.py',
+                        help='Path to genchallengedata script')
     parser.add_argument("--glide", default='glidedocking.py',
                         help='Path to glide docking script')
     parser.add_argument("--vina", default='vinadocking.py',
@@ -371,6 +379,7 @@ def main():
     p = D3RParameters()
     blasttask = BlastNFilterTask('', p)
     dataimport = DataImportTask('', p)
+    challenge = ChallengeDataTask('', p)
     glide = GlideTask('', p)
     makedb = MakeBlastDBTask('', p)
     prot = ProteinLigPrepTask('', p)
@@ -379,8 +388,9 @@ def main():
     desc = """
               Version {version}
 
-              Runs the 7 stages (makedb, import, blast, proteinligprep, glide,
-              vina, & evaluation) of CELPP processing pipeline
+              Runs the 8 stages (makedb, import, blast, challengedata,
+              proteinligprep, glide, vina, & evaluation) of CELPP
+              processing pipeline
               (http://www.drugdesigndata.org)
 
               CELPP processing pipeline relies on a set of directories
@@ -489,9 +499,17 @@ def main():
               Requires --pdbdb to be set to a directory with valid PDB
               database files.
 
-              If --stage 'proteinligprep'
+              If --stage 'challengedata'
 
               Verifies {blast_dirname} exists and has '{complete}'
+              file.  If complete, this stage runs which invokes program
+              set in --genchallenge flag to create a challenge dataset
+              file.  The --pdbdb flag must also be set when calling this
+              stage.
+
+              If --stage 'proteinligprep'
+
+              Verifies {challenge_dirname} exists and has '{complete}'
               file.  If complete, this stage runs which invokes program
               set in --proteinligprep flag to prepare pdb and inchi files
               storing output in {proteinligprep_dirname}.  --pdbdb flag
@@ -523,6 +541,7 @@ def main():
               """.format(makeblastdb_dirname=makedb.get_dir_name(),
                          dataimport_dirname=dataimport.get_dir_name(),
                          blast_dirname=blasttask.get_dir_name(),
+                         challenge_dirname=challenge.get_dir_name(),
                          proteinligprep_dirname=prot.get_dir_name(),
                          glide_dirname=glide.get_dir_name(),
                          vina_dirname=vina.get_dir_name(),

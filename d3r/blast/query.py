@@ -1,6 +1,7 @@
 __author__ = 'robswift'
 
 import os
+import logging
 from StringIO import StringIO
 from Bio.Blast.Applications import NcbiblastpCommandline
 from Bio.Blast import NCBIXML
@@ -11,6 +12,9 @@ from Bio.SeqRecord import SeqRecord
 from d3r.blast.base import Base
 from d3r.blast.hit import Hit
 from d3r.blast.ligand import Ligand
+
+logger = logging.getLogger(__name__)
+
 
 class Query(Base):
     """
@@ -98,9 +102,11 @@ class Query(Base):
             print "Fasta sequences have not been added to the Target.sequences list, and BLAST cannot be run"
             return False
         elif self.sequence_count == 1:
+            logger.debug('Running blast_monomer')
             record = self.blast_monomer(pdb_db, out_dir)
             return record
         elif self.sequence_count > 1:
+            logger.debug('Running blast_multimer')
             records = self.blast_multimer(pdb_db, out_dir)
             return records
 
@@ -176,6 +182,7 @@ class Query(Base):
         :param pdb_db: A BLASTP database
         :return: Bio.blast.Record object
         """
+        logger.debug('Running blastp ' + fasta)
         cline = NcbiblastpCommandline(cmd='blastp', query=fasta, db=pdb_db, evalue=0.001, outfmt=5)
         std_out, std_err = cline()
         blast_records = NCBIXML.parse(StringIO(std_out))
@@ -234,7 +241,9 @@ class Query(Base):
         """
         # do something to set chain count and include those chains not in alignments
         #### add stuff to make this work...move this stuff inside Query
+        logger.debug('Found ' + str(len(records)) + ' of hits')
         for record in records:
+            logger.debug('Found ' + str(len(record.alignments)) + ' alignments for record')
             for alignment in record.alignments:
                 pdb_id = self.get_pdb_id_from_alignment(alignment)
                 chain_id = self.get_chain_id_from_alignment(alignment)
