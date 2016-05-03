@@ -153,6 +153,7 @@ class ChallengeDataTask(D3RTask):
         self.set_stage(blast.get_stage() + 1)
 
         self.set_status(D3RTask.UNKNOWN_STATUS)
+        self._challenge_tarball_filename = None
 
     def get_uploadable_files(self):
         """Returns list of files that can be uploaded to remote server
@@ -165,13 +166,24 @@ class ChallengeDataTask(D3RTask):
         """
         # get the stderr/stdout files
         file_list = super(ChallengeDataTask, self).get_uploadable_files()
+        tarfile = self.get_celpp_challenge_data_tar_file()
+        if os.path.isfile(tarfile):
+            file_list.append(tarfile)
+        else:
+            logger.warning('No tar file found!!!')
 
         return file_list
+
+    def get_celpp_challenge_data_tar_file(self):
+        """Returns path to challenge tar ball
+        """
+        return os.path.join(self.get_dir(),
+                            self.get_celpp_challenge_data_dir_name() + ".tar.gz")
 
     def get_celpp_challenge_data_dir_name(self):
         """Returns path to celpp challenge data directory name
         """
-        week_num = util.get_celpp_week_number_from_path(self.get_dir())
+        week_num = util.get_celpp_week_number_from_path(self.get_path())
         year = util.get_celpp_year_from_path(self.get_dir())
         return 'celpp_week' + str(week_num) + '_' + str(year)
 
