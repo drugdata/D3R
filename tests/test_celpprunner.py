@@ -546,7 +546,49 @@ class TestCelppRunner(unittest.TestCase):
         """This should test the following stages will run
            makedb,import,blast,challengedata,proteinligprep,glide,vina
         """
-        self.assertEqual(1, 2)
+        temp_dir = tempfile.mkdtemp()
+
+        try:
+            theargs = D3RParameters()
+            theargs.pdbdb = '/pdbdb'
+            theargs.celppdir = os.path.join(temp_dir)
+
+            theargs.stage = 'makedb,import,blast,challengedata,proteinligprep,glide,vina'
+
+            d_import_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
+                                        TestCelppRunner.IMPORT_DIR_NAME)
+            os.makedirs(d_import_dir)
+            open(os.path.join(d_import_dir,
+                              D3RTask.COMPLETE_FILE), 'a').close()
+
+            fakegz = os.path.join(temp_dir, 'fake.gz')
+
+            f = gzip.open(fakegz, 'wb')
+            f.write('hello\n')
+            f.flush()
+            f.close()
+
+            theargs.pdbsequrl = 'file://' + fakegz
+            theargs.pdbfileurl = 'file://' + fakegz
+
+            theargs.compinchi = 'file://' + fakegz
+            theargs.version = '1.0.0';
+
+            theargs.makeblastdb = 'echo'
+            theargs.blastnfilter = 'echo'
+            theargs.postanalysis = 'true'
+            theargs.proteinligprep = 'echo'
+            theargs.glide = 'echo'
+            theargs.vina = 'echo'
+            theargs.genchallenge = 'echo'
+            self.assertEqual(celpprunner.run_stages(theargs), 0)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+
+
+
     def test_run_stages_createweekdir_set(self):
         temp_dir = tempfile.mkdtemp()
         try:
