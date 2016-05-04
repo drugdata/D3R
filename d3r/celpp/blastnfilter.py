@@ -160,6 +160,11 @@ class BlastNFilterTask(D3RTask):
         """
         return BlastNFilterSummary(self.get_dir())
 
+    def get_blastnfilter_summary_file(self):
+        """Returns path to summary.txt file
+        """
+        return os.path.join(self.get_dir(), BlastNFilterTask.SUMMARY_TXT)
+
     def _parse_blastnfilter_output_for_hit_stats(self):
         """Examines output directory of blastnfilter.py for stats on run
 
