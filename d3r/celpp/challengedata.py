@@ -21,126 +21,125 @@ class ChallengeDataTask(D3RTask):
     README_TXT_FILE = "readme.txt"
 
     README_BODY = """
-                     CELPP Weekly Pose Prediction Challenge
-                     ======================================
+CELPP Weekly Pose Prediction Challenge
+======================================
 
-                     celpprunner version: {version}
-                     Week: {week}
-                     Year: {year}
+celpprunner version: {version}
+Week: {week}
+Year: {year}
 
-                     This tar file contains the CELPP weekly pose prediction challenge
-                     dataset.
+This tar file contains the CELPP weekly pose prediction challenge
+dataset.
 
-                     Within this readme.txt is a description of the data in this tar file as well as
-                     a summary of the Blastnfilter run which generated these Candidates.
+Within this readme.txt is a description of the data in this tar file as well as
+a summary of the Blastnfilter run which generated these Candidates.
 
-                     Tsv files downloaded from
-                     =========================
+Tsv files downloaded from
+=========================
 
-                     http://www.wwpdb.org/files/new_release_structure_sequence.tsv
-                     http://www.wwpdb.org/files/new_release_structure_nonpolymer.tsv
-                     http://www.wwpdb.org/files/new_release_crystallization_pH.tsv
+http://www.wwpdb.org/files/new_release_structure_sequence.tsv
+http://www.wwpdb.org/files/new_release_structure_nonpolymer.tsv
+http://www.wwpdb.org/files/new_release_crystallization_pH.tsv
 
-                     Structure of data overview
-                     ==========================
+Structure of data overview
+==========================
 
-                     This tar file contains a set of directories set to the name of Targets.
-                     Targets are proteins which have primary sequence released,
-                     but not 3D coordinates.
+This tar file contains a set of directories set to the name of Targets.
+Targets are proteins which have primary sequence released,
+but not 3D coordinates.
 
-                     Within each directory are a set of Candidates.  Candiates are proteins
-                     with similar structure to the Target that also have known 3D coordinates
-                     which can be used for pose prediction.
+Within each directory are a set of Candidates.  Candiates are proteins
+with similar structure to the Target that also have known 3D coordinates
+which can be used for pose prediction.
 
-                     For more information visit:
+For more information visit:
 
-                     https://github.com/drugdata/D3R
+https://github.com/drugdata/D3R
 
-                     or
+or
 
-                     https://drugdesigndata.org/about/celpp
-
-
-                     Structure of data
-                     =================
-
-                     Below is a definition of the files and directories within this tar file:
-
-                     [file or directory <text within denote values that change>]
-
-                       -- Definition
+https://drugdesigndata.org/about/celpp
 
 
-                     [readme.txt]
+Structure of data
+=================
 
-                       -- Description of data and output from celpp blastnfilter stage of
-                          processing.
+Below is a definition of the files and directories within this tar file:
 
-                     [new_release_crystallization_pH.tsv]
-                     [new_release_structure_nonpolymer.tsv]
-                     [new_release_structure_sequence.tsv]
+[file or directory <text within denote values that change>]
 
-                       -- Tsv files downloaded from: http://www.wwpdb.org/files
+  -- Definition
 
-                     [<target id>]/
-                             [<target id>.txt]
 
-                                -- Summary of Blastnfilter results for target protein
-                                   with PDBID.
+ [readme.txt]
 
-                             [<target id>.fasta]
+     -- Description of data and output from celpp blastnfilter stage of
+        processing.
 
-                                -- Sequence of target protein with PDBID.
+ [new_release_crystallization_pH.tsv]
+ [new_release_structure_nonpolymer.tsv]
+ [new_release_structure_sequence.tsv]
 
-                             [largest-<target id>_<candidate id>-<candidate ligand id>.pdb]
+     -- Tsv files downloaded from: http://www.wwpdb.org/files
 
-                                -- Candidate protein for docking which:
-                                     1) Passes the Blastnfilter criteria
+ [<target id>]/
+               [<target id>.txt]
 
-                                     2) Contains the Ligand with the largest maximum common
-                                        substructure (MCSS) to the Target Ligand.
+                  -- Summary of Blastnfilter results for target protein
+                     with PDBID.
 
-                                     Note:  If multiple proteins founded, the protein
-                                            with the highest resolution will be picked.
+               [<target id>.fasta]
 
-                             [smallest-<target id>_<candidate id>-<candidate ligand id>.pdb]
+                  -- Sequence of target protein with PDBID.
 
-                                 -- Candidate protein for docking which:
-                                      1) Passes the Blastnfilter criteria.
+               [largest-<target id>_<candidate id>-<candidate ligand id>.pdb]
 
-                                      2) Contains the Ligand with the smallest maximum common
-                                         substructure (MCSS) to the Target Ligand.
+                  -- Candidate protein for docking which:
+                      1) Passes the Blastnfilter criteria
 
-                                         Note:  If multiple proteins founded, the protein
-                                                with the highest resolution will be picked.
+                      2) Contains the Ligand with the largest maximum common
+                         substructure (MCSS) to the Target Ligand.
 
-                             [holo-<target id>_<candidate id>-<candidate ligand id>.pdb]
+                         Note:  If multiple proteins founded, the protein
+                                with the highest resolution will be picked.
 
-                                 -- Candidate protein for docking which:
-                                      1) Passes the Blastnfilter criteria.
+               [smallest-<target id>_<candidate id>-<candidate ligand id>.pdb]
 
-                                      2) Has the highest resolution among all holo proteins.
+                  -- Candidate protein for docking which:
+                      1) Passes the Blastnfilter criteria.
 
-                             [apo-<target id>_<candidate id>-<candidate ligand id>.pdb]
+                      2) Contains the Ligand with the smallest maximum common
+                         substructure (MCSS) to the Target Ligand.
 
-                                 -- Candidate protein for docking which:
-                                      1) Passes the Blastnfilter criteria.
+                         Note:  If multiple proteins founded, the protein
+                                with the highest resolution will be picked.
 
-                                      2) Has the highest resolution among all apo proteins.
+               [holo-<target id>_<candidate id>-<candidate ligand id>.pdb]
 
-                             [lig_<candidate ligand id>.smi]
+                   -- Candidate protein for docking which:
+                      1) Passes the Blastnfilter criteria.
 
-                                 -- Canonical smile string of the Target Ligand which will be
-                                    used in later docking.
+                      2) Has the highest resolution among all holo proteins.
 
-                             [lig_<candidate ligand id>.inchi]
+               [apo-<target id>_<candidate id>-<candidate ligand id>.pdb]
 
-                                 -- Inchi string of the Target Ligand.
+                   -- Candidate protein for docking which:
+                      1) Passes the Blastnfilter criteria.
 
-                             [lig_<candidate ligand id>.mol]
+                      2) Has the highest resolution among all apo proteins.
 
-                                 -- 2D structure of the Target Ligand.
+               [lig_<candidate ligand id>.smi]
 
+                   -- Canonical smile string of the Target Ligand which will be
+                      used in later docking.
+
+               [lig_<candidate ligand id>.inchi]
+
+                   -- Inchi string of the Target Ligand.
+
+               [lig_<candidate ligand id>.mol]
+
+                   -- 2D structure of the Target Ligand.
 
                   """
 
@@ -154,6 +153,8 @@ class ChallengeDataTask(D3RTask):
 
         self.set_status(D3RTask.UNKNOWN_STATUS)
         self._challenge_tarball_filename = None
+        self._week_num = util.get_celpp_week_number_from_path(self.get_path())
+        self._year = util.get_celpp_year_from_path(self.get_dir())
 
     def get_uploadable_files(self):
         """Returns list of files that can be uploaded to remote server
@@ -183,14 +184,10 @@ class ChallengeDataTask(D3RTask):
     def get_celpp_challenge_data_dir_name(self):
         """Returns path to celpp challenge data directory name
         """
-        week_num = util.get_celpp_week_number_from_path(self.get_path())
-        year = util.get_celpp_year_from_path(self.get_dir())
-        return 'celpp_week' + str(week_num) + '_' + str(year)
+        return 'celpp_week' + str(self._week_num) + '_' + str(self._year)
 
     def _create_challenge_dir(self):
-        """
-
-        :return:
+        """Creates the challenge directory
         """
         challenge_dir = os.path.join(self.get_dir(),
                                      self.get_celpp_challenge_data_dir_name())
@@ -205,14 +202,28 @@ class ChallengeDataTask(D3RTask):
         """Creates readme.txt file for task
 
         """
-        week = str(util.get_celpp_week_number_from_path(self.get_dir()))
-        year = str(util.get_celpp_year_from_path(self.get_dir()))
+        ver = 'Unknown'
+        try:
+            ver = self.get_args().version
+        except AttributeError:
+            logger.warning('Version unset using Unknown')
 
         f = open(os.path.join(path, ChallengeDataTask.README_TXT_FILE), 'w')
         f.write(ChallengeDataTask.README_BODY.format(
-            version=self.get_args().version,
-            week=week,
-            year=year))
+            version=ver,
+            week=self._week_num,
+            year=self._year))
+
+        blast = BlastNFilterTask(self.get_path(), self.get_args())
+        summary_file = blast.get_blastnfilter_summary_file()
+
+        # append summary.txt file
+        if os.path.isfile(summary_file):
+           sumfile = open(summary_file, 'r')
+           for line in sumfile:
+               f.write(line)
+           sumfile.close()
+
         f.flush()
         f.close()
 
@@ -394,8 +405,8 @@ class ChallengeDataTask(D3RTask):
             self._create_readme(challenge_dir)
 
             # copy over tsv files
-            self._copy_over_tsv_files(challenge_dir
-                                  )
+            self._copy_over_tsv_files(challenge_dir)
+
             # tar and compress up celpp_week#_#### directory omitting final.log
             tfile = self._tar_challenge_dir(os.path.basename(challenge_dir))
 

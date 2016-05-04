@@ -3,6 +3,7 @@ __author__ = 'churas'
 import unittest
 import tempfile
 import os.path
+import re
 
 """
 test_proteinligprep
@@ -145,15 +146,43 @@ class TestChallengeDataTask(unittest.TestCase):
 
         finally:
             shutil.rmtree(temp_dir)
-    """
+
     def test_create_readme_unable_to_write_file(self):
-        self.assertEqual(1, 2)
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            params.version = "1.0.0"
+            task = ChallengeDataTask(temp_dir, params)
+            try:
+                task._create_readme(os.path.join(temp_dir,'doesnotexist'))
+                self.fail('Expected IOError')
+            except IOError:
+                pass
+        finally:
+            shutil.rmtree(temp_dir)
 
-    def test_create_readme_version_unset(self):
-        self.assertEqual(1, 2)
+    def test_create_readme_version_unset_and_no_summary_txt(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = ChallengeDataTask(temp_dir, params)
+            task._create_readme(temp_dir)
+            readme = os.path.join(temp_dir,
+                                  ChallengeDataTask.README_TXT_FILE)
+            self.assertEqual(os.path.isfile(readme), True)
+            f = open(readme, 'r')
+            found = False
+            for line in f:
 
-    def test_create_readme_version_no_blastnfilter_summary(self):
-        self.assertEqual(1, 2)
+                if re.match('^celpprunner version: Unknown.*$', line):
+                    found = True
+                    break
+
+            f.close()
+            self.assertEqual(found, True)
+
+        finally:
+            shutil.rmtree(temp_dir)
 
     def test_create_readme_version_empty_summary(self):
         self.assertEqual(1, 2)
@@ -183,7 +212,7 @@ class TestChallengeDataTask(unittest.TestCase):
 
         finally:
             shutil.rmtree(temp_dir)
-    """
+
     def test_run_fails_cause_can_run_is_false(self):
         temp_dir = tempfile.mkdtemp()
         try:
