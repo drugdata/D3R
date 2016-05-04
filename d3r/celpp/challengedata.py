@@ -20,19 +20,17 @@ class ChallengeDataTask(D3RTask):
     TAR_GZ_SUFFIX = ".tar.gz"
     README_TXT_FILE = "readme.txt"
 
-    README_BODY = """
-CELPP Weekly Pose Prediction Challenge
+    README_BODY = """CELPP Weekly Pose Prediction Challenge
 ======================================
 
-celpprunner version: {version}
+Celpprunner version: {version}
 Week: {week}
 Year: {year}
 
-This tar file contains the CELPP weekly pose prediction challenge
-dataset.
+This tar file contains the CELPP weekly pose prediction challenge dataset.
 
 Within this readme.txt is a description of the data in this tar file as well as
-a summary of the Blastnfilter run which generated these Candidates.
+a summary of the Blastnfilter run which generated these candidates.
 
 Tsv files downloaded from
 =========================
@@ -44,20 +42,17 @@ http://www.wwpdb.org/files/new_release_crystallization_pH.tsv
 Structure of data overview
 ==========================
 
-This tar file contains a set of directories set to the name of Targets.
-Targets are proteins which have primary sequence released,
-but not 3D coordinates.
+This tar file contains a set of directories set to the name of Targets. Targets
+are proteins which have primary sequence released, but not 3D coordinates.
 
-Within each directory are a set of Candidates.  Candiates are proteins
-with similar structure to the Target that also have known 3D coordinates
-which can be used for pose prediction.
+Within each directory are a set of Candidates.  Candiates are proteins with
+similar structure to the Target that also have known 3D coordinates which can
+be used for pose prediction.
 
 For more information visit:
 
 https://github.com/drugdata/D3R
-
-or
-
+              or
 https://drugdesigndata.org/about/celpp
 
 
