@@ -18,6 +18,7 @@ from d3r.celpp.task import D3RParameters
 from d3r.celpp.task import D3RTask
 from d3r.celpp.blastnfilter import BlastNFilterTask
 from d3r.celpp.challengedata import ChallengeDataTask
+from d3r.celpp.dataimport import DataImportTask
 
 
 class TestChallengeDataTask(unittest.TestCase):
@@ -185,20 +186,152 @@ class TestChallengeDataTask(unittest.TestCase):
             shutil.rmtree(temp_dir)
 
     def test_create_readme_version_empty_summary(self):
-        self.assertEqual(1, 2)
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            params.version = '1.0'
+            task = ChallengeDataTask(temp_dir, params)
+            blast = BlastNFilterTask(temp_dir, params)
+            blast.create_dir()
+            sfile = blast.get_blastnfilter_summary_file()
+            open(sfile, 'a').close()
+
+            task._create_readme(temp_dir)
+            readme = os.path.join(temp_dir,
+                                  ChallengeDataTask.README_TXT_FILE)
+            self.assertEqual(os.path.isfile(readme), True)
+            f = open(readme, 'r')
+            found = False
+            for line in f:
+
+                if re.match('^celpprunner version: 1.0.*$', line):
+                    found = True
+                    break
+
+            f.close()
+            self.assertEqual(found, True)
+
+        finally:
+            shutil.rmtree(temp_dir)
 
     def test_create_readme(self):
-        self.assertEqual(1, 2)
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            params.version = '1.0'
+            task = ChallengeDataTask(temp_dir, params)
+            blast = BlastNFilterTask(temp_dir, params)
+            blast.create_dir()
+            sfile = blast.get_blastnfilter_summary_file()
+            f = open(sfile, 'w')
+            f.write('hello there\n')
+            f.flush()
+            f.close()
+
+            task._create_readme(temp_dir)
+            readme = os.path.join(temp_dir,
+                                  ChallengeDataTask.README_TXT_FILE)
+            self.assertEqual(os.path.isfile(readme), True)
+            f = open(readme, 'r')
+            found = False
+            for line in f:
+                print line
+                if re.match('^hello there.*$', line):
+                    found = True
+                    break
+
+            f.close()
+            self.assertEqual(found, True)
+
+        finally:
+            shutil.rmtree(temp_dir)
 
     def test_copy_over_tsv_files_no_dataimport(self):
-        self.assertEqual(1, 2)
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = ChallengeDataTask(temp_dir, params)
+            task.create_dir()
+            challenge_dir = task._create_challenge_dir()
+            self.assertEqual(os.path.isdir(challenge_dir), True)
+            task._copy_over_tsv_files(challenge_dir)
 
-    def test_copy_over_tsv_files_no_missing_various_tsv_files(self):
-        self.assertEqual(1, 2)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_copy_over_tsv_files(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            dimport = DataImportTask(temp_dir,params)
+            dimport.create_dir()
+
+            ctsv = dimport.get_crystalph_tsv()
+            f = open(ctsv, 'w')
+            f.write('crystal')
+            f.flush()
+            f.close()
+
+            nonpoly = dimport.get_nonpolymer_tsv()
+            f = open(nonpoly, 'w')
+            f.write('nonpoly')
+            f.flush()
+            f.close()
+
+            seq = dimport.get_sequence_tsv()
+            f = open(seq, 'w')
+            f.write('seq')
+            f.flush()
+            f.close()
+
+            task = ChallengeDataTask(temp_dir, params)
+            task.create_dir()
+            challenge_dir = task._create_challenge_dir()
+            self.assertEqual(os.path.isdir(challenge_dir), True)
+            task._copy_over_tsv_files(challenge_dir)
+
+            cop_ctsv = os.path.join(challenge_dir,
+                                      DataImportTask.CRYSTALPH_TSV)
+            self.assertEqual(os.path.isfile(cop_ctsv), True)
+            f = open(cop_ctsv)
+            self.assertEqual(f.readline(), 'crystal')
+            f.close()
+
+            cop_nonpoly = os.path.join(challenge_dir,
+                                      DataImportTask.NONPOLYMER_TSV)
+            self.assertEqual(os.path.isfile(cop_nonpoly), True)
+            f = open(cop_nonpoly)
+            self.assertEqual(f.readline(), 'nonpoly')
+            f.close()
+
+            cop_seq = os.path.join(challenge_dir,
+                                      DataImportTask.SEQUENCE_TSV)
+            self.assertEqual(os.path.isfile(cop_seq), True)
+            f = open(cop_seq)
+            self.assertEqual(f.readline(), 'seq')
+            f.close()
+
+        finally:
+            shutil.rmtree(temp_dir)
 
     def test_tar_challenge_dir_unable_to_write_tarfile(self):
-        self.assertEqual(1, 2)
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
 
+            task = ChallengeDataTask(temp_dir, params)
+
+            chall_dir = task.get_celpp_challenge_data_dir_name()
+            try:
+                task._tar_challenge_dir(chall_dir)
+                self.fail('Expected IOError')
+            except IOError:
+                pass
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    """
     def test_tar_challenge_dir_no_final_log_and_no_candidates(self):
         self.assertEqual(1, 2)
 
@@ -212,7 +345,7 @@ class TestChallengeDataTask(unittest.TestCase):
 
         finally:
             shutil.rmtree(temp_dir)
-
+    """
     def test_run_fails_cause_can_run_is_false(self):
         temp_dir = tempfile.mkdtemp()
         try:

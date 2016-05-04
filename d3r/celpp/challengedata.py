@@ -17,7 +17,7 @@ class ChallengeDataTask(D3RTask):
     """Generates ChallengeData files
 
     """
-
+    TAR_GZ_SUFFIX = ".tar.gz"
     README_TXT_FILE = "readme.txt"
 
     README_BODY = """
@@ -141,7 +141,7 @@ Below is a definition of the files and directories within this tar file:
 
                    -- 2D structure of the Target Ligand.
 
-                  """
+"""
 
     def __init__(self, path, args):
         super(ChallengeDataTask, self).__init__(path, args)
@@ -272,7 +272,7 @@ Below is a definition of the files and directories within this tar file:
 
         tfile = os.path.join(self.get_dir(),
                              challenge_dir_name +
-                             '.tar.gz')
+                             ChallengeDataTask.TAR_GZ_SUFFIX)
 
         logger.debug('Creating tar file: ' + tfile)
 
