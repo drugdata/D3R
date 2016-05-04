@@ -29,6 +29,7 @@ from d3r.celpp.proteinligprep import ProteinLigPrepTask
 from d3r.celpp.glide import GlideTask
 from d3r.celpp.vina import AutoDockVinaTask
 from d3r.celpp.challengedata import ChallengeDataTask
+from d3r.celpp.chimeraprep import ChimeraProteinLigPrepTask
 
 
 class DummyTask(D3RTask):
@@ -81,6 +82,9 @@ class TestCelppRunner(unittest.TestCase):
 
     chall = ChallengeDataTask('/foo', param)
     CHALL_DIR_NAME = chall.get_dir_name()
+
+    chimeraprep = ChimeraProteinLigPrepTask('/foo', param)
+    CHIMERAPREP_DIR_NAME = chimeraprep.get_dir_name()
 
     def setUp(self):
         pass
@@ -156,6 +160,7 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEqual(result.evaluation, 'evaluate.py')
         self.assertEqual(result.makeblastdb, 'makeblastdb')
         self.assertEqual(result.genchallenge, 'genchallengedata.py')
+        self.assertEqual(result.chimeraprep, 'chimera_proteinligprep.py')
         theargs = ['foo', '--stage', 'dock,glide', '--email', 'b@b.com,h@h',
                    '--log', 'ERROR',
                    '--blastnfilter', '/bin/blastnfilter.py',
@@ -166,7 +171,8 @@ class TestCelppRunner(unittest.TestCase):
                    '--customweekdir',
                    '--evaluation', '/bin/evaluation.py',
                    '--makeblastdb', '/bin/makeblastdb',
-                   '--genchallenge', '/bin/gen.py']
+                   '--genchallenge', '/bin/gen.py',
+                   '--chimeraprep', '/bin/chimeraprep.py']
         result = celpprunner._parse_arguments('hi', theargs)
         self.assertEqual(result.stage, 'dock,glide')
         self.assertEqual(result.celppdir, 'foo')
@@ -181,6 +187,7 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEqual(result.makeblastdb, '/bin/makeblastdb')
         self.assertEqual(result.vina, '/bin/vina.py')
         self.assertEqual(result.genchallenge, '/bin/gen.py')
+        self.assertEqual(result.chimeraprep, '/bin/chimeraprep.py')
 
 
     def test_run_tasks_passing_none_and_empty_list(self):
@@ -316,6 +323,12 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEquals(len(task_list), 1)
         self.assertEquals(task_list[0].get_dir(),
                           os.path.join('foo', TestCelppRunner.CHALL_DIR_NAME))
+
+        task_list = celpprunner.get_task_list_for_stage(params,
+                                                        'chimeraprep')
+        self.assertEquals(len(task_list), 1)
+        self.assertEquals(task_list[0].get_dir(),
+                          os.path.join('foo', TestCelppRunner.CHIMERAPREP_DIR_NAME))
 
 
     def test_get_task_list_for_stage_for_scoring_stage_with_nonefound(self):
@@ -553,7 +566,7 @@ class TestCelppRunner(unittest.TestCase):
             theargs.pdbdb = '/pdbdb'
             theargs.celppdir = os.path.join(temp_dir)
 
-            theargs.stage = 'makedb,import,blast,challengedata,proteinligprep,glide,vina'
+            theargs.stage = 'makedb,import,blast,challengedata,proteinligprep,chimeraprep,glide,vina'
 
             d_import_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
                                         TestCelppRunner.IMPORT_DIR_NAME)
@@ -581,6 +594,7 @@ class TestCelppRunner(unittest.TestCase):
             theargs.glide = 'echo'
             theargs.vina = 'echo'
             theargs.genchallenge = 'echo'
+            theargs.chimeraprep = 'echo'
             self.assertEqual(celpprunner.run_stages(theargs), 0)
 
         finally:

@@ -18,6 +18,7 @@ from d3r.celpp.evaluation import EvaluationTaskFactory
 from d3r.celpp.makeblastdb import MakeBlastDBTask
 from d3r.celpp.vina import AutoDockVinaTask
 from d3r.celpp.challengedata import ChallengeDataTask
+from d3r.celpp.chimeraprep import ChimeraProteinLigPrepTask
 
 
 from lockfile.pidlockfile import PIDLockFile
@@ -81,6 +82,7 @@ def _setup_logging(theargs):
     d3r.celpp.task
     d3r.celpp.util
     d3r.celpp.uploader
+    d3r.celpp.chimeraprep
 
     NOTE:  If new modules are added please add their loggers to this
     function
@@ -123,6 +125,8 @@ def _setup_logging(theargs):
     logging.getLogger('d3r.celpp.task').setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.celpp.util').setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.celpp.uploader').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.chimeraprep')\
+        .setLevel(theargs.numericloglevel)
 
 
 def set_andor_create_latest_weekly_parameter(theargs):
@@ -275,6 +279,9 @@ def get_task_list_for_stage(theargs, stage_name):
     if stage_name == 'vina':
         task_list.append(AutoDockVinaTask(theargs.latest_weekly, theargs))
 
+    if stage_name == 'chimeraprep':
+        task_list.append(ChimeraProteinLigPrepTask(theargs.latest_weekly, theargs))
+
     if stage_name == 'evaluation':
         # use util function call to get all evaluation tasks
         # append them to the task_list
@@ -313,7 +320,7 @@ def _parse_arguments(desc, args):
     parser.add_argument("--stage", required=True, help='Comma delimited list' +
                         ' of stages to run.  Valid STAGES = ' +
                         '{makedb, import, blast, challengedata,'
-                        'proteinligprep, glide, vina, '
+                        'chimeraprep, proteinligprep, glide, vina, '
                         'evaluation} ')
     parser.add_argument("--blastnfilter", default='blastnfilter.py',
                         help='Path to BlastnFilter script')
@@ -323,6 +330,8 @@ def _parse_arguments(desc, args):
                         help='Path to proteinligprep script')
     parser.add_argument("--genchallenge", default='genchallengedata.py',
                         help='Path to genchallengedata script')
+    parser.add_argument("--chimeraprep", default='chimera_proteinligprep.py',
+                        help='Path to chimera_proteinligprep script')
     parser.add_argument("--glide", default='glidedocking.py',
                         help='Path to glide docking script')
     parser.add_argument("--vina", default='vinadocking.py',
@@ -384,12 +393,13 @@ def main():
     makedb = MakeBlastDBTask('', p)
     prot = ProteinLigPrepTask('', p)
     vina = AutoDockVinaTask('', p)
+    chimeraprep = ChimeraProteinLigPrepTask('', p)
 
     desc = """
               Version {version}
 
-              Runs the 8 stages (makedb, import, blast, challengedata,
-              proteinligprep, glide, vina, & evaluation) of CELPP
+              Runs the 9 stages (makedb, import, blast, challengedata,
+              proteinligprep, chimeraprep, glide, vina, & evaluation) of CELPP
               processing pipeline
               (http://www.drugdesigndata.org)
 
@@ -507,6 +517,14 @@ def main():
               file.  The --pdbdb flag must also be set when calling this
               stage.
 
+              If --stage 'chimeraprep'
+
+              Verifies {challenge_dirname} exists and has '{complete}'
+              file.  If complete, this stage runs which invokes program
+              set in --chimeraprep flag to prepare pdb and inchi files
+              storing output in {chimeraprep_dirname}.  --pdbdb flag
+              must also be set when calling this stage.
+
               If --stage 'proteinligprep'
 
               Verifies {challenge_dirname} exists and has '{complete}'
@@ -548,6 +566,7 @@ def main():
                          dockstage=str(glide.get_stage()),
                          evalstage=str(glide.get_stage() + 1),
                          complete=blasttask.COMPLETE_FILE,
+                         chimeraprep_dirname=chimeraprep.get_dir_name(),
                          version=d3r.__version__)
 
     theargs = _parse_arguments(desc, sys.argv[1:])
