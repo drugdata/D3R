@@ -122,7 +122,7 @@ def main_gendata (s3_result_path, path_2_ent, s4_result_path):
         largest_pdbloc = os.path.join(path_2_ent, largest_pdb_folder_name, largest_ent_file)
         if not os.path.isfile(largest_pdbloc):            
             logging.info("Unable to find the ent file associate with the largest pdb: %s at location %s"%(largest_pro_id, largest_pdbloc))
-            os.chdir(current_dic_layer_1)
+            os.chdir(current_dir_layer_1)
             continue
         else:
             #TC = target candidate                                
@@ -143,7 +143,7 @@ def main_gendata (s3_result_path, path_2_ent, s4_result_path):
                     rest_pdbloc = os.path.join(path_2_ent, rest_protein_folder_name, rest_ent_file)
                     if not os.path.isfile(rest_pdbloc):       
                         logging.info("Unable to find the ent file associate with the %s pdb with ID: %s at location %s"%(rest_protein, rest_protein_id, rest_pdbloc))
-                        os.chdir(current_dic_layer_1)
+                        os.chdir(current_dir_layer_1)
                         continue
                     else:
                         TC_id_rest = "%s_%s"%(query_pro, rest_protein_id)
