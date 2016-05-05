@@ -60,14 +60,14 @@ class ChimeraProteinLigPrepTask(D3RTask):
         self._can_run = False
         self._error = None
         # check blast
-        blastnfilter = ChallengeDataTask(self._path, self._args)
-        blastnfilter.update_status_from_filesystem()
-        if blastnfilter.get_status() != D3RTask.COMPLETE_STATUS:
+        chall = ChallengeDataTask(self._path, self._args)
+        chall.update_status_from_filesystem()
+        if chall.get_status() != D3RTask.COMPLETE_STATUS:
             logger.info('Cannot run ' + self.get_name() + 'task ' +
-                        'because ' + blastnfilter.get_name() + 'task' +
-                        'has a status of ' + blastnfilter.get_status())
-            self.set_error(blastnfilter.get_name() + ' task has ' +
-                           blastnfilter.get_status() + ' status')
+                        'because ' + chall.get_name() + 'task' +
+                        'has a status of ' + chall.get_status())
+            self.set_error(chall.get_name() + ' task has ' +
+                           chall.get_status() + ' status')
             return False
 
         # check this task is not complete and does not exist
