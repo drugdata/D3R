@@ -68,9 +68,34 @@ def generate_ligand (inchi, ligand_title, ):
     inchi_file = open(inchi_filename, "w")
     inchi_file.writelines(valid_inchi)
     mol_filename = "lig_" + ligand_title + ".mol"
+    #rd_mol_H = Chem.AddHs(rd_mol)
+    #allChem.EmbedMolecule(rd_mol_H)
+    #allChem.UFFOptimizeMolecule(rd_mol_H)
     allChem.Compute2DCoords(rd_mol)
     Chem.MolToMolFile (rd_mol, mol_filename, includeStereo=True)
 
+def pull_ligand_out (proteinfile, ligname, ligandfile):
+    p_xyz_lines = open(proteinfile,"r").readlines()
+    multi_ligand = False
+    l_xyz_lines = []
+    atom_list = []
+    for p_xyz_line in p_xyz_lines:
+        if "HETATM" in p_xyz_line and ligname in p_xyz_line[17:21]:
+            atom_name = p_xyz_line[12:16]
+            if atom_name in atom_list:
+                multi_ligand = True
+            else:
+                atom_list.append(atom_name)
+                l_xyz_lines.append(p_xyz_line)
+    if not multi_ligand:
+        f = open(ligandfile, "w")
+        f.writelines(l_xyz_lines)
+        f.close()
+        return ligandfile
+    else:
+        logging.info("Fatal error: Found multiple ligand for this protein:%s"%proteinfile)
+        return False
+        
 def main_gendata (s3_result_path, path_2_ent, s4_result_path):
     os.chdir(s4_result_path)
     current_dir_layer_1 = os.getcwd()
@@ -78,8 +103,13 @@ def main_gendata (s3_result_path, path_2_ent, s4_result_path):
     summary_file = "%s/summary.txt"%s3_result_path                         
     if summary_file in blastnfilterout:                                    
         blastnfilterout.remove(summary_file)
+    problem_cases = []
+    valid_cases = []
+    all_cases = []
     for single_bfout in blastnfilterout:
+        valid = False
         target_name = os.path.basename(single_bfout).split(".txt")[0]
+        all_cases.append(target_name)
         if not os.path.isdir(target_name):
             os.mkdir(target_name)
         os.chdir(target_name)
@@ -113,6 +143,8 @@ def main_gendata (s3_result_path, path_2_ent, s4_result_path):
             generate_ligand(inchi, ligand_title)
         except:
             logging.info("Could not generate the ligand for this case: %s"%(target_name))
+            os.chdir(current_dir_layer_1)                     
+            continue
         #copy all ent file here and rename it
         query_pro = info_dic["query"]
         largest_pro_id = info_dic["largest"][0]
@@ -128,7 +160,13 @@ def main_gendata (s3_result_path, path_2_ent, s4_result_path):
             #TC = target candidate                                
             TC_id = "%s_%s"%(query_pro, largest_pro_id)             
             largest_protein_name = "largest-%s-%s.pdb"%(TC_id, largest_pro_ligand)
+            largest_ligand_name = "largest-%s-%s-lig.pdb"%(TC_id, largest_pro_ligand)
+            #try to extract the largest ligand from the largest protein
             commands.getoutput("cp %s %s"%(largest_pdbloc,largest_protein_name))
+            if not pull_ligand_out (largest_protein_name, largest_pro_ligand, largest_ligand_name):
+                os.chdir(current_dir_layer_1)
+                continue
+                
             logging.info("Succsessfully generate this protein:%s"%largest_protein_name)
             for rest_protein in ("smallest", "holo", "apo"):
                 if rest_protein in info_dic:
@@ -159,15 +197,26 @@ def main_gendata (s3_result_path, path_2_ent, s4_result_path):
                             do_alignment = align_proteins (largest_protein_name, rest_protein_name, rest_protein_name)
                         except:
                             logging.info("The alignment could not be done for this protein:%s"%(rest_protein_name))
+                            os.chdir(current_dic_layer_1)
                             continue
 
                             #remove the "rot-%s"%largest_protein_name
                         if os.path.isfile("rot-%s"%largest_protein_name):
                             commands.getoutput("rm rot-%s"%largest_protein_name) 
                         logging.info("Succsessfully generate this protein:%s"%(rest_protein_name))
-
-             
+                        #here we got the valid aligned structures
+                        valid = True
         os.chdir(current_dir_layer_1)        
+        #here remove all the folder which don't have full information because of all errors which showed in the final.log
+        if valid:
+            valid_cases.append(target_name)
+    for case in all_cases:
+        if case not in valid_cases:
+            problem_cases.append(case)
+            if not os.path.isdir("error_container"):
+                os.mkdir("error_container")
+            commands.getoutput("mv %s error_container"%case)
+    logging.info("Finish generating the challenge data. The problematic cases are: %s"%problem_cases)
 
 if ("__main__") == (__name__):
     from optparse import OptionParser
