@@ -17,6 +17,9 @@ class ChallengeDataTask(D3RTask):
     """Generates ChallengeData files
 
     """
+
+    TAR_EXCLUDE_DIRS = ['error_container']
+    TAR_EXCLUDE_FILES = ['final.log']
     TAR_GZ_SUFFIX = ".tar.gz"
     README_TXT_FILE = "readme.txt"
 
@@ -83,10 +86,6 @@ Below is a definition of the files and directories within this tar file:
                   -- Summary of Blastnfilter results for target protein
                      with PDBID.
 
-               [<target id>.fasta]
-
-                  -- Sequence of target protein with PDBID.
-
                [largest-<target id>_<candidate id>-<candidate ligand id>.pdb]
 
                   -- Candidate protein for docking which:
@@ -122,6 +121,13 @@ Below is a definition of the files and directories within this tar file:
                       1) Passes the Blastnfilter criteria.
 
                       2) Has the highest resolution among all apo proteins.
+
+               [largest-<target id>_<candidate id>-<candidate ligand id> \
+                                                                      -lig.pdb]
+
+                    -- Contains the 3D coordinate of the atoms for the ligand
+                       in the "largest" protein.
+
 
                [lig_<candidate ligand id>.smi]
 
@@ -275,16 +281,21 @@ Below is a definition of the files and directories within this tar file:
         challenge_dir = os.path.join(self.get_dir(), challenge_dir_name)
 
         for entry in os.listdir(challenge_dir):
-            if entry == 'final.log':
-                logger.debug('Skipping insertion of final.log into tar file')
-                continue
-
             fullpath = os.path.join(challenge_dir, entry)
             if os.path.isdir(fullpath):
+                if entry in ChallengeDataTask.TAR_EXCLUDE_DIRS:
+                    logger.debug('Skipping insertion of ' + entry +
+                                 ' into tar file')
+                    continue
+
                 logger.debug('Adding directory to tarball: ' + entry)
                 tar.add(fullpath,arcname=challenge_dir_name + '/' + entry)
                 continue
             if os.path.isfile(fullpath):
+                if entry in ChallengeDataTask.TAR_EXCLUDE_FILES:
+                    logger.debug('Skipping insertion of ' + entry +
+                                 ' into tar file')
+                    continue
                 logger.debug('Adding file to tarball: '+ entry)
                 tar.add(fullpath,challenge_dir_name + '/' + entry)
 

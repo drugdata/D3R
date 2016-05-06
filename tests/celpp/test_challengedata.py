@@ -681,6 +681,12 @@ parser.add_argument("--pdbdb", help='blah')
 
 theargs = parser.parse_args(sys.argv[1:], namespace=parsed_arguments)
 
+open(os.path.join(theargs.outdir,'final.log'), 'a').close()
+
+thedir = os.path.join(theargs.outdir, 'error_container')
+os.mkdir(thedir)
+open(os.path.join(thedir,'foo.txt'),'a').close()
+
 thedir = os.path.join(theargs.outdir, '5hib')
 os.mkdir(thedir)
 
@@ -789,8 +795,25 @@ open(os.path.join(thedir,'lig_63N.smi'),'a').close()
             self.assertEqual(os.path.isfile(fivehicfas), True)
 
             # verify tarball is created
-            tarfile = chall.get_celpp_challenge_data_tar_file()
-            self.assertEqual(os.path.isfile(tarfile), True)
+            tfile = chall.get_celpp_challenge_data_tar_file()
+            self.assertEqual(os.path.isfile(tfile), True)
+
+            foodir = os.path.join(temp_dir, 'foo')
+            os.mkdir(foodir)
+
+            tar = tarfile.open(tfile, 'r:*')
+            tar.extractall(path=foodir)
+            tar.close()
+            name = chall.get_celpp_challenge_data_dir_name()
+            cdir = os.path.join(foodir, name)
+            readme = os.path.join(cdir, ChallengeDataTask.README_TXT_FILE)
+            self.assertEqual(os.path.isfile(readme), True)
+
+            final = os.path.join(foodir,name, 'final.log')
+            self.assertEqual(os.path.isfile(final), False)
+
+            e_con = os.path.join(foodir,name, 'error_container')
+            self.assertEqual(os.path.isdir(e_con), False)
 
         finally:
             shutil.rmtree(temp_dir)
