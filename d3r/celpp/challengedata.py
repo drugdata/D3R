@@ -180,7 +180,8 @@ Below is a definition of the files and directories within this tar file:
         """Returns path to challenge tar ball
         """
         return os.path.join(self.get_dir(),
-                            self.get_celpp_challenge_data_dir_name() + ".tar.gz")
+                            self.get_celpp_challenge_data_dir_name() +
+                            ".tar.gz")
 
     def get_celpp_challenge_data_dir_name(self):
         """Returns path to celpp challenge data directory name
@@ -197,7 +198,6 @@ Below is a definition of the files and directories within this tar file:
         if not os.path.isdir(challenge_dir):
             os.mkdir(challenge_dir)
         return challenge_dir
-
 
     def _create_readme(self, path):
         """Creates readme.txt file for task
@@ -220,10 +220,10 @@ Below is a definition of the files and directories within this tar file:
 
         # append summary.txt file
         if os.path.isfile(summary_file):
-           sumfile = open(summary_file, 'r')
-           for line in sumfile:
-               f.write(line)
-           sumfile.close()
+            sumfile = open(summary_file, 'r')
+            for line in sumfile:
+                f.write(line)
+            sumfile.close()
 
         f.flush()
         f.close()
@@ -243,7 +243,6 @@ Below is a definition of the files and directories within this tar file:
         else:
             logger.warning(dataimport.get_crystalph_tsv() +
                            ' file does not exist')
-
 
         nonpoly_dest = os.path.join(challenge_dir,
                                     DataImportTask.NONPOLYMER_TSV)
@@ -289,21 +288,21 @@ Below is a definition of the files and directories within this tar file:
                     continue
 
                 logger.debug('Adding directory to tarball: ' + entry)
-                tar.add(fullpath,arcname=challenge_dir_name + '/' + entry)
+                tar.add(fullpath, arcname=challenge_dir_name + '/' + entry)
                 continue
             if os.path.isfile(fullpath):
                 if entry in ChallengeDataTask.TAR_EXCLUDE_FILES:
                     logger.debug('Skipping insertion of ' + entry +
                                  ' into tar file')
                     continue
-                logger.debug('Adding file to tarball: '+ entry)
-                tar.add(fullpath,challenge_dir_name + '/' + entry)
+                logger.debug('Adding file to tarball: ' + entry)
+                tar.add(fullpath, challenge_dir_name + '/' + entry)
 
         tar.close()
         tfile_size = str(os.path.getsize(tfile))
         logger.debug('Tarfile created and is: ' +
                      tfile_size + 'bytes in size')
-        self.append_to_email_log('Tarfile: '+ tfile + ' (' +
+        self.append_to_email_log('Tarfile: ' + tfile + ' (' +
                                  tfile_size + ' bytes) created.')
         return tfile
 
@@ -386,7 +385,8 @@ Below is a definition of the files and directories within this tar file:
         try:
             challenge_dir = self._create_challenge_dir()
         except OSError:
-                logger.exception('Problem making challenge dir ' + challenge_dir)
+                logger.exception('Problem making challenge dir ' +
+                                 challenge_dir)
                 self.set_error('Unable to create ' + challenge_dir)
                 self.end()
 
@@ -417,7 +417,8 @@ Below is a definition of the files and directories within this tar file:
             tfile = self._tar_challenge_dir(os.path.basename(challenge_dir))
 
             # upload tar file to remote server
-
+            # TODO do we need to upload tar file to special server?
+            logger.warning(tfile + ' is not being uploaded anywhere...')
         except Exception as e:
             logger.exception('Caught exception')
             self.set_error('Caught exception ' + str(e))

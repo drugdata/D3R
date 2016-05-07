@@ -189,7 +189,6 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEqual(result.genchallenge, '/bin/gen.py')
         self.assertEqual(result.chimeraprep, '/bin/chimeraprep.py')
 
-
     def test_run_tasks_passing_none_and_empty_list(self):
         self.assertEquals(celpprunner.run_tasks(None), 3)
         task_list = []
@@ -328,8 +327,8 @@ class TestCelppRunner(unittest.TestCase):
                                                         'chimeraprep')
         self.assertEquals(len(task_list), 1)
         self.assertEquals(task_list[0].get_dir(),
-                          os.path.join('foo', TestCelppRunner.CHIMERAPREP_DIR_NAME))
-
+                          os.path.join('foo',
+                                       TestCelppRunner.CHIMERAPREP_DIR_NAME))
 
     def test_get_task_list_for_stage_for_scoring_stage_with_nonefound(self):
         temp_dir = tempfile.mkdtemp()
@@ -566,7 +565,8 @@ class TestCelppRunner(unittest.TestCase):
             theargs.pdbdb = '/pdbdb'
             theargs.celppdir = os.path.join(temp_dir)
 
-            theargs.stage = 'makedb,import,blast,challengedata,proteinligprep,chimeraprep,glide,vina'
+            theargs.stage = 'makedb,import,blast,challengedata,proteinligprep,' \
+                            'chimeraprep,glide,vina'
 
             d_import_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
                                         TestCelppRunner.IMPORT_DIR_NAME)
@@ -585,8 +585,7 @@ class TestCelppRunner(unittest.TestCase):
             theargs.pdbfileurl = 'file://' + fakegz
 
             theargs.compinchi = 'file://' + fakegz
-            theargs.version = '1.0.0';
-
+            theargs.version = '1.0.0'
             theargs.makeblastdb = 'echo'
             theargs.blastnfilter = 'echo'
             theargs.postanalysis = 'true'
@@ -599,9 +598,6 @@ class TestCelppRunner(unittest.TestCase):
 
         finally:
             shutil.rmtree(temp_dir)
-
-
-
 
     def test_run_stages_createweekdir_set(self):
         temp_dir = tempfile.mkdtemp()

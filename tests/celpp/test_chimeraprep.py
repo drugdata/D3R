@@ -52,7 +52,6 @@ class TestChimeraProteinLigPrepTask(unittest.TestCase):
                                    'chimera_proteinligprep.py.stdout')
             open(outfile, 'a').close()
 
-
             flist = task.get_uploadable_files()
             self.assertEqual(len(flist), 3)
             flist.index(errfile)

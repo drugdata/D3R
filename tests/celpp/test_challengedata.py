@@ -66,7 +66,6 @@ class TestChallengeDataTask(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
-
     def test_get_celpp_challenge_data_dir_name_path_not_found(self):
         temp_dir = tempfile.mkdtemp()
         try:
@@ -154,7 +153,7 @@ class TestChallengeDataTask(unittest.TestCase):
             params.version = "1.0.0"
             task = ChallengeDataTask(temp_dir, params)
             try:
-                task._create_readme(os.path.join(temp_dir,'doesnotexist'))
+                task._create_readme(os.path.join(temp_dir, 'doesnotexist'))
                 self.fail('Expected IOError')
             except IOError:
                 pass
@@ -262,7 +261,7 @@ class TestChallengeDataTask(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
-            dimport = DataImportTask(temp_dir,params)
+            dimport = DataImportTask(temp_dir, params)
             dimport.create_dir()
 
             ctsv = dimport.get_crystalph_tsv()
@@ -290,21 +289,21 @@ class TestChallengeDataTask(unittest.TestCase):
             task._copy_over_tsv_files(challenge_dir)
 
             cop_ctsv = os.path.join(challenge_dir,
-                                      DataImportTask.CRYSTALPH_TSV)
+                                    DataImportTask.CRYSTALPH_TSV)
             self.assertEqual(os.path.isfile(cop_ctsv), True)
             f = open(cop_ctsv)
             self.assertEqual(f.readline(), 'crystal')
             f.close()
 
             cop_nonpoly = os.path.join(challenge_dir,
-                                      DataImportTask.NONPOLYMER_TSV)
+                                       DataImportTask.NONPOLYMER_TSV)
             self.assertEqual(os.path.isfile(cop_nonpoly), True)
             f = open(cop_nonpoly)
             self.assertEqual(f.readline(), 'nonpoly')
             f.close()
 
             cop_seq = os.path.join(challenge_dir,
-                                      DataImportTask.SEQUENCE_TSV)
+                                   DataImportTask.SEQUENCE_TSV)
             self.assertEqual(os.path.isfile(cop_seq), True)
             f = open(cop_seq)
             self.assertEqual(f.readline(), 'seq')
@@ -329,7 +328,6 @@ class TestChallengeDataTask(unittest.TestCase):
 
         finally:
             shutil.rmtree(temp_dir)
-
 
     def test_tar_challenge_dir_nothing_but_readme(self):
         temp_dir = tempfile.mkdtemp()
@@ -392,10 +390,10 @@ class TestChallengeDataTask(unittest.TestCase):
         file_list.append(apo.replace(basedir + '/', ''))
 
         holo = os.path.join(namedir,
-                           self.generate_pdb_file_name('holo',
-                                                       targetid,
-                                                       candidateid,
-                                                       candidateligandid))
+                            self.generate_pdb_file_name('holo',
+                                                        targetid,
+                                                        candidateid,
+                                                        candidateligandid))
         self.write_fake_data_to_file(holo)
         file_list.append(holo.replace(basedir + '/', ''))
 
@@ -431,8 +429,8 @@ class TestChallengeDataTask(unittest.TestCase):
                                candidateligandid):
         """Generates a pdb file name matching challenge data dir format
         """
-        return type + '-' + targetid + '_' + candidateid + '_' +\
-               candidateligandid + '.pdb'
+        return (type + '-' + targetid + '_' + candidateid + '_' +
+                candidateligandid + '.pdb')
 
     def test_tar_challenge_dir(self):
         temp_dir = tempfile.mkdtemp()
@@ -454,7 +452,7 @@ class TestChallengeDataTask(unittest.TestCase):
             task._create_readme(chall_dir)
             task._copy_over_tsv_files(chall_dir)
 
-            #make a fake candidate
+            # make a fake candidate
             file_list = self.make_fake_candidate_dir(chall_dir, '5hib',
                                                      '2eb2', 'CSX')
 
@@ -471,7 +469,7 @@ class TestChallengeDataTask(unittest.TestCase):
             readme = os.path.join(cdir, ChallengeDataTask.README_TXT_FILE)
             self.assertEqual(os.path.isfile(readme), True)
 
-            final_log = os.path.join(foodir,'final.log')
+            final_log = os.path.join(foodir, 'final.log')
             self.assertEqual(os.path.isfile(final_log), False)
 
             for fname in file_list:
@@ -480,7 +478,6 @@ class TestChallengeDataTask(unittest.TestCase):
 
         finally:
             shutil.rmtree(temp_dir)
-
 
     def test_can_run(self):
         temp_dir = tempfile.mkdtemp()
@@ -536,7 +533,6 @@ class TestChallengeDataTask(unittest.TestCase):
 
         finally:
             shutil.rmtree(temp_dir)
-
 
     def test_run_fails_cause_can_run_is_false(self):
         temp_dir = tempfile.mkdtemp()
@@ -727,7 +723,7 @@ open(os.path.join(thedir,'lig_63N.smi'),'a').close()
                  'a').close()
             chall = ChallengeDataTask(temp_dir, params)
 
-            dimport = DataImportTask(temp_dir,params)
+            dimport = DataImportTask(temp_dir, params)
             dimport.create_dir()
 
             ctsv = dimport.get_crystalph_tsv()
@@ -809,10 +805,10 @@ open(os.path.join(thedir,'lig_63N.smi'),'a').close()
             readme = os.path.join(cdir, ChallengeDataTask.README_TXT_FILE)
             self.assertEqual(os.path.isfile(readme), True)
 
-            final = os.path.join(foodir,name, 'final.log')
+            final = os.path.join(foodir, name, 'final.log')
             self.assertEqual(os.path.isfile(final), False)
 
-            e_con = os.path.join(foodir,name, 'error_container')
+            e_con = os.path.join(foodir, name, 'error_container')
             self.assertEqual(os.path.isdir(e_con), False)
 
         finally:

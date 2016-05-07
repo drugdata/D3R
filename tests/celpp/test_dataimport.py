@@ -295,7 +295,6 @@ class TestDataImportTask(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
-
     def test_get_set_of_pdbid_from_crystalph_tsv_nonexistant_file(self):
         temp_dir = tempfile.mkdtemp()
         try:
@@ -345,7 +344,6 @@ class TestDataImportTask(unittest.TestCase):
             self.assertEqual('4XF3' in pdbid_set, True)
         except:
             shutil.rmtree(temp_dir)
-
 
     def test_get_set_of_pdbid_from_crystalph_tsv_invalid_entries(self):
         """Header missing and 4rfr has 3 columns
@@ -418,7 +416,6 @@ class TestDataImportTask(unittest.TestCase):
             self.assertEqual(len(pdbset), 0)
         finally:
             shutil.rmtree(temp_dir)
-
 
     def test_get_set_of_pdbid_in_crystalph_tsv_and_pdb_seqres_empty_seq(self):
         temp_dir = tempfile.mkdtemp()
@@ -515,7 +512,6 @@ class TestDataImportTask(unittest.TestCase):
             self.assertEqual('4RFR' in pdbset, True)
         finally:
             shutil.rmtree(temp_dir)
-
 
     def tearDown(self):
         pass

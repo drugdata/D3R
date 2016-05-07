@@ -280,7 +280,8 @@ def get_task_list_for_stage(theargs, stage_name):
         task_list.append(AutoDockVinaTask(theargs.latest_weekly, theargs))
 
     if stage_name == 'chimeraprep':
-        task_list.append(ChimeraProteinLigPrepTask(theargs.latest_weekly, theargs))
+        task_list.append(ChimeraProteinLigPrepTask(theargs.latest_weekly,
+                                                   theargs))
 
     if stage_name == 'evaluation':
         # use util function call to get all evaluation tasks

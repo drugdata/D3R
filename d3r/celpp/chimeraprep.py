@@ -37,7 +37,8 @@ class ChimeraProteinLigPrepTask(D3RTask):
            :returns: list of files that can be uploaded.
         """
         # get the stderr/stdout files
-        file_list = super(ChimeraProteinLigPrepTask, self).get_uploadable_files()
+        file_list = super(ChimeraProteinLigPrepTask,
+                          self).get_uploadable_files()
 
         out_dir = self.get_dir()
 

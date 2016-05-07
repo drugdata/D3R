@@ -289,6 +289,21 @@ class DataImportTask(D3RTask):
         download_path = self.get_nonpolymer_tsv()
         url = self._args.pdbfileurl
         try:
+
+            # need to do the following to see if file has been updated
+            # req = urllib2.Request('http://www.wwpdb.org/files/new_release_structure_sequence.tsv')
+            # response = urllib2.urlopen(req)
+            # print response.info()
+            #
+            # Date: Sat, 07 May 2016 17:09:52 GMT
+            # Server: Apache/2.2.15 (CentOS)
+            # Last-Modified: Sat, 07 May 2016 03:02:07 GMT
+            # ETag: "10036436-1dc53-53237cd00a8f9"
+            # Accept-Ranges: bytes
+            # Content-Length: 121939
+            # Connection: close
+            # Content-Type: text/tab-separated-values
+            #
             util.download_url_to_file(url +
                                       '/' + DataImportTask.NONPOLYMER_TSV,
                                       download_path,
@@ -336,7 +351,8 @@ class DataImportTask(D3RTask):
                                              MakeBlastDBTask.PDB_SEQRES_TXT +
                                              ' files\n')
             except Exception:
-                logger.exception('Caught exception comparing tsv with sequence')
+                logger.exception('Caught exception comparing tsv with '
+                                 'sequence')
                 self.append_to_email_log('\nError unable to examine ' +
                                          DataImportTask.CRYSTALPH_TSV +
                                          ' and/or ' +
