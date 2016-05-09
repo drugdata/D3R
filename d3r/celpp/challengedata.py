@@ -126,8 +126,7 @@ Below is a definition of the files and directories within this tar file:
                                                                       -lig.pdb]
 
                     -- Contains the 3D coordinate of the atoms for the ligand
-                       in the "largest" protein.
-
+                       in the MaxMCSS candidate (largest) protein.
 
                [lig_<candidate ligand id>.smi]
 
