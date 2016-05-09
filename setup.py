@@ -39,7 +39,9 @@ setup(
     description='Drug Design Data Resource CELPP Runner is an application to run the filtering, docking, and '
                 'evaluation of new sequences from wwpdb',
     long_description=readme + '\n\n' + history,
-    author='Christopher Churas <churas@ncmir.ucsd.edu>, Shaui Liu <shuailiu25@gmail.com>, '
+    author='Christopher Churas <churas@ncmir.ucsd.edu>,'
+           'Shaui Liu <shuailiu25@gmail.com>,'
+           'Jeff Wagner <j5wagner@ucsd.edu>,'
            'Rob Swift <rvswift@ucsd.edu>',
     author_email='drugdesigndata@gmail.com',
     url='https://github.com/drugdata/D3R',
