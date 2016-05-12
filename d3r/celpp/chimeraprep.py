@@ -4,7 +4,7 @@ import os
 import logging
 
 from d3r.celpp.task import D3RTask
-from d3r.celpp.challengedata import ChallengeDataTask
+from d3r.celpp.challengedata import BlastNFilterTask
 
 logger = logging.getLogger(__name__)
 
@@ -20,9 +20,9 @@ class ChimeraProteinLigPrepTask(D3RTask):
         super(ChimeraProteinLigPrepTask, self).__init__(path, args)
         self.set_name('chimeraprep')
 
-        # Make stage number one higher then ChallengeDataTask Stage
-        task = ChallengeDataTask(path, args)
-        self.set_stage(task.get_stage() + 1)
+        # Make stage number one higher then BlastNFilter Stage
+        blast = BlastNFilterTask(path, args)
+        self.set_stage(blast.get_stage() + 1)
 
         self.set_status(D3RTask.UNKNOWN_STATUS)
 
@@ -61,7 +61,7 @@ class ChimeraProteinLigPrepTask(D3RTask):
         self._can_run = False
         self._error = None
         # check blast
-        chall = ChallengeDataTask(self._path, self._args)
+        chall = BlastNFilterTask(self._path, self._args)
         chall.update_status_from_filesystem()
         if chall.get_status() != D3RTask.COMPLETE_STATUS:
             logger.info('Cannot run ' + self.get_name() + 'task ' +
@@ -89,7 +89,7 @@ class ChimeraProteinLigPrepTask(D3RTask):
         return True
 
     def run(self):
-        """Runs ChimeraProteinLigPrepTask after verifying ChallengeDataTask
+        """Runs ChimeraProteinLigPrepTask after verifying BlastNFilterTask
            was good
 
            Method requires can_run() to be called before hand with
@@ -123,13 +123,13 @@ class ChimeraProteinLigPrepTask(D3RTask):
             self.end()
             return
 
-        chall = ChallengeDataTask(self._path, self._args)
+        blast = BlastNFilterTask(self._path, self._args)
 
         #
         # chimeraprep.py --candidatedir <path to stage.2.blastnfilter> \
         # --outdir <path to stage.3.proteinligprep>
         cmd_to_run = (self.get_args().chimeraprep + ' --candidatedir ' +
-                      chall.get_dir() +
+                      blast.get_dir() +
                       ' --pdbdb ' + self.get_args().pdbdb +
                       ' --outdir ' + self.get_dir())
 
