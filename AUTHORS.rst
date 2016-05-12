@@ -13,3 +13,5 @@ Contributors
 * Robert Swift
 
 * Shuai Liu
+
+* Jeffrey Wagner
