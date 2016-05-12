@@ -291,7 +291,8 @@ class DataImportTask(D3RTask):
         try:
 
             # need to do the following to see if file has been updated
-            # req = urllib2.Request('http://www.wwpdb.org/files/new_release_structure_sequence.tsv')
+            # req = urllib2.Request('http://www.wwpdb.org/files/
+            # new_release_structure_sequence.tsv')
             # response = urllib2.urlopen(req)
             # print response.info()
             #
