@@ -36,6 +36,7 @@ class TestFtpFileUploader(unittest.TestCase):
         self.assertEqual(foo.get_ftp_user(), None)
         self.assertEqual(foo.get_ftp_remote_dir(), '')
         self.assertEqual(foo.get_error_msg(), None)
+        self.assertEqual(foo.get_ftp_remote_challenge_dir(), None)
 
         temp_dir = tempfile.mkdtemp()
         try:
@@ -53,6 +54,7 @@ class TestFtpFileUploader(unittest.TestCase):
             self.assertEqual(foo.get_ftp_password(), None)
             self.assertEqual(foo.get_ftp_user(), None)
             self.assertEqual(foo.get_ftp_remote_dir(), '')
+            self.assertEqual(foo.get_ftp_remote_challenge_dir(), None)
 
             # test getters and setters
             foo.set_connect_timeout(10)
@@ -61,12 +63,14 @@ class TestFtpFileUploader(unittest.TestCase):
             foo.set_ftp_password('pass')
             foo.set_ftp_remote_dir('/remote')
             foo.set_ftp_user('user')
+            foo.set_ftp_remote_challenge_dir('/chall')
 
             self.assertEqual(foo.get_connect_timeout(), 10)
             self.assertEqual(foo.get_ftp_host(), 'host')
             self.assertEqual(foo.get_ftp_password(), 'pass')
             self.assertEqual(foo.get_ftp_remote_dir(), '/remote')
             self.assertEqual(foo.get_ftp_user(), 'user')
+            self.assertEqual(foo.get_ftp_remote_challenge_dir(), '/chall')
         finally:
             shutil.rmtree(temp_dir)
 
@@ -83,6 +87,7 @@ class TestFtpFileUploader(unittest.TestCase):
             self.assertEqual(foo.get_ftp_password(), None)
             self.assertEqual(foo.get_ftp_user(), None)
             self.assertEqual(foo.get_ftp_remote_dir(), '')
+            self.assertEqual(foo.get_ftp_remote_challenge_dir(), None)
 
             # test passing partial config file
             f = open(os.path.join(temp_dir, 'partial'), 'a')
@@ -94,6 +99,7 @@ class TestFtpFileUploader(unittest.TestCase):
             self.assertEqual(foo.get_ftp_password(), None)
             self.assertEqual(foo.get_ftp_user(), 'bob@bob.com')
             self.assertEqual(foo.get_ftp_remote_dir(), '')
+            self.assertEqual(foo.get_ftp_remote_challenge_dir(), None)
 
             # test passing valid config file
             f = open(os.path.join(temp_dir, 'valid'), 'a')
@@ -105,6 +111,20 @@ class TestFtpFileUploader(unittest.TestCase):
             self.assertEqual(foo.get_ftp_password(), '222')
             self.assertEqual(foo.get_ftp_user(), 'bob@bob.com')
             self.assertEqual(foo.get_ftp_remote_dir(), '/foo')
+            self.assertEqual(foo.get_ftp_remote_challenge_dir(), None)
+
+           # test passing valid config file with challengepath
+            f = open(os.path.join(temp_dir, 'valid'), 'a')
+            f.write('host ftp.box.com\nuser bob@bob.com\npass 222\npath /foo\n'
+                    'challengepath /chall\n')
+            f.flush()
+            f.close()
+            foo = FtpFileUploader(os.path.join(temp_dir, 'valid'))
+            self.assertEqual(foo.get_ftp_host(), 'ftp.box.com')
+            self.assertEqual(foo.get_ftp_password(), '222')
+            self.assertEqual(foo.get_ftp_user(), 'bob@bob.com')
+            self.assertEqual(foo.get_ftp_remote_dir(), '/foo')
+            self.assertEqual(foo.get_ftp_remote_challenge_dir(), '/chall')
 
         finally:
             shutil.rmtree(temp_dir)
@@ -151,6 +171,9 @@ class TestFtpFileUploader(unittest.TestCase):
         foo._alt_ftp_con = None
         foo._disconnect()
         mockftp.close.assert_any_call()
+
+    def test_upload_file_direct(self):
+        self.assertEqual(1, 2)
 
     def test_upload_file_where_file_is_none(self):
 

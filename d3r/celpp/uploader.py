@@ -14,6 +14,11 @@ class InvalidFtpConfigException(Exception):
     """
     pass
 
+class DirectFtpUploadException(Exception):
+    """Thrown when there is an error during direct ftp file upload
+    """
+    pass
+
 
 class FileUploader(object):
     """Defines interface for uploading files
@@ -59,6 +64,7 @@ class FtpFileUploader(FileUploader):
         self._ftp_pass = None
         self._remote_dir = None
         self._error_msg = None
+        self._remote_challenge_dir = None
 
         if ftp_config is not None:
             self._parse_config(ftp_config)
@@ -75,6 +81,7 @@ class FtpFileUploader(FileUploader):
            user <USERNAME>
            pass <PASSWORD>
            path <BASE PATH ON REMOTE SERVER ie /foo>
+           challengepath <BASE PATH ON REMOTE SERVER ie /challenge>
 
            Example:
 
@@ -82,6 +89,7 @@ class FtpFileUploader(FileUploader):
            user bob@bob.com
            pass 12345
            path /upload
+           challengepath /challenge
 
            The above format matches the standard used
            by NCFTP with the exception of `path` which
@@ -107,6 +115,8 @@ class FtpFileUploader(FileUploader):
                         self.set_ftp_password(split_line[1].rstrip())
                     elif split_line[0] == 'path':
                         self.set_ftp_remote_dir(split_line[1].rstrip())
+                    elif split_line[0] == 'challengepath':
+                        self.set_ftp_remote_challenge_dir(split_line[1].rstrip())
         finally:
             if f is not None:
                 f.close()
@@ -120,6 +130,16 @@ class FtpFileUploader(FileUploader):
            ftp_con.put('/pathtofile','/destinationpath')
         """
         self._alt_ftp_con = ftp_con
+
+    def set_ftp_remote_challenge_dir(self, challenge_dir):
+        """Sets the remote challenge directory for ftp upload
+        """
+        self._remote_challenge_dir = challenge_dir
+
+    def get_ftp_remote_challenge_dir(self):
+        """Gets the remote challenge directory for ftp upload
+        """
+        return self._remote_challenge_dir
 
     def set_ftp_remote_dir(self, remote_dir):
         """Sets the remote directory where ftp files will be uploaded to
@@ -193,6 +213,32 @@ class FtpFileUploader(FileUploader):
             self._ftp.close()
         except:
             logger.exception('Caught exception attempting to close connection')
+
+    def upload_file_direct(self, file, remote_dir, remote_file_name):
+        """Uploads file to remote server
+
+           This method will upload the file to the `remote_dir` using the
+           `remote_file_name` as the file name
+           :param file: full path to file to upload
+           :param remote_dir: full path to remote directory to upload file to
+           :param remote_file_name: name to use for file uploaded
+           :raise DirectFtpUploadException: if `file` is None or not a file
+        """
+        if file is None:
+            raise DirectFtpUploadException('File passed in is None')
+
+        if not os.path.isfile(file):
+            raise DirectFtpUploadException(file + ' is not a file')
+
+        remote_path = os.path.normpath(remote_dir +
+                                       os.sep + remote_file_name)
+        logger.debug('Direct uploading file: ' + file + ' to ' + remote_path)
+
+        size = self._ftp.put(file, remote_path)
+
+        logger.debug('  Uploaded ' + str(size) + ' bytes')
+        self._bytes_transferred += size
+        self._files_transferred += 1
 
     def _upload_file(self, file):
         """Uploads file to remote server
