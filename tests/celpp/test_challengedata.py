@@ -653,6 +653,12 @@ class TestChallengeDataTask(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
+    def test_upload_challenge_file(self):
+        self.assertEqual(1, 2)
+
+    def test_run_fails_cause_ftp_upload_fails(self):
+        self.assertEqual(1, 2)
+
     def test_run_succeeds(self):
         temp_dir = tempfile.mkdtemp()
         try:
