@@ -373,12 +373,16 @@ def _parse_arguments(desc, args):
                         ' configuration to connect to ftp server.  If set,'
                         ' data from stages run during this invocation will be'
                         ' uploaded after the stage completes.  Format is same'
-                        ' as ncftp config files with one added field (path)'
+                        ' as ncftp config files with two added fields '
+                        '(path,challengepath) NOTE: challengepath is optional'
+                        'and sets path where challenge data package will be '
+                        'uploaded to.'
                         '\nExample:\n'
                         'host some.ftp.com\n'
                         'user bob\n'
                         'pass mypass\n'
-                        'path /celpp\n')
+                        'path /celpp\n'
+                        'challengepath /challenge\n')
 
     parser.add_argument('--version', action='version',
                         version=('%(prog)s ' + d3r.__version__))
