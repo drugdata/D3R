@@ -345,6 +345,25 @@ Below is a definition of the files and directories within this tar file:
         self._can_run = True
         return True
 
+    def _upload_challenge_file(self, challenge_file):
+        """Uploads challenge file to remote ftp server
+        """
+        uploader = self.get_file_uploader()
+        if uploader is None:
+            logger.warning('No uploader available to upload challenge data')
+            self.append_to_email_log('No uploader available to upload '
+                                     'challenge data\n')
+            return
+
+        remote_dir = uploader.get_ftp_remote_challenge_dir()
+        if remote_dir is None:
+            logger.warning('No remote challenge directory set for ftp upload')
+            self.append_to_email_log('No remote challenge directory set for '
+                                     'ftp upload\n')
+            return
+        logger.debug('Attempting to upload ' + challenge_file + ' to ' + remote_dir)
+        uploader.upload_file_direct(challenge_file, remote_dir)
+
     def run(self):
         """Runs ChallengeDataTask after verifying blastnfilter was good
 
@@ -416,8 +435,8 @@ Below is a definition of the files and directories within this tar file:
             tfile = self._tar_challenge_dir(os.path.basename(challenge_dir))
 
             # upload tar file to remote server
-            # TODO do we need to upload tar file to special server?
-            logger.warning(tfile + ' is not being uploaded anywhere...')
+            self._upload_challenge_file(tfile)
+
         except Exception as e:
             logger.exception('Caught exception')
             self.set_error('Caught exception ' + str(e))
