@@ -9,7 +9,7 @@ import time
 logger = logging.getLogger()
 logging.basicConfig( format  = '%(asctime)s: %(message)s', datefmt = '%m/%d/%y %I:%M:%S', filename = 'final.log', filemode = 'w', level   = logging.DEBUG )
 
-#s2_result_path = "/data/celpp/2015/dataset.week.47/stage.2.blastnfilter"
+#challenge_data_path = "/data/celpp/2015/dataset.week.47/stage.2.blastnfilter"
 #pdb_protein_location = "/data/pdb.extracted"
 #full_copy_location = ""
 #target_copy_location = ""
@@ -139,128 +139,149 @@ def prepare_protein (protein_file, prepared_protein, sleep_time = 300):
         return False
 
 
-def main_proteinprep ( s2_result_path, pdb_protein_path, working_folder ):
+def main_proteinprep (challenge_data_path, pdb_protein_path, working_folder ):
     os.chdir(working_folder)
     current_dir_layer_1 = os.getcwd()
+#     all_stage_2_out = glob.glob("%s/*.txt"%challenge_data_path)
+#     summary_file = "%s/summary.txt"%challenge_data_path
+#     if summary_file in all_stage_2_out:
+#         all_stage_2_out.remove(summary_file)
+#     for single_stage_2_out in all_stage_2_out: 
+#         target_id = os.path.basename(single_stage_2_out).split(".txt")[0]
+#         valid_candidates[target_id] = []
+#         if not os.path.isdir(target_id):
+#             os.mkdir(target_id)
+#         os.chdir(target_id)
+#     #+++++++++++++++++++++
+#     #get the infromation from stage 2 output
+#         commands.getoutput("cp %s ." %(single_stage_2_out))
+#         query_dic = extract_info_from_s2(target_id + ".txt")
+# 
+#     ######################
+#     #step 1, check if there is a protein start with largest if not then don't need to continue
+#     ######################
+#         if not "largest" in query_dic:
+#             logging.info("For this target protein: %s, there is no protein sharing the largest ligand witt. Not able to generate Docking grid, pass for this case..."%target_id)
+#             os.chdir(current_dir_layer_1)     
+#             continue
+#         elif len(query_dic["largest"]) != 2:
+#             logging.info("For this target protein: %s, the laregest protein has wrong number of informations associate with this id..."%target_id)
+#             os.chdir(current_dir_layer_1)
+#             continue
+#         elif not "inchi" in query_dic:
+#             logging.info("For this target protein: %s, there is no inchi info for the ligand..."%target_id)
+#             os.chdir(current_dir_layer_1)
+#             continue
+#         else:
+#             logging.info("============Start to work in this target protein: %s============"%target_id)
+#             #raw_input()
+#         ######################
+#         #step 2, if there is a largest protein then copy this portein to this folder and generate the center of the ligand
+#         ######################
+#             largest_candidate_id = query_dic["largest"][0]
+#             largest_candidate_filename = "largest-%s_%s.pdb" %(target_id, largest_candidate_id)
+#             largest_pdb_folder_name = largest_candidate_id[1:3]
+#             largest_ent_file = "pdb" + largest_candidate_id  + ".ent"
+#             largest_pdbloc = os.path.join(pdb_protein_path, largest_pdb_folder_name, largest_ent_file)
+#             if not os.path.isfile(largest_pdbloc):
+#                 logging.info("Unable to find the ent file associate with the largest candidate pdb: %s at location %s"%(largest_candidate_id, largest_pdbloc)) 
+#                 os.chdir(current_dir_layer_1)
+#                 continue
+#             else:
+#                 commands.getoutput("cp %s %s"%(largest_pdbloc, largest_candidate_filename))
+#                 valid_candidates[target_id].append(largest_candidate_filename)
+# 
+#         ######################
+#         #step 3, get the center of the ligand in the largest pdb
+#         ######################
+#         try:
+#             largest_ligand = query_dic["largest"][1] 
+#         except:
+#             logging.info("There is no ligand information for this largest candidate protein: %s"%(largest_candidate_id))
+#             os.chdir(current_dir_layer_1)
+#             continue
+#         ligand_center = get_center (largest_candidate_filename, largest_ligand) 
+#         if not ligand_center:
+#             logging.info("Unable to find the center of the ligand for the largest candidate pdb: %s"%(largest_candidate_id))
+#             os.chdir(current_dir_layer_1)
+#             continue
+#         else:
+#             center_file = open("center.txt", "w")
+#             center_file.writelines(ligand_center)
+#             center_file.close()
+#         ######################
+#         #step 4, prepare the ligand 
+#         ######################
+#         #a. generate the smile string from inchi 
+#         ligand_inchi = "InChI=" + query_dic["inchi"]
+#         inchi_f = open("tmp.inchi", "w")
+#         inchi_f.writelines(ligand_inchi)
+#         inchi_f.close()
+#         inchi_filename = "tmp.inchi"
+#         smile_filename = "tmp.smi"
+#         #print "babel -iinchi %s  -osmi ---errorlevel 1"%inchi_filename
+#         commands.getoutput("babel -iinchi %s  -osmi %s ---errorlevel 1"%(inchi_filename, smile_filename))
+#         #raw_input()
+#         if os.path.isfile(smile_filename):
+#             smile_file = open(smile_filename, "r")
+#             ligand_smile = smile_file.readlines()
+#             smile_file.close()
+#         else:
+#             logging.info( "Convert from inchi:%s to SMILES failed"%(ligand_inchi))
+#         #finish generating the smiles, then try to prepared the ligand 
+#         ##############ligand prep step starts here##############
+#         #if not ligand_prepare(ligand_smile, "ligand.mae"):
+#         if not ligand_prepare(smile_filename, "ligand.mae"):
+#             logging.info("Unable to prepare the ligand for this query protein:%s"%target_id)
+#             os.chdir(current_dir_layer_1)
+#             continue 
+#         else:
+#         ########################################################
+#         #step 5, align all proteins
+#             for method_type in ("smallest", "holo", "apo"):
+#                 if method_type in query_dic:
+#                     #copy to here
+#                     if len(query_dic[method_type]) == 2:
+#                         #have both id and ligand info
+#                         method_type_id = query_dic[method_type][0]
+#                     else:
+#                         #have only id info 
+#                         method_type_id = query_dic[method_type]
+#                     ## The pdb database is sorted by the middle two characters of the pdb code
+#                     method_type_folder_name = method_type_id[1:3]
+#                     method_ent_file = "pdb" + method_type_id  + ".ent"
+#                     method_pdbloc = os.path.join(pdb_protein_path, method_type_folder_name, method_ent_file)
+#                     if not os.path.isfile(method_pdbloc):
+#                         logging.info("Unable to find the ent file associate with the %s pdb with ID: %s at location %s"%(method_type, method_type_id, largest_pdbloc))
+#                         os.chdir(current_dir_layer_1)
+#                         continue
+#                     else:
+#                         method_type_filename = "%s-%s_%s.pdb" %(method_type, target_id, method_type_id)
+#                         commands.getoutput("cp %s %s"%(method_pdbloc, method_type_filename))
+#                         valid_candidates[target_id].append(method_type_filename)
+#                     align_proteins (largest_candidate_filename, method_type_filename, method_type_filename)
+
+    ## Get all potential target directories and candidates within
     valid_candidates = {}
-    all_stage_2_out = glob.glob("%s/*.txt"%s2_result_path)
-    summary_file = "%s/summary.txt"%s2_result_path
-    if summary_file in all_stage_2_out:
-        all_stage_2_out.remove(summary_file)
-    for single_stage_2_out in all_stage_2_out: 
-        target_id = os.path.basename(single_stage_2_out).split(".txt")[0]
-        valid_candidates[target_id] = []
-        if not os.path.isdir(target_id):
-            os.mkdir(target_id)
-        os.chdir(target_id)
-    #+++++++++++++++++++++
-    #get the infromation from stage 2 output
-        commands.getoutput("cp %s ." %(single_stage_2_out))
-        query_dic = extract_info_from_s2(target_id + ".txt")
-
-    ######################
-    #step 1, check if there is a protein start with largest if not then don't need to continue
-    ######################
-        if not "largest" in query_dic:
-            logging.info("For this target protein: %s, there is no protein sharing the largest ligand witt. Not able to generate Docking grid, pass for this case..."%target_id)
-            os.chdir(current_dir_layer_1)     
+    pot_target_dirs = os.walk(challenge_data_path)[0][1]
+    #target_ids = []
+    # Ensure that the directories are valid
+    for pot_target_id in pot_target_dirs:
+        # Does it look like a pdb id?
+        if len(pot_target_id) != 4:
+            logging.info('Filtering potential target directories: %s is not 4 characters long. Skipping' %(pot_target_id))
             continue
-        elif len(query_dic["largest"]) != 2:
-            logging.info("For this target protein: %s, the laregest protein has wrong number of informations associate with this id..."%target_id)
-            os.chdir(current_dir_layer_1)
-            continue
-        elif not "inchi" in query_dic:
-            logging.info("For this target protein: %s, there is no inchi info for the ligand..."%target_id)
-            os.chdir(current_dir_layer_1)
-            continue
-        else:
-            logging.info("============Start to work in this target protein: %s============"%target_id)
-            #raw_input()
-        ######################
-        #step 2, if there is a largest protein then copy this portein to this folder and generate the center of the ligand
-        ######################
-            largest_candidate_id = query_dic["largest"][0]
-            largest_candidate_filename = "largest-%s_%s.pdb" %(target_id, largest_candidate_id)
-            largest_pdb_folder_name = largest_candidate_id[1:3]
-            largest_ent_file = "pdb" + largest_candidate_id  + ".ent"
-            largest_pdbloc = os.path.join(pdb_protein_path, largest_pdb_folder_name, largest_ent_file)
-            if not os.path.isfile(largest_pdbloc):
-                logging.info("Unable to find the ent file associate with the largest candidate pdb: %s at location %s"%(largest_candidate_id, largest_pdbloc)) 
-                os.chdir(current_dir_layer_1)
+        #target_ids.append(pot_target_dir)
+        valid_candidates[pot_target_id] = []
+        target_dir_path = os.path.join(challenge_data_path, pot_target_id)
+        for candidate_file in glob.glob('%s/%s*.pdb' %(target_dir_path, pot_target_id)):
+            # The largest ligand will be in a pdb file called something like celpp_week19_2016/1fcz/largest-1fcz_1fcz-156-lig.pdb
+            # We want to make sure we don't treat this like a receptor
+            if 'lig.pdb' in candidate_file:
                 continue
-            else:
-                commands.getoutput("cp %s %s"%(largest_pdbloc, largest_candidate_filename))
-                valid_candidates[target_id].append(largest_candidate_filename)
-
-        ######################
-        #step 3, get the center of the ligand in the largest pdb
-        ######################
-        try:
-            largest_ligand = query_dic["largest"][1] 
-        except:
-            logging.info("There is no ligand information for this largest candidate protein: %s"%(largest_candidate_id))
-            os.chdir(current_dir_layer_1)
-            continue
-        ligand_center = get_center (largest_candidate_filename, largest_ligand) 
-        if not ligand_center:
-            logging.info("Unable to find the center of the ligand for the largest candidate pdb: %s"%(largest_candidate_id))
-            os.chdir(current_dir_layer_1)
-            continue
-        else:
-            center_file = open("center.txt", "w")
-            center_file.writelines(ligand_center)
-            center_file.close()
-        ######################
-        #step 4, prepare the ligand 
-        ######################
-        #a. generate the smile string from inchi 
-        ligand_inchi = "InChI=" + query_dic["inchi"]
-        inchi_f = open("tmp.inchi", "w")
-        inchi_f.writelines(ligand_inchi)
-        inchi_f.close()
-        inchi_filename = "tmp.inchi"
-        smile_filename = "tmp.smi"
-        #print "babel -iinchi %s  -osmi ---errorlevel 1"%inchi_filename
-        commands.getoutput("babel -iinchi %s  -osmi %s ---errorlevel 1"%(inchi_filename, smile_filename))
-        #raw_input()
-        if os.path.isfile(smile_filename):
-            smile_file = open(smile_filename, "r")
-            ligand_smile = smile_file.readlines()
-            smile_file.close()
-        else:
-            logging.info( "Convert from inchi:%s to SMILES failed"%(ligand_inchi))
-        #finish generating the smiles, then try to prepared the ligand 
-        ##############ligand prep step starts here##############
-        #if not ligand_prepare(ligand_smile, "ligand.mae"):
-        if not ligand_prepare(smile_filename, "ligand.mae"):
-            logging.info("Unable to prepare the ligand for this query protein:%s"%target_id)
-            os.chdir(current_dir_layer_1)
-            continue 
-        else:
-        ########################################################
-        #step 5, align all proteins
-            for method_type in ("smallest", "holo", "apo"):
-                if method_type in query_dic:
-                    #copy to here
-                    if len(query_dic[method_type]) == 2:
-                        #have both id and ligand info
-                        method_type_id = query_dic[method_type][0]
-                    else:
-                        #have only id info 
-                        method_type_id = query_dic[method_type]
-                    ## The pdb database is sorted by the middle two characters of the pdb code
-                    method_type_folder_name = method_type_id[1:3]
-                    method_ent_file = "pdb" + method_type_id  + ".ent"
-                    method_pdbloc = os.path.join(pdb_protein_path, method_type_folder_name, method_ent_file)
-                    if not os.path.isfile(method_pdbloc):
-                        logging.info("Unable to find the ent file associate with the %s pdb with ID: %s at location %s"%(method_type, method_type_id, largest_pdbloc))
-                        os.chdir(current_dir_layer_1)
-                        continue
-                    else:
-                        method_type_filename = "%s-%s_%s.pdb" %(method_type, target_id, method_type_id)
-                        commands.getoutput("cp %s %s"%(method_pdbloc, method_type_filename))
-                        valid_candidates[target_id].append(method_type_filename)
-                    align_proteins (largest_candidate_filename, method_type_filename, method_type_filename)
+            valid_candidates[pot_target_id].append(candidate_file)
+        
+    for target_id in valid_candidates.keys():
         ######################
         #step 6, prepare all proteins
         ######################
@@ -285,7 +306,7 @@ def main_proteinprep ( s2_result_path, pdb_protein_path, working_folder ):
             commands.getoutput("$SCHRODINGER/utilities/pdbconvert -imae %s -opdb %s"%(prepared_protein_mol2, out_prepare_pdb))
             logging.info("Successfully prepared this protein:%s"%(out_prepare_pdb))
         os.chdir(current_dir_layer_1)
-                    
+                        
                 
 
 if ("__main__") == (__name__):
@@ -300,13 +321,13 @@ if ("__main__") == (__name__):
     logging.basicConfig( format  = '%(asctime)s: %(message)s', datefmt = '%m/%d/%y %I:%M:%S', filename = 'final.log', filemode = 'w', level   = logging.DEBUG )
     opt = parser.parse_args()
     pdb_location = opt.pdbdb
-    stage_2_result = opt.candidatedir
-    stage_3_result = opt.outdir
+    challenge_data_path = opt.candidatedir
+    result_path = opt.outdir
     #sleep_time = opt.sleep
     #running under this dir
     running_dir = os.getcwd()
-    main_proteinprep(stage_2_result, pdb_location, stage_3_result)
+    main_proteinprep(challenge_data_path, pdb_location, result_path)
     #move the final log file to the result dir
     log_file_path = os.path.join(running_dir, 'final.log')
-    commands.getoutput("mv %s %s"%(log_file_path,stage_3_result))
+    commands.getoutput("mv %s %s"%(log_file_path, result_path))
 

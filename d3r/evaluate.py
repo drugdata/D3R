@@ -227,7 +227,7 @@ def make_complex_pdb(receptor_pdb, ligand_mol, complex_pdb):
     commands.getoutput('babel -imol %s -opdb %s' %(ligand_mol, ligand_pdb))
     ## Now combine the ligand and receptor pdbs
     commands.getoutput('babel --join -ipdb %s -ipdb %s -opdb' %(receptor_pdb, ligand_pdb, complex_pdb))
-
+ 
 
 
 def layout_result (pickle_file, txt_file):
