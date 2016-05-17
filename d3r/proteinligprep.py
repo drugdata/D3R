@@ -232,30 +232,53 @@ def main_proteinprep ( challenge_data_path, pdb_protein_path, working_folder ):
          
     ## Get all potential target directories and candidates within
     valid_candidates = {}
-    pot_target_dirs = os.walk(challenge_data_path)[0][1]
+    #target_ligands = {}
+    pot_target_dirs = list(os.walk(challenge_data_path))[0][1]
     #target_ids = []
     # Ensure that the directories are valid
     for pot_target_id in pot_target_dirs:
+        os.chdir(current_dir_layer_1)
         # Does it look like a pdb id?
         if len(pot_target_id) != 4:
             logging.info('Filtering potential target directories: %s is not 4 characters long. Skipping' %(pot_target_id))
             continue
+        commands.getoutput('mkdir %s' %(pot_target_id))
         #target_ids.append(pot_target_dir)
         valid_candidates[pot_target_id] = []
         target_dir_path = os.path.join(challenge_data_path, pot_target_id)
-        for candidate_file in glob.glob('%s/%s*.pdb' %(target_dir_path, pot_target_id)):
+
+        # Pull in the ligand inchi
+        lig_smiles_files = glob.glob('%s/lig_*.smi' %(target_dir_path))
+        if len(lig_smiles_files) != 1:
+            logging.info('Unable to find unambiguous ligand smiles for %s - glob returned %r' %(pot_target_id, lig_inchi_files))
+            continue
+        lig_smiles_file = lig_smiles_files[0]
+        local_smiles_file = os.path.basename(lig_smiles_file)
+        dest_smiles_file = os.path.join(pot_target_id, local_smiles_file)
+        commands.getoutput('cp %s %s' %(lig_smiles_file, dest_smiles_file))
+        
+        # Copy in each valid candidate
+        for candidate_file in glob.glob('%s/*-%s_*.pdb' %(target_dir_path, pot_target_id)):
             # The largest ligand will be in a pdb file called something like celpp_week19_2016/1fcz/largest-1fcz_1fcz-156-lig.pdb
             # We want to make sure we don't treat this like a receptor
             if 'lig.pdb' in candidate_file:
                 continue
-            valid_candidates[pot_target_id].append(candidate_file)
-        
+            commands.getoutput('cp %s %s' %(candidate_file, pot_target_id))
+            candidate_local_file = os.path.basename(candidate_file)
+            valid_candidates[pot_target_id].append((local_smiles_file, candidate_local_file))
+                
     for target_id in valid_candidates.keys():
-        
+        os.chdir(target_id)
         ######################
         #step 6, prepare all proteins
         ######################
-        for candidate_filename in valid_candidates[target_id]:
+        for smiles_filename, candidate_filename in valid_candidates[target_id]:
+            # Prepare the ligand            
+            if not ligand_prepare(smiles_filename, smiles_filename.replace('.smi','.mol2')):
+                logging.info("Unable to prepare the ligand for this query protein:%s"%target_id)
+                os.chdir(current_dir_layer_1)
+                continue 
+
             #split the complex first
             candidate_prefix = candidate_filename.replace('.pdb','')
             out_split = candidate_prefix+ "_split.pdb"
