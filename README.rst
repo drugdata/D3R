@@ -29,7 +29,9 @@ Requires
  * ftpretty
  * NCBI Blast (https://blast.ncbi.nlm.nih.gov/Blast.cgi?PAGE_TYPE=BlastDocs&DOC_TYPE=Download) (needed by blastnfilter.py)
  * rdkit (needed by blastnfilter.py and proteinligprep.py)
- * schrodinger (needed by proteinligprep.py and glidedocking.py)
+ * schrodinger (needed by proteinligprep.py, glidedocking.py, chimera_proteinligprep.py & vinadocking.py)
+ * babel (needed by chimera_proteinligprep.py)
+ * Autodock Vina & MGL Tools (needed by vinadocking.py)
 
 Installation
 ------------
