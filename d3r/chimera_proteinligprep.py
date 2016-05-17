@@ -310,7 +310,7 @@ def main_proteinprep (challenge_data_path, pdb_protein_path, working_folder ):
             # Prepare the ligand
             if not ligand_prepare(smiles_filename, smiles_filename.replace('.smi','.mol2')):
                 logging.info("Unable to prepare the ligand for this query protein:%s"%target_id)
-                os.chdir(current_dir_layer_1)
+                #os.chdir(current_dir_layer_1)
                 continue 
 
             # Split the complex first
@@ -319,6 +319,7 @@ def main_proteinprep (challenge_data_path, pdb_protein_path, working_folder ):
             out_receptor = split_complex("pdb", candidate_filename, out_split)
             if not out_receptor:
                 logging.info("Unable to split this protein:%s"%(candidate_filename))
+                #os.chdir(current_dir_layer_1)
                 continue
             
             logging.info("Successfully split this protein:%s, go to preparation step"%(candidate_filename))
@@ -327,6 +328,7 @@ def main_proteinprep (challenge_data_path, pdb_protein_path, working_folder ):
             preparation_result = prepare_protein(out_receptor,prepared_protein_mol2, 180 )
             if not preparation_result:
                 logging.info("Unable to prepare this protein:%s"%(out_split))
+                #os.chdir(current_dir_layer_1)
                 continue
             #convert into pdb format
             out_prepare_pdb = candidate_prefix + "_prepared.pdb"
