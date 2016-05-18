@@ -79,6 +79,7 @@ def get_center(protein_file, ligname):
 def ligand_prepare(ligand_smile, out_lig_file):
     if os.path.isfile(out_lig_file):
         logging.info('Ligand file %s is already prepared. Skipping.' %(out_lig_file))
+        return True
     commands.getoutput("$SCHRODINGER/ligprep -WAIT -i 0 -nt -s 1 -g -ismi %s -omae %s"%(ligand_smile, out_lig_file) ) 
     return os.path.isfile(out_lig_file)
 
@@ -276,7 +277,7 @@ def main_proteinprep ( challenge_data_path, pdb_protein_path, working_folder ):
         ######################
         for smiles_filename, candidate_filename in valid_candidates[target_id]:
             # Prepare the ligand            
-            if not ligand_prepare(smiles_filename, smiles_filename.replace('.smi','.mol2')):
+            if not ligand_prepare(smiles_filename, smiles_filename.replace('.smi','_prepped.mae')):
                 logging.info("Unable to prepare the ligand for this query protein:%s"%target_id)
                 os.chdir(current_dir_layer_1)
                 continue 

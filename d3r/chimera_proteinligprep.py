@@ -96,19 +96,16 @@ def ligand_prepare(ligand_smile, out_lig_file):
 #    return os.path.isfile(out_lig_file)
     if os.path.isfile(out_lig_file):
         logging.info('Ligand file %s is already prepared. Skipping.' %(out_lig_file))
+        return True
     # Prepare a 3D version of the ligand using babel
     unprep_lig_file = ligand_smile.replace('.smi','_unprep.mol2')
     commands.getoutput('babel -ismi %s -omol2 %s --gen3D' %(ligand_smile,unprep_lig_file))
-    
-    
     with open('chimeraPrep.py','wb') as of:
         of.write(chimera_prep_text) 
     commands.getoutput('chimera --nogui --script "chimeraPrep.py %s %s" >& chimeraLigPrep.out' %(unprep_lig_file, out_lig_file))
     #time.sleep(sleep_time) 
-    if os.path.isfile(out_lig_file):
-        return True
-    else:
-        return False
+    return os.path.isfile(out_lig_file):
+
 
 def align_proteins (target_protein, pre_prepare_protein, post_prepare_protein):
     commands.getoutput("$SCHRODINGER/utilities/structalign %s %s"%(target_protein, pre_prepare_protein))
@@ -308,7 +305,7 @@ def main_proteinprep (challenge_data_path, pdb_protein_path, working_folder ):
         ######################
         for smiles_filename, candidate_filename in valid_candidates[target_id]:
             # Prepare the ligand
-            if not ligand_prepare(smiles_filename, smiles_filename.replace('.smi','.mol2')):
+            if not ligand_prepare(smiles_filename, smiles_filename.replace('.smi','_prepped.mol2')):
                 logging.info("Unable to prepare the ligand for this query protein:%s"%target_id)
                 #os.chdir(current_dir_layer_1)
                 continue 
@@ -323,7 +320,7 @@ def main_proteinprep (challenge_data_path, pdb_protein_path, working_folder ):
                 continue
             
             logging.info("Successfully split this protein:%s, go to preparation step"%(candidate_filename))
-            prepared_protein_mol2 = candidate_prefix + ".mol2"
+            prepared_protein_mol2 = candidate_prefix + "_prepared.mol2"
             #pass the wizard sleep time here
             preparation_result = prepare_protein(out_receptor,prepared_protein_mol2, 180 )
             if not preparation_result:

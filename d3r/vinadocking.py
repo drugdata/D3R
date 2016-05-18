@@ -52,7 +52,24 @@ def main_vina (stage_3_result, stage_4_working, update= True):
             os.chdir(current_dir)
             continue
         
+        # Get the candidate protein names in this directory
         candidate_proteins = glob.glob('./*-????-????.mol2')
+        
+        # Get the ligand names in this directory
+        ligand_mol2s = glob.glob('lig_*_prepped.mol2')
+        ligand_mol2s = [i for i in ligand_mol2s if not "unprep" in i]
+        if len(ligand_mol2s) == 0:
+            logging.info('No ligand files found for target %s. Skipping.' %(dockable_path))
+            os.chdir(current_dir)
+            continue
+        if len(ligand_mol2s) > 1:
+            logging.info('Multiple ligand files found for target %s (found ligands %r). The workflow currently should only be sending one ligand. Skipping. ' %(dockable_path, ligand_mol2s))
+            os.chdir(current_dir)
+            continue
+            
+        
+        
+        
         for candidate_protein in candidate_proteins:
             candidate_prefix = candidate_protein.replace('.mol2','')
             #if os.path.isfile(candidate_protein):
@@ -63,52 +80,57 @@ def main_vina (stage_3_result, stage_4_working, update= True):
             ##################
             #do docking inside
             commands.getoutput("cp ../%s ."%candidate_protein)
-            commands.getoutput("cp ../ligand.mol2 .")
-            commands.getoutput('. /usr/local/mgltools/bin/mglenv.sh; pythonsh $MGL_ROOT/MGLToolsPckgs/AutoDockTools/Utilities24/prepare_ligand4.py -l ligand.mol2')
-            ligandPdbqtFile = 'ligand.pdbqt'
-
+            
             ## Technical prep: Prepare the protein
             #receptorMol2File = '.'.join(possible_protein.split('.')[:-1]) + '.mol2'
             commands.getoutput('. /usr/local/mgltools/bin/mglenv.sh; pythonsh $MGL_ROOT/MGLToolsPckgs/AutoDockTools/Utilities24/prepare_receptor4.py -r %s' %(candidate_protein))
             receptorPdbqtFile = candidate_protein.replace('.mol2','.pdbqt')
 
-            ## Do the docking
-            logging.info("Trying to dock...")
-            out_dock_file = dock(ligandPdbqtFile, receptorPdbqtFile, grid_center)
-            logging.info("Finished docking, beginning post-docking file conversion")
-            
-            ## Convert the receptor to pdb
-            intermediates_prefix = '%s_postdocking' %(candidate_prefix)
-            output_prefix = '%s_docked' %(candidate_prefix)
-            #receptorPdbqt = out_dock_file.replace('ligand_out',candidate_name)
-            receptorPdbqt = candidate_prefix+'.pdbqt'
-            ## This receptor pdb will be one of our final outputs
-            receptorPdb = receptorPdbqt.replace('.pdbqt','.pdb')
-            os.system('. /usr/local/mgltools/bin/mglenv.sh; python $MGL_ROOT/MGLToolsPckgs/AutoDockTools/Utilities24/pdbqt_to_pdb.py -f %s -o %s' %(receptorPdbqt, receptorPdb))
-            
-            ## Then make the ligand mol
-            ## pdbqt_to_pdb.py can't split up the multiple poses in vina's output files, so we do that by hand
-            with open(out_dock_file) as of:
-                fileData = of.read()
-            fileDataSp = fileData.split('ENDMDL')
-            
-            ## Write out each pose to its own pdb and mol file, then merge with the receptor to make the complex files.
-            for index, poseText in enumerate(fileDataSp[:-1]):
-                this_pose_pdbqt = intermediates_prefix+'_ligand'+str(index+1)+'.pdbqt'
-                this_pose_pdb = intermediates_prefix+'_ligand'+str(index+1)+'.pdb'
-                this_pose_mol = intermediates_prefix+'_ligand'+str(index+1)+'.mol'
-                with open(this_pose_pdbqt,'wb') as wf:
-                    wf.write(poseText+'ENDMDL')
-                commands.getoutput('. /usr/local/mgltools/bin/mglenv.sh; python $MGL_ROOT/MGLToolsPckgs/AutoDockTools/Utilities24/pdbqt_to_pdb.py -f %s -o %s' %(this_pose_pdbqt, this_pose_pdb))
-                commands.getoutput('babel -ipdb %s -omol %s' %(this_pose_pdb, this_pose_mol))
-            
-            ## Here convert our top-ranked pose to the final submission for this docking
-            ## Right now we're ignoring everything other than the top pose
-            top_intermediate_mol = intermediates_prefix+'_ligand1.mol'
-            final_ligand_mol = output_prefix+'.mol'
-            commands.getoutput('cp %s %s' %( top_intermediate_mol, final_ligand_mol))
+
+            for ligand_mol2 in ligand_mol2s:
+                ## Technical prep: Prepare the ligand
+                ligand_name = ligand_mol2.replace('lig_','').replace('_prepped.mol2','')
+                ligandPdbqtFile = ligand_mol2.replace('.mol2','.pdbqt')
+                commands.getoutput("cp ../%s ." %(ligand_mol2))
+                commands.getoutput('. /usr/local/mgltools/bin/mglenv.sh; pythonsh $MGL_ROOT/MGLToolsPckgs/AutoDockTools/Utilities24/prepare_ligand4.py -l %s' %(ligand_mol2))
+    
+                ## Do the docking
+                logging.info("Trying to dock...")
+                out_dock_file = dock(ligandPdbqtFile, receptorPdbqtFile, grid_center)
+                logging.info("Finished docking, beginning post-docking file conversion")
                 
-            ##################
+                ## Convert the receptor to pdb
+                intermediates_prefix = '%s_postdocking' %(candidate_prefix)
+                output_prefix = '%s_docked' %(candidate_prefix)
+                #receptorPdbqt = out_dock_file.replace('ligand_out',candidate_name)
+                receptorPdbqt = candidate_prefix+'.pdbqt'
+                ## This receptor pdb will be one of our final outputs
+                receptorPdb = receptorPdbqt.replace('.pdbqt','.pdb')
+                commands.getoutput('. /usr/local/mgltools/bin/mglenv.sh; python $MGL_ROOT/MGLToolsPckgs/AutoDockTools/Utilities24/pdbqt_to_pdb.py -f %s -o %s' %(receptorPdbqt, receptorPdb))
+                
+                ## Then make the ligand mol
+                ## pdbqt_to_pdb.py can't split up the multiple poses in vina's output files, so we do that by hand
+                with open(out_dock_file) as fo:
+                    fileData = fo.read()
+                fileDataSp = fileData.split('ENDMDL')
+                
+                ## Write out each pose to its own pdb and mol file, then merge with the receptor to make the complex files.
+                for index, poseText in enumerate(fileDataSp[:-1]):
+                    this_pose_pdbqt = intermediates_prefix+'_ligand'+str(index+1)+'.pdbqt'
+                    this_pose_pdb = intermediates_prefix+'_ligand'+str(index+1)+'.pdb'
+                    this_pose_mol = intermediates_prefix+'_ligand'+str(index+1)+'.mol'
+                    with open(this_pose_pdbqt,'wb') as wf:
+                        wf.write(poseText+'ENDMDL')
+                    commands.getoutput('. /usr/local/mgltools/bin/mglenv.sh; python $MGL_ROOT/MGLToolsPckgs/AutoDockTools/Utilities24/pdbqt_to_pdb.py -f %s -o %s' %(this_pose_pdbqt, this_pose_pdb))
+                    commands.getoutput('babel -ipdb %s -omol %s' %(this_pose_pdb, this_pose_mol))
+                
+                ## Here convert our top-ranked pose to the final submission for this docking
+                ## Right now we're ignoring everything other than the top pose
+                top_intermediate_mol = intermediates_prefix+'_ligand1.mol'
+                final_ligand_mol = output_prefix+'.mol'
+                commands.getoutput('cp %s %s' %( top_intermediate_mol, final_ligand_mol))
+                    
+                ##################
             os.chdir(current_dir_layer_2)
         os.chdir(current_dir)
         ##################

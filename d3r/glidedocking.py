@@ -70,8 +70,22 @@ def main_glide (stage_3_result, stage_4_working, update= True):
             logging.info("Fatal error: Unable to find the center file for this case %s"%target_name)
             os.chdir(current_dir)
             continue
-        
+            
+        # Get the candidate protein names in this directory
         candidate_proteins = glob.glob('./*-????-????.maegz')
+        
+        # Get the ligand names in this directory
+        ligand_maes = glob.glob('lig_*_prepped.mae')
+        ligand_maes = [i for i in ligand_maes if not "unprep" in i]
+        if len(ligand_maes) == 0:
+            logging.info('No ligand files found for target %s. Skipping.' %(dockable_path))
+            os.chdir(current_dir)
+            continue
+        if len(ligand_maes) > 1:
+            logging.info('Multiple ligand files found for target %s (found ligands %r). The workflow currently should only be sending one ligand. Skipping. ' %(dockable_path, ligand_maes))
+            os.chdir(current_dir)
+            continue
+            
         #for possible_protein in ("largest.maegz", "smallest.maegz", "holo.maegz", "apo.maegz"):
         for candidate_protein in candidate_proteins:
             candidate_prefix = candidate_protein.replace('.maegz','')
@@ -84,7 +98,7 @@ def main_glide (stage_3_result, stage_4_working, update= True):
             ##################
             #do docking inside
             commands.getoutput("cp ../%s ."%candidate_protein)
-            commands.getoutput("cp ../ligand.mae .")
+
             #generate grid
             logging.info("Trying to get the grid file...")
             if update: 
@@ -96,34 +110,38 @@ def main_glide (stage_3_result, stage_4_working, update= True):
                 if not os.path.isfile(out_grid):
                     out_grid = grid(grid_center, candidate_protein)
                     #time.sleep(200)
-            logging.info("Finish grid generation...")
-            logging.info("Trying to dock...")
-            if update:
-                out_dock = dock("ligand.mae", out_grid, candidate_prefix)
-            else:
-                out_dock = candidate_prefix + "_dock_pv.maegz"
-                if not os.path.isfile(out_dock):
-                    out_dock = dock("ligand.mae", out_grid, candidate_prefix)
-            logging.info("Finished docking, beginning post-docking file conversion")
-                
-            # Split the results into receptor and poses
-            intermediate_prefix = '%s_postdocking' %(candidate_prefix)
-            receptorMae = intermediate_prefix+'_receptor1.mae'
+            logging.info("Finished grid generation...")
             
-            
-            ## Split into a receptor mae file and one ligand mae for each pose
-            commands.getoutput('$SCHRODINGER/run split_structure.py -m ligand -many_files %s %s.mae' %(out_dock, intermediate_prefix))
-            
-            ## Convert the receptor mae into pdb
-            # This pdb is one of the final outputs from docking
-            receptorPdb = intermediate_prefix+'_receptor1.pdb'
-            commands.getoutput('/opt/schrodinger2015-3/utilities/structconvert %s %s' %(receptorMae, receptorPdb))
-            
-            ## Convert the ligand maes into mols
-            ligand_maes = glob.glob('./%s_ligand?.mae' %(intermediate_prefix))
+            ## Dock each ligand
             for ligand_mae in ligand_maes:
-                ligand_mol = ligand_mae.replace('.mae','.mol') 
-                commands.getoutput('/opt/schrodinger2015-3/utilities/structconvert %s %s' %(ligand_mae, ligand_mol))
+                commands.getoutput("cp ../%s ." %(ligand_mae))
+                logging.info("Trying to dock...")
+                if update:
+                    out_dock = dock("ligand.mae", out_grid, candidate_prefix)
+                else:
+                    out_dock = candidate_prefix + "_dock_pv.maegz"
+                    if not os.path.isfile(out_dock):
+                        out_dock = dock(ligand_mae, out_grid, candidate_prefix)
+                logging.info("Finished docking, beginning post-docking file conversion")
+                
+                # Split the results into receptor and poses
+                intermediate_prefix = '%s_postdocking' %(candidate_prefix)
+                receptorMae = intermediate_prefix+'_receptor1.mae'
+            
+            
+                ## Split into a receptor mae file and one ligand mae for each pose
+                commands.getoutput('$SCHRODINGER/run split_structure.py -m ligand -many_files %s %s.mae' %(out_dock, intermediate_prefix))
+            
+                ## Convert the receptor mae into pdb
+                # This pdb is one of the final outputs from docking
+                receptorPdb = intermediate_prefix+'_receptor1.pdb'
+                commands.getoutput('/opt/schrodinger2015-3/utilities/structconvert %s %s' %(receptorMae, receptorPdb))
+            
+                ## Convert the ligand maes into mols
+                docked_ligand_maes = glob.glob('./%s_ligand?.mae' %(intermediate_prefix))
+                for docked_ligand_mae in docked_ligand_maes:
+                    docked_ligand_mol = ligand_mae.replace('.mae','.mol') 
+                    commands.getoutput('/opt/schrodinger2015-3/utilities/structconvert %s %s' %(docked_ligand_mae, docked_ligand_mol))
 
             # Copy the top-ranked ligand mol to be one of the final outputs from this step
             top_ligand_mol = intermediate_prefix+'_ligand1.mol'
