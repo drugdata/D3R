@@ -288,7 +288,7 @@ def main_proteinprep (challenge_data_path, pdb_protein_path, working_folder ):
         commands.getoutput('cp %s %s' %(lig_smiles_file, dest_smiles_file))
     
         ## Get the ligand center of mass for the "largest" candidate (all of the other candidates have been aligned to this one)
-        largest_ligand_filenames = glob.glob('largest-*-lig.pdb')
+        largest_ligand_filenames = glob.glob('%s/largest-*-lig.pdb'%(target_dir_path))
         if len(largest_ligand_filenames) != 1:
             logging.info("Failed to find largest structure's ligand file. There should be one match but I found %r" %(largest_ligand_filenames))
         largest_ligand_filename = largest_ligand_filenames[0]

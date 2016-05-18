@@ -256,7 +256,7 @@ def main_proteinprep ( challenge_data_path, pdb_protein_path, working_folder ):
         # Pull in the ligand inchi
         lig_smiles_files = glob.glob('%s/lig_*.smi' %(target_dir_path))
         if len(lig_smiles_files) != 1:
-            logging.info('Unable to find unambiguous ligand smiles for %s - glob returned %r' %(pot_target_id, lig_inchi_files))
+            logging.info('Unable to find unambiguous ligand smiles for %s - glob returned %r' %(pot_target_id, lig_smiles_files))
             continue
         lig_smiles_file = lig_smiles_files[0]
         local_smiles_file = os.path.basename(lig_smiles_file)
@@ -265,7 +265,7 @@ def main_proteinprep ( challenge_data_path, pdb_protein_path, working_folder ):
 
     
         ## Get the ligand center of mass for the "largest" candidate (all of the other candidates have been aligned to this one)
-        largest_ligand_filenames = glob.glob('largest-*-lig.pdb')
+        largest_ligand_filenames = glob.glob('%s/largest-*-lig.pdb'%(target_dir_path))
         if len(largest_ligand_filenames) != 1:
             logging.info("Failed to find largest structure's ligand file. There should be one match but I found %r" %(largest_ligand_filenames))
         largest_ligand_filename = largest_ligand_filenames[0]
