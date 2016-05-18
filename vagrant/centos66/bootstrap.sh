@@ -52,7 +52,17 @@ pushd mgltools_x86_64Linux2_1.5.6
 popd
 popd
 
-echo "Install UCSF chimera"
+echo "MANUAL TASK -- Install UCSF chimera"
+echo "1) Download chimera by visiting: https://www.cgl.ucsf.edu/chimera/cgi-bin/secure/chimera-get.py?file=linux_x86_64/chimera-1.10.2-linux_x86_64.bin"
+echo "   In a browser, accept license and download binary."
+echo "   Copy binary to directory with VagrantFile & bootstrap.sh file"
+echo ""
+echo "2) Connect to vm via vagrant ssh"
+echo "3) Become root sudo -u root /bin/bash"
+echo "4) cd /vagrant"
+echo "5) Run chmod a+x chimera-1.10.2-linux_x86_64.bin"
+echo "6) Run ./chimera-1.10.2-linux_x86_64.bin"
+echo "   and follow instructions using defaults"
 # wget https://www.cgl.ucsf.edu/chimera/cgi-bin/secure/chimera-get.py?file=linux_x86_64/chimera-1.10.2-linux_x86_64.bin -O chimera.bin
 # chomd u+x chimera.bin
 # ./chimera.bin
