@@ -104,7 +104,7 @@ def ligand_prepare(ligand_smile, out_lig_file):
         of.write(chimera_prep_text) 
     commands.getoutput('chimera --nogui --script "chimeraPrep.py %s %s" >& chimeraLigPrep.out' %(unprep_lig_file, out_lig_file))
     #time.sleep(sleep_time) 
-    return os.path.isfile(out_lig_file):
+    return os.path.isfile(out_lig_file)
 
 
 def align_proteins (target_protein, pre_prepare_protein, post_prepare_protein):
@@ -280,7 +280,7 @@ def main_proteinprep (challenge_data_path, pdb_protein_path, working_folder ):
         # Pull in the ligand inchi
         lig_smiles_files = glob.glob('%s/lig_*.smi' %(target_dir_path))
         if len(lig_smiles_files) != 1:
-            logging.info('Unable to find unambiguous ligand smiles for %s - glob returned %r' %(pot_target_id, lig_inchi_files))
+            logging.info('Unable to find unambiguous ligand smiles for %s - glob returned %r' %(pot_target_id, lig_smiles_files))
             continue
         lig_smiles_file = lig_smiles_files[0]
         local_smiles_file = os.path.basename(lig_smiles_file)
