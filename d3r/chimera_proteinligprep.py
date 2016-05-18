@@ -298,7 +298,7 @@ def main_proteinprep (challenge_data_path, pdb_protein_path, working_folder ):
             os.chdir(current_dir_layer_1)
             continue
         else:
-            with open("center.txt", "w") as center_file:
+            with open("%s/center.txt" %(target_dir_path), "w") as center_file:
                 center_file.writelines(ligand_center)
                     
         
