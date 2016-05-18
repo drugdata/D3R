@@ -48,13 +48,13 @@ def extract_info_from_s2(stage_2_out):
 
 #copy all the txt files from the output stage 2 location and create folder for each of this named by the query entry
 #check if it finished later needed 
-def get_center(protein_file, ligname):
-    xyz_lines = open(protein_file,"r").readlines()
+def get_center(ligand_pdb):
+    xyz_lines = open(ligand_pdb,"r").readlines()
     multi_ligand = False
     atom_list = []
     x = y = z = 0
     for xyz_line in xyz_lines:
-        if "HETATM" in xyz_line and ligname in xyz_line[17:21]:
+        if "HETATM" in xyz_line:
             #logging.debug("Check the get center of this protein: %s for this ligand: %s"%(protein_file, ligname))
             atom_name = xyz_line[12:16]
             if atom_name in atom_list:
@@ -66,16 +66,19 @@ def get_center(protein_file, ligname):
                     y+= float(xyz_line[38:46])
                     z+= float(xyz_line[46:54])
                 except:
-                    logging.debug("Fatal error: Cannot find the XYZ coordinate for this protein:%s"%protein_file)
+                    logging.debug("Fatal error: Cannot find the XYZ coordinate for this ligand:%s"%ligand_pdb)
                     return False
     if not multi_ligand:
         lig_center = "%8.3f, %8.3f, %8.3f"%(x/len(atom_list), y/len(atom_list), z/len(atom_list))
-        logging.debug("Ligand center for this case:%s is %s"%(protein_file, lig_center))
+        logging.debug("Ligand center for this case:%s is %s"%(ligand_pdb, lig_center))
         return lig_center
     else:
-        logging.debug("Fatal error: Found multiple ligand for this protein:%s"%protein_file)
+        logging.debug("Fatal error: Found multiple ligands in file:%s"%ligand_pdb)
         return False
-
+    
+    
+    
+    
 def ligand_prepare(ligand_smile, out_lig_file):
     if os.path.isfile(out_lig_file):
         logging.info('Ligand file %s is already prepared. Skipping.' %(out_lig_file))
@@ -259,6 +262,23 @@ def main_proteinprep ( challenge_data_path, pdb_protein_path, working_folder ):
         local_smiles_file = os.path.basename(lig_smiles_file)
         dest_smiles_file = os.path.join(pot_target_id, local_smiles_file)
         commands.getoutput('cp %s %s' %(lig_smiles_file, dest_smiles_file))
+
+    
+        ## Get the ligand center of mass for the "largest" candidate (all of the other candidates have been aligned to this one)
+        largest_ligand_filenames = glob.glob('largest-*-lig.pdb')
+        if len(largest_ligand_filenames) != 1:
+            logging.info("Failed to find largest structure's ligand file. There should be one match but I found %r" %(largest_ligand_filenames))
+        largest_ligand_filename = largest_ligand_filenames[0]
+        ligand_center = get_center (largest_ligand_filename) 
+        if not ligand_center:
+            logging.info("Unable to find the center of the ligand for the largest candidate pdb: %s"%(pot_target_id))
+            os.chdir(current_dir_layer_1)
+            continue
+        else:
+            with open("center.txt", "w") as center_file:
+                center_file.writelines(ligand_center)
+                    
+
         
         # Copy in each valid candidate
         for candidate_file in glob.glob('%s/*-%s_*.pdb' %(target_dir_path, pot_target_id)):
