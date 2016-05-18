@@ -296,17 +296,38 @@ def main_proteinprep ( challenge_data_path, pdb_protein_path, working_folder ):
         #step 6, prepare all proteins
         ######################
         for smiles_filename, candidate_filename in valid_candidates[target_id]:
-            # Prepare the ligand            
+
+            
+            
+            ## Parse the candidate name 
+            ## Get the method type, target, and candidate info from the filename
+            # for example, this will parse 'apo-5hib_2eb2_docked.mol' into [('apo', '5hib', '2eb2')]
+            
+            parsed_name = re.findall('([a-zA-Z0-9]+)-([a-zA-Z0-9]+)_([a-zA-Z0-9]+)-?([a-zA-Z0-9]*).pdb', candidate_filename)
+            if len(parsed_name) != 1:
+                logging.info('Failed to parse docked structure name "%s". Parsing yielded %r' %(candidate_filename, parsed_name))
+                continue
+            candidate_structure_type = parsed_name[0][0]
+            candidate_structure_target = parsed_name[0][1]
+            candidate_structure_candidate = parsed_name[0][2]
+            candidate_structure_ligand = parsed_name[0][2]
+            
+            # Prepare the ligand
             if not ligand_prepare(smiles_filename, smiles_filename.replace('.smi','_prepped.mae')):
                 logging.info("Unable to prepare the ligand for this query protein:%s"%target_id)
-                os.chdir(current_dir_layer_1)
+                #os.chdir(current_dir_layer_1)
                 continue 
 
-            #split the complex first
-            candidate_prefix = candidate_filename.replace('.pdb','')
+            # Split the complex 
+            #candidate_prefix = candidate_filename.replace('.pdb','')
+            candidate_prefix = '%s-%s_%s' %(candidate_structure_type,
+                                            candidate_structure_target,
+                                            candidate_structure_candidate)
+            
             out_split = candidate_prefix+ "_split.pdb"
             out_receptor = split_complex("pdb", candidate_filename, out_split)
-            if not out_receptor:
+            
+            if not(out_receptor):
                 logging.info("Unable to split this protein:%s"%(candidate_filename))
                 continue
             
