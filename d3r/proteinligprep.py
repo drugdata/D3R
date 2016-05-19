@@ -313,7 +313,7 @@ def main_proteinprep ( challenge_data_path, pdb_protein_path, working_folder ):
             candidate_structure_ligand = parsed_name[0][2]
             
             # Prepare the ligand
-            if not ligand_prepare(smiles_filename, smiles_filename.replace('.smi','_prepped.mae')):
+            if not ligand_prepare(smiles_filename, smiles_filename.replace('.smi','_prepared.mae')):
                 logging.info("Unable to prepare the ligand for this query protein:%s"%target_id)
                 #os.chdir(current_dir_layer_1)
                 continue 
@@ -339,8 +339,8 @@ def main_proteinprep ( challenge_data_path, pdb_protein_path, working_folder ):
                 logging.info("Unable to prepare this protein:%s"%(out_split))
                 continue                
             #convert into pdb format
-            #prepared_candidate_filename = candidate_prefix + "_prepared.pdb"
-            #commands.getoutput("$SCHRODINGER/utilities/pdbconvert -imae %s -opdb %s"%(prepared_protein_maegz, prepared_candidate_filename))
+            prepared_candidate_filename = candidate_prefix + "_prepared.pdb"
+            commands.getoutput("$SCHRODINGER/utilities/pdbconvert -imae %s -opdb %s"%(prepared_protein_maegz, prepared_candidate_filename))
             logging.info("Successfully prepared this protein:%s"%(prepared_candidate_filename))
         os.chdir(current_dir_layer_1)
                     

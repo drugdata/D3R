@@ -334,7 +334,7 @@ def main_proteinprep (challenge_data_path, pdb_protein_path, working_folder ):
             candidate_structure_ligand = parsed_name[0][2]
             
             # Prepare the ligand
-            if not ligand_prepare(smiles_filename, smiles_filename.replace('.smi','_prepped.mol2')):
+            if not ligand_prepare(smiles_filename, smiles_filename.replace('.smi','_prepared.mol2')):
                 logging.info("Unable to prepare the ligand for this query protein:%s"%target_id)
                 #os.chdir(current_dir_layer_1)
                 continue 

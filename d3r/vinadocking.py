@@ -57,7 +57,7 @@ def main_vina (stage_3_result, stage_4_working, update= True):
         
         logging.info('Found candidates %r' %(candidate_proteins))
         # Get the ligand names in this directory
-        ligand_mol2s = glob.glob('lig_*_prepped.mol2')
+        ligand_mol2s = glob.glob('lig_*_prepared.mol2')
         ligand_mol2s = [i for i in ligand_mol2s if not "unprep" in i]
         if len(ligand_mol2s) == 0:
             logging.info('No ligand files found for target %s. Skipping.' %(dockable_path))

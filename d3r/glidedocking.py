@@ -76,7 +76,7 @@ def main_glide (stage_3_result, stage_4_working, update= True):
         logging.info('Found candidates %r' %(candidate_proteins))
 
         # Get the ligand names in this directory
-        ligand_maes = glob.glob('lig_*_prepped.mae')
+        ligand_maes = glob.glob('lig_*_prepared.mae')
         ligand_maes = [i for i in ligand_maes if not "unprep" in i]
         if len(ligand_maes) == 0:
             logging.info('No ligand files found for target %s. Skipping.' %(dockable_path))
