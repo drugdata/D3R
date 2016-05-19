@@ -5,7 +5,7 @@ import os
 import glob
 import logging
 import time
-
+import re
 logger = logging.getLogger()
 logging.basicConfig( format  = '%(asctime)s: %(message)s', datefmt = '%m/%d/%y %I:%M:%S', filename = 'final.log', filemode = 'w', level   = logging.DEBUG )
 
