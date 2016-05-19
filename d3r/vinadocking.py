@@ -55,6 +55,7 @@ def main_vina (stage_3_result, stage_4_working, update= True):
         # Get the candidate protein names in this directory
         candidate_proteins = glob.glob('./*-????_????_prepared.mol2')
         
+        logging.info('Found candidates %r' %(candidate_proteins))
         # Get the ligand names in this directory
         ligand_mol2s = glob.glob('lig_*_prepped.mol2')
         ligand_mol2s = [i for i in ligand_mol2s if not "unprep" in i]
