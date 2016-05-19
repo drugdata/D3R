@@ -72,7 +72,7 @@ def main_glide (stage_3_result, stage_4_working, update= True):
             continue
             
         # Get the candidate protein names in this directory
-        candidate_proteins = glob.glob('./*-????_????_prepared.maegz')
+        candidate_proteins = glob.glob('./*-????_????_prepared.mae')
         logging.info('Found candidates %r' %(candidate_proteins))
 
         # Get the ligand names in this directory
