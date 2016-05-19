@@ -332,15 +332,15 @@ def main_proteinprep ( challenge_data_path, pdb_protein_path, working_folder ):
                 continue
             
             logging.info("Successfully split this protein:%s, go to preparation step"%(candidate_filename))
-            prepared_protein_maegz = candidate_prefix + ".maegz"
+            prepared_protein_maegz = candidate_prefix + "_prepared.mae"
             #pass the wizard sleep time here
             preparation_result = prepare_protein(out_receptor,prepared_protein_maegz, 180 )
             if not preparation_result:
                 logging.info("Unable to prepare this protein:%s"%(out_split))
                 continue                
             #convert into pdb format
-            prepared_candidate_filename = candidate_prefix + "_prepared.pdb"
-            commands.getoutput("$SCHRODINGER/utilities/pdbconvert -imae %s -opdb %s"%(prepared_protein_maegz, prepared_candidate_filename))
+            #prepared_candidate_filename = candidate_prefix + "_prepared.pdb"
+            #commands.getoutput("$SCHRODINGER/utilities/pdbconvert -imae %s -opdb %s"%(prepared_protein_maegz, prepared_candidate_filename))
             logging.info("Successfully prepared this protein:%s"%(prepared_candidate_filename))
         os.chdir(current_dir_layer_1)
                     
