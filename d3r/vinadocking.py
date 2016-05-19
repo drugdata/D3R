@@ -23,7 +23,7 @@ struct.write(outFile)
 def dock(ligand_pdbqt,  protein_pdbqt, grid_center,):
     center_list = grid_center.split(',')
     vina_command = 'vina --receptor %s  --ligand %s --center_x %s --center_y %s --center_z %s --size_x 15 --size_y 15 --size_z 15 --seed 999' %(protein_pdbqt, ligand_pdbqt, center_list[0], center_list[1], center_list[2])
-    out_dock_file = 'ligand_out.pdb'
+    out_dock_file = ligand_pdbqt.replace('.pdbqt','_out.pdbqt')
     commands.getoutput(vina_command)
     return out_dock_file
 

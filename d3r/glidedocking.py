@@ -89,7 +89,7 @@ def main_glide (stage_3_result, stage_4_working, update= True):
             
         #for possible_protein in ("largest.maegz", "smallest.maegz", "holo.maegz", "apo.maegz"):
         for candidate_protein in candidate_proteins:
-            candidate_prefix = candidate_protein.replace('.maegz','')
+            candidate_prefix = candidate_protein.replace('.mae','')
 
             #if os.path.isfile(candidate_protein):
             logging.info( "Working on this receptor: %s"%candidate_prefix )
