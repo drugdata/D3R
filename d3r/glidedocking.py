@@ -10,10 +10,10 @@ logger = logging.getLogger()
 logging.basicConfig( format  = '%(asctime)s: %(message)s', datefmt = '%m/%d/%y %I:%M:%S', filename = 'final.log', filemode = 'w', level   = logging.INFO )
 
 
-def grid (grid_center, prep_pro):
-    protein_name = prep_pro.split(".")[0]
-    out_grid = protein_name + ".zip"
-    grid_in  = protein_name +  "_grid.in"
+def grid (grid_center, prep_pro, prefix):
+    #protein_name = prep_pro.split(".")[0]
+    out_grid = prefix + ".zip"
+    grid_in  = prefix +  "_grid.in"
     grid_1 = "GRID_CENTER \t %s \n"%grid_center
     grid_2 = "GRIDFILE \t %s \n"%out_grid
     grid_3 = "INNERBOX \t 10, 10, 10 \n"
@@ -89,7 +89,7 @@ def main_glide (stage_3_result, stage_4_working, update= True):
             
         #for possible_protein in ("largest.maegz", "smallest.maegz", "holo.maegz", "apo.maegz"):
         for candidate_protein in candidate_proteins:
-            candidate_prefix = candidate_protein.replace('.mae','')
+            candidate_prefix = candidate_protein.replace('_prepared.mae','')
 
             #if os.path.isfile(candidate_protein):
             logging.info( "Working on this receptor: %s"%candidate_prefix )
@@ -103,13 +103,13 @@ def main_glide (stage_3_result, stage_4_working, update= True):
             #generate grid
             logging.info("Trying to get the grid file...")
             if update: 
-                out_grid = grid(grid_center, candidate_protein) 
+                out_grid = grid(grid_center, candidate_protein, candidate_prefix) 
                 #time.sleep(200)
             else:
                 #check if there is old grid
                 out_grid = candidate_prefix + ".zip"
                 if not os.path.isfile(out_grid):
-                    out_grid = grid(grid_center, candidate_protein)
+                    out_grid = grid(grid_center, candidate_protein, candidate_prefix)
                     #time.sleep(200)
             logging.info("Finished grid generation...")
             
