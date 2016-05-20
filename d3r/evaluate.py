@@ -504,7 +504,7 @@ if ("__main__") == (__name__):
     logging.basicConfig(format='%(asctime)s: %(message)s',
                         datefmt='%m/%d/%y %I:%M:%S', filename='final.log',
                         filemode='w', level=logging.INFO)
-    (opt, args) = parser.parse_args()
+    opt = parser.parse_args()
     dockDir = opt.dockdir
     evaluateDir = opt.outdir
     pdbloc = opt.pdbdb
