@@ -305,6 +305,7 @@ def main_score (dock_dir, pdb_protein_path, evaluate_dir, update= True):
     
     for target_dir in target_dirs:
         valid_target = False # this flag indicates whether we have at least one valid docked structure for scoring
+        print "cp -r %s/%s %s"%(dock_dir, target_dir, evaluate_dir)
         commands.getoutput("cp -r %s/%s %s"%(dock_dir, target_dir, evaluate_dir))
         target_name = os.path.basename(target_dir)
         os.chdir(target_name)
