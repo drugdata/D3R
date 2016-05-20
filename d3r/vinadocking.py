@@ -71,7 +71,7 @@ def main_vina (stage_3_result, stage_4_working, update= True):
         
         
         for candidate_protein in candidate_proteins:
-            candidate_prefix = candidate_protein.replace('.mol2','')
+            candidate_prefix = candidate_protein.replace('_prepared.mol2','')
             #if os.path.isfile(candidate_protein):
             logging.info( "Working on this receptor: %s"%candidate_protein )
             if not os.path.isdir(candidate_prefix):

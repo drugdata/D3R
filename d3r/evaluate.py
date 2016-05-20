@@ -302,6 +302,7 @@ def main_score (dock_dir, pdb_protein_path, evaluate_dir, update= True):
     ## os.walk will return a tuple of (directory absolute path, subdirectories, files)
 
     target_dirs = list(os.walk(dock_dir))[0][1]
+
     all_docked_structures = []
     
     for target_dir in target_dirs:
