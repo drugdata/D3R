@@ -105,7 +105,7 @@ def main_vina (stage_3_result, stage_4_working, update= True):
                 #receptorPdbqt = out_dock_file.replace('ligand_out',candidate_name)
                 receptorPdbqt = candidate_prefix+'.pdbqt'
                 ## This receptor pdb will be one of our final outputs
-                outputReceptorPdb = "%s_docked.pdb" %(output_prefix)
+                outputReceptorPdb = "%s.pdb" %(output_prefix)
                 commands.getoutput('. /usr/local/mgltools/bin/mglenv.sh; python $MGL_ROOT/MGLToolsPckgs/AutoDockTools/Utilities24/pdbqt_to_pdb.py -f %s -o %s' %(receptorPdbqt, outputReceptorPdb))
                 
                 ## Then make the ligand mol

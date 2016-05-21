@@ -136,13 +136,13 @@ def main_glide (stage_3_result, stage_4_working, update= True):
                 ## Convert the receptor mae into pdb
                 # This pdb is one of the final outputs from docking
                 outputReceptorPdb = '%s_docked.pdb' %(candidate_prefix)
-                commands.getoutput('/opt/schrodinger2015-3/utilities/structconvert %s %s' %(receptorMae, outputReceptorPdb))
+                commands.getoutput('$SCHRODINGER/utilities/structconvert %s %s' %(receptorMae, outputReceptorPdb))
             
                 ## Convert the ligand maes into mols
                 docked_ligand_maes = glob.glob('./%s_ligand?.mae' %(intermediate_prefix))
                 for docked_ligand_mae in docked_ligand_maes:
-                    docked_ligand_mol = ligand_mae.replace('.mae','.mol') 
-                    commands.getoutput('/opt/schrodinger2015-3/utilities/structconvert %s %s' %(docked_ligand_mae, docked_ligand_mol))
+                    docked_ligand_mol = docked_ligand_mae.replace('.mae','.mol') 
+                    commands.getoutput('$SCHRODINGER/utilities/structconvert %s %s' %(docked_ligand_mae, docked_ligand_mol))
 
             # Copy the top-ranked ligand mol to be one of the final outputs from this step
             top_ligand_mol = intermediate_prefix+'_ligand1.mol'
