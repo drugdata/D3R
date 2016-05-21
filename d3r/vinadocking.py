@@ -105,8 +105,8 @@ def main_vina (stage_3_result, stage_4_working, update= True):
                 #receptorPdbqt = out_dock_file.replace('ligand_out',candidate_name)
                 receptorPdbqt = candidate_prefix+'.pdbqt'
                 ## This receptor pdb will be one of our final outputs
-                receptorPdb = receptorPdbqt.replace('.pdbqt','.pdb')
-                commands.getoutput('. /usr/local/mgltools/bin/mglenv.sh; python $MGL_ROOT/MGLToolsPckgs/AutoDockTools/Utilities24/pdbqt_to_pdb.py -f %s -o %s' %(receptorPdbqt, receptorPdb))
+                outputReceptorPdb = "%s_docked.pdb" %(output_prefix)
+                commands.getoutput('. /usr/local/mgltools/bin/mglenv.sh; python $MGL_ROOT/MGLToolsPckgs/AutoDockTools/Utilities24/pdbqt_to_pdb.py -f %s -o %s' %(receptorPdbqt, outputReceptorPdb))
                 
                 ## Then make the ligand mol
                 ## pdbqt_to_pdb.py can't split up the multiple poses in vina's output files, so we do that by hand
