@@ -5,6 +5,9 @@ import tempfile
 import stat
 import re
 import tarfile
+from mock import Mock
+
+from d3r.celpp.uploader import FtpFileUploader
 
 """
 test_proteinligprep
@@ -653,10 +656,89 @@ class TestChallengeDataTask(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
-    def test_upload_challenge_file(self):
+    def test_upload_challenge_file_challenge_file_is_none(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+
+            chall = ChallengeDataTask(temp_dir, params)
+            chall._upload_challenge_file(None)
+            chall.set_file_uploader(params)
+            self.assertEqual(chall.get_email_log(), 'challenge_file is None in'
+                                                    ' _upload_challenge_file'
+                                                    '\n')
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_upload_challenge_file_uploader_is_none(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            chall = ChallengeDataTask(temp_dir, params)
+            chall._upload_challenge_file('/foo')
+            self.assertEqual(chall.get_email_log(), 'No uploader available '
+                                                    'to upload challenge '
+                                                    'data\n')
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_upload_challenge_file_no_remote_challenge_dir(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            chall = ChallengeDataTask(temp_dir, params)
+            ftp = FtpFileUploader(None)
+            chall.set_file_uploader(ftp)
+            chall._upload_challenge_file('/foo')
+            self.assertEqual(chall.get_email_log(), 'No remote challenge'
+                                                    ' directory set for '
+                                                    'ftp upload\n')
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_upload_challenge_file_uploader_upload_fails(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            yeardir = os.path.join(temp_dir, '2016')
+            os.mkdir(yeardir)
+            weekdir = os.path.join(yeardir, 'dataset.week.50')
+            os.mkdir(weekdir)
+            chall = ChallengeDataTask(weekdir, params)
+            chall.create_dir()
+
+            mockftp = D3RParameters()
+            mockftp.put = Mock(side_effect=IOError('hi'))
+            ftp = FtpFileUploader(None)
+            ftp.set_ftp_remote_challenge_dir('/challenge')
+            ftp.set_ftp_connection(mockftp)
+            chall.set_file_uploader(ftp)
+            tarball = os.path.join(chall.get_dir(),'celppweek50_2016.tar.gz')
+            f = open(tarball, 'w')
+            f.write('hi')
+            f.flush()
+            f.close()
+            try:
+                chall._upload_challenge_file(tarball)
+                self.fail('Expected exception')
+            except Exception as e:
+                self.assertEqual(str(e),
+                                 'Unable to upload ' + tarball +
+                                 ' to /challenge/celppweek50_2016.tar.gz : ' +
+                                 'hi')
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_upload_challenge_file_uploader_tar_succeeds_latest_fails(self):
+        self.assertEqual(1, 2)
+
+    def test_upload_challenge_file_uploader_successful(self):
         self.assertEqual(1, 2)
 
     def test_run_fails_cause_ftp_upload_fails(self):
+        self.assertEqual(1, 2)
+
+    def test_run_success_with_ftp_upload(self):
         self.assertEqual(1, 2)
 
     def test_run_succeeds(self):

@@ -22,6 +22,7 @@ class ChallengeDataTask(D3RTask):
     TAR_EXCLUDE_FILES = ['final.log']
     TAR_GZ_SUFFIX = ".tar.gz"
     README_TXT_FILE = "readme.txt"
+    LATEST_TXT = "latest.txt"
 
     README_BODY = """CELPP Weekly Pose Prediction Challenge
 ======================================
@@ -140,6 +141,9 @@ Below is a definition of the files and directories within this tar file:
                [lig_<candidate ligand id>.mol]
 
                    -- 2D structure of the Target Ligand.
+
+Blastnfilter Summary
+====================
 
 """
 
@@ -348,6 +352,12 @@ Below is a definition of the files and directories within this tar file:
     def _upload_challenge_file(self, challenge_file):
         """Uploads challenge file to remote ftp server
         """
+        if challenge_file is None:
+            logger.error('challenge_file is None')
+            self.append_to_email_log('challenge_file is None in '
+                                     '_upload_challenge_file\n')
+            return
+
         uploader = self.get_file_uploader()
         if uploader is None:
             logger.warning('No uploader available to upload challenge data')
@@ -361,8 +371,33 @@ Below is a definition of the files and directories within this tar file:
             self.append_to_email_log('No remote challenge directory set for '
                                      'ftp upload\n')
             return
-        logger.debug('Attempting to upload ' + challenge_file + ' to ' + remote_dir)
-        uploader.upload_file_direct(challenge_file, remote_dir)
+        logger.debug('Attempting to upload ' + challenge_file + ' to '
+                     + remote_dir)
+
+        if uploader.upload_file_direct(challenge_file, remote_dir,
+                                       os.path.basename(challenge_file)) \
+                is False:
+            raise Exception(uploader.get_error_msg())
+
+        self.append_to_email_log('\nChallenge tarball uploaded: \n'
+                                 + uploader.get_upload_summary() + '\n')
+
+        # create latest.txt file and upload to ftp server
+        self._upload_latest_file(self, uploader, challenge_file, remote_dir,
+                                 ChallengeDataTask.LATEST_TXT)
+
+    def _upload_latest_file(self, uploader, challenge_file, remote_dir):
+        """Creates and uploads latest.txt file containing name of tarfile
+        """
+        chall_name = os.path.basename(challenge_file)
+        latest_file = os.path.join(self.get_dir(),
+                                   ChallengeDataTask.LATEST_TXT)
+        f = open(latest_file, 'w')
+        f.write(chall_name)
+        f.flush()
+        f.close()
+        if uploader.upload_file_direct(challenge_file, remote_dir) is False:
+            raise Exception(uploader.get_error_msg())
 
     def run(self):
         """Runs ChallengeDataTask after verifying blastnfilter was good
