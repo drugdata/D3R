@@ -172,8 +172,84 @@ class TestFtpFileUploader(unittest.TestCase):
         foo._disconnect()
         mockftp.close.assert_any_call()
 
-    def test_upload_file_direct(self):
-        self.assertEqual(1, 2)
+    def test_upload_file_direct_none_passed_as_file(self):
+        foo = FtpFileUploader(None)
+
+        self.assertEqual(foo.upload_file_direct(None,'/remote_dir',
+                                                'remote_filename'), False)
+
+        self.assertEqual(foo.get_error_msg(), 'File passed in is None')
+
+    def test_upload_file_direct_file_is_not_a_file(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            foo = FtpFileUploader(None)
+            noexist = os.path.join(temp_dir, 'noexist')
+            self.assertEqual(foo.upload_file_direct(noexist,
+                                   '/remote_dir', 'remote_filename'), False)
+
+            self.assertEqual(foo.get_error_msg(), noexist +
+                             ' is not a file')
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_upload_file_direct_remote_dir_is_none(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            foo = FtpFileUploader(None)
+            afile = os.path.join(temp_dir, 'afile')
+            open(afile, 'a').close()
+            self.assertEqual(foo.upload_file_direct(afile, None,
+                                                    'remote_filename'), False)
+            self.assertEqual(foo.get_error_msg(), 'remote_dir is None')
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_upload_file_direct_remote_file_name_is_none(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            foo = FtpFileUploader(None)
+            afile = os.path.join(temp_dir, 'afile')
+            open(afile, 'a').close()
+            self.assertEqual(foo.upload_file_direct(afile, '/foo', None),
+                             False)
+            self.assertEqual(foo.get_error_msg(), 'remote_file_name is None')
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_upload_file_direct_put_throws_exception(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            mockftp = MockFtp()
+            mockftp.put = Mock(side_effect=IOError('hi'))
+            foo = FtpFileUploader(None)
+            foo.set_ftp_connection(mockftp)
+            afile = os.path.join(temp_dir, 'afile')
+            open(afile, 'a').close()
+            self.assertEqual(foo.upload_file_direct(afile, '/foo', 'name'),
+                             False)
+            self.assertEqual(foo.get_error_msg(), 'Unable to upload ' + afile +
+                             ' to /foo/name : hi')
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_upload_file_direct_success(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            mockftp = MockFtp()
+            mockftp.put = Mock(return_value=3)
+            foo = FtpFileUploader(None)
+            foo.set_ftp_connection(mockftp)
+            afile = os.path.join(temp_dir, 'afile')
+            open(afile, 'a').close()
+            self.assertEqual(foo.upload_file_direct(afile, '/foo', 'name'),
+                             True)
+            self.assertEqual(foo.get_error_msg(), None)
+            self.assertEqual(foo.get_upload_summary(), '1 (3 bytes) files '
+                                                       'uploaded in 0 seconds'
+                                                       ' to host Unset:')
+        finally:
+            shutil.rmtree(temp_dir)
 
     def test_upload_file_where_file_is_none(self):
 

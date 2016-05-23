@@ -14,11 +14,6 @@ class InvalidFtpConfigException(Exception):
     """
     pass
 
-class DirectFtpUploadException(Exception):
-    """Thrown when there is an error during direct ftp file upload
-    """
-    pass
-
 
 class FileUploader(object):
     """Defines interface for uploading files
@@ -35,13 +30,23 @@ class FileUploader(object):
         return True
 
     def get_upload_summary(self):
-        """Gets summary of previous `upload_files` invocation
+        """Gets summary of previous `upload_files` or
+           `upload_file_direct` invocation
             This method SHOULD be overridden in subclass
             :raises: NotImplementedError
             :returns: Human readable string summary
         """
         logger.debug('Running dummy get_upload_summary method')
         return 'Nothing to report since this does not do anything'
+
+    def upload_file_direct(self, file, remote_dir, remote_file_name):
+        """Uploads file directly
+           This method SHOULD be overridden in subclass
+           :raises: NotImplmentedError
+           :returns: True upon success, false otherwise.
+        """
+        logger.error('Not implemented')
+        raise NotImplementedError('Not implemented')
 
 
 class FtpFileUploader(FileUploader):
@@ -218,27 +223,65 @@ class FtpFileUploader(FileUploader):
         """Uploads file to remote server
 
            This method will upload the file to the `remote_dir` using the
-           `remote_file_name` as the file name
+           `remote_file_name` as the file name.  If there is an error
+           information can be obtained by calling `self.get_error_msg()`
            :param file: full path to file to upload
            :param remote_dir: full path to remote directory to upload file to
            :param remote_file_name: name to use for file uploaded
-           :raise DirectFtpUploadException: if `file` is None or not a file
+           :returns: True upon success, false otherwise
         """
-        if file is None:
-            raise DirectFtpUploadException('File passed in is None')
+        self._error_msg = None
+        self._bytes_transferred = 0
+        self._files_transferred = 0
+        start_time = int(time.time())
+        try:
+            if file is None:
+                self._error_msg = 'File passed in is None'
+                return False
 
-        if not os.path.isfile(file):
-            raise DirectFtpUploadException(file + ' is not a file')
+            if not os.path.isfile(file):
+                self._error_msg = file + ' is not a file'
+                return False
 
-        remote_path = os.path.normpath(remote_dir +
-                                       os.sep + remote_file_name)
-        logger.debug('Direct uploading file: ' + file + ' to ' + remote_path)
+            if remote_dir is None:
+                self._error_msg = 'remote_dir is None'
+                return False
 
-        size = self._ftp.put(file, remote_path)
+            if remote_file_name is None:
+                self._error_msg = 'remote_file_name is None'
+                return False
 
-        logger.debug('  Uploaded ' + str(size) + ' bytes')
-        self._bytes_transferred += size
-        self._files_transferred += 1
+            remote_path = os.path.normpath(remote_dir +
+                                           os.sep + remote_file_name)
+            logger.debug('Direct uploading file: ' + file + ' to ' +
+                         remote_path)
+
+            # Try to connect
+            try:
+                self._connect()
+            except:
+                logger.exception('Unable to connect to ftp host')
+                self._error_msg = 'Unable to connect to ftp host'
+                return False
+            try:
+                size = self._ftp.put(file, remote_path)
+
+                logger.debug('  Uploaded ' + str(size) + ' bytes')
+                self._bytes_transferred += size
+                self._files_transferred += 1
+            except Exception as e:
+                logger.exception('Caught exception direct uploading file' +
+                                 file + ' to ' + remote_path)
+                self._error_msg = 'Unable to upload ' + file + ' to ' +\
+                                  remote_path + ' : ' + str(e)
+                return False
+            finally:
+                self._disconnect()
+            return True
+        finally:
+            self._duration = int(time.time()) - start_time
+            logger.debug('End of direct_file_upload operation took ' +
+                         str(self._duration) + ' seconds')
 
     def _upload_file(self, file):
         """Uploads file to remote server
