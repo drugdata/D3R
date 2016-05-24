@@ -9,7 +9,7 @@ import smtplib
 import platform
 from email.mime.text import MIMEText
 
-from d3r.celpp.uploader import FtpFileUploader
+from d3r.celpp.filetransfer import FtpFileUploader
 
 
 logger = logging.getLogger(__name__)
