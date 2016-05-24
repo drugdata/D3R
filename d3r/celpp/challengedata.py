@@ -383,8 +383,7 @@ Blastnfilter Summary
                                  + uploader.get_upload_summary() + '\n')
 
         # create latest.txt file and upload to ftp server
-        self._upload_latest_file(self, uploader, challenge_file, remote_dir,
-                                 ChallengeDataTask.LATEST_TXT)
+        self._upload_latest_file(uploader, challenge_file, remote_dir)
 
     def _upload_latest_file(self, uploader, challenge_file, remote_dir):
         """Creates and uploads latest.txt file containing name of tarfile
@@ -396,7 +395,8 @@ Blastnfilter Summary
         f.write(chall_name)
         f.flush()
         f.close()
-        if uploader.upload_file_direct(challenge_file, remote_dir) is False:
+        if uploader.upload_file_direct(latest_file, remote_dir,
+                                       ChallengeDataTask.LATEST_TXT) is False:
             raise Exception(uploader.get_error_msg())
 
     def run(self):
