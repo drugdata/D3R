@@ -3,10 +3,20 @@
 History
 -------
 
-0.1.0 (2015-06-30)
+1.1.0 (2016-05-24)
 ---------------------
 
-* First release on PyPI.
+* ChallengeDataTask now uploads challenge data package 
+  (celpp_week##_##.tar.gz) to 'challengedata' directory on
+  ftp if ftpconfig is set properly.  This is in addition, to
+  the default upload directory for that challenge data package.
+
+* Added a header line in readme.txt of challenge data package
+  to denote start of Blastnfilter summary output.
+
+* Not part of production release, but added prototype vagrant 
+  configuration to enable easy creation of a VM that can run
+  celpprunner.
 
 1.0.0 (2016-05-12)
 ---------------------
@@ -29,4 +39,9 @@ History
   fix made dataimport stage dependent on makeblastdb stage so
   the order is now stage.1.makeblastdb => stage.2.dataimport =>
   stage.3.blastnfilter... (issue #16)
+
+0.1.0 (2015-06-30)
+---------------------
+
+* First release on PyPI.
 
