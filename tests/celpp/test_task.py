@@ -24,7 +24,7 @@ from d3r.celpp.task import UnsetNameError
 from d3r.celpp.task import UnsetCommandError
 from d3r.celpp.task import UnsetFileNameError
 from d3r.celpp.task import D3RTask
-from d3r.celpp.uploader import FileUploader
+from d3r.celpp.filetransfer import FileUploader
 
 
 class MockException(Exception):

@@ -8,7 +8,7 @@ import shutil
 import os.path
 from mock import Mock
 
-from d3r.celpp.uploader import FtpFileUploader
+from d3r.celpp.filetransfer import FtpFileUploader
 """
 test_uploader
 ----------------------------------
@@ -113,7 +113,7 @@ class TestFtpFileUploader(unittest.TestCase):
             self.assertEqual(foo.get_ftp_remote_dir(), '/foo')
             self.assertEqual(foo.get_ftp_remote_challenge_dir(), None)
 
-           # test passing valid config file with challengepath
+            # test passing valid config file with challengepath
             f = open(os.path.join(temp_dir, 'valid'), 'a')
             f.write('host ftp.box.com\nuser bob@bob.com\npass 222\npath /foo\n'
                     'challengepath /chall\n')
@@ -175,7 +175,7 @@ class TestFtpFileUploader(unittest.TestCase):
     def test_upload_file_direct_none_passed_as_file(self):
         foo = FtpFileUploader(None)
 
-        self.assertEqual(foo.upload_file_direct(None,'/remote_dir',
+        self.assertEqual(foo.upload_file_direct(None, '/remote_dir',
                                                 'remote_filename'), False)
 
         self.assertEqual(foo.get_error_msg(), 'File passed in is None')
@@ -186,7 +186,8 @@ class TestFtpFileUploader(unittest.TestCase):
             foo = FtpFileUploader(None)
             noexist = os.path.join(temp_dir, 'noexist')
             self.assertEqual(foo.upload_file_direct(noexist,
-                                   '/remote_dir', 'remote_filename'), False)
+                                                    '/remote_dir',
+                                                    'remote_filename'), False)
 
             self.assertEqual(foo.get_error_msg(), noexist +
                              ' is not a file')

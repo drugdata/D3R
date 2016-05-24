@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class InvalidFtpConfigException(Exception):
-    """Thrown when an invalid ftp configution is passed to FtpFileUploader
+    """Thrown when an invalid ftp configuration is passed to FtpFileUploader
     """
     pass
 
@@ -111,17 +111,18 @@ class FtpFileUploader(FileUploader):
             f = open(ftp_config, 'r')
             for line in f:
                 split_line = line.split(' ')
-                if len(split_line) == 2:
-                    if split_line[0] == 'host':
-                        self.set_ftp_host(split_line[1].rstrip())
-                    elif split_line[0] == 'user':
-                        self.set_ftp_user(split_line[1].rstrip())
-                    elif split_line[0] == 'pass':
-                        self.set_ftp_password(split_line[1].rstrip())
-                    elif split_line[0] == 'path':
-                        self.set_ftp_remote_dir(split_line[1].rstrip())
-                    elif split_line[0] == 'challengepath':
-                        self.set_ftp_remote_challenge_dir(split_line[1].rstrip())
+                if not len(split_line) == 2:
+                    continue
+                if split_line[0] == 'host':
+                    self.set_ftp_host(split_line[1].rstrip())
+                elif split_line[0] == 'user':
+                    self.set_ftp_user(split_line[1].rstrip())
+                elif split_line[0] == 'pass':
+                    self.set_ftp_password(split_line[1].rstrip())
+                elif split_line[0] == 'path':
+                    self.set_ftp_remote_dir(split_line[1].rstrip())
+                elif split_line[0] == 'challengepath':
+                    self.set_ftp_remote_challenge_dir(split_line[1].rstrip())
         finally:
             if f is not None:
                 f.close()
