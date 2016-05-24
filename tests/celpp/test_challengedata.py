@@ -7,7 +7,7 @@ import re
 import tarfile
 from mock import Mock
 
-from d3r.celpp.uploader import FtpFileUploader
+from d3r.celpp.filetransfer import FtpFileUploader
 
 """
 test_proteinligprep
@@ -713,7 +713,7 @@ class TestChallengeDataTask(unittest.TestCase):
             ftp.set_ftp_remote_challenge_dir('/challenge')
             ftp.set_ftp_connection(mockftp)
             chall.set_file_uploader(ftp)
-            tarball = os.path.join(chall.get_dir(),'celppweek50_2016.tar.gz')
+            tarball = os.path.join(chall.get_dir(), 'celppweek50_2016.tar.gz')
             f = open(tarball, 'w')
             f.write('hi')
             f.flush()
@@ -730,23 +730,82 @@ class TestChallengeDataTask(unittest.TestCase):
             shutil.rmtree(temp_dir)
 
     def test_upload_challenge_file_uploader_tar_succeeds_latest_fails(self):
-        self.assertEqual(1, 2)
-
-    def test_upload_challenge_file_uploader_successful(self):
-        self.assertEqual(1, 2)
-
-    def test_run_fails_cause_ftp_upload_fails(self):
-        self.assertEqual(1, 2)
-
-    def test_run_success_with_ftp_upload(self):
-        self.assertEqual(1, 2)
-
-    def test_run_succeeds(self):
         temp_dir = tempfile.mkdtemp()
         try:
-            script = os.path.join(temp_dir, 'genchallenge.py')
-            f = open(script, 'w')
-            f.write("""#! /usr/bin/env python
+            params = D3RParameters()
+            yeardir = os.path.join(temp_dir, '2016')
+            os.mkdir(yeardir)
+            weekdir = os.path.join(yeardir, 'dataset.week.50')
+            os.mkdir(weekdir)
+            chall = ChallengeDataTask(weekdir, params)
+            chall.create_dir()
+
+            mockftp = D3RParameters()
+            mockftp.put = Mock(side_effect=[3, IOError('hi')])
+            ftp = FtpFileUploader(None)
+            ftp.set_ftp_remote_challenge_dir('/challenge')
+            ftp.set_ftp_connection(mockftp)
+            chall.set_file_uploader(ftp)
+            tarball = os.path.join(chall.get_dir(), 'celppweek50_2016.tar.gz')
+            f = open(tarball, 'w')
+            f.write('hi')
+            f.flush()
+            f.close()
+            latest_file = os.path.join(chall.get_dir(),
+                                       ChallengeDataTask.LATEST_TXT)
+            try:
+                chall._upload_challenge_file(tarball)
+                self.fail('Expected exception')
+            except Exception as e:
+                self.assertEqual(str(e),
+                                 'Unable to upload ' + latest_file +
+                                 ' to /challenge/latest.txt : ' +
+                                 'hi')
+
+            f = open(latest_file, 'r')
+            line = f.readline()
+            self.assertEqual(line, 'celppweek50_2016.tar.gz')
+            f.close()
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_upload_challenge_file_uploader_successful(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            yeardir = os.path.join(temp_dir, '2017')
+            os.mkdir(yeardir)
+            weekdir = os.path.join(yeardir, 'dataset.week.1')
+            os.mkdir(weekdir)
+            chall = ChallengeDataTask(weekdir, params)
+            chall.create_dir()
+
+            mockftp = D3RParameters()
+            mockftp.put = Mock(side_effect=[3, 5])
+            ftp = FtpFileUploader(None)
+            ftp.set_ftp_remote_challenge_dir('/challenge')
+            ftp.set_ftp_connection(mockftp)
+            chall.set_file_uploader(ftp)
+            tarball = os.path.join(chall.get_dir(), 'celppweek1_2017.tar.gz')
+            f = open(tarball, 'w')
+            f.write('hi')
+            f.flush()
+            f.close()
+            latest_file = os.path.join(chall.get_dir(),
+                                       ChallengeDataTask.LATEST_TXT)
+            chall._upload_challenge_file(tarball)
+
+            f = open(latest_file, 'r')
+            line = f.readline()
+            self.assertEqual(line, 'celppweek1_2017.tar.gz')
+            f.close()
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def create_gen_challenge_script(self, temp_dir):
+        script = os.path.join(temp_dir, 'genchallenge.py')
+        f = open(script, 'w')
+        f.write("""#! /usr/bin/env python
 import argparse
 import sys
 import os
@@ -797,9 +856,134 @@ open(os.path.join(thedir,'lig_63N.mol'),'a').close()
 open(os.path.join(thedir,'lig_63N.smi'),'a').close()
 
 """)
+        f.flush()
+        f.close()
+        os.chmod(script, stat.S_IRWXU)
+        return script
+
+    def test_run_fails_cause_ftp_upload_fails(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            script = self.create_gen_challenge_script(temp_dir)
+            params = D3RParameters()
+            params.genchallenge = script
+            params.pdbdb = '/foo'
+            params.version = '1'
+
+            blastnfilter = BlastNFilterTask(temp_dir, params)
+            blastnfilter.create_dir()
+            open(os.path.join(blastnfilter.get_dir(), D3RTask.COMPLETE_FILE),
+                 'a').close()
+
+            chall = ChallengeDataTask(temp_dir, params)
+            mockftp = D3RParameters()
+            mockftp.put = Mock(side_effect=[3, IOError('hi')])
+            ftp = FtpFileUploader(None)
+            ftp.set_ftp_remote_challenge_dir('/challenge')
+            ftp.set_ftp_connection(mockftp)
+            chall.set_file_uploader(ftp)
+
+            dimport = DataImportTask(temp_dir, params)
+            dimport.create_dir()
+
+            ctsv = dimport.get_crystalph_tsv()
+            f = open(ctsv, 'w')
+            f.write('crystal')
             f.flush()
             f.close()
-            os.chmod(script, stat.S_IRWXU)
+
+            nonpoly = dimport.get_nonpolymer_tsv()
+            f = open(nonpoly, 'w')
+            f.write('nonpoly')
+            f.flush()
+            f.close()
+
+            seq = dimport.get_sequence_tsv()
+            f = open(seq, 'w')
+            f.write('seq')
+            f.flush()
+            f.close()
+
+            chall.run()
+            latest_file = os.path.join(chall.get_dir(),
+                                       ChallengeDataTask.LATEST_TXT)
+            self.assertEqual(chall.get_error(), 'Caught exception ' +
+                             'Unable to upload ' + latest_file + ' to ' +
+                             '/challenge/' + ChallengeDataTask.LATEST_TXT +
+                             ' : hi')
+            # verify test files get created
+            errfile = os.path.join(chall.get_dir(),
+                                   D3RTask.ERROR_FILE)
+            self.assertEqual(os.path.isfile(errfile), True)
+
+            compfile = os.path.join(chall.get_dir(),
+                                    D3RTask.COMPLETE_FILE)
+            self.assertEqual(os.path.isfile(compfile), False)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_run_success_with_ftp_upload(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            script = self.create_gen_challenge_script(temp_dir)
+            params = D3RParameters()
+            params.genchallenge = script
+            params.pdbdb = '/foo'
+            params.version = '1'
+
+            blastnfilter = BlastNFilterTask(temp_dir, params)
+            blastnfilter.create_dir()
+            open(os.path.join(blastnfilter.get_dir(), D3RTask.COMPLETE_FILE),
+                 'a').close()
+
+            chall = ChallengeDataTask(temp_dir, params)
+            mockftp = D3RParameters()
+            mockftp.put = Mock(side_effect=[3, 5])
+            ftp = FtpFileUploader(None)
+            ftp.set_ftp_remote_challenge_dir('/challenge')
+            ftp.set_ftp_connection(mockftp)
+            chall.set_file_uploader(ftp)
+
+            dimport = DataImportTask(temp_dir, params)
+            dimport.create_dir()
+
+            ctsv = dimport.get_crystalph_tsv()
+            f = open(ctsv, 'w')
+            f.write('crystal')
+            f.flush()
+            f.close()
+
+            nonpoly = dimport.get_nonpolymer_tsv()
+            f = open(nonpoly, 'w')
+            f.write('nonpoly')
+            f.flush()
+            f.close()
+
+            seq = dimport.get_sequence_tsv()
+            f = open(seq, 'w')
+            f.write('seq')
+            f.flush()
+            f.close()
+
+            chall.run()
+            self.assertEqual(chall.get_error(), None)
+            # verify test files get created
+            errfile = os.path.join(chall.get_dir(),
+                                   D3RTask.ERROR_FILE)
+            self.assertEqual(os.path.isfile(errfile), False)
+
+            compfile = os.path.join(chall.get_dir(),
+                                    D3RTask.COMPLETE_FILE)
+            self.assertEqual(os.path.isfile(compfile), True)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_run_succeeds_no_ftp(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            script = self.create_gen_challenge_script(temp_dir)
             params = D3RParameters()
             params.genchallenge = script
             params.pdbdb = '/foo'
