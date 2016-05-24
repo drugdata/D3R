@@ -63,7 +63,4 @@ echo "4) cd /vagrant"
 echo "5) Run chmod a+x chimera-1.10.2-linux_x86_64.bin"
 echo "6) Run ./chimera-1.10.2-linux_x86_64.bin"
 echo "   and follow instructions using defaults"
-# wget https://www.cgl.ucsf.edu/chimera/cgi-bin/secure/chimera-get.py?file=linux_x86_64/chimera-1.10.2-linux_x86_64.bin -O chimera.bin
-# chomd u+x chimera.bin
-# ./chimera.bin
-
+echo ""
