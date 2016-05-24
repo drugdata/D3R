@@ -490,7 +490,7 @@ def main():
 
               In this stage 4 files are downloaded from urls specified
               by --compinchi and --pdbfileurl flags on the commandline
-              into stage.1.dataimport directory.
+              into {dataimport_dirname} directory.
 
               The tsv files are (--pdbfileurl flag sets url to
               download these files from):
