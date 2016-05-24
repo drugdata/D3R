@@ -520,7 +520,12 @@ def main():
               file.  If complete, this stage runs which invokes program
               set in --genchallenge flag to create a challenge dataset
               file.  The --pdbdb flag must also be set when calling this
-              stage.
+              stage. If --ftpconfig is set with challengepath field then
+              this stage will also upload the challenge dataset tarfile
+              to the ftp server with path set by challengepath.  The
+              code will also upload a latest.txt file containing name
+              of the tarfile to the same destination overwriting any
+              latest.txt file that already exists.
 
               If --stage 'chimeraprep'
 
