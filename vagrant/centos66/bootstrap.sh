@@ -18,6 +18,7 @@ pip install xlsxwriter
 pip install ftpretty
 pip install wheel
 pip install flake8
+pip install lockfile --upgrade
 
 echo "adding rdkit yum repo"
 # install rdkit from yum repo
