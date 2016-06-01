@@ -319,7 +319,7 @@ def main_score (dock_dir, pdb_protein_path, evaluate_dir, update= True):
         ##################
         #Do the scoring here
         #1, get all the docked structures and crystal structure
-        potential_mols = glob.glob('%s/*docked.mol2' %(target_dir))
+        potential_mols = glob.glob('%s/*/*docked.mol' %(target_dir))
         ## Go copy in all the submitted poses
         for potential_mol in potential_mols:
             
