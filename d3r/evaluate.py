@@ -233,7 +233,7 @@ def structure_align(prefix, actual_xtal_pdb, receptor_in, ligand_in):
 
 def make_complex_pdb(receptor_pdb, ligand_mol, complex_pdb):
     ## First, convert the ligand to pdb
-    ligand_pdb = ligand_mol.replace('.mol','.pdb')
+    ligand_pdb = ligand_mol.replace('.mol','_lig.pdb')
     commands.getoutput('babel -imol %s -opdb %s' %(ligand_mol, ligand_pdb))
     ## Now combine the ligand and receptor pdbs
     commands.getoutput('babel --join -ipdb %s -ipdb %s -opdb %s' %(receptor_pdb, ligand_pdb, complex_pdb))
