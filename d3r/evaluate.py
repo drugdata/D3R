@@ -216,16 +216,16 @@ def structure_align(prefix, actual_xtal_pdb, receptor_in, ligand_in):
     ## NOTE! the default rotation matrix output by structalign only has 3 decimal places. This might make a difference. 
     ## To fix it, make a copy of $SCHRODINGER/mmshare-v<whatever>/bin/Linux-x86_64/structalign_utility.py in which the %.3f's in the mat.write lines are replaced with %.5f's.
     #cmd1 = '$SCHRODINGER/utilities/structalign -matrix %s %s >& %s_structAlignOut' %(actual_xtal_pdb, receptor_in, prefix)
-    cmd1 = '$SCHRODINGER/utilities/structalign -matrix temp_xtal.mae temp_receptor.mae >& %s_structAlignOut' %(prefix)
+    cmd1 = '$SCHRODINGER/utilities/structalign -matrix temp_xtal.mae temp_receptor.mae >& %s_alignMatrixGenOut' %(prefix)
     commands.getoutput(cmd1)
     
-    cmd2 = '$SCHRODINGER/utilities/python temp.py %s %s %s' %(receptor_in, receptor_mae, matrixFile)
+    cmd2 = '$SCHRODINGER/utilities/python temp.py %s %s %s >& %s_receptorAlignOut' %(receptor_in, receptor_mae, matrixFile, prefix)
     commands.getoutput(cmd2)
     
-    cmd3 = '$SCHRODINGER/utilities/python temp.py %s %s %s' %(ligand_in, ligand_out, matrixFile)
+    cmd3 = '$SCHRODINGER/utilities/python temp.py %s %s %s >& %s_ligandAlignOut' %(ligand_in, ligand_out, matrixFile, prefix)
     commands.getoutput(cmd3)
     
-    cmd4 = '$SCHRODINGER/utilities/structconvert -imae %s -opdb %s' %(receptor_mae, receptor_out)
+    cmd4 = '$SCHRODINGER/utilities/structconvert -imae %s -opdb %s >& %s_structConvertOut' %(receptor_mae, receptor_out, prefix)
     commands.getoutput(cmd4)
     
     return receptor_out, ligand_out
