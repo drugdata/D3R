@@ -201,7 +201,8 @@ def structure_align(prefix, actual_xtal_pdb, receptor_in, ligand_in):
     receptor_mae = 'rot_%s_receptor1.mae' %(prefix)
     receptor_out = 'rot_%s' %(receptor_in)
     ligand_out = 'rot_%s' %(ligand_in)
-    matrixFile = receptor_in.replace('.pdb','.rot')
+    #matrixFile = receptor_in.replace('.pdb','.rot')
+    matrixFile = 'temp_receptor.rot'
     with open('temp.py','wb') as of:
         of.write(schrodingerScriptText)
     
