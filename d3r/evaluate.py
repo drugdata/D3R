@@ -233,10 +233,11 @@ def structure_align(prefix, actual_xtal_pdb, receptor_in, ligand_in):
 
 def make_complex_pdb(receptor_pdb, ligand_mol, complex_pdb):
     ## First, convert the ligand to pdb
-    temp_ligand_pdb = 'temp_'+ligand_mol.replace('.mol','.pdb')
-    commands.getoutput('babel -imol %s -opdb %s' %(ligand_mol, temp_ligand_pdb))
+    ligand_pdb = ligand_mol.replace('.mol','.pdb')
+    commands.getoutput('babel -imol %s -opdb %s' %(ligand_mol, ligand_pdb))
     ## Now combine the ligand and receptor pdbs
     commands.getoutput('babel --join -ipdb %s -ipdb %s -opdb %s' %(receptor_pdb, temp_ligand_pdb, complex_pdb))
+    return ligand_pdb, complex_pdb
  
 
 
@@ -429,11 +430,11 @@ def main_score (dock_dir, pdb_protein_path, evaluate_dir, update= True):
             file_prefix = "%s-%s_%s_docked" %(docked_structure_type,
                                               docked_structure_target,
                                               docked_structure_candidate)             
-            complex_pdb = '%s_complex.pdb' %(file_prefix)
+            aln_complex_pdb = '%s_complex.pdb' %(file_prefix)
             
             aln_recep, aln_lig = structure_align(file_prefix, 'crystal_receptor1.pdb', docked_receptor, docked_lig_mol)
-            make_complex_pdb(aln_recep, aln_lig, complex_pdb)
-            docked_lig_pdb = docked_lig_mol.replace('.mol','.pdb')
+            aln_lig_pdb, aln_complex_pdb = make_complex_pdb(aln_recep, aln_lig, aln_complex_pdb)
+            #docked_lig_pdb = docked_lig_mol.replace('.mol','.pdb')
             
             
             ## Now compare the RMSDs of every ligand to those in the crystal
