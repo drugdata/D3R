@@ -3,6 +3,18 @@
 History
 -------
 
+1.2.0 (2016-06-02)
+---------------------
+
+* proteinligprep.py and chimera_proteinligprep.py
+  has been updated to work with genchallenge stage output.
+
+* vinadocking.py and glidedocking.py now output receptor as pdb
+  and ligand as mol.
+
+* evaluate.py modified to accept new output format as described
+  here:  https://github.com/drugdata/D3R/wiki/Proposed-challenge-docked-results-file-structure
+
 1.1.0 (2016-05-24)
 ---------------------
 
