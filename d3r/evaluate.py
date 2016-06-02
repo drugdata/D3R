@@ -314,9 +314,9 @@ def main_score (dock_dir, pdb_protein_path, evaluate_dir, update= True):
 
     target_dirs = list(os.walk(dock_dir))[0][1]
 
-    all_docked_structures = []
     
     for target_dir in target_dirs:
+        all_docked_structures = []
         valid_target = False # this flag indicates whether we have at least one valid docked structure for scoring
         commands.getoutput("cp -r %s/%s %s"%(dock_dir,target_dir, evaluate_dir))
         target_name = os.path.basename(target_dir)
