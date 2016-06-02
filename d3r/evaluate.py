@@ -442,7 +442,7 @@ def main_score (dock_dir, pdb_protein_path, evaluate_dir, update= True):
             try:
                 rmsd_list = []
                 for crystal_ligand in crystal_ligand_list:
-                    rmsd = main_rmsd(crystal_ligand, alnd_lig_pdb)
+                    rmsd = main_rmsd(crystal_ligand, aln_lig_pdb)
                     logging.info( "RMSD for the first ligand: %s comparing with crystal ligand :%s, is : %s"%(aln_lig_pdb, crystal_ligand, rmsd))
                     rmsd_list.append(rmsd)
                 if docked_structure_type not in score_dic[target_name]:
