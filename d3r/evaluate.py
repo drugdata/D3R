@@ -442,13 +442,13 @@ def main_score (dock_dir, pdb_protein_path, evaluate_dir, update= True):
             try:
                 rmsd_list = []
                 for crystal_ligand in crystal_ligand_list:
-                    rmsd = main_rmsd(crystal_ligand, docked_lig_pdb)
-                    logging.info( "RMSD for the first ligand: %s comparing with crystal ligand :%s, is : %s"%(docked_lig_pdb, crystal_ligand, rmsd))
+                    rmsd = main_rmsd(crystal_ligand, alnd_lig_pdb)
+                    logging.info( "RMSD for the first ligand: %s comparing with crystal ligand :%s, is : %s"%(aln_lig_pdb, crystal_ligand, rmsd))
                     rmsd_list.append(rmsd)
                 if docked_structure_type not in score_dic[target_name]:
                     score_dic[target_name][docked_structure_type] = min(rmsd_list)
             except:
-                logging.info("RMSD cannot be calculated for the ligand: %s"%docked_lig_pdb)   
+                logging.info("RMSD cannot be calculated for the ligand: %s"%(aln_lig_pdb)   
             #structure_type = all_docked_structure.split("_")[0]
             
             #first split, then combine together, then do the aligned
