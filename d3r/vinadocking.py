@@ -24,6 +24,9 @@ def dock(ligand_pdbqt,  protein_pdbqt, grid_center,):
     center_list = grid_center.split(',')
     vina_command = 'vina --receptor %s  --ligand %s --center_x %s --center_y %s --center_z %s --size_x 15 --size_y 15 --size_z 15 --seed 999' %(protein_pdbqt, ligand_pdbqt, center_list[0], center_list[1], center_list[2])
     out_dock_file = ligand_pdbqt.replace('.pdbqt','_out.pdbqt')
+    if not(os.path.isfile(out_dock_file)):
+        logging.info("Docking failed for protein %s and ligand %s" %(protein_pdbqt, ligand_pdbqt))
+        return False
     commands.getoutput(vina_command)
     return out_dock_file
 
@@ -97,6 +100,9 @@ def main_vina (stage_3_result, stage_4_working, update= True):
                 ## Do the docking
                 logging.info("Trying to dock...")
                 out_dock_file = dock(ligandPdbqtFile, receptorPdbqtFile, grid_center)
+                if out_dock_file == False:
+                    logging.info("Docking failed - Skipping")
+                    continue
                 logging.info("Finished docking, beginning post-docking file conversion")
                 
                 ## Convert the receptor to pdb
