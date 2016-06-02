@@ -209,24 +209,24 @@ def structure_align(prefix, actual_xtal_pdb, receptor_in, ligand_in):
     
     ## On the old version of maestro/structalign that's on nif1, we can't get the rotation matrix by aligning two pdbs. Until it gets updated, I'll convert a copy to mae and get the rotation matrix by aligning that.
     
-    cmd0 = '$SCHRODINGER/utilities/structconvert -ipdb %s -omae temp_xtal.mae' %(actual_xtal_pdb)
+    cmd0 = '$SCHRODINGER/utilities/structconvert -ipdb %s -omae temp_xtal.mae >& %s-0-convertXtalPdbToMae' %(actual_xtal_pdb, prefix)
     commands.getoutput(cmd0)
-    cmd0point5 = '$SCHRODINGER/utilities/structconvert -ipdb %s -omae temp_receptor.mae' %(receptor_in)
+    cmd0point5 = '$SCHRODINGER/utilities/structconvert -ipdb %s -omae temp_receptor.mae >& %s-0.5-convertCanPdbToMae' %(receptor_in, prefix)
     commands.getoutput(cmd0point5)
     
     ## NOTE! the default rotation matrix output by structalign only has 3 decimal places. This might make a difference. 
     ## To fix it, make a copy of $SCHRODINGER/mmshare-v<whatever>/bin/Linux-x86_64/structalign_utility.py in which the %.3f's in the mat.write lines are replaced with %.5f's.
     #cmd1 = '$SCHRODINGER/utilities/structalign -matrix %s %s >& %s_structAlignOut' %(actual_xtal_pdb, receptor_in, prefix)
-    cmd1 = '$SCHRODINGER/utilities/structalign -matrix temp_xtal.mae temp_receptor.mae >& %s_alignMatrixGenOut' %(prefix)
+    cmd1 = '$SCHRODINGER/utilities/structalign -matrix temp_xtal.mae temp_receptor.mae >& %s-1-alignMatrixGenOut' %(prefix)
     commands.getoutput(cmd1)
     
-    cmd2 = '$SCHRODINGER/utilities/python temp.py %s %s %s >& %s_receptorAlignOut' %(receptor_in, receptor_mae, matrixFile, prefix)
+    cmd2 = '$SCHRODINGER/utilities/python temp.py %s %s %s >& %s-2-receptorAlignOut' %(receptor_in, receptor_mae, matrixFile, prefix)
     commands.getoutput(cmd2)
     
-    cmd3 = '$SCHRODINGER/utilities/python temp.py %s %s %s >& %s_ligandAlignOut' %(ligand_in, ligand_out, matrixFile, prefix)
+    cmd3 = '$SCHRODINGER/utilities/python temp.py %s %s %s >& %s-3-ligandAlignOut' %(ligand_in, ligand_out, matrixFile, prefix)
     commands.getoutput(cmd3)
     
-    cmd4 = '$SCHRODINGER/utilities/structconvert -imae %s -opdb %s >& %s_structConvertOut' %(receptor_mae, receptor_out, prefix)
+    cmd4 = '$SCHRODINGER/utilities/structconvert -imae %s -opdb %s >& %s-4-structConvertOut' %(receptor_mae, receptor_out, prefix)
     commands.getoutput(cmd4)
     
     return receptor_out, ligand_out
