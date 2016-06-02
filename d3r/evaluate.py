@@ -448,7 +448,7 @@ def main_score (dock_dir, pdb_protein_path, evaluate_dir, update= True):
                 if docked_structure_type not in score_dic[target_name]:
                     score_dic[target_name][docked_structure_type] = min(rmsd_list)
             except:
-                logging.info("RMSD cannot be calculated for the ligand: %s"%(aln_lig_pdb)   
+                logging.info("RMSD cannot be calculated for the ligand: %s"%(aln_lig_pdb))
             #structure_type = all_docked_structure.split("_")[0]
             
             #first split, then combine together, then do the aligned
