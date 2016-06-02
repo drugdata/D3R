@@ -109,7 +109,7 @@ def mcs(ref_mol, fit_mol, ref_ignore = [], fit_ignore = []):
             OEWriteMolecule(ofs2, mol2)                                 
             ofs2.close()                                                
             if match1_heavy_atom != match2_heavy_atom:                  
-                print "WARNING: match1_%s.pdb and match2_%s.pdb have different heavy atoms, need to check..."
+                print "WARNING: match1_%s.pdb and match2_%s.pdb have different heavy atoms, need to check..."%(i,j)
             for mp1, mp2 in zip(match1.GetAtoms(), match2.GetAtoms()):  
                 ref_name = mp1.target.GetName().strip()                 
                 fit_name = mp2.target.GetName().strip()                 
@@ -216,7 +216,7 @@ def structure_align(prefix, actual_xtal_pdb, receptor_in, ligand_in):
     ## NOTE! the default rotation matrix output by structalign only has 3 decimal places. This might make a difference. 
     ## To fix it, make a copy of $SCHRODINGER/mmshare-v<whatever>/bin/Linux-x86_64/structalign_utility.py in which the %.3f's in the mat.write lines are replaced with %.5f's.
     #cmd1 = '$SCHRODINGER/utilities/structalign -matrix %s %s >& %s_structAlignOut' %(actual_xtal_pdb, receptor_in, prefix)
-    cmd1 = '$SCHRODINGER/utilities/structalign -matrix temp_xal.mae temp_receptor.mae >& %s_structAlignOut' %(prefix)
+    cmd1 = '$SCHRODINGER/utilities/structalign -matrix temp_xtal.mae temp_receptor.mae >& %s_structAlignOut' %(prefix)
     commands.getoutput(cmd1)
     
     cmd2 = '$SCHRODINGER/utilities/python temp.py %s %s %s' %(receptor_in, receptor_mae, matrixFile)
