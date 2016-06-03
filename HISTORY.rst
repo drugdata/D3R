@@ -3,7 +3,7 @@
 History
 -------
 
-1.2.0 (2016-06-02)
+1.2.0 (2016-06-03)
 ---------------------
 
 * proteinligprep.py and chimera_proteinligprep.py
@@ -14,6 +14,10 @@ History
 
 * evaluate.py modified to accept new output format as described
   here:  https://github.com/drugdata/D3R/wiki/Proposed-challenge-docked-results-file-structure
+
+* ProteinLigPrepTask #41 modified to use ChallengeDataTask as input
+
+* ChimeraProteinLigPrepTask #30 modified to use ChallengeDataTask as input
 
 1.1.0 (2016-05-24)
 ---------------------
