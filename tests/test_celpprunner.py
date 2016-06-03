@@ -479,7 +479,7 @@ class TestCelppRunner(unittest.TestCase):
             theargs.stage = 'challengedata,proteinligprep'
 
             blastdb_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
-                                      TestCelppRunner.BLAST_DIR_NAME)
+                                       TestCelppRunner.BLAST_DIR_NAME)
             os.makedirs(blastdb_dir)
             open(os.path.join(blastdb_dir, 'complete'), 'a').close()
 
