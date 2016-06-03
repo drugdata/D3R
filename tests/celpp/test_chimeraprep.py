@@ -209,6 +209,10 @@ class TestChimeraProteinLigPrepTask(unittest.TestCase):
             params.pdbdb = '/foo'
             chall = ChallengeDataTask(temp_dir, params)
             chall.create_dir()
+
+            challdir = os.path.join(chall.get_dir(),
+                                    chall.get_celpp_challenge_data_dir_name())
+
             open(os.path.join(chall.get_dir(), D3RTask.COMPLETE_FILE),
                  'a').close()
             task = ChimeraProteinLigPrepTask(temp_dir, params)
@@ -217,7 +221,7 @@ class TestChimeraProteinLigPrepTask(unittest.TestCase):
             self.assertEqual(task.get_error(),
                              'Caught Exception trying to run ' +
                              '/bin/doesnotexist --candidatedir ' +
-                             chall.get_dir() + ' --pdbdb ' +
+                             challdir + ' --pdbdb ' +
                              '/foo --outdir ' +
                              task.get_dir() +
                              ' : [Errno 2] No such file or directory')

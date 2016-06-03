@@ -146,8 +146,11 @@ class ProteinLigPrepTask(D3RTask):
         #
         # proteinligprep.py --candidatedir <path to stage.3.challengedata> \
         # --outdir <path to stage.3.proteinligprep>
+
+        challdir = os.path.join(chall.get_dir(),
+                                chall.get_celpp_challenge_data_dir_name())
         cmd_to_run = (self.get_args().proteinligprep + ' --candidatedir ' +
-                      chall.get_dir() +
+                      challdir +
                       ' --pdbdb ' + self.get_args().pdbdb +
                       ' --outdir ' + self.get_dir())
 
