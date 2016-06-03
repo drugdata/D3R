@@ -469,31 +469,24 @@ class TestCelppRunner(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
-    def test_run_stages_blast_and_proteinligprep_no_error(self):
+    def test_run_stages_challenge_and_proteinligprep_no_error(self):
         temp_dir = tempfile.mkdtemp()
 
         try:
             theargs = D3RParameters()
             theargs.pdbdb = '/pdbdb'
             theargs.celppdir = os.path.join(temp_dir)
-            theargs.stage = 'blast,proteinligprep'
+            theargs.stage = 'challengedata,proteinligprep'
 
-            makedb_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
-                                      TestCelppRunner.MAKEDB_DIR_NAME)
-            os.makedirs(makedb_dir)
-            open(os.path.join(makedb_dir, 'complete'), 'a').close()
+            blastdb_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
+                                      TestCelppRunner.BLAST_DIR_NAME)
+            os.makedirs(blastdb_dir)
+            open(os.path.join(blastdb_dir, 'complete'), 'a').close()
 
-            d_import_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
-                                        TestCelppRunner.IMPORT_DIR_NAME)
-            os.makedirs(d_import_dir)
-            open(os.path.join(d_import_dir,
-                              D3RTask.COMPLETE_FILE), 'a').close()
-
-            theargs.blastnfilter = 'echo'
-            theargs.postanalysis = 'true'
             theargs.proteinligprep = 'echo'
-            self.assertEqual(celpprunner.run_stages(theargs), 0)
+            theargs.genchallenge = 'echo'
 
+            self.assertEqual(celpprunner.run_stages(theargs), 0)
         finally:
             shutil.rmtree(temp_dir)
 
@@ -519,7 +512,7 @@ class TestCelppRunner(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
-    def test_run_stages_makedb_blast_proteinligprep_glide_no_error(self):
+    def test_run_stages_makedb_blast_chall_proteinligprep_glide_no_error(self):
         temp_dir = tempfile.mkdtemp()
 
         try:
@@ -527,7 +520,7 @@ class TestCelppRunner(unittest.TestCase):
             theargs.pdbdb = '/pdbdb'
             theargs.celppdir = os.path.join(temp_dir)
 
-            theargs.stage = 'makedb,blast,proteinligprep,glide'
+            theargs.stage = 'makedb,blast,challengedata,proteinligprep,glide'
 
             d_import_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
                                         TestCelppRunner.IMPORT_DIR_NAME)
@@ -549,6 +542,7 @@ class TestCelppRunner(unittest.TestCase):
             theargs.postanalysis = 'true'
             theargs.proteinligprep = 'echo'
             theargs.glide = 'echo'
+            theargs.genchallenge = 'echo'
             self.assertEqual(celpprunner.run_stages(theargs), 0)
 
         finally:

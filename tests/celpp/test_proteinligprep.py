@@ -15,7 +15,7 @@ import shutil
 import os
 from d3r.celpp.task import D3RParameters
 from d3r.celpp.task import D3RTask
-from d3r.celpp.blastnfilter import BlastNFilterTask
+from d3r.celpp.challengedata import ChallengeDataTask
 from d3r.celpp.proteinligprep import ProteinLigPrepTask
 
 
@@ -118,30 +118,30 @@ class TestProteinLigPrepTask(unittest.TestCase):
             proteinligprep = ProteinLigPrepTask(temp_dir, params)
             self.assertEqual(proteinligprep.can_run(), False)
             self.assertEqual(proteinligprep.get_error(),
-                             'blastnfilter task has notfound status')
+                             'challengedata task has notfound status')
 
-            # blastn filter running
-            blastnfilter = BlastNFilterTask(temp_dir, params)
-            blastnfilter.create_dir()
-            open(os.path.join(blastnfilter.get_dir(), D3RTask.START_FILE),
+            # challenge filter running
+            chall = ChallengeDataTask(temp_dir, params)
+            chall.create_dir()
+            open(os.path.join(chall.get_dir(), D3RTask.START_FILE),
                  'a').close()
             proteinligprep = ProteinLigPrepTask(temp_dir, params)
             self.assertEqual(proteinligprep.can_run(), False)
             self.assertEqual(proteinligprep.get_error(),
-                             'blastnfilter task has start status')
+                             'challengedata task has start status')
 
             # blastnfilter failed
-            error_file = os.path.join(blastnfilter.get_dir(),
+            error_file = os.path.join(chall.get_dir(),
                                       D3RTask.ERROR_FILE)
             open(error_file, 'a').close()
             proteinligprep = ProteinLigPrepTask(temp_dir, params)
             self.assertEqual(proteinligprep.can_run(), False)
             self.assertEqual(proteinligprep.get_error(),
-                             'blastnfilter task has error status')
+                             'challengedata task has error status')
 
             # blastnfilter success
             os.remove(error_file)
-            open(os.path.join(blastnfilter.get_dir(),
+            open(os.path.join(chall.get_dir(),
                               D3RTask.COMPLETE_FILE), 'a').close()
             proteinligprep = ProteinLigPrepTask(temp_dir, params)
             self.assertEqual(proteinligprep.can_run(), True)
@@ -173,7 +173,7 @@ class TestProteinLigPrepTask(unittest.TestCase):
             proteinligprep = ProteinLigPrepTask(temp_dir, params)
             proteinligprep.run()
             self.assertEqual(proteinligprep.get_error(),
-                             'blastnfilter task has notfound status')
+                             'challengedata task has notfound status')
         finally:
             shutil.rmtree(temp_dir)
 
@@ -181,9 +181,9 @@ class TestProteinLigPrepTask(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
-            blastnfilter = BlastNFilterTask(temp_dir, params)
-            blastnfilter.create_dir()
-            open(os.path.join(blastnfilter.get_dir(), D3RTask.COMPLETE_FILE),
+            chall = ChallengeDataTask(temp_dir, params)
+            chall.create_dir()
+            open(os.path.join(chall.get_dir(), D3RTask.COMPLETE_FILE),
                  'a').close()
             proteinligprep = ProteinLigPrepTask(temp_dir, params)
             proteinligprep.run()
@@ -203,9 +203,9 @@ class TestProteinLigPrepTask(unittest.TestCase):
         try:
             params = D3RParameters()
             params.proteinligprep = 'false'
-            blastnfilter = BlastNFilterTask(temp_dir, params)
-            blastnfilter.create_dir()
-            open(os.path.join(blastnfilter.get_dir(), D3RTask.COMPLETE_FILE),
+            chall = ChallengeDataTask(temp_dir, params)
+            chall.create_dir()
+            open(os.path.join(chall.get_dir(), D3RTask.COMPLETE_FILE),
                  'a').close()
             proteinligprep = ProteinLigPrepTask(temp_dir, params)
             proteinligprep.run()
@@ -226,9 +226,9 @@ class TestProteinLigPrepTask(unittest.TestCase):
             params = D3RParameters()
             params.proteinligprep = 'false'
             params.pdbdb = '/foo'
-            blastnfilter = BlastNFilterTask(temp_dir, params)
-            blastnfilter.create_dir()
-            open(os.path.join(blastnfilter.get_dir(), D3RTask.COMPLETE_FILE),
+            chall = ChallengeDataTask(temp_dir, params)
+            chall.create_dir()
+            open(os.path.join(chall.get_dir(), D3RTask.COMPLETE_FILE),
                  'a').close()
             proteinligprep = ProteinLigPrepTask(temp_dir, params)
 
@@ -256,9 +256,9 @@ class TestProteinLigPrepTask(unittest.TestCase):
             params = D3RParameters()
             params.proteinligprep = '/bin/doesnotexist'
             params.pdbdb = '/foo'
-            blastnfilter = BlastNFilterTask(temp_dir, params)
-            blastnfilter.create_dir()
-            open(os.path.join(blastnfilter.get_dir(), D3RTask.COMPLETE_FILE),
+            chall = ChallengeDataTask(temp_dir, params)
+            chall.create_dir()
+            open(os.path.join(chall.get_dir(), D3RTask.COMPLETE_FILE),
                  'a').close()
             proteinligprep = ProteinLigPrepTask(temp_dir, params)
 
@@ -266,7 +266,7 @@ class TestProteinLigPrepTask(unittest.TestCase):
             self.assertEqual(proteinligprep.get_error(),
                              'Caught Exception trying to run ' +
                              '/bin/doesnotexist --candidatedir ' +
-                             blastnfilter.get_dir() + ' --pdbdb ' +
+                             chall.get_dir() + ' --pdbdb ' +
                              '/foo --outdir ' +
                              proteinligprep.get_dir() +
                              ' : [Errno 2] No such file or directory')
@@ -284,9 +284,9 @@ class TestProteinLigPrepTask(unittest.TestCase):
             params = D3RParameters()
             params.proteinligprep = 'true'
             params.pdbdb = '/foo'
-            blastnfilter = BlastNFilterTask(temp_dir, params)
-            blastnfilter.create_dir()
-            open(os.path.join(blastnfilter.get_dir(), D3RTask.COMPLETE_FILE),
+            chall = ChallengeDataTask(temp_dir, params)
+            chall.create_dir()
+            open(os.path.join(chall.get_dir(), D3RTask.COMPLETE_FILE),
                  'a').close()
             proteinligprep = ProteinLigPrepTask(temp_dir, params)
 

@@ -273,7 +273,7 @@ class TestEvaluation(unittest.TestCase):
         evaluation = EvaluationTask('/blah', 'foo.evaluation',
                                     docktask, params)
         self.assertEquals(evaluation.get_name(), 'foo.evaluation')
-        self.assertEquals(evaluation.get_stage(), 6)
+        self.assertEquals(evaluation.get_stage(), 7)
 
     def test_can_run(self):
         temp_dir = tempfile.mkdtemp()
