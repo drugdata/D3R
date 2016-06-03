@@ -15,7 +15,7 @@ import shutil
 import os
 from d3r.celpp.task import D3RParameters
 from d3r.celpp.task import D3RTask
-from d3r.celpp.challengedata import BlastNFilterTask
+from d3r.celpp.challengedata import ChallengeDataTask
 from d3r.celpp.chimeraprep import ChimeraProteinLigPrepTask
 
 
@@ -69,17 +69,17 @@ class TestChimeraProteinLigPrepTask(unittest.TestCase):
             task = ChimeraProteinLigPrepTask(temp_dir, params)
             self.assertEqual(task.can_run(), False)
             self.assertEqual(task.get_error(),
-                             'blastnfilter task has notfound status')
+                             'challengedata task has notfound status')
 
             # blastnfilter  running
-            chall = BlastNFilterTask(temp_dir, params)
+            chall = ChallengeDataTask(temp_dir, params)
             chall.create_dir()
             open(os.path.join(chall.get_dir(), D3RTask.START_FILE),
                  'a').close()
             task = ChimeraProteinLigPrepTask(temp_dir, params)
             self.assertEqual(task.can_run(), False)
             self.assertEqual(task.get_error(),
-                             'blastnfilter task has start status')
+                             'challengedata task has start status')
 
             # blastnfilter failed
             error_file = os.path.join(chall.get_dir(),
@@ -88,7 +88,7 @@ class TestChimeraProteinLigPrepTask(unittest.TestCase):
             task = ChimeraProteinLigPrepTask(temp_dir, params)
             self.assertEqual(task.can_run(), False)
             self.assertEqual(task.get_error(),
-                             'blastnfilter task has error status')
+                             'challengedata task has error status')
 
             # blastnfilter success
             os.remove(error_file)
@@ -124,17 +124,17 @@ class TestChimeraProteinLigPrepTask(unittest.TestCase):
             task = ChimeraProteinLigPrepTask(temp_dir, params)
             task.run()
             self.assertEqual(task.get_error(),
-                             'blastnfilter task has notfound status')
+                             'challengedata task has notfound status')
         finally:
             shutil.rmtree(temp_dir)
 
-    def test_run_fails_cause_proteinligprep_not_set(self):
+    def test_run_fails_cause_chimeraprep_not_set(self):
         temp_dir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
-            blast = BlastNFilterTask(temp_dir, params)
-            blast.create_dir()
-            open(os.path.join(blast.get_dir(), D3RTask.COMPLETE_FILE),
+            chall = ChallengeDataTask(temp_dir, params)
+            chall.create_dir()
+            open(os.path.join(chall.get_dir(), D3RTask.COMPLETE_FILE),
                  'a').close()
             task = ChimeraProteinLigPrepTask(temp_dir, params)
             task.run()
@@ -154,9 +154,9 @@ class TestChimeraProteinLigPrepTask(unittest.TestCase):
         try:
             params = D3RParameters()
             params.chimeraprep = 'false'
-            blast = BlastNFilterTask(temp_dir, params)
-            blast.create_dir()
-            open(os.path.join(blast.get_dir(), D3RTask.COMPLETE_FILE),
+            chall = ChallengeDataTask(temp_dir, params)
+            chall.create_dir()
+            open(os.path.join(chall.get_dir(), D3RTask.COMPLETE_FILE),
                  'a').close()
             task = ChimeraProteinLigPrepTask(temp_dir, params)
             task.run()
@@ -177,9 +177,9 @@ class TestChimeraProteinLigPrepTask(unittest.TestCase):
             params = D3RParameters()
             params.chimeraprep = 'false'
             params.pdbdb = '/foo'
-            blast = BlastNFilterTask(temp_dir, params)
-            blast.create_dir()
-            open(os.path.join(blast.get_dir(), D3RTask.COMPLETE_FILE),
+            chall = ChallengeDataTask(temp_dir, params)
+            chall.create_dir()
+            open(os.path.join(chall.get_dir(), D3RTask.COMPLETE_FILE),
                  'a').close()
             task = ChimeraProteinLigPrepTask(temp_dir, params)
 
@@ -201,15 +201,15 @@ class TestChimeraProteinLigPrepTask(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
-    def test_run_fails_cause_proteinligprep_is_not_found(self):
+    def test_run_fails_cause_chimeraprep_is_not_found(self):
         temp_dir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
             params.chimeraprep = '/bin/doesnotexist'
             params.pdbdb = '/foo'
-            blast = BlastNFilterTask(temp_dir, params)
-            blast.create_dir()
-            open(os.path.join(blast.get_dir(), D3RTask.COMPLETE_FILE),
+            chall = ChallengeDataTask(temp_dir, params)
+            chall.create_dir()
+            open(os.path.join(chall.get_dir(), D3RTask.COMPLETE_FILE),
                  'a').close()
             task = ChimeraProteinLigPrepTask(temp_dir, params)
 
@@ -217,7 +217,7 @@ class TestChimeraProteinLigPrepTask(unittest.TestCase):
             self.assertEqual(task.get_error(),
                              'Caught Exception trying to run ' +
                              '/bin/doesnotexist --candidatedir ' +
-                             blast.get_dir() + ' --pdbdb ' +
+                             chall.get_dir() + ' --pdbdb ' +
                              '/foo --outdir ' +
                              task.get_dir() +
                              ' : [Errno 2] No such file or directory')
@@ -235,9 +235,9 @@ class TestChimeraProteinLigPrepTask(unittest.TestCase):
             params = D3RParameters()
             params.chimeraprep = 'true'
             params.pdbdb = '/foo'
-            blast = BlastNFilterTask(temp_dir, params)
-            blast.create_dir()
-            open(os.path.join(blast.get_dir(), D3RTask.COMPLETE_FILE),
+            chall = ChallengeDataTask(temp_dir, params)
+            chall.create_dir()
+            open(os.path.join(chall.get_dir(), D3RTask.COMPLETE_FILE),
                  'a').close()
             task = ChimeraProteinLigPrepTask(temp_dir, params)
 

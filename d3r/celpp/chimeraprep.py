@@ -4,7 +4,7 @@ import os
 import logging
 
 from d3r.celpp.task import D3RTask
-from d3r.celpp.challengedata import BlastNFilterTask
+from d3r.celpp.challengedata import ChallengeDataTask
 
 logger = logging.getLogger(__name__)
 
@@ -21,8 +21,8 @@ class ChimeraProteinLigPrepTask(D3RTask):
         self.set_name('chimeraprep')
 
         # Make stage number one higher then BlastNFilter Stage
-        blast = BlastNFilterTask(path, args)
-        self.set_stage(blast.get_stage() + 1)
+        chall = ChallengeDataTask(path, args)
+        self.set_stage(chall.get_stage() + 1)
 
         self.set_status(D3RTask.UNKNOWN_STATUS)
 
@@ -51,7 +51,7 @@ class ChimeraProteinLigPrepTask(D3RTask):
     def can_run(self):
         """Determines if task can actually run
 
-           This method first verifies the `BlastNFilterTask` task
+           This method first verifies the `ChallengeDataTask` task
            has `D3RTask.COMPLETE_STATUS` for
            status.  The method then verifies a `ProteinLigPrepTask` does
            not already exist.  If above is not true then self.set_error()
@@ -61,7 +61,7 @@ class ChimeraProteinLigPrepTask(D3RTask):
         self._can_run = False
         self._error = None
         # check blast
-        chall = BlastNFilterTask(self._path, self._args)
+        chall = ChallengeDataTask(self._path, self._args)
         chall.update_status_from_filesystem()
         if chall.get_status() != D3RTask.COMPLETE_STATUS:
             logger.info('Cannot run ' + self.get_name() + 'task ' +
@@ -123,13 +123,13 @@ class ChimeraProteinLigPrepTask(D3RTask):
             self.end()
             return
 
-        blast = BlastNFilterTask(self._path, self._args)
+        chall = ChallengeDataTask(self._path, self._args)
 
         #
-        # chimeraprep.py --candidatedir <path to stage.2.blastnfilter> \
-        # --outdir <path to stage.3.proteinligprep>
+        # chimeraprep.py --candidatedir <path to stage.3.challengedata> \
+        # --outdir <path to stage.4.chimeraligprep>
         cmd_to_run = (self.get_args().chimeraprep + ' --candidatedir ' +
-                      blast.get_dir() +
+                      chall.get_dir() +
                       ' --pdbdb ' + self.get_args().pdbdb +
                       ' --outdir ' + self.get_dir())
 
