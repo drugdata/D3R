@@ -305,6 +305,8 @@ class DataImportTask(D3RTask):
             # Connection: close
             # Content-Type: text/tab-separated-values
             #
+            # to get last modified run this:
+            # print resp.info()['Last-Modified']
             util.download_url_to_file(url +
                                       '/' + DataImportTask.NONPOLYMER_TSV,
                                       download_path,
