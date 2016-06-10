@@ -369,6 +369,21 @@ def _parse_arguments(desc, args):
                         default='localhost')
     parser.add_argument('--smtpport', dest='smtpport',
                         help='Sets smtp server port', default='25')
+    parser.add_argument('--skipimportwait', action='store_true',
+                        help='Normally the import stage will wait if any of '
+                             'the tsv files have not been updated since the'
+                             'start of the current celpp week.  Setting this '
+                             'flag bypasses this delay and downloads the'
+                             'files')
+    parser.add_argument('--importsleep', default='600',
+                        help='Number of seconds to wait before re-checking '
+                             'tsv files to see if they have been updated in '
+                             'the import stage (default 600)')
+    parser.add_argument('--importretry', default='60',
+                        help='Number of times import stage should check if '
+                             'tsv files have been updated (default 60, or 10 '
+                             'hours with default --importsleep set to 600 '
+                             'seconds)')
     parser.add_argument('--ftpconfig', dest='ftpconfig', help='File containing'
                         ' configuration to connect to ftp server.  If set,'
                         ' data from stages run during this invocation will be'
@@ -503,6 +518,14 @@ def main():
               download this file from):
 
               Components-inchi.ich
+
+              This stage will just wait and retry if any of the tsv files
+              have NOT been updated since the start of the current
+              celpp week as determined by a HEAD request. To bypass
+              this delay add --skipimportwait flag.  --importsleep denotes
+              the time to wait before re-examining the update time of the
+              tsv files and --importretry sets number of times to retry
+              before giving up.
 
               If --stage 'blast'
 
