@@ -490,6 +490,26 @@ class TestUtil(unittest.TestCase):
                                                    + '12')
         self.assertEqual(foo, '12')
 
+    def test_get_previous_date_of_previous_friday_from_date(self):
+        # test None passed in
+
+        # test non date passed in
+
+        # test date on Friday
+
+        # test date on Saturday
+
+        # test date on Sunday
+
+        # test date on Monday
+
+        # test date on Tuesday
+
+        # test date on Wednesday
+
+        # test date on Thursday
+        self.fail('Need to implement')
+
     def tearDown(self):
         pass
 

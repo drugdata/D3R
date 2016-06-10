@@ -7,11 +7,14 @@ import urllib
 import time
 import gzip
 from datetime import date
+from datetime import datetime
 from datetime import timedelta
 
 logger = logging.getLogger(__name__)
 
 DAYS_IN_WEEK = 7
+
+FRIDAY_WEEKDAY = 4
 
 DATA_SET_WEEK_PREFIX = 'dataset.week.'
 
@@ -180,6 +183,29 @@ def get_celpp_week_number_from_path(dir):
         return '0'
     return weeknum
 
+
+def get_previous_date_of_previous_friday_from_date(the_datetime):
+    """Given a date, function finds date of previous Friday
+       Given `the_date` code finds the date of the previous
+       Friday with same hour, minute, and second.
+       :return: datetime object containing date of previous Friday
+       :raises: Exception if `the_date` is None
+    """
+    if the_datetime is None:
+        raise Exception('Must pass a valid datetime')
+    assert isinstance(the_datetime, datetime)
+
+    weekday = the_datetime.weekday()
+    if weekday == FRIDAY_WEEKDAY:
+        return the_datetime
+
+    if weekday > FRIDAY_WEEKDAY:
+        tdelta = timedelta(days=(weekday - FRIDAY_WEEKDAY))
+    else:
+        if weekday < FRIDAY_WEEKDAY:
+            tdelta = timedelta(days=(3 + weekday))
+
+    return the_datetime - tdelta
 
 def get_celpp_week_of_year_from_date(the_date):
     """ Returns CELPP week of year
