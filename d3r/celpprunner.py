@@ -325,6 +325,9 @@ def _parse_arguments(desc, args):
                         'evaluation} ')
     parser.add_argument("--blastnfilter", default='blastnfilter.py',
                         help='Path to BlastnFilter script')
+    parser.add_argument("--blastnfiltertimeout", default=36000, type=int,
+                        help='Time in seconds script is allowed to run before'
+                             'being killed')
     parser.add_argument("--postanalysis", default='postanalysis.py',
                         help='Path to PostAnalysis script')
     parser.add_argument("--proteinligprep", default='proteinligprep.py',
@@ -369,17 +372,17 @@ def _parse_arguments(desc, args):
                         default='localhost')
     parser.add_argument('--smtpport', dest='smtpport',
                         help='Sets smtp server port', default='25')
-    parser.add_argument('--skipimportwait', action='store_true',
+    parser.add_argument('--skipimportwait', default=False, action='store_true',
                         help='Normally the import stage will wait if any of '
                              'the tsv files have not been updated since the'
                              'start of the current celpp week.  Setting this '
                              'flag bypasses this delay and downloads the'
                              'files')
-    parser.add_argument('--importsleep', default='600',
+    parser.add_argument('--importsleep', default=600, type=int,
                         help='Number of seconds to wait before re-checking '
                              'tsv files to see if they have been updated in '
                              'the import stage (default 600)')
-    parser.add_argument('--importretry', default='60',
+    parser.add_argument('--importretry', default=60, type=int,
                         help='Number of times import stage should check if '
                              'tsv files have been updated (default 60, or 10 '
                              'hours with default --importsleep set to 600 '
@@ -532,10 +535,15 @@ def main():
               Verifies {dataimport_dirname} exists and has '{complete}'
               file.  Also verifies {makeblastdb_dirname} exists and has
               '{complete}' file.  If both conditions are met then the
-              'blast' stage is run and output stored in
+              'blast' stage is run which invokes script set by
+              --blastnfilter flag and output stored in
               {blast_dirname}.
               Requires --pdbdb to be set to a directory with valid PDB
               database files.
+
+              Note: --blastnfilter script is killed after time set with
+              --blastnfiltertimeout flag.
+
 
               If --stage 'challengedata'
 

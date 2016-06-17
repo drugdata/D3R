@@ -162,8 +162,8 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEqual(result.genchallenge, 'genchallengedata.py')
         self.assertEqual(result.chimeraprep, 'chimera_proteinligprep.py')
         self.assertEqual(result.skipimportwait, False)
-        self.assertEqual(result.importretry, '60')
-        self.assertEqual(result.importsleep, '600')
+        self.assertEqual(result.importretry, 60)
+        self.assertEqual(result.importsleep, 600)
         theargs = ['foo', '--stage', 'dock,glide', '--email', 'b@b.com,h@h',
                    '--log', 'ERROR',
                    '--blastnfilter', '/bin/blastnfilter.py',
@@ -195,8 +195,8 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEqual(result.genchallenge, '/bin/gen.py')
         self.assertEqual(result.chimeraprep, '/bin/chimeraprep.py')
         self.assertEqual(result.skipimportwait, True)
-        self.assertEqual(result.importretry, '10')
-        self.assertEqual(result.importsleep, '30')
+        self.assertEqual(result.importretry, 10)
+        self.assertEqual(result.importsleep, 30)
 
     def test_run_tasks_passing_none_and_empty_list(self):
         self.assertEquals(celpprunner.run_tasks(None), 3)
