@@ -4,11 +4,18 @@ import os
 import logging
 import re
 import urllib
-import time
 import gzip
+import subprocess
+import shlex
+import time
+import urllib2
+from dateutil.parser import *
 from datetime import date
 from datetime import datetime
 from datetime import timedelta
+from dateutil.tz import *
+
+
 
 logger = logging.getLogger(__name__)
 
@@ -184,7 +191,7 @@ def get_celpp_week_number_from_path(dir):
     return weeknum
 
 
-def get_previous_date_of_previous_friday_from_date(the_datetime):
+def get_previous_friday_from_date(the_datetime):
     """Given a date, function finds date of previous Friday
        Given `the_date` code finds the date of the previous
        Friday with same hour, minute, and second.
@@ -206,6 +213,39 @@ def get_previous_date_of_previous_friday_from_date(the_datetime):
             tdelta = timedelta(days=(3 + weekday))
 
     return the_datetime - tdelta
+
+
+def is_datetime_after_celpp_week_start(the_datetime):
+    """Determines if `the_datetime` is after celpp week start
+    :returns: True if yes otherwise False
+    :raises Exception: If `the_datetime` is not a valid datetime object
+    """
+    if the_datetime is None:
+        raise Exception('Must pass a valid datetime')
+    assert isinstance(the_datetime, datetime)
+
+    prev_friday = get_previous_friday_from_date(datetime.now(tzlocal()))
+
+    if the_datetime >= prev_friday:
+        return True
+
+    return False
+
+
+def has_url_been_updated_since_start_of_celpp_week(url):
+    """Checks if url has been updated since start of celpp week
+    """
+    if url is None:
+        raise Exception('url cannot be None')
+
+    req = urllib2.Request(url)
+    resp = urllib2.urlopen(req)
+
+    last_modified = resp.info()['Last-Modified']
+    logger.debug(url + ' last modified: ' + last_modified)
+    lmdate = parse(last_modified)
+    return is_datetime_after_celpp_week_start(lmdate)
+
 
 def get_celpp_week_of_year_from_date(the_date):
     """ Returns CELPP week of year
@@ -359,3 +399,58 @@ def get_file_line_count(the_file):
         counter += 1
     f.close()
     return counter
+
+
+def run_external_command(cmd_to_run, timeout=None):
+    """Runs command via external process
+       Executes command in `cmd_to_run` which should
+       be a single string command ie: ls -la or /bin/true
+       :param cmd_to_run: The command with arguments to run
+       :param timeout: Sets # second to allow process to run
+                       If exceeded terminate() is called and
+                       if that fails kill() is called on process
+                       NOTE: if process is killed this way
+                             stderr and stdout output will be
+                             lost
+       :returns: tuple (exitcode, stdout, stderr)
+    """
+
+    if cmd_to_run is None:
+        return 256, '', 'Command must be set'
+
+    if timeout is None:
+        logger.info("Running command " + cmd_to_run)
+    else:
+        logger.info("Running command " + cmd_to_run + ' with timeout ' +
+                    str(timeout))
+
+    p = subprocess.Popen(shlex.split(cmd_to_run),
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE)
+
+    # wait timeout seconds for process to
+    # finish.  If its still running.  Kill
+    # it
+    if timeout is not None:
+        counter = 0
+        while counter < timeout:
+            if p.poll() is not None:
+                break
+            time.sleep(1)
+            counter += 1
+
+        # if counter exceeded timeout kill the task
+        if counter >= timeout:
+            logger.info("Process exceeded timeout calling terminate()")
+            p.terminate()
+            time.sleep(1)
+            try:
+                os.kill(p.pid, 0)
+            except OSError:
+                logger.debug('Process ' + str(p.pid) + ' killed with terminate()')
+            else:
+                logger.debug('Process ' + str(p.pid) + ' still alive killing with kill()')
+                p.kill()
+
+    out, err = p.communicate()
+    return p.returncode, out, err
