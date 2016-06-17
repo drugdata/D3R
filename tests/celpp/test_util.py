@@ -10,9 +10,9 @@ import stat
 
 from urllib2 import URLError
 from datetime import datetime
-from dateutil.tz import *
+from dateutil.tz import tzutc
+from dateutil.tz import tzlocal
 from datetime import timedelta
-
 
 
 """
@@ -506,7 +506,6 @@ class TestUtil(unittest.TestCase):
         except Exception:
             pass
 
-
         # test non date passed in
         try:
             util.get_previous_friday_from_date('hello')
@@ -582,7 +581,8 @@ class TestUtil(unittest.TestCase):
         except AssertionError:
             pass
 
-        prev_friday = util.get_previous_friday_from_date(datetime.now(tzlocal()))
+        prev_friday = util.get_previous_friday_from_date(
+            datetime.now(tzlocal()))
         oneday = timedelta(days=1)
         sat = prev_friday + oneday
         self.assertTrue(util.is_datetime_after_celpp_week_start(sat))
@@ -612,27 +612,30 @@ class TestUtil(unittest.TestCase):
             f.flush()
             f.close()
 
-            prev_friday = util.get_previous_friday_from_date(datetime.now(tzlocal()))
+            prev_friday = util.get_previous_friday_from_date(
+                datetime.now(tzlocal()))
 
             thurs = prev_friday - timedelta(days=1)
-            d_since_epoch = thurs - datetime(1970,01, 01, tzinfo=tzutc())
+            d_since_epoch = thurs - datetime(1970, 01, 01, tzinfo=tzutc())
             secs_since_epoch = d_since_epoch.total_seconds()
             os.utime(fakefile, (secs_since_epoch, secs_since_epoch))
-            val = util.has_url_been_updated_since_start_of_celpp_week('file://' + fakefile)
+            val = util.has_url_been_updated_since_start_of_celpp_week(
+                'file://' + fakefile)
             self.assertEqual(val, False)
 
             sat = prev_friday + timedelta(days=1)
-            d_since_epoch = sat - datetime(1970,01, 01, tzinfo=tzutc())
+            d_since_epoch = sat - datetime(1970, 01, 01, tzinfo=tzutc())
             secs_since_epoch = d_since_epoch.total_seconds()
             os.utime(fakefile, (secs_since_epoch, secs_since_epoch))
-            val = util.has_url_been_updated_since_start_of_celpp_week('file://' + fakefile)
+            val = util.has_url_been_updated_since_start_of_celpp_week(
+                'file://' + fakefile)
             self.assertEqual(val, True)
 
         finally:
             shutil.rmtree(temp_dir)
 
     def test_run_external_command_command_not_set(self):
-        ecode,out,err = util.run_external_command(None)
+        ecode, out, err = util.run_external_command(None)
         self.assertEqual(ecode, 256)
         self.assertEqual(out, '')
         self.assertEqual(err, 'Command must be set')
@@ -641,8 +644,8 @@ class TestUtil(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             try:
-                ecode,out,err = util.run_external_command(os.path.join(temp_dir,
-                                                                       'noexist'))
+                noexist = os.path.join(temp_dir, 'noexist')
+                ecode, out, err = util.run_external_command(noexist)
                 self.fail('Expected OSError')
             except OSError:
                 pass
@@ -653,7 +656,7 @@ class TestUtil(unittest.TestCase):
     def test_run_external_command_success_with_output(self):
         temp_dir = tempfile.mkdtemp()
         try:
-            script = os.path.join(temp_dir,'yo.py')
+            script = os.path.join(temp_dir, 'yo.py')
 
             # create a small python script that outputs args passed
             # in to standard out, writes error to standard error
@@ -669,7 +672,7 @@ class TestUtil(unittest.TestCase):
             f.close()
             os.chmod(script, stat.S_IRWXU)
 
-            ecode,out,err = util.run_external_command(script + ' hi how')
+            ecode, out, err = util.run_external_command(script + ' hi how')
 
             self.assertEqual(err, 'error')
             self.assertEqual(out, 'hihow')
@@ -678,11 +681,10 @@ class TestUtil(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
-
     def test_run_external_command_success_with_timeout(self):
         temp_dir = tempfile.mkdtemp()
         try:
-            script = os.path.join(temp_dir,'yo.py')
+            script = os.path.join(temp_dir, 'yo.py')
 
             # create a small python script that outputs args passed
             # in to standard out, writes error to standard error
@@ -698,7 +700,8 @@ class TestUtil(unittest.TestCase):
             f.close()
             os.chmod(script, stat.S_IRWXU)
 
-            ecode,out,err = util.run_external_command(script + ' hi how',timeout=10)
+            ecode, out, err = util.run_external_command(script + ' hi how',
+                                                        timeout=10)
 
             self.assertEqual(err, 'error')
             self.assertEqual(out, 'hihow')
@@ -710,7 +713,7 @@ class TestUtil(unittest.TestCase):
     def test_run_external_command_process_exceeds_timeout(self):
         temp_dir = tempfile.mkdtemp()
         try:
-            script = os.path.join(temp_dir,'yo.py')
+            script = os.path.join(temp_dir, 'yo.py')
 
             # create a small python script that outputs args passed
             # in to standard out, writes error to standard error
@@ -728,7 +731,8 @@ class TestUtil(unittest.TestCase):
             f.close()
             os.chmod(script, stat.S_IRWXU)
 
-            ecode,out,err = util.run_external_command(script + ' hi how',timeout=1)
+            ecode, out, err = util.run_external_command(script +
+                                                        ' hi how', timeout=1)
 
             self.assertTrue(ecode < 0)
 
@@ -738,7 +742,7 @@ class TestUtil(unittest.TestCase):
     def test_run_external_command_fail_with_output(self):
         temp_dir = tempfile.mkdtemp()
         try:
-            script = os.path.join(temp_dir,'yo.py')
+            script = os.path.join(temp_dir, 'yo.py')
 
             # create a small python script that outputs args passed
             # in to standard out, writes error to standard error
@@ -754,7 +758,7 @@ class TestUtil(unittest.TestCase):
             f.close()
             os.chmod(script, stat.S_IRWXU)
 
-            ecode,out,err = util.run_external_command(script + ' hi how')
+            ecode, out, err = util.run_external_command(script + ' hi how')
 
             self.assertEqual(err, '2error')
             self.assertEqual(out, 'hihow')
