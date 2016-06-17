@@ -10,6 +10,7 @@ import platform
 from email.mime.text import MIMEText
 
 from d3r.celpp.filetransfer import FtpFileUploader
+from d3r.celpp import util
 
 
 logger = logging.getLogger(__name__)
@@ -586,7 +587,7 @@ class D3RTask(object):
         return D3RTask.UNKNOWN_STATUS
 
     def run_external_command(self, command_name, cmd_to_run,
-                             command_failure_is_fatal):
+                             command_failure_is_fatal, timeout=None):
         """Runs external command line process
 
         Method runs external process logging the command
@@ -604,6 +605,8 @@ class D3RTask(object):
                exception then status of task is set to
                D3RTask.ERROR_STATUS and failure message appended
                to email log and task.set_error is set
+        :param timeout: Sets allowed runtime of process in seconds.
+                        To allow infinite run omit value or set to None
         :return: exit code of process
         :raise: UnsetNameError if command_name is None
         :raise: UnsetCommandError if cmd_to_run is None
@@ -620,10 +623,10 @@ class D3RTask(object):
         logger.info("Running command " + cmd_to_run)
 
         self.append_to_email_log('Running command: ' + cmd_to_run + '\n')
+
         try:
-            p = subprocess.Popen(shlex.split(cmd_to_run),
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE)
+            returncode, out, err = util.run_external_command(cmd_to_run,
+                                                             timeout=timeout)
         except Exception as e:
             logger.exception("Error caught exception")
             self.set_status(D3RTask.ERROR_STATUS)
@@ -632,22 +635,20 @@ class D3RTask(object):
             self.end()
             return 1
 
-        out, err = p.communicate()
-
         self.write_to_file(err, command_name + D3RTask.STDERR_SUFFIX)
         self.write_to_file(out, command_name + D3RTask.STDOUT_SUFFIX)
 
-        if p.returncode != 0:
+        if returncode != 0:
             if command_failure_is_fatal:
                 self.set_status(D3RTask.ERROR_STATUS)
-                self.set_error("Non zero exit code: " + str(p.returncode) +
+                self.set_error("Non zero exit code: " + str(returncode) +
                                " received. Standard out: " + out +
                                " Standard error: " + err)
             else:
                 self.append_to_email_log("Although considered non fatal " +
                                          "for processing of stage a " +
                                          "non zero exit code: " +
-                                         str(p.returncode) +
+                                         str(returncode) +
                                          "received. Standard out: " + out +
                                          " Standard error : " + err)
-        return p.returncode
+        return returncode
