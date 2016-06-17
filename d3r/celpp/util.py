@@ -412,6 +412,7 @@ def run_external_command(cmd_to_run, timeout=None):
                        NOTE: if process is killed this way
                              stderr and stdout output will be
                              lost
+       :raises: All exceptions from subprocess.Popen()
        :returns: tuple (exitcode, stdout, stderr)
     """
 
