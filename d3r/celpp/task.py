@@ -3,8 +3,6 @@
 import os
 import time
 import logging
-import subprocess
-import shlex
 import smtplib
 import platform
 from email.mime.text import MIMEText
