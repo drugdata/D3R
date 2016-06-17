@@ -20,7 +20,8 @@ requirements = [
     "psutil",
     "biopython",
     "xlsxwriter",
-    "ftpretty"
+    "ftpretty",
+    "python-dateutil"
 ]
 
 test_requirements = [
@@ -30,6 +31,7 @@ test_requirements = [
     "biopython",
     "xlsxwriter",
     "ftpretty",
+    "python-dateutil",
     "mock"
 ]
 
