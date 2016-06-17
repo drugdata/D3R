@@ -9,12 +9,11 @@ import subprocess
 import shlex
 import time
 import urllib2
-from dateutil.parser import *
+from dateutil.parser import parse
 from datetime import date
 from datetime import datetime
 from datetime import timedelta
-from dateutil.tz import *
-
+from dateutil.tz import tzlocal
 
 
 logger = logging.getLogger(__name__)
@@ -448,9 +447,11 @@ def run_external_command(cmd_to_run, timeout=None):
             try:
                 os.kill(p.pid, 0)
             except OSError:
-                logger.debug('Process ' + str(p.pid) + ' killed with terminate()')
+                logger.debug('Process ' + str(p.pid) +
+                             ' killed with terminate()')
             else:
-                logger.debug('Process ' + str(p.pid) + ' still alive killing with kill()')
+                logger.debug('Process ' + str(p.pid) +
+                             ' still alive killing with kill()')
                 p.kill()
 
     out, err = p.communicate()
