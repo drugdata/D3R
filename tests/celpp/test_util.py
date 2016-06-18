@@ -33,7 +33,8 @@ class TestUtil(unittest.TestCase):
         pass
 
     def get_total_seconds(self, td):
-        return (td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / 10**6
+        return (td.microseconds +
+                (td.seconds + td.days * 24 * 3600) * 10**6) / 10**6
 
     def test_find_latest_year(self):
         temp_dir = tempfile.mkdtemp()
