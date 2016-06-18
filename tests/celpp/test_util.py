@@ -32,6 +32,9 @@ class TestUtil(unittest.TestCase):
     def setUp(self):
         pass
 
+    def get_total_seconds(self, td):
+        return (td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / 10**6
+
     def test_find_latest_year(self):
         temp_dir = tempfile.mkdtemp()
         try:
@@ -616,16 +619,16 @@ class TestUtil(unittest.TestCase):
                 datetime.now(tzlocal()))
 
             thurs = prev_friday - timedelta(days=1)
-            d_since_epoch = thurs - datetime(1970, 01, 01, tzinfo=tzutc())
-            secs_since_epoch = d_since_epoch.total_seconds()
+            dse = thurs - datetime(1970, 01, 01, tzinfo=tzutc())
+            secs_since_epoch = self.get_total_seconds(dse)
             os.utime(fakefile, (secs_since_epoch, secs_since_epoch))
             val = util.has_url_been_updated_since_start_of_celpp_week(
                 'file://' + fakefile)
             self.assertEqual(val, False)
 
             sat = prev_friday + timedelta(days=1)
-            d_since_epoch = sat - datetime(1970, 01, 01, tzinfo=tzutc())
-            secs_since_epoch = d_since_epoch.total_seconds()
+            dse = sat - datetime(1970, 01, 01, tzinfo=tzutc())
+            secs_since_epoch = self.get_total_seconds(dse)
             os.utime(fakefile, (secs_since_epoch, secs_since_epoch))
             val = util.has_url_been_updated_since_start_of_celpp_week(
                 'file://' + fakefile)
