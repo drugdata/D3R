@@ -12,6 +12,11 @@ from d3r.celpp.makeblastdb import MakeBlastDBTask
 logger = logging.getLogger(__name__)
 
 
+class ImportRetryCountExceededError(Exception):
+    """Error raised when import retry count has been exceeded
+    """
+    pass
+
 class DataImportTask(D3RTask):
     """Represents DataImport Task
     This task downloads 3 files named new_release_structure_nonpolymer.tsv,
@@ -217,6 +222,31 @@ class DataImportTask(D3RTask):
         except IOError:
             logger.exception('Error appending standard to file')
 
+    def _wait_for_url_to_be_updated(self, url):
+        """Waits for `url` to have been updated since start of celpp week
+        """
+        try:
+            if self.get_args().skipimportwait is True:
+                logger.debug('Skiping wait for tsv files to be updated')
+                return
+        except Exception as e:
+            logger.exception('Skiping wait for tsv files to be updated')
+            return
+
+        val = util.has_url_been_updated_since_start_of_celpp_week(url)
+        counter = 0
+        while val is False:
+            if counter > self.get_args().importretry:
+                raise ImportRetryCountExceededError(url + ' has not been updated after ' +
+                                                    str(counter*self.get_args().importsleep) +
+                                                    ' seconds')
+            logger.debug('Try #' + str(counter) + ' ' + url +
+                         ' has not been updated. Sleeping ' +
+                         str(self.get_args().importsleep) + ' seconds')
+            time.sleep(self.get_args().importsleep)
+            val = util.has_url_been_updated_since_start_of_celpp_week(url)
+            counter += 1
+
     def can_run(self):
         """Determines if task can actually run
 
@@ -255,6 +285,55 @@ class DataImportTask(D3RTask):
         self._can_run = True
         return True
 
+
+    def _download_files(self, url):
+
+        try:
+            nonpolyurl = url + '/' + DataImportTask.NONPOLYMER_TSV
+
+            self._wait_for_url_to_be_updated(nonpolyurl)
+
+            download_path = self.get_nonpolymer_tsv()
+            util.download_url_to_file(nonpolyurl,
+                                      download_path,
+                                      self._maxretries,
+                                      self._retrysleep)
+
+            sequence = url + '/' + DataImportTask.SEQUENCE_TSV
+            self._wait_for_url_to_be_updated(sequence)
+
+            download_path = self.get_sequence_tsv()
+            util.download_url_to_file(sequence,
+                                      download_path,
+                                      self._maxretries,
+                                      self._retrysleep)
+
+            crystal = url + '/' + DataImportTask.CRYSTALPH_TSV
+
+            self._wait_for_url_to_be_updated(crystal)
+            download_path = self.get_crystalph_tsv()
+            util.download_url_to_file(crystal,
+                                      download_path,
+                                      self._maxretries,
+                                      self._retrysleep)
+
+            url = self._args.compinchi
+            download_path = self.get_components_inchi_file()
+            util.download_url_to_file(url +
+                                      '/' + DataImportTask.COMPINCHI_ICH,
+                                      download_path,
+                                      self._maxretries,
+                                      self._retrysleep)
+            return True
+        except Exception:
+            logger.exception('Caught Exception trying to download file(s)')
+
+            self.set_error('Unable to download file from ' +
+                           url + ' to ' + download_path)
+            # assess the result
+            self.end()
+        return False
+
     def run(self):
         """Downloads Components-inchi.ich
 
@@ -286,92 +365,41 @@ class DataImportTask(D3RTask):
                                       'is False')
             return
 
-        download_path = self.get_nonpolymer_tsv()
         url = self._args.pdbfileurl
+
+        # if False is returned then the download failed
+        # just return since the method has already
+        # called end() and set_error()
+        if self._download_files(url) is False:
+            return
+
+        # Compare TSV files with pdb_seqres.txt file to see if there
+        # are any duplicates issue #15
         try:
-
-            # need to do the following to see if file has been updated
-            # req = urllib2.Request('http://www.wwpdb.org/files/
-            # new_release_structure_sequence.tsv')
-            # response = urllib2.urlopen(req)
-            # print response.info()
-            #
-            # Date: Sat, 07 May 2016 17:09:52 GMT
-            # Server: Apache/2.2.15 (CentOS)
-            # Last-Modified: Sat, 07 May 2016 03:02:07 GMT
-            # ETag: "10036436-1dc53-53237cd00a8f9"
-            # Accept-Ranges: bytes
-            # Content-Length: 121939
-            # Connection: close
-            # Content-Type: text/tab-separated-values
-            #
-            # to get last modified run this:
-            # print resp.info()['Last-Modified']
-            util.download_url_to_file(url +
-                                      '/' + DataImportTask.NONPOLYMER_TSV,
-                                      download_path,
-                                      self._maxretries,
-                                      self._retrysleep)
-
-            download_path = self.get_sequence_tsv()
-            util.download_url_to_file(url +
-                                      '/' + DataImportTask.SEQUENCE_TSV,
-                                      download_path,
-                                      self._maxretries,
-                                      self._retrysleep)
-
-            download_path = self.get_crystalph_tsv()
-            util.download_url_to_file(url +
-                                      '/' + DataImportTask.CRYSTALPH_TSV,
-                                      download_path,
-                                      self._maxretries,
-                                      self._retrysleep)
-
-            url = self._args.compinchi
-            download_path = self.get_components_inchi_file()
-            util.download_url_to_file(url +
-                                      '/' + DataImportTask.COMPINCHI_ICH,
-                                      download_path,
-                                      self._maxretries,
-                                      self._retrysleep)
-
-            # Compare TSV files with pdb_seqres.txt file to see if there
-            # are any duplicates issue #15
-            try:
-                pdbs = self.get_set_of_pdbid_in_crystalph_tsv_and_pdb_seqres()
-                if len(pdbs) == 0:
-                    self.append_to_email_log('\nFound no entries in ' +
-                                             DataImportTask.CRYSTALPH_TSV +
-                                             'and ' +
-                                             MakeBlastDBTask.PDB_SEQRES_TXT +
-                                             ' files\n')
-                else:
-                    self.append_to_email_log('\nWARNING: Found ' +
-                                             str(len(pdbs)) +
-                                             ' PDBIDs in both ' +
-                                             DataImportTask.CRYSTALPH_TSV +
-                                             ' and ' +
-                                             MakeBlastDBTask.PDB_SEQRES_TXT +
-                                             ' files\n')
-            except Exception:
-                logger.exception('Caught exception comparing tsv with '
-                                 'sequence')
-                self.append_to_email_log('\nError unable to examine ' +
+            pdbs = self.get_set_of_pdbid_in_crystalph_tsv_and_pdb_seqres()
+            if len(pdbs) == 0:
+                self.append_to_email_log('\nFound no entries in ' +
                                          DataImportTask.CRYSTALPH_TSV +
-                                         ' and/or ' +
+                                         'and ' +
                                          MakeBlastDBTask.PDB_SEQRES_TXT +
                                          ' files\n')
-
-            # Append internal standard
-            self.append_standard_to_files()
-
-            self.end()
-            return
+            else:
+                self.append_to_email_log('\nWARNING: Found ' +
+                                         str(len(pdbs)) +
+                                         ' PDBIDs in both ' +
+                                         DataImportTask.CRYSTALPH_TSV +
+                                         ' and ' +
+                                         MakeBlastDBTask.PDB_SEQRES_TXT +
+                                         ' files\n')
         except Exception:
-            logger.exception('Caught Exception trying to download file(s)')
+            logger.exception('Caught exception comparing tsv with '
+                             'sequence')
+            self.append_to_email_log('\nError unable to examine ' +
+                                     DataImportTask.CRYSTALPH_TSV +
+                                     ' and/or ' +
+                                     MakeBlastDBTask.PDB_SEQRES_TXT +
+                                     ' files\n')
 
-        self.set_error('Unable to download file from ' +
-                       url + ' to ' + download_path)
-
-        # assess the result
+        # Append internal standard
+        self.append_standard_to_files()
         self.end()

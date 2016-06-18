@@ -295,6 +295,13 @@ class TestDataImportTask(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
+    def test_wait_for_url_to_be_updated(self):
+        self.fail('not implemented')
+
+    def test_download_files(self):
+        self.fail('not implemented')
+
+
     def test_get_set_of_pdbid_from_crystalph_tsv_nonexistant_file(self):
         temp_dir = tempfile.mkdtemp()
         try:
