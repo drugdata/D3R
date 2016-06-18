@@ -8,6 +8,10 @@ import unittest
 import os
 import tempfile
 import shutil
+from datetime import datetime
+from dateutil.tz import tzutc
+from dateutil.tz import tzlocal
+from datetime import timedelta
 
 """
 test_dataimport
@@ -19,14 +23,22 @@ Tests for `dataimport` module.
 from d3r.celpp.task import D3RParameters
 from d3r.celpp.task import D3RTask
 from d3r.celpp.dataimport import DataImportTask
+from d3r.celpp.dataimport import ImportRetryCountExceededError
 from d3r.celpp.makeblastdb import MakeBlastDBTask
 from d3r.celpp import util
+
 from tests.celpp import test_task
+
 
 
 class TestDataImportTask(unittest.TestCase):
     def setUp(self):
         pass
+
+    def get_total_seconds(self, td):
+        return (td.microseconds +
+                (td.seconds + td.days * 24 * 3600) * 10**6) / 10**6
+
 
     def test_update_status_from_filesystem(self):
         params = D3RParameters()
@@ -296,10 +308,57 @@ class TestDataImportTask(unittest.TestCase):
             shutil.rmtree(temp_dir)
 
     def test_wait_for_url_to_be_updated(self):
-        self.fail('not implemented')
+        temp_dir = tempfile.mkdtemp()
+        try:
+            # skipimportwait is None
+            params = D3RParameters()
+            task = DataImportTask(temp_dir, params)
+            task._wait_for_url_to_be_updated('foo')
+
+            # skipimportwait is True
+            params = D3RParameters()
+            params.skipimportwait = True
+            task = DataImportTask(temp_dir, params)
+            task._wait_for_url_to_be_updated('foo')
+
+            params = D3RParameters()
+            params.skipimportwait = False
+            params.importretry = 4
+            params.importsleep = 0
+            task = DataImportTask(temp_dir, params)
+
+            fakefile = os.path.join(temp_dir, 'foo')
+
+            f = open(fakefile, 'w')
+            f.write('hi\n')
+            f.flush()
+            f.close()
+
+            prev_friday = util.get_previous_friday_from_date(
+                datetime.now(tzlocal()))
+
+            thurs = prev_friday - timedelta(days=1)
+            dse = thurs - datetime(1970, 01, 01, tzinfo=tzutc())
+            secs_since_epoch = self.get_total_seconds(dse)
+            os.utime(fakefile, (secs_since_epoch, secs_since_epoch))
+            try:
+                task._wait_for_url_to_be_updated('file://' + fakefile)
+                self.fail('Expected ImportRetryCountExceededError')
+            except ImportRetryCountExceededError:
+                pass
+
+            sat = prev_friday + timedelta(days=1)
+            dse = sat - datetime(1970, 01, 01, tzinfo=tzutc())
+            secs_since_epoch = self.get_total_seconds(dse)
+            os.utime(fakefile, (secs_since_epoch, secs_since_epoch))
+
+            task._wait_for_url_to_be_updated('file://' + fakefile)
+
+        finally:
+            shutil.rmtree(temp_dir)
 
     def test_download_files(self):
-        self.fail('not implemented')
+        self.fail('TODO implement the tests')
 
 
     def test_get_set_of_pdbid_from_crystalph_tsv_nonexistant_file(self):
