@@ -243,7 +243,11 @@ class DataImportTask(D3RTask):
             logger.debug('Try #' + str(counter) + ' ' + url +
                          ' has not been updated. Sleeping ' +
                          str(self.get_args().importsleep) + ' seconds')
-            time.sleep(self.get_args().importsleep)
+            try:
+                time.sleep(self.get_args().importsleep)
+            except AttributeError:
+                logger.exception('importsleep was not set')
+
             val = util.has_url_been_updated_since_start_of_celpp_week(url)
             counter += 1
 
