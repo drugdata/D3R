@@ -17,6 +17,7 @@ class ImportRetryCountExceededError(Exception):
     """
     pass
 
+
 class DataImportTask(D3RTask):
     """Represents DataImport Task
     This task downloads 3 files named new_release_structure_nonpolymer.tsv,
@@ -229,7 +230,7 @@ class DataImportTask(D3RTask):
             if self.get_args().skipimportwait is True:
                 logger.debug('Skiping wait for tsv files to be updated')
                 return
-        except Exception as e:
+        except Exception:
             logger.exception('Skiping wait for tsv files to be updated')
             return
 
@@ -237,9 +238,10 @@ class DataImportTask(D3RTask):
         counter = 0
         while val is False:
             if counter > self.get_args().importretry:
-                raise ImportRetryCountExceededError(url + ' has not been updated after ' +
-                                                    str(counter*self.get_args().importsleep) +
-                                                    ' seconds')
+                raise ImportRetryCountExceededError(
+                    url + ' has not been updated after ' +
+                    str(counter*self.get_args().importsleep) +
+                    ' seconds')
             logger.debug('Try #' + str(counter) + ' ' + url +
                          ' has not been updated. Sleeping ' +
                          str(self.get_args().importsleep) + ' seconds')
@@ -288,7 +290,6 @@ class DataImportTask(D3RTask):
             return False
         self._can_run = True
         return True
-
 
     def _download_files(self, url):
 

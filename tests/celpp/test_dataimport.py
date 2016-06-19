@@ -30,7 +30,6 @@ from d3r.celpp import util
 from tests.celpp import test_task
 
 
-
 class TestDataImportTask(unittest.TestCase):
     def setUp(self):
         pass
@@ -38,7 +37,6 @@ class TestDataImportTask(unittest.TestCase):
     def get_total_seconds(self, td):
         return (td.microseconds +
                 (td.seconds + td.days * 24 * 3600) * 10**6) / 10**6
-
 
     def test_update_status_from_filesystem(self):
         params = D3RParameters()
@@ -357,9 +355,97 @@ class TestDataImportTask(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
-    def test_download_files(self):
-        self.fail('TODO implement the tests')
+    def test_download_files_with_wait_all_successful(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            prev_friday = util.get_previous_friday_from_date(
+                datetime.now(tzlocal()))
+            sat = prev_friday + timedelta(days=1)
+            dse = sat - datetime(1970, 01, 01, tzinfo=tzutc())
+            secs_since_epoch = self.get_total_seconds(dse)
 
+            nonpoly = os.path.join(temp_dir,
+                                   DataImportTask.NONPOLYMER_TSV)
+            f = open(nonpoly, 'w')
+            f.write('nonpoly\n')
+            f.flush()
+            f.close()
+            os.utime(nonpoly, (secs_since_epoch, secs_since_epoch))
+
+            seq = os.path.join(temp_dir,
+                               DataImportTask.SEQUENCE_TSV)
+            f = open(seq, 'w')
+            f.write('seq\n')
+            f.flush()
+            f.close()
+            os.utime(seq, (secs_since_epoch, secs_since_epoch))
+
+            crystal = os.path.join(temp_dir,
+                                   DataImportTask.CRYSTALPH_TSV)
+            f = open(crystal, 'w')
+            f.write('crystal\n')
+            f.flush()
+            f.close()
+            os.utime(crystal, (secs_since_epoch, secs_since_epoch))
+
+            comp = os.path.join(temp_dir, DataImportTask.COMPINCHI_ICH)
+
+            f = open(comp, 'w')
+            f.write('comp\n')
+            f.flush()
+            f.close()
+
+            params = D3RParameters()
+            params.skipimportwait = False
+            params.importretry = 4
+            params.importsleep = 0
+            params.compinchi = 'file://' + temp_dir
+            task = DataImportTask(temp_dir, params)
+            task.create_dir()
+            val = task._download_files('file://' + temp_dir)
+            self.assertEqual(task.get_error(), None)
+            self.assertTrue(val)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_download_files_fail(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            nonpoly = os.path.join(temp_dir,
+                                   DataImportTask.NONPOLYMER_TSV)
+            f = open(nonpoly, 'w')
+            f.write('nonpoly\n')
+            f.flush()
+            f.close()
+
+            seq = os.path.join(temp_dir,
+                               DataImportTask.SEQUENCE_TSV)
+            f = open(seq, 'w')
+            f.write('seq\n')
+            f.flush()
+            f.close()
+
+            crystal = os.path.join(temp_dir,
+                                   DataImportTask.CRYSTALPH_TSV)
+            f = open(crystal, 'w')
+            f.write('crystal\n')
+            f.flush()
+            f.close()
+
+            params = D3RParameters()
+            params.skipimportwait = True
+            params.compinchi = 'file://' + temp_dir
+            task = DataImportTask(temp_dir, params)
+            task.create_dir()
+            val = task._download_files('file://' + temp_dir)
+            self.assertEqual(task.get_error(), 'Unable to download file from '
+                                               'file://' + temp_dir + ' to ' +
+                             task.get_components_inchi_file())
+            self.assertFalse(val)
+
+        finally:
+            shutil.rmtree(temp_dir)
 
     def test_get_set_of_pdbid_from_crystalph_tsv_nonexistant_file(self):
         temp_dir = tempfile.mkdtemp()
