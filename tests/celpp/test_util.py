@@ -738,7 +738,7 @@ class TestUtil(unittest.TestCase):
             ecode, out, err = util.run_external_command(script +
                                                         ' hi how', timeout=1)
 
-            self.assertTrue(ecode < 0)
+            self.assertTrue(ecode, -100)
 
         finally:
             shutil.rmtree(temp_dir)
