@@ -406,11 +406,10 @@ def run_external_command(cmd_to_run, timeout=None):
        be a single string command ie: ls -la or /bin/true
        :param cmd_to_run: The command with arguments to run
        :param timeout: Sets # second to allow process to run
-                       If exceeded terminate() is called and
-                       if that fails kill() is called on process
+                       If exceeded terminate() is called
                        NOTE: if process is killed this way
-                             stderr and stdout output will be
-                             lost
+                             stderr and stdout output may be
+                             lost and exitcode will be -100
        :raises: All exceptions from subprocess.Popen()
        :returns: tuple (exitcode, stdout, stderr)
     """
@@ -444,15 +443,8 @@ def run_external_command(cmd_to_run, timeout=None):
             logger.info("Process exceeded timeout calling terminate()")
             p.terminate()
             time.sleep(1)
-            try:
-                os.kill(p.pid, 0)
-            except OSError:
-                logger.debug('Process ' + str(p.pid) +
-                             ' killed with terminate()')
-            else:
-                logger.debug('Process ' + str(p.pid) +
-                             ' still alive killing with kill()')
-                p.kill()
+            out, err = p.communicate()
+            return -100, out, err
 
     out, err = p.communicate()
     return p.returncode, out, err
