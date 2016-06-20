@@ -64,6 +64,26 @@ class TestDataImportTask(unittest.TestCase):
                          '/foo/' + task.get_dir_name() +
                          '/new_release_crystallization_pH.tsv')
 
+    def test_append_standard_to_files(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = DataImportTask(temp_dir, params)
+            task.create_dir()
+            task.append_standard_to_files()
+            self.assertTrue(os.path.isfile(task.get_nonpolymer_tsv()))
+            self.assertTrue(os.path.isfile(task.get_sequence_tsv()))
+            self.assertTrue(os.path.isfile(task.get_crystalph_tsv()))
+
+            # now do it again, but this time make the append fail
+            # cause the nonpolymer_tsv is a directory
+            os.unlink(task.get_nonpolymer_tsv())
+            os.makedirs(task.get_nonpolymer_tsv())
+            task.append_standard_to_files()
+
+        finally:
+            shutil.rmtree(temp_dir)
+
     def test_can_run_with_complete_file(self):
         temp_dir = tempfile.mkdtemp()
         try:
@@ -321,7 +341,7 @@ class TestDataImportTask(unittest.TestCase):
 
             params = D3RParameters()
             params.skipimportwait = False
-            params.importretry = 4
+            params.importretry = 2
             params.importsleep = 0
             task = DataImportTask(temp_dir, params)
 
@@ -339,6 +359,18 @@ class TestDataImportTask(unittest.TestCase):
             dse = thurs - datetime(1970, 01, 01, tzinfo=tzutc())
             secs_since_epoch = self.get_total_seconds(dse)
             os.utime(fakefile, (secs_since_epoch, secs_since_epoch))
+            # test retry exceeded
+            try:
+                task._wait_for_url_to_be_updated('file://' + fakefile)
+                self.fail('Expected ImportRetryCountExceededError')
+            except ImportRetryCountExceededError:
+                pass
+
+            # test importsleep not defined
+            params = D3RParameters()
+            params.skipimportwait = False
+            params.importretry = 2
+            task.set_args(params)
             try:
                 task._wait_for_url_to_be_updated('file://' + fakefile)
                 self.fail('Expected ImportRetryCountExceededError')
@@ -397,7 +429,7 @@ class TestDataImportTask(unittest.TestCase):
 
             params = D3RParameters()
             params.skipimportwait = False
-            params.importretry = 4
+            params.importretry = 2
             params.importsleep = 0
             params.compinchi = 'file://' + temp_dir
             task = DataImportTask(temp_dir, params)
@@ -455,7 +487,7 @@ class TestDataImportTask(unittest.TestCase):
             task.create_dir()
             pdbid_set = task.get_set_of_pdbid_in_crystalph_tsv_and_pdb_seqres()
             self.assertEqual(len(pdbid_set), 0)
-        except:
+        finally:
             shutil.rmtree(temp_dir)
 
     def test_get_set_of_pdbid_from_crystalph_tsv_empty_file(self):
@@ -468,7 +500,36 @@ class TestDataImportTask(unittest.TestCase):
             pdbid_set = task.get_set_of_pdbid_in_crystalph_tsv_and_pdb_seqres()
             self.assertEqual(os.path.isfile(task.get_crystalph_tsv()), True)
             self.assertEqual(len(pdbid_set), 0)
-        except:
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_set_of_pdbid_from_crystalph_tsv_no_header_invalid_lines(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = DataImportTask(temp_dir, params)
+            task.create_dir()
+            f = open(task.get_crystalph_tsv(), 'w')
+            f.write('hello\nx\n')
+            f.flush()
+            f.close()
+            pdbid_set = task.get_set_of_pdbid_from_crystalph_tsv()
+            self.assertEqual(os.path.isfile(task.get_crystalph_tsv()), True)
+            self.assertEqual(len(pdbid_set), 0)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_set_of_pdbid_from_crystalph_tsv_internal_exception(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = DataImportTask(temp_dir, params)
+            task.create_dir()
+            open(task.get_crystalph_tsv(), 'a').close()
+            os.chmod(task.get_crystalph_tsv(), 0o000)
+            pdbid_set = task.get_set_of_pdbid_from_crystalph_tsv()
+            self.assertEqual(len(pdbid_set), 0)
+        finally:
             shutil.rmtree(temp_dir)
 
     def test_get_set_of_pdbid_from_crystalph_tsv_valid_entries(self):
@@ -486,7 +547,7 @@ class TestDataImportTask(unittest.TestCase):
             f.write('4XF3\t6.2\n')
             f.flush()
             f.close()
-            pdbid_set = task.get_set_of_pdbid_in_crystalph_tsv_and_pdb_seqres()
+            pdbid_set = task.get_set_of_pdbid_from_crystalph_tsv()
             self.assertEqual(os.path.isfile(task.get_crystalph_tsv()), True)
             self.assertEqual(len(pdbid_set), 5)
             self.assertEqual('4RFR' in pdbid_set, True)
@@ -494,7 +555,7 @@ class TestDataImportTask(unittest.TestCase):
             self.assertEqual('4XET' in pdbid_set, True)
             self.assertEqual('4XF1' in pdbid_set, True)
             self.assertEqual('4XF3' in pdbid_set, True)
-        except:
+        finally:
             shutil.rmtree(temp_dir)
 
     def test_get_set_of_pdbid_from_crystalph_tsv_invalid_entries(self):
@@ -513,7 +574,7 @@ class TestDataImportTask(unittest.TestCase):
             f.write('4XF3\t6.2\n')
             f.flush()
             f.close()
-            pdbid_set = task.get_set_of_pdbid_in_crystalph_tsv_and_pdb_seqres()
+            pdbid_set = task.get_set_of_pdbid_from_crystalph_tsv()
             self.assertEqual(os.path.isfile(task.get_crystalph_tsv()), True)
             self.assertEqual(len(pdbid_set), 3)
             self.assertEqual('4RFR' in pdbid_set, False)
@@ -521,7 +582,7 @@ class TestDataImportTask(unittest.TestCase):
             self.assertEqual('4XET' in pdbid_set, True)
             self.assertEqual('4XF1' in pdbid_set, True)
             self.assertEqual('4XF3' in pdbid_set, True)
-        except:
+        finally:
             shutil.rmtree(temp_dir)
 
     def test_get_set_of_pdbid_in_crystalph_tsv_and_pdb_seqres_no_seq(self):
