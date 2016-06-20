@@ -1,4 +1,4 @@
-.PHONY: clean-pyc clean-build docs clean
+.PHONY: clean-pyc clean-build docs clean updateversion
 
 define BROWSER_PYSCRIPT
 import os, webbrowser, sys
@@ -25,6 +25,7 @@ help:
 	@echo "release - package and upload a release"
 	@echo "dist - package"
 	@echo "install - install the package to the active Python's site-packages"
+	@echo "updateversion - updates version value in setup.py & d3r/__init__.py"
 
 clean: clean-build clean-pyc clean-test
 
@@ -80,3 +81,14 @@ dist: clean
 
 install: clean
 	python setup.py install
+
+updateversion:
+	@cv=`egrep '^\s+version=' setup.py | sed "s/^.*='//" | sed "s/'.*//"`; \
+	read -p "Current ($$cv) enter new version: " vers; \
+	echo "Updating setup.py & d3r/__init__.py with new version: $$vers"; \
+	sed -i "s/version='.*',/version='$$vers',/" setup.py ; \
+	sed -i "s/__version__ = '.*'/__version__ = '$$vers'/" d3r/__init__.py
+	@echo -n "  Updated setup.py: " ; \
+	grep "version" setup.py ; 
+	@echo -n "  Updated d3r/__init__.py: " ; \
+	grep "__version__" d3r/__init__.py
