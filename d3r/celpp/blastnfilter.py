@@ -337,8 +337,17 @@ class BlastNFilterTask(D3RTask):
 
         blastnfilter_name = os.path.basename(self.get_args().blastnfilter)
 
+
+        try:
+            btimeout = int(self.get_args().blastnfiltertimeout)
+        except:
+            btimeout = None
+
+        logger.debug('BlastnFilter script timeout set to ' + str(btimeout) +
+                     ' seconds')
+
         self.run_external_command(blastnfilter_name,
-                                  cmd_to_run, False)
+                                  cmd_to_run, False,timeout=btimeout)
 
         self.set_status(D3RTask.COMPLETE_STATUS)
 
