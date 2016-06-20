@@ -138,8 +138,7 @@ class DataImportTask(D3RTask):
             return pdbid_set
         except:
             logger.exception('Caught exception trying to get set of PDBIDs')
-            return set()
-        return pdbid_set
+        return set()
 
     def get_set_of_pdbid_in_crystalph_tsv_and_pdb_seqres(self):
         """Gets set of PDBIDs that are in both tsv and sequence file
@@ -234,21 +233,24 @@ class DataImportTask(D3RTask):
             logger.exception('Skiping wait for tsv files to be updated')
             return
 
+        try:
+            importsleep = int(self.get_args().importsleep)
+        except Exception:
+            logger.exception('importsleep was not set using 1 second')
+            importsleep = 1
+
         val = util.has_url_been_updated_since_start_of_celpp_week(url)
         counter = 0
         while val is False:
             if counter > self.get_args().importretry:
                 raise ImportRetryCountExceededError(
                     url + ' has not been updated after ' +
-                    str(counter*self.get_args().importsleep) +
+                    str(counter*importsleep) +
                     ' seconds')
             logger.debug('Try #' + str(counter) + ' ' + url +
                          ' has not been updated. Sleeping ' +
-                         str(self.get_args().importsleep) + ' seconds')
-            try:
-                time.sleep(self.get_args().importsleep)
-            except AttributeError:
-                logger.exception('importsleep was not set')
+                         str(importsleep) + ' seconds')
+            time.sleep(importsleep)
 
             val = util.has_url_been_updated_since_start_of_celpp_week(url)
             counter += 1
