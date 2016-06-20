@@ -327,51 +327,63 @@ def _parse_arguments(desc, args):
                         help='Path to BlastnFilter script')
     parser.add_argument("--blastnfiltertimeout", default=36000, type=int,
                         help='Time in seconds script is allowed to run before'
-                             'being killed')
+                             'being killed (default 36000)')
     parser.add_argument("--postanalysis", default='postanalysis.py',
                         help='Path to PostAnalysis script')
     parser.add_argument("--proteinligprep", default='proteinligprep.py',
-                        help='Path to proteinligprep script')
+                        help='Path to proteinligprep script (default '
+                             'proteinligprep.py)')
     parser.add_argument("--genchallenge", default='genchallengedata.py',
-                        help='Path to genchallengedata script')
+                        help='Path to genchallengedata script '
+                             '(default genchallengedata.py)')
     parser.add_argument("--chimeraprep", default='chimera_proteinligprep.py',
-                        help='Path to chimera_proteinligprep script')
+                        help='Path to chimera_proteinligprep script '
+                             '(default chimera_proteinligprep.py)')
     parser.add_argument("--glide", default='glidedocking.py',
-                        help='Path to glide docking script')
+                        help='Path to glide docking script '
+                             '(default glidedocking.py)')
     parser.add_argument("--vina", default='vinadocking.py',
-                        help='Path to auto dock vina docking script')
+                        help='Path to auto dock vina docking script '
+                             '(default vinadocking.py)')
     parser.add_argument("--evaluation", default='evaluate.py',
-                        help='Path to evaluation script')
+                        help='Path to evaluation script (default evaluate.py)')
     parser.add_argument("--pdbdb", default='/data/pdb',
-                        help='Path to PDB database files')
+                        help='Path to PDB database files (default /data/pdb)')
     parser.add_argument("--compinchi",
                         default='http://ligand-expo.rcsb.org/' +
                         'dictionaries',
                         help='URL to download Components-inchi.ich' +
                              ' file for' +
-                             'task stage dataimport')
+                             'task stage dataimport '
+                             '(default http://ligand-expo.rcsb.org/)')
     parser.add_argument("--pdbfileurl",
                         default='http://www.wwpdb.org/files',
                         help='URL to download ' +
-                             'new_release_structure_nonpolymer.tsv' +
-                             ',new_release_structure_sequence.tsv' +
-                             ', and new_release_crystallization_pH.tsv' +
-                             ' files for task stage dataimport')
+                             DataImportTask.NONPOLYMER_TSV + ', ' +
+                             DataImportTask.SEQUENCE_TSV + ', and ' +
+                             DataImportTask.CRYSTALPH_TSV +
+                             ' files for task stage dataimport '
+                             '(default http://www.wwpdb.org/files)')
     parser.add_argument("--makeblastdb", default='makeblastdb',
                         help='Path to NCBI Blast makeblastdb program '
-                             'ie /usr/bin/makeblastdb')
+                             'ie /usr/bin/makeblastdb (default makeblastdb)')
     parser.add_argument("--pdbsequrl",
                         default='ftp://ftp.rcsb.org/pub/pdb/derived_data/'
                                 'pdb_seqres.txt.gz',
-                        help='ftp url to download rcsb sequences file')
+                        help='ftp url to download rcsb sequences file '
+                             '(default '
+                             'ftp://ftp.rcsb.org/pub/pdb/derived_data/'
+                             'pdb_seqres.txt.gz')
     parser.add_argument("--log", dest="loglevel", choices=['DEBUG',
                         'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
                         help="Set the logging level",
                         default='WARNING')
-    parser.add_argument('--smtp', dest='smtp', help='Sets smtpserver to use',
+    parser.add_argument('--smtp', dest='smtp', help='Sets smtpserver to use '
+                                                    '(default localhost)',
                         default='localhost')
     parser.add_argument('--smtpport', dest='smtpport',
-                        help='Sets smtp server port', default='25')
+                        help='Sets smtp server port (default 25)',
+                        default='25')
     parser.add_argument('--skipimportwait', default=False, action='store_true',
                         help='Normally the import stage will wait if any of '
                              'the tsv files have not been updated since the'
@@ -392,15 +404,8 @@ def _parse_arguments(desc, args):
                         ' data from stages run during this invocation will be'
                         ' uploaded after the stage completes.  Format is same'
                         ' as ncftp config files with two added fields '
-                        '(path,challengepath) NOTE: challengepath is optional'
-                        'and sets path where challenge data package will be '
-                        'uploaded to.'
-                        '\nExample:\n'
-                        'host some.ftp.com\n'
-                        'user bob\n'
-                        'pass mypass\n'
-                        'path /celpp\n'
-                        'challengepath /challenge\n')
+                        '(path,challengepath) SEE: description of challengedata '
+                        'stage above for example file')
 
     parser.add_argument('--version', action='version',
                         version=('%(prog)s ' + d3r.__version__))
@@ -475,7 +480,9 @@ def main():
               Unless --customweekdir is set, this program will
               examine the 'celppdir' (last argument passed on
               commandline) to find the latest directory with this path:
+
               <year>/dataset.week.#
+
               The program will find the latest <year> and within
               that year the dataset.week.# with highest #.  The output
               directories created will be put within this directory.
@@ -485,8 +492,7 @@ def main():
 
               Setting the --createweekdir flag will instruct this
               program to create a new directory for the current
-              celpp week/year before invoking running any stage
-              processing.
+              celpp week/year before running any stage processing.
 
               NOTE: CELPP weeks start on Friday and end on Thursday
                     and week # follows ISO8601 rules so week numbers
@@ -498,7 +504,7 @@ def main():
 
               If --stage 'makedb'
 
-              In this stage the file pdb_seqres.txt.gz is downloaded from
+              In this stage the file {pdb_seqres} is downloaded from
               an ftp site set by --pdbsequrl.
               This file is then gunzipped and NCBI makeblastdb
               (set by --makeblastdb) is run on it to create a blast
@@ -513,14 +519,14 @@ def main():
               The tsv files are (--pdbfileurl flag sets url to
               download these files from):
 
-              new_release_structure_nonpolymer.tsv
-              new_release_structure_sequence.tsv
-              new_release_crystallization_pH.tsv
+              {nonpolymer_tsv}
+              {sequence_tsv}
+              {crystal_tsv}
 
-              The ich file is (--compinchi flat sets url to
+              The Components ich file is (--compinchi flag sets base url to
               download this file from):
 
-              Components-inchi.ich
+              {compinchi_ich}
 
               This stage will just wait and retry if any of the tsv files
               have NOT been updated since the start of the current
@@ -554,9 +560,18 @@ def main():
               stage. If --ftpconfig is set with challengepath field then
               this stage will also upload the challenge dataset tarfile
               to the ftp server with path set by challengepath.  The
-              code will also upload a latest.txt file containing name
+              code will also upload a {latest_txt} file containing name
               of the tarfile to the same destination overwriting any
-              latest.txt file that already exists.
+              {latest_txt} file that already exists.
+
+              Example file for --ftpconfig:
+
+              host some.ftp.com
+              user bob
+              pass mypass
+              path /celpp
+              challengepath /challenge
+
 
               If --stage 'chimeraprep'
 
@@ -591,7 +606,7 @@ def main():
               If --stage 'evaluation'
 
               Finds all stage.{dockstage}.<algo> directories with '{complete}'
-              files in them which do not end in name 'webdata' and runs
+              files in them which do not end in name '{webdata}' and runs
               script set via --evaluation parameter storing the result of
               the script into stage.{evalstage}.<algo>.evaluation. --pdbdb flag
               must also be set when calling this stage.
@@ -608,6 +623,13 @@ def main():
                          evalstage=str(glide.get_stage() + 1),
                          complete=blasttask.COMPLETE_FILE,
                          chimeraprep_dirname=chimeraprep.get_dir_name(),
+                         compinchi_ich=DataImportTask.COMPINCHI_ICH,
+                         pdb_seqres=MakeBlastDBTask.PDB_SEQRES_TXT_GZ,
+                         nonpolymer_tsv=DataImportTask.NONPOLYMER_TSV,
+                         sequence_tsv=DataImportTask.SEQUENCE_TSV,
+                         crystal_tsv=DataImportTask.CRYSTALPH_TSV,
+                         webdata=EvaluationTaskFactory.WEB_DATA_SUFFIX,
+                         latest_txt=ChallengeDataTask.LATEST_TXT,
                          version=d3r.__version__)
 
     theargs = _parse_arguments(desc, sys.argv[1:])
