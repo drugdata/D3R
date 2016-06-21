@@ -15,44 +15,16 @@ class InvalidFtpConfigException(Exception):
     pass
 
 
-class FileUploader(object):
-    """Defines interface for uploading files
-    """
-
-    def upload_files(self, list_of_files):
-        """Uploads files in `list_of_files`
-
-           This method SHOULD be overridden in subclass
-           :raises: NotImplementedError
-           :returns: True upon success, false otherwise.
-        """
-        logger.debug('Running dummy get_upload_summary method')
-        return True
-
-    def get_upload_summary(self):
-        """Gets summary of previous `upload_files` or
-           `upload_file_direct` invocation
-            This method SHOULD be overridden in subclass
-            :raises: NotImplementedError
-            :returns: Human readable string summary
-        """
-        logger.debug('Running dummy get_upload_summary method')
-        return 'Nothing to report since this does not do anything'
-
-    def upload_file_direct(self, file, remote_dir, remote_file_name):
-        """Uploads file directly
-           This method SHOULD be overridden in subclass
-           :raises: NotImplmentedError
-           :returns: True upon success, false otherwise.
-        """
-        logger.error('Not implemented')
-        raise NotImplementedError('Not implemented')
-
-
-class FtpFileUploader(FileUploader):
+class FtpFileTransfer(object):
     """Implements FileUploader class by enabling upload of files to ftp
 
     """
+    HOST = 'host'
+    USER = 'user'
+    PASS = 'pass'
+    PATH = 'path'
+    CHALLENGEPATH = 'challengepath'
+    SUBMISSIONPATH = 'submissionpath'
 
     def __init__(self, ftp_config):
         """Constructor
@@ -70,6 +42,7 @@ class FtpFileUploader(FileUploader):
         self._remote_dir = None
         self._error_msg = None
         self._remote_challenge_dir = None
+        self._remote_submission_dir = None
 
         if ftp_config is not None:
             self._parse_config(ftp_config)
@@ -87,6 +60,7 @@ class FtpFileUploader(FileUploader):
            pass <PASSWORD>
            path <BASE PATH ON REMOTE SERVER ie /foo>
            challengepath <BASE PATH ON REMOTE SERVER ie /challenge>
+           submissionpath <BASE PATH ON REMOTE SERVER ie /submission>
 
            Example:
 
@@ -95,6 +69,7 @@ class FtpFileUploader(FileUploader):
            pass 12345
            path /upload
            challengepath /challenge
+           submissionpath /usersubmissions
 
            The above format matches the standard used
            by NCFTP with the exception of `path` which
@@ -113,16 +88,19 @@ class FtpFileUploader(FileUploader):
                 split_line = line.split(' ')
                 if not len(split_line) == 2:
                     continue
-                if split_line[0] == 'host':
+                if split_line[0] == FtpFileTransfer.HOST:
                     self.set_ftp_host(split_line[1].rstrip())
-                elif split_line[0] == 'user':
+                elif split_line[0] == FtpFileTransfer.USER:
                     self.set_ftp_user(split_line[1].rstrip())
-                elif split_line[0] == 'pass':
+                elif split_line[0] == FtpFileTransfer.PASS:
                     self.set_ftp_password(split_line[1].rstrip())
-                elif split_line[0] == 'path':
+                elif split_line[0] == FtpFileTransfer.PATH:
                     self.set_ftp_remote_dir(split_line[1].rstrip())
-                elif split_line[0] == 'challengepath':
+                elif split_line[0] == FtpFileTransfer.CHALLENGEPATH:
                     self.set_ftp_remote_challenge_dir(split_line[1].rstrip())
+                elif split_line[0] == FtpFileTransfer.SUBMISSIONPATH:
+                    self.set_ftp_remote_submission_dir(split_line[1].rstrip())
+
         finally:
             if f is not None:
                 f.close()
@@ -146,6 +124,16 @@ class FtpFileUploader(FileUploader):
         """Gets the remote challenge directory for ftp upload
         """
         return self._remote_challenge_dir
+
+    def set_ftp_remote_submission_dir(self, submission_dir):
+        """Sets the remote submission directory for ftp download
+        """
+        self._remote_submission_dir = submission_dir
+
+    def get_ftp_remote_submission_dir(self):
+        """Gets the remote submission directory for ftp download
+        """
+        return self._remote_submission_dir
 
     def set_ftp_remote_dir(self, remote_dir):
         """Sets the remote directory where ftp files will be uploaded to
@@ -193,19 +181,26 @@ class FtpFileUploader(FileUploader):
     def get_error_msg(self):
         return self._error_msg
 
-    def _connect(self):
+    def connect(self):
         if self._alt_ftp_con is None:
-            logger.debug('Connecting to ' +
-                         self.get_ftp_host() + ' with user ' +
-                         self.get_ftp_user())
-            self._ftp = ftpretty(self.get_ftp_host(),
-                                 self.get_ftp_user(),
-                                 self.get_ftp_password(),
-                                 timeout=self.get_connect_timeout())
-            return
-        self._ftp = self._alt_ftp_con
+            try:
 
-    def _disconnect(self):
+                logger.debug('Connecting to ' +
+                             str(self.get_ftp_host()) + ' with user ' +
+                             str(self.get_ftp_user()))
+                self._ftp = ftpretty(self.get_ftp_host(),
+                                     self.get_ftp_user(),
+                                     self.get_ftp_password(),
+                                     timeout=self.get_connect_timeout())
+                return True
+            except:
+                logger.exception('Unable to connect to ftp host')
+                self._error_msg = 'Unable to connect to ftp host'
+                return False
+        self._ftp = self._alt_ftp_con
+        return True
+
+    def disconnect(self):
         if self._ftp is None:
             logger.debug('ftp connection is None, just returning')
             return
@@ -219,6 +214,51 @@ class FtpFileUploader(FileUploader):
             self._ftp.close()
         except:
             logger.exception('Caught exception attempting to close connection')
+
+    def delete_file(self, remote_dir, remote_file_name):
+        """Deletes file specified by `remote_dir` and `remote_file_name`
+
+           This method will delete file specified by `remote_dir` and
+           `remote_file_name`.  If there is an error information can be
+           obtained by calling `self.get_error_msg()`
+           :param remote_dir: full path to remote directory for file to delete
+           :param remote_file_name: name of remote file to delete
+           :returns: True upon success, false otherwise
+        """
+        self._error_msg = None
+        start_time = int(time.time())
+        result = False
+        try:
+            if remote_dir is None:
+                self._error_msg = 'remote_dir None'
+                return False
+
+            if remote_file_name is None:
+                self._error_msg = 'remote_file_name is None'
+                return False
+
+            remote_path = os.path.normpath(remote_dir +
+                                           os.sep + remote_file_name)
+            logger.debug('Deleting file : ' + remote_path)
+
+            try:
+
+                result = self._ftp.delete(remote_path)
+
+                logger.debug(' Delete operation returned: ' + result)
+            except Exception as e:
+                logger.exception('Caught exception direct uploading file' +
+                                 file + ' to ' + remote_path)
+                self._error_msg = 'Unable to upload ' + file + ' to ' +\
+                                  remote_path + ' : ' + str(e)
+                return False
+
+            return True
+        finally:
+            self._duration = int(time.time()) - start_time
+            logger.debug('Delete operation took ' +
+                         str(self._duration) + ' seconds')
+        return result
 
     def upload_file_direct(self, file, remote_dir, remote_file_name):
         """Uploads file to remote server
@@ -257,13 +297,6 @@ class FtpFileUploader(FileUploader):
             logger.debug('Direct uploading file: ' + file + ' to ' +
                          remote_path)
 
-            # Try to connect
-            try:
-                self._connect()
-            except:
-                logger.exception('Unable to connect to ftp host')
-                self._error_msg = 'Unable to connect to ftp host'
-                return False
             try:
                 size = self._ftp.put(file, remote_path)
 
@@ -276,8 +309,6 @@ class FtpFileUploader(FileUploader):
                 self._error_msg = 'Unable to upload ' + file + ' to ' +\
                                   remote_path + ' : ' + str(e)
                 return False
-            finally:
-                self._disconnect()
             return True
         finally:
             self._duration = int(time.time()) - start_time
@@ -356,14 +387,6 @@ class FtpFileUploader(FileUploader):
                 self._error_msg = 'No files to upload'
                 return True
 
-            # Try to connect
-            try:
-                self._connect()
-            except:
-                logger.exception('Unable to connect to ftp host')
-                self._error_msg = 'Unable to connect to ftp host'
-                return False
-
             try:
                 logger.debug('Uploading ' + str(len(list_of_files)) + ' files')
                 for file in list_of_files:
@@ -372,8 +395,6 @@ class FtpFileUploader(FileUploader):
                 logger.exception('Caught exception')
                 self._error_msg = 'Error during upload'
                 return False
-            finally:
-                self._disconnect()
             return True
         finally:
             self._duration = int(time.time()) - start_time
@@ -398,13 +419,8 @@ class FtpFileUploader(FileUploader):
             logger.exception('Ftp host not set')
             host = 'Unset'
 
-        try:
-            remote_dir = self.get_ftp_remote_dir()
-            logger.debug('remote dir: ' + remote_dir)
-
-        except TypeError:
-            logger.exception('remote dir not set')
-            remote_dir = 'Unset'
+        remote_dir = self.get_ftp_remote_dir()
+        logger.debug('remote dir: ' + remote_dir)
 
         summary += (str(self._files_transferred) + ' (' +
                     str(self._bytes_transferred) +
