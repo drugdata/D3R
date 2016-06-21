@@ -7,7 +7,7 @@ import smtplib
 import platform
 from email.mime.text import MIMEText
 
-from d3r.celpp.filetransfer import FtpFileUploader
+from d3r.celpp.filetransfer import FtpFileTransfer
 from d3r.celpp import util
 
 
@@ -115,7 +115,7 @@ class D3RTask(object):
 
         try:
             logger.debug('ftpconfig set to ' + args.ftpconfig)
-            self._file_uploader = FtpFileUploader(args.ftpconfig)
+            self._file_uploader = FtpFileTransfer(args.ftpconfig)
         except:
             logger.debug('FtpFileUploader not set.  This may not be '
                          'an error')
@@ -174,7 +174,7 @@ class D3RTask(object):
         """
         return self._file_uploader
 
-    def set_file_uploader(self, file_uploader):
+    def set_file_transfer(self, file_uploader):
         """Sets file uploader
         """
         self._file_uploader = file_uploader
@@ -347,11 +347,14 @@ class D3RTask(object):
             return
         try:
             uploadable_files = self.get_uploadable_files()
+            self.get_file_uploader().connect()
             self.get_file_uploader().upload_files(uploadable_files)
             summary = self.get_file_uploader().get_upload_summary()
             self.append_to_email_log('\n' + summary + '\n')
         except:
             logger.exception('Caught exception trying to upload files')
+        finally:
+            self.get_file_uploader().disconnect()
 
     def start(self):
         """Denotes start of task
