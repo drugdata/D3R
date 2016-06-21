@@ -19,6 +19,7 @@ from d3r.celpp.makeblastdb import MakeBlastDBTask
 from d3r.celpp.vina import AutoDockVinaTask
 from d3r.celpp.challengedata import ChallengeDataTask
 from d3r.celpp.chimeraprep import ChimeraProteinLigPrepTask
+from d3r.celpp.filetransfer import FtpFileTransfer
 
 
 from lockfile.pidlockfile import PIDLockFile
@@ -124,7 +125,7 @@ def _setup_logging(theargs):
     logging.getLogger('d3r.celpp.evaluation').setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.celpp.task').setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.celpp.util').setLevel(theargs.numericloglevel)
-    logging.getLogger('d3r.celpp.uploader').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.filetransfer').setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.celpp.chimeraprep')\
         .setLevel(theargs.numericloglevel)
 
@@ -403,8 +404,11 @@ def _parse_arguments(desc, args):
                         ' configuration to connect to ftp server.  If set,'
                         ' data from stages run during this invocation will be'
                         ' uploaded after the stage completes.  Format is same'
-                        ' as ncftp config files with two added fields '
-                        '(path,challengepath) SEE: description of challengedata '
+                        ' as ncftp config files with two added fields (' +
+                        FtpFileTransfer.PATH + ', ' +
+                        FtpFileTransfer.CHALLENGEPATH + ', ' +
+                        FtpFileTransfer.SUBMISSIONPATH + ') ' +
+                        'SEE: description of challengedata '
                         'stage above for example file')
 
     parser.add_argument('--version', action='version',
@@ -557,20 +561,21 @@ def main():
               file.  If complete, this stage runs which invokes program
               set in --genchallenge flag to create a challenge dataset
               file.  The --pdbdb flag must also be set when calling this
-              stage. If --ftpconfig is set with challengepath field then
+              stage. If --ftpconfig is set with {challengepath} field then
               this stage will also upload the challenge dataset tarfile
-              to the ftp server with path set by challengepath.  The
+              to the ftp server with path set by {challengepath}.  The
               code will also upload a {latest_txt} file containing name
               of the tarfile to the same destination overwriting any
               {latest_txt} file that already exists.
 
               Example file for --ftpconfig:
 
-              host some.ftp.com
-              user bob
-              pass mypass
-              path /celpp
-              challengepath /challenge
+              {host} some.ftp.com
+              {user} bob
+              {passn} mypass
+              {path} /celpp
+              {challengepath} /challenge
+              {submissionpath} /submissions
 
 
               If --stage 'chimeraprep'
@@ -630,6 +635,12 @@ def main():
                          crystal_tsv=DataImportTask.CRYSTALPH_TSV,
                          webdata=EvaluationTaskFactory.WEB_DATA_SUFFIX,
                          latest_txt=ChallengeDataTask.LATEST_TXT,
+                         host=FtpFileTransfer.HOST,
+                         user=FtpFileTransfer.USER,
+                         passn=FtpFileTransfer.PASS,
+                         path=FtpFileTransfer.PATH,
+                         challengepath=FtpFileTransfer.CHALLENGEPATH,
+                         submissionpath=FtpFileTransfer.SUBMISSIONPATH,
                          version=d3r.__version__)
 
     theargs = _parse_arguments(desc, sys.argv[1:])
