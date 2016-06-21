@@ -25,14 +25,14 @@ from d3r.celpp.task import UnsetNameError
 from d3r.celpp.task import UnsetCommandError
 from d3r.celpp.task import UnsetFileNameError
 from d3r.celpp.task import D3RTask
-from d3r.celpp.filetransfer import FileUploader
+from d3r.celpp.filetransfer import FtpFileTransfer
 
 
 class MockException(Exception):
     pass
 
 
-class MockFileUploader(FileUploader):
+class MockFileTransfer(FtpFileTransfer):
     """Fake FileUploader
     """
     def __init__(self):
@@ -40,6 +40,7 @@ class MockFileUploader(FileUploader):
         self._upload_summary_except_object = None
         self._upload_summary = None
         self._upload_files = None
+        self._connect = True
 
     def set_upload_files(self, val):
         self._upload_files = val
@@ -73,6 +74,15 @@ class MockFileUploader(FileUploader):
 
         return self._upload_summary
 
+    def set_connect(self, val):
+        self._connect = val
+
+    def connect(self):
+        return self._connect
+
+    def disconnect(self):
+        pass
+
 
 class TestD3rTask(unittest.TestCase):
 
@@ -92,7 +102,7 @@ class TestD3rTask(unittest.TestCase):
         task.set_stage(4)
         task.set_status(D3RTask.START_STATUS)
         task.set_error('error')
-        task.set_file_uploader('yah')
+        task.set_file_transfer('yah')
 
         self.assertEqual(task.get_name(), 'foo')
         self.assertEqual(task.get_path(), 'blah')
@@ -209,10 +219,10 @@ class TestD3rTask(unittest.TestCase):
 
         # try calling upload_task where _file_uploader.upload_files
         # throws exception
-        uploader = MockFileUploader()
+        uploader = MockFileTransfer()
         uploader.set_upload_files_exception(MockException('hi'))
         task = D3RTask(None, D3RParameters())
-        task.set_file_uploader(uploader)
+        task.set_file_transfer(uploader)
         task._upload_task()
 
         # try calling where upload_summary throws exception
