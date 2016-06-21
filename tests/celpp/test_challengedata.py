@@ -7,7 +7,7 @@ import re
 import tarfile
 from mock import Mock
 
-from d3r.celpp.filetransfer import FtpFileUploader
+from d3r.celpp.filetransfer import FtpFileTransfer
 
 """
 test_proteinligprep
@@ -663,7 +663,7 @@ class TestChallengeDataTask(unittest.TestCase):
 
             chall = ChallengeDataTask(temp_dir, params)
             chall._upload_challenge_file(None)
-            chall.set_file_uploader(params)
+            chall.set_file_transfer(params)
             self.assertEqual(chall.get_email_log(), 'challenge_file is None in'
                                                     ' _upload_challenge_file'
                                                     '\n')
@@ -687,8 +687,8 @@ class TestChallengeDataTask(unittest.TestCase):
         try:
             params = D3RParameters()
             chall = ChallengeDataTask(temp_dir, params)
-            ftp = FtpFileUploader(None)
-            chall.set_file_uploader(ftp)
+            ftp = FtpFileTransfer(None)
+            chall.set_file_transfer(ftp)
             chall._upload_challenge_file('/foo')
             self.assertEqual(chall.get_email_log(), 'No remote challenge'
                                                     ' directory set for '
@@ -709,10 +709,11 @@ class TestChallengeDataTask(unittest.TestCase):
 
             mockftp = D3RParameters()
             mockftp.put = Mock(side_effect=IOError('hi'))
-            ftp = FtpFileUploader(None)
+            ftp = FtpFileTransfer(None)
             ftp.set_ftp_remote_challenge_dir('/challenge')
             ftp.set_ftp_connection(mockftp)
-            chall.set_file_uploader(ftp)
+            ftp.connect()
+            chall.set_file_transfer(ftp)
             tarball = os.path.join(chall.get_dir(), 'celppweek50_2016.tar.gz')
             f = open(tarball, 'w')
             f.write('hi')
@@ -726,6 +727,7 @@ class TestChallengeDataTask(unittest.TestCase):
                                  'Unable to upload ' + tarball +
                                  ' to /challenge/celppweek50_2016.tar.gz : ' +
                                  'hi')
+            ftp.disconnect()
         finally:
             shutil.rmtree(temp_dir)
 
@@ -742,10 +744,11 @@ class TestChallengeDataTask(unittest.TestCase):
 
             mockftp = D3RParameters()
             mockftp.put = Mock(side_effect=[3, IOError('hi')])
-            ftp = FtpFileUploader(None)
+            ftp = FtpFileTransfer(None)
             ftp.set_ftp_remote_challenge_dir('/challenge')
             ftp.set_ftp_connection(mockftp)
-            chall.set_file_uploader(ftp)
+            ftp.connect()
+            chall.set_file_transfer(ftp)
             tarball = os.path.join(chall.get_dir(), 'celppweek50_2016.tar.gz')
             f = open(tarball, 'w')
             f.write('hi')
@@ -766,6 +769,7 @@ class TestChallengeDataTask(unittest.TestCase):
             line = f.readline()
             self.assertEqual(line, 'celppweek50_2016.tar.gz')
             f.close()
+            ftp.disconnect()
         finally:
             shutil.rmtree(temp_dir)
 
@@ -782,10 +786,11 @@ class TestChallengeDataTask(unittest.TestCase):
 
             mockftp = D3RParameters()
             mockftp.put = Mock(side_effect=[3, 5])
-            ftp = FtpFileUploader(None)
+            ftp = FtpFileTransfer(None)
             ftp.set_ftp_remote_challenge_dir('/challenge')
             ftp.set_ftp_connection(mockftp)
-            chall.set_file_uploader(ftp)
+            ftp.connect()
+            chall.set_file_transfer(ftp)
             tarball = os.path.join(chall.get_dir(), 'celppweek1_2017.tar.gz')
             f = open(tarball, 'w')
             f.write('hi')
@@ -799,6 +804,7 @@ class TestChallengeDataTask(unittest.TestCase):
             line = f.readline()
             self.assertEqual(line, 'celppweek1_2017.tar.gz')
             f.close()
+            ftp.disconnect()
         finally:
             shutil.rmtree(temp_dir)
 
@@ -878,10 +884,11 @@ open(os.path.join(thedir,'lig_63N.smi'),'a').close()
             chall = ChallengeDataTask(temp_dir, params)
             mockftp = D3RParameters()
             mockftp.put = Mock(side_effect=[3, IOError('hi')])
-            ftp = FtpFileUploader(None)
+            ftp = FtpFileTransfer(None)
             ftp.set_ftp_remote_challenge_dir('/challenge')
             ftp.set_ftp_connection(mockftp)
-            chall.set_file_uploader(ftp)
+            ftp.connect()
+            chall.set_file_transfer(ftp)
 
             dimport = DataImportTask(temp_dir, params)
             dimport.create_dir()
@@ -919,7 +926,7 @@ open(os.path.join(thedir,'lig_63N.smi'),'a').close()
             compfile = os.path.join(chall.get_dir(),
                                     D3RTask.COMPLETE_FILE)
             self.assertEqual(os.path.isfile(compfile), False)
-
+            ftp.disconnect()
         finally:
             shutil.rmtree(temp_dir)
 
@@ -940,10 +947,11 @@ open(os.path.join(thedir,'lig_63N.smi'),'a').close()
             chall = ChallengeDataTask(temp_dir, params)
             mockftp = D3RParameters()
             mockftp.put = Mock(side_effect=[3, 5])
-            ftp = FtpFileUploader(None)
+            ftp = FtpFileTransfer(None)
             ftp.set_ftp_remote_challenge_dir('/challenge')
             ftp.set_ftp_connection(mockftp)
-            chall.set_file_uploader(ftp)
+            ftp.connect()
+            chall.set_file_transfer(ftp)
 
             dimport = DataImportTask(temp_dir, params)
             dimport.create_dir()
@@ -976,6 +984,7 @@ open(os.path.join(thedir,'lig_63N.smi'),'a').close()
             compfile = os.path.join(chall.get_dir(),
                                     D3RTask.COMPLETE_FILE)
             self.assertEqual(os.path.isfile(compfile), True)
+            ftp.disconnect()
 
         finally:
             shutil.rmtree(temp_dir)
