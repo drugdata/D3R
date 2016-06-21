@@ -364,26 +364,28 @@ Blastnfilter Summary
             self.append_to_email_log('No uploader available to upload '
                                      'challenge data\n')
             return
+        try:
+            remote_dir = uploader.get_ftp_remote_challenge_dir()
+            if remote_dir is None:
+                logger.warning('No remote challenge directory set for ftp upload')
+                self.append_to_email_log('No remote challenge directory set for '
+                                         'ftp upload\n')
+                return
+            logger.debug('Attempting to upload ' + challenge_file + ' to '
+                         + remote_dir)
 
-        remote_dir = uploader.get_ftp_remote_challenge_dir()
-        if remote_dir is None:
-            logger.warning('No remote challenge directory set for ftp upload')
-            self.append_to_email_log('No remote challenge directory set for '
-                                     'ftp upload\n')
-            return
-        logger.debug('Attempting to upload ' + challenge_file + ' to '
-                     + remote_dir)
+            if uploader.upload_file_direct(challenge_file, remote_dir,
+                                           os.path.basename(challenge_file)) \
+                    is False:
+                raise Exception(uploader.get_error_msg())
 
-        if uploader.upload_file_direct(challenge_file, remote_dir,
-                                       os.path.basename(challenge_file)) \
-                is False:
-            raise Exception(uploader.get_error_msg())
+            self.append_to_email_log('\nChallenge tarball uploaded: \n'
+                                     + uploader.get_upload_summary() + '\n')
 
-        self.append_to_email_log('\nChallenge tarball uploaded: \n'
-                                 + uploader.get_upload_summary() + '\n')
-
-        # create latest.txt file and upload to ftp server
-        self._upload_latest_file(uploader, challenge_file, remote_dir)
+            # create latest.txt file and upload to ftp server
+            self._upload_latest_file(uploader, challenge_file, remote_dir)
+        finally:
+            uploader.disconnect()
 
     def _upload_latest_file(self, uploader, challenge_file, remote_dir):
         """Creates and uploads latest.txt file containing name of tarfile
