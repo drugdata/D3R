@@ -358,7 +358,7 @@ Blastnfilter Summary
                                      '_upload_challenge_file\n')
             return
 
-        uploader = self.get_file_uploader()
+        uploader = self.get_file_transfer()
         if uploader is None:
             logger.warning('No uploader available to upload challenge data')
             self.append_to_email_log('No uploader available to upload '
