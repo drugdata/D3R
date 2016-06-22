@@ -169,7 +169,7 @@ class D3RTask(object):
     def set_error(self, error):
         self._error = error
 
-    def get_file_uploader(self):
+    def get_file_transfer(self):
         """Gets the file uploader
         """
         return self._file_uploader
@@ -343,18 +343,18 @@ class D3RTask(object):
 
            :return: None
         """
-        if self.get_file_uploader() is None:
+        if self.get_file_transfer() is None:
             return
         try:
             uploadable_files = self.get_uploadable_files()
-            self.get_file_uploader().connect()
-            self.get_file_uploader().upload_files(uploadable_files)
-            summary = self.get_file_uploader().get_upload_summary()
+            self.get_file_transfer().connect()
+            self.get_file_transfer().upload_files(uploadable_files)
+            summary = self.get_file_transfer().get_upload_summary()
             self.append_to_email_log('\n' + summary + '\n')
         except:
             logger.exception('Caught exception trying to upload files')
         finally:
-            self.get_file_uploader().disconnect()
+            self.get_file_transfer().disconnect()
 
     def start(self):
         """Denotes start of task
