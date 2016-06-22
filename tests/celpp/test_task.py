@@ -109,11 +109,11 @@ class TestD3rTask(unittest.TestCase):
         self.assertEqual(task.get_stage(), 4)
         self.assertEqual(task.get_status(), D3RTask.START_STATUS)
         self.assertEqual(task.get_error(), 'error')
-        self.assertEqual(task.get_file_uploader(), 'yah')
+        self.assertEqual(task.get_file_transfer(), 'yah')
 
         params.ftpconfig = '/somefile'
         task = D3RTask('/path', params)
-        self.assertEqual(task.get_file_uploader(), None)
+        self.assertEqual(task.get_file_transfer(), None)
 
     def test_get_dir_name(self):
         params = D3RParameters()
