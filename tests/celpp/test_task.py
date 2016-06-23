@@ -162,6 +162,24 @@ class TestD3rTask(unittest.TestCase):
 
         self.assertEqual(task.get_dir(), '/blah/stage.1.foo')
 
+    def test_get_set_email_log(self):
+        params = D3RParameters()
+        task = D3RTask(None, params)
+        self.assertEqual(task.get_email_log(), None)
+        task.set_email_log('hi')
+        self.assertEqual(task.get_email_log(), 'hi')
+
+    def test_get_program_name(self):
+        params = D3RParameters()
+        task = D3RTask(None, params)
+        self.assertTrue(task._get_program_name().endswith('task.pyc '))
+
+        params.program = 'proggy'
+        params.version= 'versy'
+        task = D3RTask(None, params)
+        self.assertEqual(task._get_program_name(), 'proggy versy')
+
+
     def test_get_uploadable_files(self):
         task = D3RTask(None, D3RParameters())
         self.assertEqual(task.get_uploadable_files(), [])
