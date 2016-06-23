@@ -474,6 +474,43 @@ class TestFtpFileUploader(unittest.TestCase):
         self.assertEqual(sum, '0 (0 bytes) files uploaded in 0 seconds to'
                               ' host Unset:')
 
+    def test_delete_file_none_file(self):
+        foo = FtpFileTransfer(None)
+        self.assertFalse(foo.delete_file(None))
+        self.assertEqual(foo.get_error_msg(), 'remote_file None')
+
+    def test_delete_file_not_connected(self):
+        foo = FtpFileTransfer(None)
+        self.assertFalse(foo.delete_file('/./somefile'))
+        self.assertEqual(foo.get_error_msg(), "Unable to delete /somefile : "
+                                              "'NoneType' object has no "
+                                              "attribute 'delete'")
+
+    def test_delete_file_success(self):
+        mockftp = MockFtp()
+        mockftp.delete = Mock(return_value='hello')
+        mockftp.close = Mock(return_value=None)
+        foo = FtpFileTransfer(None)
+        foo.set_ftp_connection(mockftp)
+        foo.connect()
+        self.assertTrue(foo.delete_file('/a/b'))
+        self.assertEqual(foo.get_error_msg(), None)
+        foo.disconnect()
+        mockftp.delete.assert_called_with('/a/b')
+
+    def test_delete_file_fail(self):
+        mockftp = MockFtp()
+        mockftp.delete = Mock(side_effect=IOError('error'))
+        mockftp.close = Mock(return_value=None)
+        foo = FtpFileTransfer(None)
+        foo.set_ftp_connection(mockftp)
+        foo.connect()
+        self.assertFalse(foo.delete_file('/a/b'))
+        self.assertEqual(foo.get_error_msg(), 'Unable to delete /a/b : error')
+        foo.disconnect()
+        mockftp.delete.assert_called_with('/a/b')
+
+
     def tearDown(self):
         pass
 

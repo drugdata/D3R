@@ -215,42 +215,34 @@ class FtpFileTransfer(object):
         except:
             logger.exception('Caught exception attempting to close connection')
 
-    def delete_file(self, remote_dir, remote_file_name):
-        """Deletes file specified by `remote_dir` and `remote_file_name`
+    def delete_file(self, remote_file):
+        """Deletes file specified by `remote_file`
 
-           This method will delete file specified by `remote_dir` and
-           `remote_file_name`.  If there is an error information can be
-           obtained by calling `self.get_error_msg()`
-           :param remote_dir: full path to remote directory for file to delete
-           :param remote_file_name: name of remote file to delete
+           This method will delete file specified by
+           `remote_file`.  If there is an error information can be
+           obtained by calling `self.get_error_msg()`  It is assumed
+           `connect()` has been called on this object.
+           :param remote_dir: full path to remote file to delete
            :returns: True upon success, false otherwise
         """
         self._error_msg = None
         start_time = int(time.time())
-        result = False
         try:
-            if remote_dir is None:
-                self._error_msg = 'remote_dir None'
+            if remote_file is None:
+                self._error_msg = 'remote_file None'
                 return False
 
-            if remote_file_name is None:
-                self._error_msg = 'remote_file_name is None'
-                return False
-
-            remote_path = os.path.normpath(remote_dir +
-                                           os.sep + remote_file_name)
+            remote_path = os.path.normpath(remote_file)
             logger.debug('Deleting file : ' + remote_path)
 
             try:
-
                 result = self._ftp.delete(remote_path)
-
                 logger.debug(' Delete operation returned: ' + result)
             except Exception as e:
-                logger.exception('Caught exception direct uploading file' +
-                                 file + ' to ' + remote_path)
-                self._error_msg = 'Unable to upload ' + file + ' to ' +\
-                                  remote_path + ' : ' + str(e)
+                logger.exception('Caught exception deleting file' +
+                                 remote_path)
+                self._error_msg = 'Unable to delete ' + remote_path +\
+                                  ' : ' + str(e)
                 return False
 
             return True
@@ -258,7 +250,44 @@ class FtpFileTransfer(object):
             self._duration = int(time.time()) - start_time
             logger.debug('Delete operation took ' +
                          str(self._duration) + ' seconds')
-        return result
+
+    def download_file(self, remote_file, local_file):
+        """Downloads file specified by `remote_file` to `local_file`
+
+           This method will download file specified by
+           `remote_file` to `local_file.  If there is an error information can be
+           obtained by calling `self.get_error_msg()`  It is assumed
+           `connect()` has been called on this object.
+           :param remote_file: full path to remote file to download
+           :param local_file: full path to download remote file to
+           :returns: True upon success, false otherwise
+        """
+        self._error_msg = None
+        start_time = int(time.time())
+        try:
+            if remote_file is None:
+                self._error_msg = 'remote_file None'
+                return False
+
+            remote_path = os.path.normpath(remote_file)
+            local_path = os.path.normpath(local_file)
+            logger.debug('Downloading file : ' + remote_path + ' to ' +
+                         local_path)
+
+            try:
+                self._ftp.get(remote_path, local=local_path)
+            except Exception as e:
+                logger.exception('Caught exception downloading file' +
+                                 remote_path + ' to ' + local_path)
+                self._error_msg = ('Unable to download ' + remote_path +
+                                   ' to ' + local_path +' : ' + str(e))
+                return False
+
+            return True
+        finally:
+            self._duration = int(time.time()) - start_time
+            logger.debug('Download operation took ' +
+                         str(self._duration) + ' seconds')
 
     def upload_file_direct(self, file, remote_dir, remote_file_name):
         """Uploads file to remote server
