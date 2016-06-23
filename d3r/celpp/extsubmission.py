@@ -107,6 +107,7 @@ class ExternalDataSubmissionTask(D3RTask):
                                       'is False')
             return
         try:
+            pass
             # self._download_remote_challenge_data_package()
             # self._untar_challenge_data_package()
             # summary = self._get_summary_of_docked_results()
