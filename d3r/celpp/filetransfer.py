@@ -222,7 +222,7 @@ class FtpFileTransfer(object):
            `remote_file`.  If there is an error information can be
            obtained by calling `self.get_error_msg()`  It is assumed
            `connect()` has been called on this object.
-           :param remote_dir: full path to remote file to delete
+           :param remote_file: full path to remote file to delete
            :returns: True upon success, false otherwise
         """
         self._error_msg = None
@@ -237,7 +237,7 @@ class FtpFileTransfer(object):
 
             try:
                 result = self._ftp.delete(remote_path)
-                logger.debug(' Delete operation returned: ' + result)
+                logger.debug(' Delete operation returned: ' + str(result))
             except Exception as e:
                 logger.exception('Caught exception deleting file' +
                                  remote_path)
@@ -269,6 +269,10 @@ class FtpFileTransfer(object):
                 self._error_msg = 'remote_file None'
                 return False
 
+            if local_file is None:
+                self._error_msg = 'local_file None'
+                return False
+
             remote_path = os.path.normpath(remote_file)
             local_path = os.path.normpath(local_file)
             logger.debug('Downloading file : ' + remote_path + ' to ' +
@@ -287,6 +291,90 @@ class FtpFileTransfer(object):
         finally:
             self._duration = int(time.time()) - start_time
             logger.debug('Download operation took ' +
+                         str(self._duration) + ' seconds')
+
+    def list_dirs(self, remote_dir):
+        """Gets list of all directories found in `remote_dir`
+
+           This method gets a list of directories in `remote_dir`
+           If there is an error information can be
+           obtained by calling `self.get_error_msg()`  It is assumed
+           `connect()` has been called on this object.
+           :param remote_dir: full path to remote directory to examine
+           :returns: None for failure and list upon success
+        """
+        self._error_msg = None
+        start_time = int(time.time())
+        try:
+            if remote_dir is None:
+                self._error_msg = 'remote_dir None'
+                return None
+
+            remote_path = os.path.normpath(remote_dir)
+            logger.debug('Examining : ' + remote_path)
+
+            dirlist = []
+            try:
+                for paths in self._ftp.list(remote_dir, extra=True):
+                    if paths['directory'] == 'd':
+                        if paths['name'] == '.':
+                            continue
+                        if paths['name'] == '..':
+                            continue
+                        dirlist.append(paths['name'])
+
+            except Exception as e:
+                logger.exception('Caught exception examining ' +
+                                 remote_path)
+                self._error_msg = ('Unable to get directory list for ' +
+                                   remote_path +
+                                   ' : ' + str(e))
+                return None
+
+            return dirlist
+        finally:
+            self._duration = int(time.time()) - start_time
+            logger.debug('list directory operation took ' +
+                         str(self._duration) + ' seconds')
+
+    def list_files(self, remote_dir):
+        """Gets list of all files found in `remote_dir`
+
+           This method gets a list of files in `remote_dir`
+           If there is an error information can be
+           obtained by calling `self.get_error_msg()`  It is assumed
+           `connect()` has been called on this object.
+           :param remote_dir: full path to remote directory to examine
+           :returns: None for failure and list upon success
+        """
+        self._error_msg = None
+        start_time = int(time.time())
+        try:
+            if remote_dir is None:
+                self._error_msg = 'remote_dir None'
+                return None
+
+            remote_path = os.path.normpath(remote_dir)
+            logger.debug('Examining : ' + remote_path)
+
+            filelist = []
+            try:
+                for paths in self._ftp.list(remote_dir, extra=True):
+                    if paths['directory'] == '-':
+                        filelist.append(paths['name'])
+
+            except Exception as e:
+                logger.exception('Caught exception examining ' +
+                                 remote_path)
+                self._error_msg = ('Unable to get file list for ' +
+                                   remote_path +
+                                   ' : ' + str(e))
+                return None
+
+            return filelist
+        finally:
+            self._duration = int(time.time()) - start_time
+            logger.debug('list file operation took ' +
                          str(self._duration) + ' seconds')
 
     def upload_file_direct(self, file, remote_dir, remote_file_name):

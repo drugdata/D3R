@@ -510,6 +510,131 @@ class TestFtpFileUploader(unittest.TestCase):
         foo.disconnect()
         mockftp.delete.assert_called_with('/a/b')
 
+    def test_download_file_remote_file_params_none(self):
+        foo = FtpFileTransfer(None)
+        self.assertFalse(foo.download_file(None, None))
+        self.assertEqual(foo.get_error_msg(), 'remote_file None')
+
+        self.assertFalse(foo.download_file('/hi', None))
+        self.assertEqual(foo.get_error_msg(), 'local_file None')
+
+    def test_download_file_not_connected(self):
+        foo = FtpFileTransfer(None)
+        self.assertFalse(foo.download_file('/remote/bye', '/local/hi'))
+        self.assertEqual(foo.get_error_msg(), "Unable to download /remote/bye "
+                                              "to /local/hi : 'NoneType' "
+                                              "object has no attribute 'get'")
+
+    def test_download_file_success(self):
+        mockftp = MockFtp()
+        mockftp.get = Mock()
+        mockftp.close = Mock(return_value=None)
+        foo = FtpFileTransfer(None)
+        foo.set_ftp_connection(mockftp)
+        foo.connect()
+        self.assertTrue(foo.download_file('/a/b', '/c/d'))
+        self.assertEqual(foo.get_error_msg(), None)
+        foo.disconnect()
+        mockftp.get.assert_called_with('/a/b', local='/c/d')
+
+    def test_download_file_fail(self):
+        mockftp = MockFtp()
+        mockftp.get = Mock(side_effect=IOError('error'))
+        mockftp.close = Mock(return_value=None)
+        foo = FtpFileTransfer(None)
+        foo.set_ftp_connection(mockftp)
+        foo.connect()
+        self.assertFalse(foo.download_file('/a/b', '/c/d'))
+        self.assertEqual(foo.get_error_msg(), 'Unable to download /a/b to '
+                                              '/c/d : error')
+        foo.disconnect()
+        mockftp.get.assert_called_with('/a/b', local='/c/d')
+
+    def test_list_dirs_remote_dir_none(self):
+        foo = FtpFileTransfer(None)
+        self.assertFalse(foo.list_dirs(None))
+        self.assertEqual(foo.get_error_msg(), 'remote_dir None')
+
+    def test_list_dirs_remote_dir_not_connected(self):
+        foo = FtpFileTransfer(None)
+        self.assertFalse(foo.list_dirs('/foo'))
+        self.assertEqual(foo.get_error_msg(), "Unable to get directory list "
+                                              "for /foo : 'NoneType' object "
+                                              "has no attribute 'list'")
+
+    def test_list_dirs_success(self):
+        mockftp = MockFtp()
+        mockftp.list = Mock(return_value=[{'directory': 'd', 'name': '.'},
+                                          {'directory': 'd', 'name': '..'},
+                                          {'directory': 'd', 'name': 'foo'},
+                                          {'directory': '-', 'name': 'file'}])
+        mockftp.close = Mock(return_value=None)
+        foo = FtpFileTransfer(None)
+        foo.set_ftp_connection(mockftp)
+        foo.connect()
+        dirlist = foo.list_dirs('/foo')
+        self.assertTrue(len(dirlist) == 1)
+        self.assertEqual(dirlist[0], 'foo')
+        foo.disconnect()
+        mockftp.list.assert_called_with('/foo', extra=True)
+
+    def test_list_dirs_fail(self):
+        mockftp = MockFtp()
+        mockftp.list = Mock(side_effect=IOError('error'))
+        mockftp.close = Mock(return_value=None)
+        foo = FtpFileTransfer(None)
+        foo.set_ftp_connection(mockftp)
+        foo.connect()
+        dirlist = foo.list_dirs('/foo2')
+        self.assertTrue(dirlist == None)
+        foo.disconnect()
+        self.assertEqual(foo.get_error_msg(), 'Unable to get directory list '
+                                              'for /foo2 : error')
+        mockftp.list.assert_called_with('/foo2', extra=True)
+#############
+    def test_list_files_remote_dir_none(self):
+        foo = FtpFileTransfer(None)
+        self.assertFalse(foo.list_files(None))
+        self.assertEqual(foo.get_error_msg(), 'remote_dir None')
+
+    def test_list_files_remote_dir_not_connected(self):
+        foo = FtpFileTransfer(None)
+        self.assertFalse(foo.list_files('/foo'))
+        self.assertEqual(foo.get_error_msg(), "Unable to get file list "
+                                              "for /foo : 'NoneType' object "
+                                              "has no attribute 'list'")
+
+    def test_list_files_success(self):
+        mockftp = MockFtp()
+        mockftp.list = Mock(return_value=[{'directory': 'd', 'name': '.'},
+                                          {'directory': 'd', 'name': '..'},
+                                          {'directory': 'd', 'name': 'foo'},
+                                          {'directory': '-', 'name': 'file'}])
+        mockftp.close = Mock(return_value=None)
+        foo = FtpFileTransfer(None)
+        foo.set_ftp_connection(mockftp)
+        foo.connect()
+        filelist = foo.list_files('/foo')
+        self.assertTrue(len(filelist) == 1)
+        self.assertEqual(filelist[0], 'file')
+        foo.disconnect()
+        mockftp.list.assert_called_with('/foo', extra=True)
+
+    def test_list_files_fail(self):
+        mockftp = MockFtp()
+        mockftp.list = Mock(side_effect=IOError('error'))
+        mockftp.close = Mock(return_value=None)
+        foo = FtpFileTransfer(None)
+        foo.set_ftp_connection(mockftp)
+        foo.connect()
+        filelist = foo.list_files('/foo2')
+        self.assertTrue(filelist == None)
+        foo.disconnect()
+        self.assertEqual(foo.get_error_msg(), 'Unable to get file list '
+                                              'for /foo2 : error')
+        mockftp.list.assert_called_with('/foo2', extra=True)
+
+
 
     def tearDown(self):
         pass
