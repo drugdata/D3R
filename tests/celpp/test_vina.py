@@ -16,7 +16,7 @@ import os
 from d3r.celpp.task import D3RParameters
 from d3r.celpp.task import D3RTask
 from d3r.celpp.vina import AutoDockVinaTask
-from d3r.celpp.proteinligprep import ProteinLigPrepTask
+from d3r.celpp.chimeraprep import ChimeraProteinLigPrepTask
 
 
 class TestAutoDockVinaTask(unittest.TestCase):
@@ -56,17 +56,17 @@ class TestAutoDockVinaTask(unittest.TestCase):
             vina = AutoDockVinaTask(temp_dir, params)
             self.assertEqual(vina.can_run(), False)
             self.assertEqual(vina.get_error(),
-                             'proteinligprep task has notfound status')
+                             'chimeraprep task has notfound status')
 
             # proteinligprep filter running
-            proteinligprep = ProteinLigPrepTask(temp_dir, params)
+            proteinligprep = ChimeraProteinLigPrepTask(temp_dir, params)
             proteinligprep.create_dir()
             open(os.path.join(proteinligprep.get_dir(), D3RTask.START_FILE),
                  'a').close()
             vina = AutoDockVinaTask(temp_dir, params)
             self.assertEqual(vina.can_run(), False)
             self.assertEqual(vina.get_error(),
-                             'proteinligprep task has start status')
+                             'chimeraprep task has start status')
 
             # proteinligprep failed
             error_file = os.path.join(proteinligprep.get_dir(),
@@ -75,7 +75,7 @@ class TestAutoDockVinaTask(unittest.TestCase):
             vina = AutoDockVinaTask(temp_dir, params)
             self.assertEqual(vina.can_run(), False)
             self.assertEqual(vina.get_error(),
-                             'proteinligprep task has error status')
+                             'chimeraprep task has error status')
 
             # proteinligprep success
             os.remove(error_file)
@@ -111,7 +111,7 @@ class TestAutoDockVinaTask(unittest.TestCase):
             vina = AutoDockVinaTask(temp_dir, params)
             vina.run()
             self.assertEqual(vina.get_error(),
-                             'proteinligprep task has notfound status')
+                             'chimeraprep task has notfound status')
         finally:
             shutil.rmtree(temp_dir)
 
@@ -119,7 +119,7 @@ class TestAutoDockVinaTask(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
-            proteinligprep = ProteinLigPrepTask(temp_dir, params)
+            proteinligprep = ChimeraProteinLigPrepTask(temp_dir, params)
             proteinligprep.create_dir()
             open(os.path.join(proteinligprep.get_dir(), D3RTask.COMPLETE_FILE),
                  'a').close()
@@ -141,7 +141,7 @@ class TestAutoDockVinaTask(unittest.TestCase):
         try:
             params = D3RParameters()
             params.vina = 'false'
-            proteinligprep = ProteinLigPrepTask(temp_dir, params)
+            proteinligprep = ChimeraProteinLigPrepTask(temp_dir, params)
             proteinligprep.create_dir()
             open(os.path.join(proteinligprep.get_dir(), D3RTask.COMPLETE_FILE),
                  'a').close()
@@ -170,7 +170,7 @@ class TestAutoDockVinaTask(unittest.TestCase):
         try:
             params = D3RParameters()
             params.vina = '/bin/doesnotexist'
-            proteinligprep = ProteinLigPrepTask(temp_dir, params)
+            proteinligprep = ChimeraProteinLigPrepTask(temp_dir, params)
             proteinligprep.create_dir()
             open(os.path.join(proteinligprep.get_dir(), D3RTask.COMPLETE_FILE),
                  'a').close()
@@ -196,7 +196,7 @@ class TestAutoDockVinaTask(unittest.TestCase):
         try:
             params = D3RParameters()
             params.vina = 'true'
-            proteinligprep = ProteinLigPrepTask(temp_dir, params)
+            proteinligprep = ChimeraProteinLigPrepTask(temp_dir, params)
             proteinligprep.create_dir()
             open(os.path.join(proteinligprep.get_dir(),
                               D3RTask.COMPLETE_FILE),
