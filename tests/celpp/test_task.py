@@ -5,6 +5,7 @@
 import unittest
 import tempfile
 import os.path
+import re
 
 """
 test_task
@@ -172,10 +173,8 @@ class TestD3rTask(unittest.TestCase):
     def test_get_program_name(self):
         params = D3RParameters()
         task = D3RTask(None, params)
-
-        self.assertTrue(task._get_program_name().endswith('task.pyc '),
-                         task._get_program_name())
-
+        self.assertTrue(task._get_program_name().find('task.py') > 0,
+                        task._get_program_name())
         params.program = 'proggy'
         params.version= 'versy'
         task = D3RTask(None, params)
