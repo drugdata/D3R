@@ -8,13 +8,38 @@ import time
 from d3r.celpp.task import D3RTask
 from d3r.celpp.challengedata import ChallengeDataTask
 from d3r.celpp.evaluation import EvaluationTaskFactory
+from d3r.celpp.filetransfer import FtpFileTransfer
 from d3r.celpp import util
+
 logger = logging.getLogger(__name__)
 
 class ExternalDataSubmissionFactory(object):
     """Factory to create ExternalDataSubmissionObjects
     """
+    def __init__(self, path, args):
+        """Constructor
+        """
+        logger.debug('ftpconfig set to ' + args.ftpconfig)
+        self._file_transfer = FtpFileTransfer(args.ftpconfig)
+        self._path = path
+        self._args = args
 
+    def get_args(self):
+        return self._args
+
+    def get_path(self):
+        return self._path
+
+    def set_file_transfer(self, filetransfer):
+        """Sets file transfer
+        """
+        self._file_transfer = filetransfer
+
+    def _get_submission_dirs(self, remote_dir):
+        return []
+
+    def _get_challenge_data_package_file(self, remote_dir, dir_name):
+        return ''
 
     def get_external_data_submissions(self):
         """Generate ExternalDataSubmission objects
@@ -37,7 +62,18 @@ class ExternalDataSubmissionFactory(object):
                  # create new external submission object and add to list
            return #list
         """
-        return []
+        subdir = self._file_transfer.get_ftp_remote_submission_dir()
+        dlist = self._get_submission_dirs(subdir)
+        task_list = []
+        for d in dlist:
+            chall_file = self._get_challenge_data_package_file(subdir, d)
+
+            if chall_file is not None:
+                et = ExternalDataSubmissionTask(self.get_path(), d,
+                                                chall_file, self.get_args())
+                task_list.append(et)
+
+        return task_list
 
 class ExternalDataSubmissionTask(D3RTask):
     """Downloads external user docking Submissions
