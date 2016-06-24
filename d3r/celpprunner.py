@@ -283,6 +283,10 @@ def get_task_list_for_stage(theargs, stage_name):
     if stage_name == 'chimeraprep':
         task_list.append(ChimeraProteinLigPrepTask(theargs.latest_weekly,
                                                    theargs))
+    if stage_name == 'extsubmission':
+        # extfac = ExternalDataSubmissionFactory(theargs.latest_weekly, theargs)
+        # task_list.extend(extfac.get_external_data_submissions())
+        pass
 
     if stage_name == 'evaluation':
         # use util function call to get all evaluation tasks
@@ -322,8 +326,8 @@ def _parse_arguments(desc, args):
     parser.add_argument("--stage", required=True, help='Comma delimited list' +
                         ' of stages to run.  Valid STAGES = ' +
                         '{makedb, import, blast, challengedata,'
-                        'chimeraprep, proteinligprep, glide, vina, '
-                        'evaluation} ')
+                        'chimeraprep, proteinligprep, extsubmission, glide, '
+                        'vina, evaluation} ')
     parser.add_argument("--blastnfilter", default='blastnfilter.py',
                         help='Path to BlastnFilter script')
     parser.add_argument("--blastnfiltertimeout", default=36000, type=int,
@@ -431,8 +435,8 @@ def main():
               Version {version}
 
               Runs the 9 stages (makedb, import, blast, challengedata,
-              proteinligprep, chimeraprep, glide, vina, & evaluation) of CELPP
-              processing pipeline
+              proteinligprep, chimeraprep, extsubmission, glide, vina, &
+              evaluation) of CELPP processing pipeline
               (http://www.drugdesigndata.org)
 
               CELPP processing pipeline relies on a set of directories
@@ -593,6 +597,24 @@ def main():
               set in --proteinligprep flag to prepare pdb and inchi files
               storing output in {proteinligprep_dirname}.  --pdbdb flag
               must also be set when calling this stage.
+
+              If --stage 'extsubmission'
+
+              Connects to server specified by --ftpconfig and downloads
+              external docking submissions from {submissionpath} on remote
+              server.
+
+              Submissions should be named:
+
+              celpp_weekXX_YYYY_dockedresults_ZZZZ.tar.gz as documented here:
+
+              https://github.com/drugdata/d3r/wiki/Proposed-challenge-docked\
+              -results-file-structure
+
+              For each submission a directory named stage.X.ZZZZ.extsubmission
+              will be created and uncompressed contents of package will be
+              stored in that directory.  If data does not conform properly
+              'error' file will be placed in directory denoting failure
 
               If --stage 'glide'
 
