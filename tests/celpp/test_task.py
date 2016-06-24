@@ -172,7 +172,9 @@ class TestD3rTask(unittest.TestCase):
     def test_get_program_name(self):
         params = D3RParameters()
         task = D3RTask(None, params)
-        self.assertTrue(task._get_program_name().endswith('task.pyc '))
+
+        self.assertTrue(task._get_program_name().endswith('task.pyc '),
+                         task._get_program_name())
 
         params.program = 'proggy'
         params.version= 'versy'
