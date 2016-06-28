@@ -329,12 +329,14 @@ def _parse_arguments(desc, args):
                         'chimeraprep, proteinligprep, extsubmission, glide, '
                         'vina, evaluation} ')
     parser.add_argument("--blastnfilter", default='blastnfilter.py',
-                        help='Path to BlastnFilter script')
+                        help='Path to BlastnFilter script '
+                             '(default blastnfilter.py)')
     parser.add_argument("--blastnfiltertimeout", default=36000, type=int,
                         help='Time in seconds script is allowed to run before'
                              'being killed (default 36000)')
     parser.add_argument("--postanalysis", default='postanalysis.py',
-                        help='Path to PostAnalysis script')
+                        help='Path to PostAnalysis script '
+                             '(default postanalysis.py)')
     parser.add_argument("--proteinligprep", default='proteinligprep.py',
                         help='Path to proteinligprep script (default '
                              'proteinligprep.py)')
@@ -381,7 +383,7 @@ def _parse_arguments(desc, args):
                              'pdb_seqres.txt.gz')
     parser.add_argument("--log", dest="loglevel", choices=['DEBUG',
                         'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
-                        help="Set the logging level",
+                        help="Set the logging level (default WARNING)",
                         default='WARNING')
     parser.add_argument('--smtp', dest='smtp', help='Sets smtpserver to use '
                                                     '(default localhost)',
