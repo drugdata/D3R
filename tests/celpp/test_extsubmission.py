@@ -9,7 +9,6 @@ import shutil
 import os
 import tarfile
 from mock import Mock
-from mock import DEFAULT
 
 from d3r.celpp.extsubmission import ExternalDataSubmissionFactory
 from d3r.celpp.extsubmission import ExternalDataSubmissionTask
@@ -40,7 +39,7 @@ class TestExternalSubmission(unittest.TestCase):
     def test_externaldatasubmissionfactory_ftpconfig_set(self):
         temp_dir = tempfile.mkdtemp()
         try:
-            figfile = os.path.join(temp_dir,'foo')
+            figfile = os.path.join(temp_dir, 'foo')
             f = open(figfile, 'w')
             f.write('host blah.blah.com\n')
             f.write('user bob\n')
@@ -52,7 +51,7 @@ class TestExternalSubmission(unittest.TestCase):
             params = D3RParameters()
             params.ftpconfig = figfile
             fac = ExternalDataSubmissionFactory('/foo', params)
-            self.assertTrue(fac.get_file_transfer() != None)
+            self.assertTrue(fac.get_file_transfer() is not None)
         finally:
             shutil.rmtree(temp_dir)
 
@@ -82,7 +81,8 @@ class TestExternalSubmission(unittest.TestCase):
             week = os.path.join(year, util.DATA_SET_WEEK_PREFIX + '40')
             os.makedirs(week)
             fac = ExternalDataSubmissionFactory(week, params)
-            self.assertEqual(fac._get_challenge_package_results_file_name('xxx'),
+            rfname = fac._get_challenge_package_results_file_name('xxx')
+            self.assertEqual(rfname,
                              'celpp_week40_2016_dockedresults_xxx.tar.gz')
 
         finally:
@@ -174,12 +174,10 @@ class TestExternalSubmission(unittest.TestCase):
             os.makedirs(week)
             params = D3RParameters()
             mockft = D3RParameters()
-            mockft.list_files = Mock(return_value=
-                                     ['hi', 'celpp_week13_2015_'+
-                                      dr +
-                                      '_dname.tar.gz',
-                                      'celpp_week13_2016' + dr +
-                                      'yuck.tar.gz'])
+            mockft.list_files = Mock(return_value=['hi', 'celpp_week13_2015_' +
+                                                   dr + '_dname.tar.gz',
+                                                   'celpp_week13_2016' + dr +
+                                                   'yuck.tar.gz'])
             fac = ExternalDataSubmissionFactory(week, params)
             fac.set_file_transfer(mockft)
             dlist = fac._get_challenge_data_package_file('/remote', 'dname')
@@ -197,11 +195,10 @@ class TestExternalSubmission(unittest.TestCase):
             os.makedirs(week)
             params = D3RParameters()
             mockft = D3RParameters()
-            mockft.list_files = Mock(return_value=
-                                     ['hi', 'celpp_week13_2015' + dr +
-                                      'dname.tar.gz',
-                                      'celpp_week13_2016' + dr +
-                                      'yuck.tar.gz'])
+            mockft.list_files = Mock(return_value=['hi', 'celpp_week13_2015' +
+                                                   dr + 'dname.tar.gz',
+                                                   'celpp_week13_2016' + dr +
+                                                   'yuck.tar.gz'])
             fac = ExternalDataSubmissionFactory(week, params)
             fac.set_file_transfer(mockft)
             dlist = fac._get_challenge_data_package_file('/remote', 'yuck')
@@ -248,14 +245,13 @@ class TestExternalSubmission(unittest.TestCase):
             mockft = D3RParameters()
             mockft.connect = Mock()
             mockft.disconnect = Mock()
-            mockft.get_ftp_remote_submission_dir = Mock(return_value=
-                                                        '/remote')
+            mockft.get_ftp_remote_submission_dir = Mock(return_value='/remote')
             mockft.list_dirs = Mock(return_value=['yo'])
             mockft.list_files = Mock(return_value=['hi',
-                                                    'celpp_week13_2015' + dr +
-                                                    'dname.tar.gz',
-                                                    'celpp_week13_2016' + dr +
-                                                    'yuck.tar.gz'])
+                                                   'celpp_week13_2015' + dr +
+                                                   'dname.tar.gz',
+                                                   'celpp_week13_2016' + dr +
+                                                   'yuck.tar.gz'])
             fac.set_file_transfer(mockft)
             tlist = fac.get_external_data_submissions()
             self.assertEqual(len(tlist), 0)
@@ -279,14 +275,13 @@ class TestExternalSubmission(unittest.TestCase):
             mockft.get_ftp_remote_challenge_dir = Mock(return_value='/chall')
             mockft.delete_file = Mock(return_value=False)
 
-            mockft.get_ftp_remote_submission_dir = Mock(return_value=
-                                                        '/remote')
+            mockft.get_ftp_remote_submission_dir = Mock(return_value='/remote')
             mockft.list_dirs = Mock(return_value=['yo'])
             mockft.list_files = Mock(return_value=['hi',
-                                                    'celpp_week13_2017' + dr +
-                                                    'yo.tar.gz',
-                                                    'celpp_week13_2016' + dr +
-                                                    'yuck.tar.gz'])
+                                                   'celpp_week13_2017' + dr +
+                                                   'yo.tar.gz',
+                                                   'celpp_week13_2016' + dr +
+                                                   'yuck.tar.gz'])
             fac.set_file_transfer(mockft)
             tlist = fac.get_external_data_submissions()
             self.assertEqual(len(tlist), 1)
@@ -313,14 +308,13 @@ class TestExternalSubmission(unittest.TestCase):
             mockft.connect = Mock()
             mockft.delete_file = Mock(return_value=True)
             mockft.get_ftp_remote_challenge_dir = Mock(return_value='/chall')
-            mockft.get_ftp_remote_submission_dir = Mock(return_value=
-                                                        '/remote')
+            mockft.get_ftp_remote_submission_dir = Mock(return_value='/remote')
             mockft.list_dirs = Mock(return_value=['yo', 'yuck'])
             mockft.list_files = Mock(return_value=['hi',
-                                                    'celpp_week13_2017' + dr +
-                                                    'yo.tar.gz',
-                                                    'celpp_week13_2017' + dr +
-                                                    'yuck.tar.gz'])
+                                                   'celpp_week13_2017' + dr +
+                                                   'yo.tar.gz',
+                                                   'celpp_week13_2017' + dr +
+                                                   'yuck.tar.gz'])
             fac.set_file_transfer(mockft)
             tlist = fac.get_external_data_submissions()
             self.assertEqual(len(tlist), 2)
@@ -329,13 +323,13 @@ class TestExternalSubmission(unittest.TestCase):
                              '/remote/yo/celpp_week13_2017' + dr + 'yo.tar.gz')
             self.assertEqual(tlist[1].get_name(), 'yuck.extsubmission')
             self.assertEqual(tlist[1].get_remote_challenge_data_package(),
-                             '/remote/yuck/celpp_week13_2017' + dr + 'yuck.tar.gz')
+                             '/remote/yuck/celpp_week13_2017' + dr +
+                             'yuck.tar.gz')
             mockft.list_dirs.assert_called_with('/remote')
             mockft.list_files.assert_called_with('/remote/yuck')
             mockft.delete_file.assert_called_with('/chall/latest.txt')
         finally:
             shutil.rmtree(temp_dir)
-
 
     def test_externaltask_get_set_remote_challenge_data_package(self):
         params = D3RParameters()
@@ -348,7 +342,8 @@ class TestExternalSubmission(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
-            task = ExternalDataSubmissionTask(temp_dir, 'name', '/remote', params)
+            task = ExternalDataSubmissionTask(temp_dir, 'name', '/remote',
+                                              params)
             self.assertTrue(task.can_run())
 
             task.create_dir()
@@ -394,7 +389,6 @@ class TestExternalSubmission(unittest.TestCase):
                                           chall_name)
         self.assertTrue(val)
         self.assertEqual(task.get_email_log(), '')
-
 
     def test_untar_challenge_data_package_no_tarfile(self):
 
@@ -461,7 +455,7 @@ class TestExternalSubmission(unittest.TestCase):
         f.close()
 
         # add in a symlink for fun
-        os.symlink(mymol, os.path.join(candidateonedir,'hello'))
+        os.symlink(mymol, os.path.join(candidateonedir, 'hello'))
 
         tar = tarfile.open(tfile, 'w:gz')
         tar.add(candidateonedir, arcname='/' + nameprefix + '/' + candidateone)
@@ -475,9 +469,9 @@ class TestExternalSubmission(unittest.TestCase):
         try:
             params = D3RParameters()
             task = ExternalDataSubmissionTask(temp_dir, 'hello',
-                                          'hi', params)
+                                              'hi', params)
             task.create_dir()
-            tfile = self.create_good_tarfile(task.get_dir(), 'hello')
+            self.create_good_tarfile(task.get_dir(), 'hello')
             c = task._untar_challenge_data_package('hello.tar.gz')
             self.assertEqual(c, 'hello')
             self.assertEqual(task.get_email_log(), None)
@@ -497,9 +491,10 @@ class TestExternalSubmission(unittest.TestCase):
         try:
             params = D3RParameters()
             task = ExternalDataSubmissionTask(temp_dir, 'hello',
-                                          'hi', params)
+                                              'hi', params)
             task.create_dir()
-            tfile = self.create_bad_tarfile_dotdot_path(task.get_dir(), 'hello')
+            self.create_bad_tarfile_dotdot_path(task.get_dir(),
+                                                'hello')
             c = task._untar_challenge_data_package('hello.tar.gz')
             self.assertEqual(c, 'hello')
             self.assertEqual(task.get_email_log(), 'Skipping, found .. in '
@@ -523,7 +518,7 @@ class TestExternalSubmission(unittest.TestCase):
         try:
             params = D3RParameters()
             task = ExternalDataSubmissionTask(temp_dir, 'yo',
-                                          'hi', params)
+                                              'hi', params)
             task.create_dir()
             tfile = self.create_good_tarfile(task.get_dir(),
                                              'yo')
@@ -548,7 +543,7 @@ class TestExternalSubmission(unittest.TestCase):
         try:
             params = D3RParameters()
             task = ExternalDataSubmissionTask(temp_dir, 'yo',
-                                          'hi', params)
+                                              'hi', params)
             task.create_dir()
             try:
                 task._move_challenge_data_package_into_task_dir('foo')
@@ -563,7 +558,7 @@ class TestExternalSubmission(unittest.TestCase):
         try:
             params = D3RParameters()
             task = ExternalDataSubmissionTask(temp_dir, 'yo',
-                                          'hi', params)
+                                              'hi', params)
             task.create_dir()
             basedir = os.path.join(task.get_dir(), 'foo')
             os.makedirs(basedir)

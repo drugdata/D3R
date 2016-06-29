@@ -4,7 +4,6 @@
 import logging
 import os
 import tarfile
-import re
 import shutil
 
 from d3r.celpp.task import D3RTask
@@ -13,6 +12,7 @@ from d3r.celpp.evaluation import EvaluationTaskFactory
 from d3r.celpp.filetransfer import FtpFileTransfer
 
 logger = logging.getLogger(__name__)
+
 
 class ExternalDataSubmissionFactory(object):
     """Factory to create ExternalDataSubmissionObjects
@@ -117,9 +117,9 @@ class ExternalDataSubmissionFactory(object):
            for each directory under submission directory
            look for a celpp_weekXX_YYYY_dockedresults_ZZZZ.tar.gz file
            where ZZZZ matches name of directory under submission directory
-           Regardless if its found or not create new ExternalDataSubmission object
-           and pass ZZZZ for name and path to .tar.gz file as remotefile if
-           the tar.gz file was found otherwise pass None
+           Regardless if its found or not create new ExternalDataSubmission
+           object and pass ZZZZ for name and path to .tar.gz file as
+           remotefile if the tar.gz file was found otherwise pass None
            along with args.  Append this object to list and
            return it
         """
@@ -148,6 +148,7 @@ class ExternalDataSubmissionFactory(object):
                 logger.exception('Caught exception disconnecting')
 
         return task_list
+
 
 class ExternalDataSubmissionTask(D3RTask):
     """Downloads external user docking Submissions

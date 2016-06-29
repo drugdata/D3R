@@ -5,7 +5,6 @@
 import unittest
 import tempfile
 import os.path
-import re
 
 """
 test_task
@@ -176,10 +175,9 @@ class TestD3rTask(unittest.TestCase):
         self.assertTrue(task._get_program_name().find('task.py') > 0,
                         task._get_program_name())
         params.program = 'proggy'
-        params.version= 'versy'
+        params.version = 'versy'
         task = D3RTask(None, params)
         self.assertEqual(task._get_program_name(), 'proggy versy')
-
 
     def test_get_uploadable_files(self):
         task = D3RTask(None, D3RParameters())
@@ -557,7 +555,6 @@ class TestD3rTask(unittest.TestCase):
 
         finally:
             shutil.rmtree(temp_dir)
-
 
     def test_run_external_command_cmd_times_out(self):
         temp_dir = tempfile.mkdtemp()

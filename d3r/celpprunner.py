@@ -125,7 +125,8 @@ def _setup_logging(theargs):
     logging.getLogger('d3r.celpp.evaluation').setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.celpp.task').setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.celpp.util').setLevel(theargs.numericloglevel)
-    logging.getLogger('d3r.celpp.filetransfer').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.filetransfer')\
+        .setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.celpp.chimeraprep')\
         .setLevel(theargs.numericloglevel)
 

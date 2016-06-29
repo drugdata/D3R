@@ -255,8 +255,8 @@ class FtpFileTransfer(object):
         """Downloads file specified by `remote_file` to `local_file`
 
            This method will download file specified by
-           `remote_file` to `local_file.  If there is an error information can be
-           obtained by calling `self.get_error_msg()`  It is assumed
+           `remote_file` to `local_file.  If there is an error information can
+           be obtained by calling `self.get_error_msg()`  It is assumed
            `connect()` has been called on this object.
            :param remote_file: full path to remote file to download
            :param local_file: full path to download remote file to
@@ -284,7 +284,7 @@ class FtpFileTransfer(object):
                 logger.exception('Caught exception downloading file' +
                                  remote_path + ' to ' + local_path)
                 self._error_msg = ('Unable to download ' + remote_path +
-                                   ' to ' + local_path +' : ' + str(e))
+                                   ' to ' + local_path + ' : ' + str(e))
                 return False
 
             return True

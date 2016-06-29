@@ -442,8 +442,6 @@ class TestFtpFileUploader(unittest.TestCase):
         mockftp.close = Mock(return_value=None)
         foo = FtpFileTransfer(None)
         foo.set_ftp_connection(mockftp)
-
-
         foo.set_ftp_remote_dir('/remote')
         foo.set_ftp_host('hosty')
         temp_dir = tempfile.mkdtemp()
@@ -586,12 +584,12 @@ class TestFtpFileUploader(unittest.TestCase):
         foo.set_ftp_connection(mockftp)
         foo.connect()
         dirlist = foo.list_dirs('/foo2')
-        self.assertTrue(dirlist == None)
+        self.assertTrue(dirlist is None)
         foo.disconnect()
         self.assertEqual(foo.get_error_msg(), 'Unable to get directory list '
                                               'for /foo2 : error')
         mockftp.list.assert_called_with('/foo2', extra=True)
-#############
+
     def test_list_files_remote_dir_none(self):
         foo = FtpFileTransfer(None)
         self.assertFalse(foo.list_files(None))
@@ -628,13 +626,11 @@ class TestFtpFileUploader(unittest.TestCase):
         foo.set_ftp_connection(mockftp)
         foo.connect()
         filelist = foo.list_files('/foo2')
-        self.assertTrue(filelist == None)
+        self.assertTrue(filelist is None)
         foo.disconnect()
         self.assertEqual(foo.get_error_msg(), 'Unable to get file list '
                                               'for /foo2 : error')
         mockftp.list.assert_called_with('/foo2', extra=True)
-
-
 
     def tearDown(self):
         pass

@@ -367,9 +367,10 @@ Blastnfilter Summary
         try:
             remote_dir = uploader.get_ftp_remote_challenge_dir()
             if remote_dir is None:
-                logger.warning('No remote challenge directory set for ftp upload')
-                self.append_to_email_log('No remote challenge directory set for '
-                                         'ftp upload\n')
+                logger.warning('No remote challenge directory set for '
+                               'ftp upload')
+                self.append_to_email_log('No remote challenge directory set ' +
+                                         'for ftp upload\n')
                 return
             logger.debug('Attempting to upload ' + challenge_file + ' to '
                          + remote_dir)
