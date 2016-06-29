@@ -5,6 +5,7 @@ import logging
 import os
 import tarfile
 import re
+import shutil
 
 from d3r.celpp.task import D3RTask
 from d3r.celpp.challengedata import ChallengeDataTask
@@ -193,8 +194,8 @@ class ExternalDataSubmissionTask(D3RTask):
 
     def _is_tarmembername_safe(self, tname, chall_name):
         if tname.startswith(os.sep):
-            msg = ('Skipping, path starts with / :' +
-                   ' : ' + tname)
+            msg = ('Skipping, path starts with / : ' +
+                   tname)
             logger.warning(msg)
             self.append_to_email_log(msg + '\n')
             return False
@@ -223,27 +224,36 @@ class ExternalDataSubmissionTask(D3RTask):
                 if self._is_tarmembername_safe(t.name, chall_name) is False:
                     continue
 
-                prefix_dir_removed = t.name.replace(chall_name, '', 1)
+                prefix_dir_removed = t.name.replace(chall_name + '/', '', 1)
                 logger.debug('Found entry in tar ' + t.name)
                 if t.isdir():
-                    logger.debug('Creating directory ' + prefix_dir_removed)
-                    os.makedirs(self.get_dir(), prefix_dir_removed)
+                    logger.debug('Found directory ' + prefix_dir_removed)
                     continue
-
                 if t.isfile():
                     logger.debug('Extracting file ' + prefix_dir_removed)
-                    tar.extract(t, os.path.join(self.get_dir(),
-                                                prefix_dir_removed))
+                    tar.extract(t, path=self.get_dir())
                     continue
                 msg = ('Ignoring non dir/file entry in tar ' +
                        prefix_dir_removed)
                 logger.warning(msg)
                 self.append_to_email_log(msg + '\n')
+            return chall_name
         finally:
             try:
                 tar.close()
             except Exception:
                 logger.exception('Caught exception trying to close tar')
+
+    def _move_challenge_data_package_into_task_dir(self, chall_name):
+        """Moves the contents of uncompressed challenge data package into
+           `get_dir()` of task
+        """
+        package_dir = os.path.join(self.get_dir(), chall_name)
+        for entry in os.listdir(package_dir):
+            fullpath = os.path.join(package_dir, entry)
+            logger.debug('Moving ' + fullpath)
+            shutil.move(fullpath, os.path.join(self.get_dir(), entry))
+        os.rmdir(package_dir)
 
     def _get_summary_of_docked_results(self):
         """Right now just returns an empty string
@@ -260,14 +270,27 @@ class ExternalDataSubmissionTask(D3RTask):
 
             ft = self.get_file_transfer()
             ft.connect()
+            localfile = os.path.join(self.get_dir(), chall_name)
+            logger.debug('Downloading ' +
+                         self.get_remote_challenge_data_package() + ' to ' +
+                         localfile)
             ft.download_file(self.get_remote_challenge_data_package(),
-                             os.path.join(self.get_dir(), chall_name))
+                             localfile)
         finally:
             try:
                 ft.disconnect()
             except Exception:
                 logger.exception('Caught exception trying to disconnect')
         return chall_name
+
+    def _runtask(self):
+        """Performs the download and untar of challenge data package
+        """
+        chall_file = self._download_remote_challenge_data_package()
+        chall_name = self._untar_challenge_data_package(chall_file)
+        self._move_challenge_data_package_into_task_dir(chall_name)
+        summary = self._get_summary_of_docked_results()
+        self.append_to_email_log(summary)
 
     def run(self):
         """Runs ExternalDataSubmission task
@@ -286,11 +309,7 @@ class ExternalDataSubmissionTask(D3RTask):
                                       'is False')
             return
         try:
-
-            chall_file = self._download_remote_challenge_data_package()
-            self._untar_challenge_data_package(chall_file)
-            summary = self._get_summary_of_docked_results()
-            self.append_to_email_log(summary)
+            self._runtask()
         except Exception as e:
             logger.exception('Caught exception')
             self.set_error('Caught exception ' + str(e))

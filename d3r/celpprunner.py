@@ -20,7 +20,7 @@ from d3r.celpp.vina import AutoDockVinaTask
 from d3r.celpp.challengedata import ChallengeDataTask
 from d3r.celpp.chimeraprep import ChimeraProteinLigPrepTask
 from d3r.celpp.filetransfer import FtpFileTransfer
-
+from d3r.celpp.extsubmission import ExternalDataSubmissionFactory
 
 from lockfile.pidlockfile import PIDLockFile
 
@@ -284,9 +284,8 @@ def get_task_list_for_stage(theargs, stage_name):
         task_list.append(ChimeraProteinLigPrepTask(theargs.latest_weekly,
                                                    theargs))
     if stage_name == 'extsubmission':
-        # extfac = ExternalDataSubmissionFactory(theargs.latest_weekly, theargs)
-        # task_list.extend(extfac.get_external_data_submissions())
-        pass
+        extfac = ExternalDataSubmissionFactory(theargs.latest_weekly, theargs)
+        task_list.extend(extfac.get_external_data_submissions())
 
     if stage_name == 'evaluation':
         # use util function call to get all evaluation tasks

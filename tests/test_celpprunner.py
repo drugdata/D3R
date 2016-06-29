@@ -602,6 +602,22 @@ class TestCelppRunner(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
+    def test_get_task_list_for_stage_extsubmission(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            theargs = D3RParameters()
+            theargs.pdbdb = '/pdbdb'
+            theargs.latest_weekly = temp_dir
+            theargs.stage = 'extsubmission'
+            try:
+                celpprunner.get_task_list_for_stage(theargs, 'extsubmission')
+                self.fail('expected NotImplementedError')
+            except NotImplementedError:
+                pass
+
+        finally:
+            shutil.rmtree(temp_dir)
+
     def test_run_stages_createweekdir_set(self):
         temp_dir = tempfile.mkdtemp()
         try:

@@ -7,10 +7,15 @@ import unittest
 import tempfile
 import shutil
 import os
+import tarfile
 from mock import Mock
+from mock import DEFAULT
+
 from d3r.celpp.extsubmission import ExternalDataSubmissionFactory
+from d3r.celpp.extsubmission import ExternalDataSubmissionTask
 from d3r.celpp.task import D3RParameters
 from d3r.celpp import util
+from d3r.celpp.task import D3RTask
 
 """
 test_extsubmission
@@ -328,6 +333,358 @@ class TestExternalSubmission(unittest.TestCase):
             mockft.list_dirs.assert_called_with('/remote')
             mockft.list_files.assert_called_with('/remote/yuck')
             mockft.delete_file.assert_called_with('/chall/latest.txt')
+        finally:
+            shutil.rmtree(temp_dir)
+
+
+    def test_externaltask_get_set_remote_challenge_data_package(self):
+        params = D3RParameters()
+        task = ExternalDataSubmissionTask('/foo', 'name', '/remote', params)
+        self.assertEqual(task.get_remote_challenge_data_package(), '/remote')
+        task.set_remote_challenge_data_package('/blah')
+        self.assertEqual(task.get_remote_challenge_data_package(), '/blah')
+
+    def test_externaltask_can_run(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = ExternalDataSubmissionTask(temp_dir, 'name', '/remote', params)
+            self.assertTrue(task.can_run())
+
+            task.create_dir()
+            self.assertFalse(task.can_run())
+            self.assertEqual(task.get_error(), 'stage.6.name.extsubmission '
+                                               'already exists and status is '
+                                               'unknown')
+            open(os.path.join(task.get_dir(),
+                              D3RTask.COMPLETE_FILE), 'a').close()
+
+            self.assertFalse(task.can_run())
+            self.assertEqual(task.get_error(), None)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_is_tarmember_safe(self):
+        params = D3RParameters()
+        task = ExternalDataSubmissionTask('/foo', 'name',
+                                          '/remote/celpp_week12_2016_'
+                                          'dockedresults_name.tar.gz', params)
+        # path starts with /
+        val = task._is_tarmembername_safe('/celpp_week12', 'celpp_week12')
+        self.assertFalse(val)
+        self.assertEqual(task.get_email_log(), 'Skipping, path starts with '
+                                               '/ : /celpp_week12\n')
+        task.set_email_log('')
+        # path does not start with chall_name
+        val = task._is_tarmembername_safe('celpp', 'celpp_week12')
+        self.assertFalse(val)
+        self.assertEqual(task.get_email_log(), 'Skipping, path does not'
+                                               ' conform: celpp\n')
+        task.set_email_log('')
+
+        # path has .. in it
+        val = task._is_tarmembername_safe('celpp/../yo', 'celpp')
+        self.assertFalse(val)
+        self.assertEqual(task.get_email_log(), 'Skipping, found .. in path:'
+                                               ' celpp/../yo\n')
+        task.set_email_log('')
+        chall_name = 'celpp_week12_2016_dockedresults_name'
+        # valid path
+        val = task._is_tarmembername_safe(chall_name + '/5xjv/yo.pdb',
+                                          chall_name)
+        self.assertTrue(val)
+        self.assertEqual(task.get_email_log(), '')
+
+
+    def test_untar_challenge_data_package_no_tarfile(self):
+
+        params = D3RParameters()
+        task = ExternalDataSubmissionTask('/foo', 'name',
+                                          '/remote/hello.tar.gz', params)
+        try:
+            task._untar_challenge_data_package('hello')
+            self.fail('Expected IOError')
+        except IOError:
+            pass
+
+    def create_good_tarfile(self, temp_dir, nameprefix):
+        tfiledir = os.path.join(temp_dir, nameprefix)
+        tfile = tfiledir + '.tar.gz'
+
+        os.makedirs(tfiledir)
+        candidateone = '5juw'
+        candidateonedir = os.path.join(tfiledir, candidateone)
+        os.makedirs(candidateonedir)
+
+        mypdb = 'apo-5juw_2eb2_docked.pdb'
+        mypdbfile = os.path.join(candidateonedir, mypdb)
+        f = open(mypdbfile, 'w')
+        f.write('mypdb')
+        f.flush()
+        f.close()
+
+        mymol = 'apo-5juw_2eb2_docked.mol'
+        mymolfile = os.path.join(candidateonedir, mymol)
+        f = open(mymolfile, 'w')
+        f.write('mymol')
+        f.flush()
+        f.close()
+
+        tar = tarfile.open(tfile, 'w:gz')
+        tar.add(candidateonedir, arcname=nameprefix + '/' + candidateone)
+        tar.close()
+        shutil.rmtree(tfiledir)
+
+        return tfile
+
+    def create_bad_tarfile_dotdot_path(self, temp_dir, nameprefix):
+        tfiledir = os.path.join(temp_dir, nameprefix)
+        tfile = tfiledir + '.tar.gz'
+
+        os.makedirs(tfiledir)
+        candidateone = '5juw'
+        candidateonedir = os.path.join(tfiledir, candidateone)
+        os.makedirs(candidateonedir)
+
+        mypdb = 'apo-5juw_2eb2_docked.pdb'
+        mypdbfile = os.path.join(candidateonedir, mypdb)
+        f = open(mypdbfile, 'w')
+        f.write('mypdb')
+        f.flush()
+        f.close()
+
+        mymol = 'apo-5juw_2eb2_..docked.mol'
+        mymolfile = os.path.join(candidateonedir, mymol)
+        f = open(mymolfile, 'w')
+        f.write('mymol')
+        f.flush()
+        f.close()
+
+        # add in a symlink for fun
+        os.symlink(mymol, os.path.join(candidateonedir,'hello'))
+
+        tar = tarfile.open(tfile, 'w:gz')
+        tar.add(candidateonedir, arcname='/' + nameprefix + '/' + candidateone)
+        tar.close()
+        shutil.rmtree(tfiledir)
+
+        return tfile
+
+    def test_untar_challenge_data_package_good_tarfile(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = ExternalDataSubmissionTask(temp_dir, 'hello',
+                                          'hi', params)
+            task.create_dir()
+            tfile = self.create_good_tarfile(task.get_dir(), 'hello')
+            c = task._untar_challenge_data_package('hello.tar.gz')
+            self.assertEqual(c, 'hello')
+            self.assertEqual(task.get_email_log(), None)
+            candidate = os.path.join(task.get_dir(), 'hello', '5juw')
+            self.assertTrue(os.path.isdir(candidate))
+            mypdb = os.path.join(candidate,
+                                 'apo-5juw_2eb2_docked.pdb')
+            mymol = os.path.join(candidate,
+                                 'apo-5juw_2eb2_docked.mol')
+            self.assertTrue(os.path.isfile(mypdb))
+            self.assertTrue(os.path.isfile(mymol))
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_untar_challenge_data_package_dotdot_tarfile(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = ExternalDataSubmissionTask(temp_dir, 'hello',
+                                          'hi', params)
+            task.create_dir()
+            tfile = self.create_bad_tarfile_dotdot_path(task.get_dir(), 'hello')
+            c = task._untar_challenge_data_package('hello.tar.gz')
+            self.assertEqual(c, 'hello')
+            self.assertEqual(task.get_email_log(), 'Skipping, found .. in '
+                                                   'path: hello/5juw/apo-'
+                                                   '5juw_2eb2_..docked.mol\n'
+                                                   'Ignoring non dir/file '
+                                                   'entry in tar 5juw/hello\n')
+            candidate = os.path.join(task.get_dir(), 'hello', '5juw')
+            self.assertTrue(os.path.isdir(candidate))
+            mypdb = os.path.join(candidate,
+                                 'apo-5juw_2eb2_docked.pdb')
+            mymol = os.path.join(candidate,
+                                 'apo-5juw_2eb2.._docked.mol')
+            self.assertTrue(os.path.isfile(mypdb))
+            self.assertFalse(os.path.isfile(mymol))
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_untar_challenge_data_package_wrong_prefix(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = ExternalDataSubmissionTask(temp_dir, 'yo',
+                                          'hi', params)
+            task.create_dir()
+            tfile = self.create_good_tarfile(task.get_dir(),
+                                             'yo')
+            shutil.move(tfile, os.path.join(task.get_dir(),
+                                            'byte.tar.gz'))
+            c = task._untar_challenge_data_package('byte.tar.gz')
+            self.assertEqual(c, 'byte')
+
+            candidate = os.path.join(task.get_dir(), 'hello', '5juw')
+            self.assertFalse(os.path.isdir(candidate))
+            mypdb = os.path.join(candidate,
+                                 'apo-5juw_2eb2_docked.pdb')
+            mymol = os.path.join(candidate,
+                                 'apo-5juw_2eb2.._docked.mol')
+            self.assertFalse(os.path.isfile(mypdb))
+            self.assertFalse(os.path.isfile(mymol))
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_move_challenge_data_package_into_task_dir_raises_exception(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = ExternalDataSubmissionTask(temp_dir, 'yo',
+                                          'hi', params)
+            task.create_dir()
+            try:
+                task._move_challenge_data_package_into_task_dir('foo')
+                self.fail('expected IOError')
+            except OSError:
+                pass
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_move_challenge_data_package_into_task_dir_valid(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = ExternalDataSubmissionTask(temp_dir, 'yo',
+                                          'hi', params)
+            task.create_dir()
+            basedir = os.path.join(task.get_dir(), 'foo')
+            os.makedirs(basedir)
+            can1 = os.path.join(basedir, '5juw')
+            os.makedirs(can1)
+            pdb1 = os.path.join(can1, 'apo.pdb')
+            open(pdb1, 'a').close()
+            mol1 = os.path.join(can1, 'apo.mol')
+            open(mol1, 'a').close()
+
+            can2 = os.path.join(basedir, 'abcd')
+            os.makedirs(can2)
+            pdb2 = os.path.join(can2, 'apo.pdb')
+            open(pdb2, 'a').close()
+            mol2 = os.path.join(can2, 'apo.mol')
+            open(mol2, 'a').close()
+
+            task._move_challenge_data_package_into_task_dir('foo')
+            can3 = os.path.join(task.get_dir(), '5juw')
+            can4 = os.path.join(task.get_dir(), 'abcd')
+            self.assertTrue(os.path.isdir(can3))
+            self.assertTrue(os.path.isdir(can4))
+            self.assertTrue(os.path.isfile(os.path.join(can3, 'apo.pdb')))
+            self.assertTrue(os.path.isfile(os.path.join(can3, 'apo.mol')))
+            self.assertTrue(os.path.isfile(os.path.join(can4, 'apo.pdb')))
+            self.assertTrue(os.path.isfile(os.path.join(can4, 'apo.mol')))
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_summary_of_docked_results(self):
+        params = D3RParameters()
+        task = ExternalDataSubmissionTask('/foo', 'yo',
+                                          'hi', params)
+        self.assertEqual(task._get_summary_of_docked_results(), '')
+
+    def test__download_remote_challenge_data_package_raise_exception(self):
+        params = D3RParameters()
+        task = ExternalDataSubmissionTask('/foo', 'yo',
+                                          'hi', params)
+        try:
+            task._download_remote_challenge_data_package()
+            self.fail('Expected attribute error')
+        except AttributeError:
+            pass
+
+    def test__download_remote_challenge_data_package_success(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            pkg = '/remote/celpp2_3.tar.gz'
+            task = ExternalDataSubmissionTask(temp_dir, 'yo',
+                                              pkg, params)
+            task.create_dir()
+            mockft = D3RParameters()
+            mockft.connect = Mock(return_value=None)
+            mockft.download_file = Mock(return_value=True)
+            mockft.disconnect = Mock(return_value=None)
+            task.set_file_transfer(mockft)
+            val = task._download_remote_challenge_data_package()
+            self.assertEqual(val, 'celpp2_3.tar.gz')
+            localfile = os.path.join(task.get_dir(), 'celpp2_3.tar.gz')
+            mockft.download_file.assert_called_with(pkg, localfile)
+            mockft.connect.assert_called_with()
+            mockft.disconnect.assert_called_with()
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_run_unable_to_run_cause_can_run_is_false(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            pkg = '/remote/celpp2_3.tar.gz'
+            task = ExternalDataSubmissionTask(temp_dir, 'yo',
+                                              pkg, params)
+            task.create_dir()
+            task.run()
+            self.assertEqual(task.get_email_log(), None)
+            self.assertEqual(task.get_error(), 'stage.6.yo.extsubmission '
+                                               'already exists and status '
+                                               'is unknown')
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_runtask_success(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            pkg = '/remote/celpp1_2017_dockedresults_yo.tar.gz'
+            task = ExternalDataSubmissionTask(temp_dir, 'yo',
+                                              pkg, params)
+            mockft = D3RParameters()
+            mockft.connect = Mock(return_value=None)
+            mockft.download_file = Mock(return_value=True)
+            mockft.disconnect = Mock(return_value=None)
+            task.set_file_transfer(mockft)
+            task.create_dir()
+            self.create_good_tarfile(task.get_dir(),
+                                     'celpp1_2017_dockedresults_yo')
+            task._runtask()
+            self.assertEqual(task.get_error(), None)
+            self.assertEqual(task.get_email_log(), '')
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_run_fail(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            pkg = '/remote/celpp1_2017_dockedresults_yo.tar.gz'
+            task = ExternalDataSubmissionTask(temp_dir, 'yo',
+                                              pkg, params)
+            mockft = D3RParameters()
+            mockft.connect = Mock(side_effect=IOError('error'))
+            mockft.download_file = Mock(return_value=True)
+            mockft.disconnect = Mock(return_value=None)
+            task.set_file_transfer(mockft)
+            task.run()
+            self.assertEqual(task.get_error(), 'Caught exception error')
+            self.assertEqual(task.get_email_log(), None)
+
         finally:
             shutil.rmtree(temp_dir)
 
