@@ -3,6 +3,26 @@
 History
 -------
 
+1.3.0 (2016-06-29)
+---------------------
+
+* Fixed bug #45 where autodock vina task was being incorrectly
+  fed proteinligprep as input. Code now feeds it chimeraprep.
+
+* #28 Data import stage waits for TSV files to be updated before
+  downloading.  
+
+* #8 celpprunner will now kill blastnfilter if it runs beyond
+  time set via --blastnfiltertimeout flag.
+
+* #37 Added external docking submission task which downloads
+  external docked results so they can be evaluated the same
+  way as the internal docking programs.
+
+* #44 Added utility function to call external processes. To
+  reduce redundancy in the code base.
+
+
 1.2.0 (2016-06-03)
 ---------------------
 
