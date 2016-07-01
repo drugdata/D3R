@@ -15,6 +15,26 @@ logging.basicConfig( format  = '%(asctime)s: %(message)s', datefmt = '%m/%d/%y %
 #full_copy_location = ""
 #target_copy_location = ""
 
+rdkit_smiles_to_3d_sdf_text = '''
+import rdkit.Chem
+import rdkit.Chem.AllChem
+import sys
+
+if not(len(sys.argv)) == 3:
+    print "python smiles2Mol.py inputSmiles outputSdf"
+    sys.exit()
+
+smiles = open(sys.argv[1]).read().strip()
+mol = rdkit.Chem.MolFromSmiles(smiles)
+molH = rdkit.Chem.AddHs(mol)
+rdkit.Chem.AllChem.EmbedMolecule(molH)
+rdkit.Chem.AllChem.UFFOptimizeMolecule(molH)
+w = rdkit.Chem.SDWriter(sys.argv[2])
+w.write(molH)
+w.close()
+'''
+
+
 chimera_prep_text = '''
 import chimera
 import sys
@@ -99,11 +119,17 @@ def ligand_prepare(ligand_smile, out_lig_file):
         logging.info('Ligand file %s is already prepared. Skipping.' %(out_lig_file))
         return True
     # Prepare a 3D version of the ligand using babel
-    unprep_lig_file = ligand_smile.replace('.smi','_unprep.mol2')
-    commands.getoutput('babel -ismi %s -omol2 %s --gen3D' %(ligand_smile,unprep_lig_file))
+    unprep_lig_file_1 = ligand_smile.replace('.smi','_unprep_step1.sdf')
+    with open('rdkit_smiles_to_3d_sdf.py','wb') as of:
+        of.write(rdkit_smiles_to_3d_sdf_text) 
+    commands.getoutput('python rdkit_smiles_to_3d_sdf.py %s %s' %(ligand_smile, unprep_lig_file_1))
+    unprep_lig_file_2 = ligand_smile.replace('.smi','_unprep_step2.mol2')
+    commands.getoutput('babel -isdf %s -omol2 %s' %(unprep_lig_file_1, unprep_lig_file_2))
+    #unprep_lig_file = ligand_smile.replace('.smi','_unprep.mol2')
+    #commands.getoutput('babel -ismi %s -omol2 %s --gen3D' %(ligand_smile,unprep_lig_file))
     with open('chimeraPrep.py','wb') as of:
         of.write(chimera_prep_text) 
-    commands.getoutput('chimera --nogui --script "chimeraPrep.py %s %s" >& chimeraLigPrep.out' %(unprep_lig_file, out_lig_file))
+    commands.getoutput('chimera --nogui --script "chimeraPrep.py %s %s" >& chimeraLigPrep.out' %(unprep_lig_file_2, out_lig_file))
     #time.sleep(sleep_time) 
     return os.path.isfile(out_lig_file)
 
