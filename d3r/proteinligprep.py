@@ -83,7 +83,7 @@ def ligand_prepare(ligand_smile, out_lig_file):
     if os.path.isfile(out_lig_file):
         logging.info('Ligand file %s is already prepared. Skipping.' %(out_lig_file))
         return True
-    commands.getoutput("$SCHRODINGER/ligprep -WAIT -i 0 -nt -s 1 -g -ismi %s -omae %s"%(ligand_smile, out_lig_file) ) 
+    commands.getoutput("$SCHRODINGER/ligprep -WAIT -i 0 -nt -ns -ismi %s -omae %s"%(ligand_smile, out_lig_file) )
     return os.path.isfile(out_lig_file)
 
 def align_proteins (target_idtein, pre_prepare_protein, post_prepare_protein):
