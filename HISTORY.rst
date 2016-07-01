@@ -3,6 +3,12 @@
 History
 -------
 
+1.3.1 (2016-07-01)
+---------------------
+
+* In proteinligprep.py ligprep command modified. -s 1 -g flags 
+  removed and -ns flag added to preserve stereo information.
+
 1.3.0 (2016-06-29)
 ---------------------
 
