@@ -7,6 +7,7 @@ import tempfile
 import os.path
 import gzip
 import stat
+import logging
 
 from urllib2 import URLError
 from datetime import datetime
@@ -26,6 +27,7 @@ import shutil
 from datetime import date
 from d3r.celpp import util
 from d3r.celpp.util import DownloadError
+from d3r.celpp.task import D3RParameters
 
 
 class TestUtil(unittest.TestCase):
@@ -770,6 +772,46 @@ class TestUtil(unittest.TestCase):
 
         finally:
             shutil.rmtree(temp_dir)
+
+    def test_setup_logging(self):
+        logger = logging.getLogger('funlogger')
+        theargs = D3RParameters()
+        theargs.loglevel = 'INFO'
+        util.setup_logging(theargs)
+        self.assertEqual(logging.getLogger('d3r.celpp.task')
+                         .getEffectiveLevel(),
+                         logging.INFO)
+        self.assertEqual(theargs.numericloglevel, logging.INFO)
+        logger.debug('test')
+
+        theargs.loglevel = 'DEBUG'
+        util.setup_logging(theargs)
+        self.assertEqual(logging.getLogger('d3r.celpp.task')
+                         .getEffectiveLevel(),
+                         logging.DEBUG)
+        self.assertEqual(theargs.numericloglevel, logging.DEBUG)
+
+        theargs.loglevel = 'WARNING'
+        util.setup_logging(theargs)
+        self.assertEqual(logging.getLogger('d3r.celpp.task')
+                         .getEffectiveLevel(),
+                         logging.WARNING)
+        self.assertEqual(theargs.numericloglevel, logging.WARNING)
+
+        theargs.loglevel = 'ERROR'
+        util.setup_logging(theargs)
+        self.assertEqual(logging.getLogger('d3r.celpp.task')
+                         .getEffectiveLevel(),
+                         logging.ERROR)
+        self.assertEqual(theargs.numericloglevel, logging.ERROR)
+
+        theargs.loglevel = 'CRITICAL'
+        util.setup_logging(theargs)
+        self.assertEqual(logging.getLogger('d3r.celpp.task')
+                         .getEffectiveLevel(),
+                         logging.CRITICAL)
+        self.assertEqual(theargs.numericloglevel, logging.CRITICAL)
+
 
     def tearDown(self):
         pass

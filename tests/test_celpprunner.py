@@ -109,45 +109,6 @@ class TestCelppRunner(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
-    def test_setup_logging(self):
-        logger = logging.getLogger('funlogger')
-        theargs = D3RParameters()
-        theargs.loglevel = 'INFO'
-        celpprunner._setup_logging(theargs)
-        self.assertEqual(logging.getLogger('d3r.celpp.task')
-                         .getEffectiveLevel(),
-                         logging.INFO)
-        self.assertEqual(theargs.numericloglevel, logging.INFO)
-        logger.debug('test')
-
-        theargs.loglevel = 'DEBUG'
-        celpprunner._setup_logging(theargs)
-        self.assertEqual(logging.getLogger('d3r.celpp.task')
-                         .getEffectiveLevel(),
-                         logging.DEBUG)
-        self.assertEqual(theargs.numericloglevel, logging.DEBUG)
-
-        theargs.loglevel = 'WARNING'
-        celpprunner._setup_logging(theargs)
-        self.assertEqual(logging.getLogger('d3r.celpp.task')
-                         .getEffectiveLevel(),
-                         logging.WARNING)
-        self.assertEqual(theargs.numericloglevel, logging.WARNING)
-
-        theargs.loglevel = 'ERROR'
-        celpprunner._setup_logging(theargs)
-        self.assertEqual(logging.getLogger('d3r.celpp.task')
-                         .getEffectiveLevel(),
-                         logging.ERROR)
-        self.assertEqual(theargs.numericloglevel, logging.ERROR)
-
-        theargs.loglevel = 'CRITICAL'
-        celpprunner._setup_logging(theargs)
-        self.assertEqual(logging.getLogger('d3r.celpp.task')
-                         .getEffectiveLevel(),
-                         logging.CRITICAL)
-        self.assertEqual(theargs.numericloglevel, logging.CRITICAL)
-
     def test_parse_arguments(self):
         theargs = ['--stage', 'blast', 'foo']
         result = celpprunner._parse_arguments('hi', theargs)
