@@ -26,7 +26,6 @@ from lockfile.pidlockfile import PIDLockFile
 
 # create logger
 logger = logging.getLogger('d3r.celpprunner')
-LOG_FORMAT = "%(asctime)-15s %(levelname)s %(name)s %(message)s"
 
 
 def _get_lock(theargs, stage):
@@ -67,68 +66,6 @@ def _get_lock(theargs, stage):
     logger.info("Acquiring lock")
     lock.acquire(timeout=10)
     return lock
-
-
-def _setup_logging(theargs):
-    """Sets up the logging for application
-
-    Loggers are setup for:
-    d3r.celpprunner
-    d3r.celpp.blastnfilter
-    d3r.celpp.dataimport
-    d3r.celpp.glide
-    d3r.celpp.makeblastdb
-    d3r.celpp.proteinligprep
-    d3r.celpp.evaluation
-    d3r.celpp.task
-    d3r.celpp.util
-    d3r.celpp.uploader
-    d3r.celpp.chimeraprep
-
-    NOTE:  If new modules are added please add their loggers to this
-    function
-
-    The loglevel is set by theargs.loglevel and the format is set
-    by LOG_FORMAT set at the top of this module.
-    :param: theargs should have .loglevel set to one of the
-    following strings: DEBUG, INFO, WARNING, ERROR, CRITICAL
-    """
-    theargs.logformat = LOG_FORMAT
-    theargs.numericloglevel = logging.NOTSET
-    if theargs.loglevel == 'DEBUG':
-        theargs.numericloglevel = logging.DEBUG
-    if theargs.loglevel == 'INFO':
-        theargs.numericloglevel = logging.INFO
-    if theargs.loglevel == 'WARNING':
-        theargs.numericloglevel = logging.WARNING
-    if theargs.loglevel == 'ERROR':
-        theargs.numericloglevel = logging.ERROR
-    if theargs.loglevel == 'CRITICAL':
-        theargs.numericloglevel = logging.CRITICAL
-
-    logger.setLevel(theargs.numericloglevel)
-    logging.basicConfig(format=theargs.logformat)
-
-    # There should be a line below for every package aka .py file
-    # under celpp module
-    logging.getLogger('d3r.celpp.blastnfilter')\
-        .setLevel(theargs.numericloglevel)
-    logging.getLogger('d3r.celpp.challengedata')\
-        .setLevel(theargs.numericloglevel)
-    logging.getLogger('d3r.celpp.dataimport').setLevel(theargs.numericloglevel)
-    logging.getLogger('d3r.celpp.glide').setLevel(theargs.numericloglevel)
-    logging.getLogger('d3r.celpp.vina').setLevel(theargs.numericloglevel)
-    logging.getLogger('d3r.celpp.makeblastdb')\
-        .setLevel(theargs.numericloglevel)
-    logging.getLogger('d3r.celpp.proteinligprep')\
-        .setLevel(theargs.numericloglevel)
-    logging.getLogger('d3r.celpp.evaluation').setLevel(theargs.numericloglevel)
-    logging.getLogger('d3r.celpp.task').setLevel(theargs.numericloglevel)
-    logging.getLogger('d3r.celpp.util').setLevel(theargs.numericloglevel)
-    logging.getLogger('d3r.celpp.filetransfer')\
-        .setLevel(theargs.numericloglevel)
-    logging.getLogger('d3r.celpp.chimeraprep')\
-        .setLevel(theargs.numericloglevel)
 
 
 def set_andor_create_latest_weekly_parameter(theargs):
@@ -671,7 +608,7 @@ def main():
     theargs.program = sys.argv[0]
     theargs.version = d3r.__version__
 
-    _setup_logging(theargs)
+    util.setup_logging(theargs)
 
     try:
         run_stages(theargs)
