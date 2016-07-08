@@ -1,7 +1,10 @@
 __author__ = 'robswift'
 
+import logging
 from Bio import Alphabet
 from d3r.filter.filtering_sets import stabilisers, buffers, ions, excipients
+
+logger = logging.getLogger(__name__)
 
 
 class BaseFilter(object):
@@ -105,6 +108,7 @@ class HitFilter(BaseFilter):
         structure is also labeled 'tosser.'
         :param threshold: (float) percent identity threshold. Default = 0.95
         """
+        logger.debug('In filter_by_identity()')
         if threshold is None:
             threshold = HitFilter.identity_threshold
             for hit in self.query.hits:
@@ -129,7 +133,7 @@ class HitFilter(BaseFilter):
         labeled 'tosser.'
         :param threshold: (float) percent coverage threshold. Default = 0.90
         """
-
+        logger.debug('In filter_by_coverage()')
         # If the highest coverage for one or more chains is less than the threshold, then triage
         if threshold == None:
             threshold = HitFilter.coverage_threshold
@@ -152,6 +156,7 @@ class HitFilter(BaseFilter):
         labeled 'tosser.'
         :param threshold: (int) threshold value for the number of unique sequences in each hit structure. Default = 4
         """
+        logger.debug('In filter_by_sequence_count()')
         if threshold == None:
             threshold = HitFilter.sequence_threshold
             for hit in self.query.hits:
@@ -165,6 +170,7 @@ class HitFilter(BaseFilter):
         If a blast search of the wwPDB using the query sequence only returns apo hit structures, then the query will
         be labeled 'tosser'.
         """
+        logger.debug('In filter_apo()')
         if len([hit for hit in self.query.hits if hit.dock_count == 0]) == len(self.query.hits):
             for hit in self.query.hits:
                 hit.set_reason(10)
@@ -179,6 +185,7 @@ class HitFilter(BaseFilter):
         :param method: (string) an experimental structure determination method used to solve wwPDB structures.
         Default = 'x-ray diffraction'
         """
+        logger.debug('In filter_by_method()')
         if not method: method = HitFilter.method
         for hit in self.query.hits:
             if hit.exp_method != method.lower():
@@ -193,6 +200,7 @@ class HitFilter(BaseFilter):
         threshold will be labeled'tosser'.
         :param threshold: (int) threshold value for the number of unique dockable ligands in each query. Default = 1.
         """
+        logger.debug('In filter_by_dockable_ligand_count()')
         if threshold is None:
             threshold = HitFilter.dockable_ligand_threshold
             for hit in self.query.hits:
@@ -213,6 +221,7 @@ class CandidateFilter(BaseFilter):
         super(CandidateFilter, self).__init__(*args, **kwargs)
 
     def filter_for_most_similar(self):
+        logger.debug('In filter_for_most_similar()')
         # sort the hit list by decreasing MCSS size and increasing resolution
         # the most similar will be at the front of the list, the least similar will be at the end of the list.
         hits = [hit for hit in self.query.hits if not hit.triage and hit.largest_mcss]
@@ -228,6 +237,7 @@ class CandidateFilter(BaseFilter):
                     hit.set_retain_reason(1)
 
     def filter_for_least_similar(self):
+        logger.debug('In filter_for_least_similar()')
         # sort the hits by increasing MCSS size and increasing resolution
         hits = [hit for hit in self.query.hits if not hit.triage and hit.smallest_mcss]
         if hits:
@@ -242,6 +252,7 @@ class CandidateFilter(BaseFilter):
                     hit.set_retain_reason(2)
 
     def filter_holo(self):
+        logger.debug('In filter_holo()')
         hits = [hit for hit in self.query.hits if hit.resolution and not hit.triage and hit.dock_count > 0]
         if hits:
             hits.sort(key=lambda hit: hit.resolution)
@@ -257,6 +268,7 @@ class CandidateFilter(BaseFilter):
         Hits are only considered apo if: i) the number of dockable ligands is 0 and ii) all the non-dockable ligands
         may only be buffers, ions, excipients, or stabilisers (the sets in filter.filtering_sets.py).
         """
+        logger.debug('In filter_apo()')
         allowable_apo = set()
         allowable_apo.update(stabilisers)
         allowable_apo.update(buffers)

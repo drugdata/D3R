@@ -2,8 +2,11 @@ __author__ = 'robswift'
 
 
 import os
+import logging
 from d3r.filter.filter import QueryFilter
 from d3r.filter.filter import HitFilter
+
+logger = logging.getLogger(__name__)
 
 
 class InputAnalysis(object):
@@ -124,6 +127,7 @@ class InputAnalysis(object):
         self.set_number_of_monomers_one_dock()
         self.set_number_of_multimers()
         self.set_number_of_multimers_one_dock()
+        logger.debug('Writing summary.txt file to ' + out_dir)
         handle = open(os.path.join(out_dir,'summary.txt'), 'w')
         out = ['INPUT SUMMARY']
         out.append('  entries:{no:>32}'.format(no = self.number_of_structures))
@@ -134,7 +138,9 @@ class InputAnalysis(object):
         out.append('  multimers:{no:>30}'.format(no = self.number_of_multimers))
         out.append('  dockable multimers:{no:>21}'.format(no = self.number_of_multimers_one_dock))
         out.append('')
-        for l in out: handle.write("%s\n" % l)
+        for l in out:
+            logger.debug(l)
+            handle.write("%s\n" % l)
         handle.close()
 
 class OutputAnalysis(object):
@@ -179,7 +185,9 @@ class OutputAnalysis(object):
         out.append('  No. of hit sequences             <=    {no}'.format(no = HitFilter.sequence_threshold))
         out.append('  Structure determination method:        {method}'.format(method = HitFilter.method))
         out.append('')
-        for l in out: handle.write("%s\n" %l)
+        for l in out:
+            logger.debug(l)
+            handle.write("%s\n" %l)
         handle.close()
 
     def print_to_file(self, out_dir):
@@ -191,5 +199,7 @@ class OutputAnalysis(object):
             out.append('  Target: {id}|Sequences: {sc}|Hits: {hc}|'
                        'Candidates: {cc}|Elected:{ec}|PDBids: {pdbs}'.format(id=query, sc=sc, hc=hc, cc=cc, ec=ec,
                                                                              pdbs=pdb_ids))
-        for l in out: handle.write("%s\n" %l)
+        for l in out:
+            logger.debug(l)
+            handle.write("%s\n" %l)
         handle.close()

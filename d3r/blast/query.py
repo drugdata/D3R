@@ -55,6 +55,7 @@ class Query(Base):
         :param inchi: (string) the inchi string, which uniquely identifies the ligand
         :param label: (string) set to either 'dock' or 'do_not_call'
         """
+        logger.debug('In set_ligand()')
         ligand = Ligand(resname, inchi)
         if label == 'dock':
             if ligand.set_rd_mol_from_inchi():
@@ -98,8 +99,10 @@ class Query(Base):
         BLASTP and is deleted after the BLASTP search is completed.
         :return: Bio.blast.Record object
         """
+        logger.debug('In run_blast()')
         if self.sequence_count == 0:
-            print "Fasta sequences have not been added to the Target.sequences list, and BLAST cannot be run"
+            logger.error("Fasta sequences have not been added to the " +
+                         "Target.sequences list, and BLAST cannot be run")
             return False
         elif self.sequence_count == 1:
             logger.debug('Running blast_monomer')
@@ -118,10 +121,20 @@ class Query(Base):
         :return: Bio.blast.Record
         """
         records = []
+        try:
+            logger.debug('There are ' +
+                         str(len(self.sequences)) + ' to ' +
+                         'analyze but this code will only analyze '
+                         'the first sequence???')
+        except:
+            logger.exception('Caught exception logging debug information')
+
         for sequence in self.sequences:
             fasta = self.write_fasta(sequence, out_dir)
             if fasta:
+                logger.debug('Starting blastp of ' + fasta)
                 record = self.blastp(fasta, pdb_db)
+                logger.debug('Removing file ' + fasta)
                 os.remove(fasta)
                 if record:
                     records.append(record)
@@ -132,15 +145,22 @@ class Query(Base):
         Runs a BLASTP search of sequences in the wwPDB for each unique chain in a multimer.
         :param pdb_db: (string) The absolute path to a BLASTP database
         :param out_dir: (string) The absolute path to the output directory. A fasta file is writen here prior to running
-        :return: Bio.blast.Record
+        :return: Bio.blast.Record or None
         """
         records = []
+        try:
+            logger.debug('There are ' + str(len(self.sequences)) + ' to analyze')
+        except:
+            logger.exception('Caught exception logging debug information')
         for sequence in self.sequences:
             fasta = self.write_fasta(sequence, out_dir)
             if fasta:
+                logger.debug('Starting blastp of ' + fasta)
                 records.append(self.blastp(fasta, pdb_db))
+                logger.debug('Removing ' + fasta + ' file')
                 os.remove(fasta)
         if records:
+            logger.debug('Getting intersection of records')
             self.get_intersection(records)
             return records
 
@@ -152,6 +172,11 @@ class Query(Base):
         :return: record, a Bio.blast.Record object
         """
         ids=[]
+        try:
+            logger.debug('In get_intersection() examining ' +
+                         str(len(records)) + ' records')
+        except:
+            logger.exception('caught exception printing log message')
         for record in records:
             ids.append(set([self.get_pdb_id_from_alignment(a) for a in record.alignments]))
         id_intersection = set.intersection(*ids)
@@ -191,18 +216,25 @@ class Query(Base):
 
     def write_fasta(self, sequence, out_dir):
         """
-        Writes the input BioPython sequence records to a fasta file in the specified directory. If the fasta file was
-        written successfully, the absolute path to the fasta file is returned. Otherwise False is returned.
+        Writes the input BioPython sequence records to a fasta file in the
+        specified directory. If the fasta file was
+        written successfully, the absolute path to the fasta file is
+        returned. Otherwise False is returned.
         :sequence: (Bio.SeqRecord)
-        :param outdir: (string) The absolute path of the directory where the fasta file will be written
-        return: the absolute path to the fasta file
+        :param outdir: (string) The absolute path of the directory
+        where the fasta file will be written
+        return: the absolute path to the fasta file upon success or
+        False upon failure
         """
         fasta = os.path.join(os.path.abspath(out_dir), '_'.join((self.pdb_id, sequence.id)) + '.fasta')
+        logger.debug('Writing fasta file: ' + fasta)
         try:
             SeqIO.write(sequence, fasta, "fasta")
             return fasta
         except:
+            logger.exception('Caught exception')
             return False
+        return False
 
     def get_pdb_id_from_alignment(self, alignment):
         """

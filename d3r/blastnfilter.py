@@ -11,6 +11,11 @@ import logging
 logger = logging.getLogger('d3r.blastnfilter')
 LOG_FORMAT = "%(asctime)-15s %(levelname)s %(name)s %(message)s"
 
+class CommandLineParameters(object):
+    """Holds command line arguments
+    """
+    pass
+
 
 def _setup_logging(loglevel, logformat):
     """Sets up logging for the application
@@ -26,6 +31,12 @@ def _setup_logging(loglevel, logformat):
     logger.setLevel(loglevel)
     logging.basicConfig(format=logformat)
     logging.getLogger('d3r.blast.ligand').setLevel(loglevel)
+    logging.getLogger('d3r.blast.hit').setLevel(loglevel)
+    logging.getLogger('d3r.blast.hit_sequence').setLevel(loglevel)
+    logging.getLogger('d3r.blast.query').setLevel(loglevel)
+    logging.getLogger('d3r.filter.filter').setLevel(loglevel)
+    logging.getLogger('d3r.utilities.analysis').setLevel(loglevel)
+    logging.getLogger('d3r.utilities.in_put').setLevel(loglevel)
     logging.getLogger('d3r.utilities.run').setLevel(loglevel)
 
 

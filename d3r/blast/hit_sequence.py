@@ -1,5 +1,10 @@
 __author__ = 'robswift'
 
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 class HitSequence(object):
     """
 
@@ -28,6 +33,7 @@ class HitSequence(object):
         """
         returns True if a QueryAlignment object was successfully create, otherwise returns False
         """
+        logger.debug('In seq_query_alignment()')
         try:
             qa = QueryAlignment()
             pdb_id, chain_id = record.query.encode('ascii').split()[0].split('_')
@@ -40,6 +46,7 @@ class HitSequence(object):
             self.query_alignments.append(qa)
             return True
         except:
+            logger.exception('Caught exception')
             return False
 
     def sort_by_coverage(self):
@@ -85,8 +92,10 @@ class QueryAlignment(object):
         :return: Boolean
         """
         if not self.query_length or not self.alignment:
-            print "The TestSequence instance attributes, Ligand.query_length and Ligand.alignment both must be set " \
-                  "before calling the set_coverage_and_identity method."
+            logger.error("The TestSequence instance attributes, " +
+                         "Ligand.query_length and Ligand.alignment " +
+                         "both must be set " +
+                         "before calling the set_coverage_and_identity method.")
             return False
         else:
             coverage, identity = self._calculate_coverage_and_identity(self.alignment, self.query_length)
@@ -105,6 +114,7 @@ class QueryAlignment(object):
         :param record:
         :return: (float) coverage, (float) identity
         """
+        logger.debug('In _calculate_coverage_and_identity()')
         aligned_test_seq_length = 0
         identical_test_seq_length = 0
         for hsp in alignment.hsps:

@@ -1,7 +1,10 @@
 __author__ = 'robswift'
 
+import logging
 from d3r.filter.filtering_sets import do_not_call
 from d3r.blast.query import Query
+
+logger = logging.getLogger(__name__)
 
 
 def create_queries(polymer, non_polymer, ph):
@@ -13,6 +16,7 @@ def create_queries(polymer, non_polymer, ph):
     :param non_polymer: (string) the absolute path to new_release_nonpolymer.tsv
     :return: (d3r.blast.Target() object)
     """
+    logger.debug('In create_queries()')
     queries = read_sequences(polymer)
     read_ph(ph, queries)
     read_ligands(non_polymer, queries)
@@ -26,6 +30,7 @@ def read_sequences(polymer):
     :param polymer: the absolute path to a new_release_sequence.tsv file
     :return: queries a list of query objects.
     """
+    logger.debug('In read_sequences()')
     queries = []
     handle = open(polymer, 'r')
     for line in handle.readlines()[1:]:
@@ -36,6 +41,7 @@ def read_sequences(polymer):
             seq = words[2]
             queries = add_sequence(queries, seq, pdb_id, chain_id)
         except:
+            logger.exception('Caught exception')
             continue
     handle.close()
     return queries
@@ -49,6 +55,7 @@ def add_sequence(queries, seq, pdb_id, chain_id):
     :param pdb_id: The corresponding wwPDB id.
     :param chain_id: The corresponding chain id.
     """
+    logger.debug('In add_sequence()')
     added = [query.pdb_id for query in queries if query]
     if pdb_id in added:
         queries[added.index(pdb_id)].set_sequence(chain_id, seq)
@@ -68,6 +75,7 @@ def read_ligands(non_polymer, queries):
     :param non_polymer: absolute path to the pre-release non_polymer.tsv file
     :param queries, a list of target objects.
     """
+    logger.debug('In read_ligands()')
     handle = open(non_polymer, 'r')
     for line in handle.readlines()[1:]:
         words = line.split()
@@ -79,6 +87,7 @@ def read_ligands(non_polymer, queries):
                 ligand_label = label(resname)
                 add_ligand(pdb_id, resname, inchi, ligand_label, queries)
             except:
+                logger.exception('Caught exception')
                 continue
     handle.close()
 
@@ -93,6 +102,7 @@ def add_ligand(pdb_id, resname, inchi, label, queries):
     :param queries: (list) a list of target objects
     :return:
     """
+    logger.debug('In add_ligand()')
     added = [target.pdb_id for target in queries if target]
     queries[added.index(pdb_id)].set_ligand(resname, inchi, label)
 
@@ -103,6 +113,7 @@ def read_ph(ph, queries):
     :param queries:
     :return:
     """
+    logger.debug('In read_ph()')
     handle = open(ph, 'r')
     for line in handle.readlines()[1:]:
         words = line.split()
@@ -112,6 +123,7 @@ def read_ph(ph, queries):
                 exp_ph = words[1]
                 add_ph(pdb_id, exp_ph, queries)
             except:
+                logger.exception('Caught exception')
                 continue
     handle.close()
 
