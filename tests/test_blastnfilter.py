@@ -9,38 +9,58 @@ Tests for `blastnfilter` module.
 """
 
 import unittest
-import tempfile
-import logging
-import os
-import os.path
-import shutil
-from datetime import date
-from d3r import blastnfilter
 
+from d3r import blastnfilter
 
 class TestBlastnfilter(unittest.TestCase):
 
     def setUp(self):
         pass
 
-    def test_setup_logging(self):
-        logger = logging.getLogger('funlogger')
+    def test_parse_arguments(self):
+        theargs = []
+        try:
+            blastnfilter._parse_arguments('hi', theargs)
+            self.fail('expected exception')
+        except:
+            pass
 
-        blastnfilter._setup_logging(logging.INFO, blastnfilter.LOG_FORMAT)
-        self.assertEqual(logging.getLogger('d3r.blastnfilter')
-                         .getEffectiveLevel(),
-                         logging.INFO)
-        self.assertEqual(logging.getLogger('d3r.blast.ligand')
-                         .getEffectiveLevel(),
-                         logging.INFO)
-        blastnfilter._setup_logging(logging.DEBUG, blastnfilter.LOG_FORMAT)
-        self.assertEqual(logging.getLogger('d3r.blastnfilter')
-                         .getEffectiveLevel(),
-                         logging.DEBUG)
-        self.assertEqual(logging.getLogger('d3r.blast.ligand')
-                         .getEffectiveLevel(),
-                         logging.DEBUG)
+        theargs = ['--outdir', 'myoutdir',
+                   '--nonpolymertsv', 'mynonpolymertsv',
+                   '--sequencetsv', 'mysequencetsv',
+                   '--crystalpH', 'mycrystalph',
+                   '--pdbblastdb', 'mypdbblastdb',
+                   '--pdbdb', 'mypdbdb',
+                   '--compinchi', 'mycompinchi']
+        result = blastnfilter._parse_arguments('hi', theargs)
+        self.assertEqual(result.out, 'myoutdir')
+        self.assertEqual(result.non_polymer, 'mynonpolymertsv')
+        self.assertEqual(result.loglevel, 'WARNING')
+        self.assertEqual(result.polymer, 'mysequencetsv')
+        self.assertEqual(result.ph, 'mycrystalph')
+        self.assertEqual(result.blast_db, 'mypdbblastdb')
+        self.assertEqual(result.pdb_path, 'mypdbdb')
+        self.assertEqual(result.compinchi, 'mycompinchi')
+        theargs.append('--log')
+        theargs.append('DEBUG')
+        result = blastnfilter._parse_arguments('hi', theargs)
+        self.assertEqual(result.loglevel, 'DEBUG')
 
+
+    def test_main_args_set_but_invalid(self):
+        theargs = ['blastnfilter',
+                   '--outdir', 'myoutdir',
+                   '--nonpolymertsv', 'mynonpolymertsv',
+                   '--sequencetsv', 'mysequencetsv',
+                   '--crystalpH', 'mycrystalph',
+                   '--pdbblastdb', 'mypdbblastdb',
+                   '--pdbdb', 'mypdbdb',
+                   '--compinchi', 'mycompinchi']
+        try:
+            blastnfilter.main(theargs)
+            self.fail('expected exception')
+        except:
+            pass
 
     def tearDown(self):
         pass
