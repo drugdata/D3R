@@ -24,6 +24,7 @@ FRIDAY_WEEKDAY = 4
 
 DATA_SET_WEEK_PREFIX = 'dataset.week.'
 
+LOG_FORMAT = "%(asctime)-15s %(levelname)s %(name)s %(message)s"
 
 class DownloadError(Exception):
     """Exception to denote error downloading data
@@ -448,3 +449,79 @@ def run_external_command(cmd_to_run, timeout=None):
 
     out, err = p.communicate()
     return p.returncode, out, err
+
+def setup_logging(theargs):
+    """Sets up the logging for application
+
+    Loggers are setup for:
+    d3r.celpprunner
+    d3r.celpp.blastnfilter
+    d3r.celpp.dataimport
+    d3r.celpp.glide
+    d3r.celpp.makeblastdb
+    d3r.celpp.proteinligprep
+    d3r.celpp.evaluation
+    d3r.celpp.task
+    d3r.celpp.util
+    d3r.celpp.uploader
+    d3r.celpp.chimeraprep
+
+    NOTE:  If new modules are added please add their loggers to this
+    function
+
+    The loglevel is set by theargs.loglevel and the format is set
+    by LOG_FORMAT set at the top of this module.
+    :param: theargs should have .loglevel set to one of the
+    following strings: DEBUG, INFO, WARNING, ERROR, CRITICAL
+    """
+    theargs.logformat = LOG_FORMAT
+    theargs.numericloglevel = logging.NOTSET
+    if theargs.loglevel == 'DEBUG':
+        theargs.numericloglevel = logging.DEBUG
+    if theargs.loglevel == 'INFO':
+        theargs.numericloglevel = logging.INFO
+    if theargs.loglevel == 'WARNING':
+        theargs.numericloglevel = logging.WARNING
+    if theargs.loglevel == 'ERROR':
+        theargs.numericloglevel = logging.ERROR
+    if theargs.loglevel == 'CRITICAL':
+        theargs.numericloglevel = logging.CRITICAL
+
+    logger.setLevel(theargs.numericloglevel)
+    logging.basicConfig(format=theargs.logformat)
+
+    # There should be a line below for every package aka .py file
+    # under celpp module
+    logging.getLogger('d3r.blastnfilter')\
+        .setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpprunner')\
+        .setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celppreports')\
+        .setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.blastnfilter')\
+        .setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.challengedata')\
+        .setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.dataimport').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.glide').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.vina').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.makeblastdb')\
+        .setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.proteinligprep')\
+        .setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.evaluation').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.task').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.util').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.filetransfer')\
+        .setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.chimeraprep')\
+        .setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.blast.ligand').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.blast.hit').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.blast.hit_sequence').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.blast.query').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.filter.filter').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.utilities.analysis').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.utilities.in_put').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.utilities.run').setLevel(theargs.numericloglevel)
+
