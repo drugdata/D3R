@@ -33,7 +33,10 @@ def read_sequences(polymer):
     logger.debug('In read_sequences()')
     queries = []
     handle = open(polymer, 'r')
-    for line in handle.readlines()[1:]:
+    for line in handle.readlines():
+        if line.startswith('PDB_ID'):
+            continue
+
         words = line.split()
         try:
             pdb_id = words[0].lower()
