@@ -52,7 +52,8 @@ def read_sequences(polymer):
 
 def add_sequence(queries, seq, pdb_id, chain_id):
     """
-    Adds a FASTA sequence, with a specific chain and wwPDB ID, to the appropriate target object.
+    Adds a FASTA sequence, with a specific chain and wwPDB ID, to the
+    appropriate target object.
     :param queries: a list of target objects, which may be empty
     :param seq: a FASTA sequence. It will be converted to a Bio.SeqRecord
     :param pdb_id: The corresponding wwPDB id.
@@ -72,9 +73,12 @@ def add_sequence(queries, seq, pdb_id, chain_id):
 
 def read_ligands(non_polymer, queries):
     """
-    Reads the information in a new_release_structure_nonpolymer.tsv file. The ligands are mapped to the appropriate
-    target object by their wwPDB IDs. Morerover, each ligand is labeled as 'do_not_call' or 'dock' depending on whether
-    or not the resname of the ligand is found in the do_not_call set in the filter.filtering_sets module.
+    Reads the information in a new_release_structure_nonpolymer.tsv file. The
+    ligands are mapped to the appropriate
+    target object by their wwPDB IDs. Morerover, each ligand is labeled as
+    'do_not_call' or 'dock' depending on whether
+    or not the resname of the ligand is found in the do_not_call set in the
+    filter.filtering_sets module.
     :param non_polymer: absolute path to the pre-release non_polymer.tsv file
     :param queries, a list of target objects.
     """
