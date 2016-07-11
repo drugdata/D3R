@@ -26,6 +26,7 @@ DATA_SET_WEEK_PREFIX = 'dataset.week.'
 
 LOG_FORMAT = "%(asctime)-15s %(levelname)s %(name)s %(message)s"
 
+
 class DownloadError(Exception):
     """Exception to denote error downloading data
     """
@@ -450,6 +451,7 @@ def run_external_command(cmd_to_run, timeout=None):
     out, err = p.communicate()
     return p.returncode, out, err
 
+
 def setup_logging(theargs):
     """Sets up the logging for application
 
@@ -518,10 +520,11 @@ def setup_logging(theargs):
         .setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.blast.ligand').setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.blast.hit').setLevel(theargs.numericloglevel)
-    logging.getLogger('d3r.blast.hit_sequence').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.blast.hit_sequence')\
+        .setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.blast.query').setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.filter.filter').setLevel(theargs.numericloglevel)
-    logging.getLogger('d3r.utilities.analysis').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.utilities.analysis')\
+        .setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.utilities.in_put').setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.utilities.run').setLevel(theargs.numericloglevel)
-
