@@ -139,7 +139,7 @@ def run(options):
         query = queries.pop()
         query_filter(query)
         if not query.triage:
-            logger.debug('Blasting query ')
+            logger.debug('Blasting query:  ' + query.pdb_id)
             query = blast_the_query(query, pdb_db, pdb_path, fasta, out_dir, compinchi)
             logger.debug('calculate mcss')
             calculate_mcss(query)
