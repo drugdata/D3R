@@ -18,6 +18,10 @@ def create_queries(polymer, non_polymer, ph):
     """
     logger.debug('In create_queries()')
     queries = read_sequences(polymer)
+    if queries is not None:
+        logger.debug('Found ' + str(len(queries)) + ' queries from ' +
+                     polymer + ' file')
+
     read_ph(ph, queries)
     read_ligands(non_polymer, queries)
     return queries
@@ -84,7 +88,9 @@ def read_ligands(non_polymer, queries):
     """
     logger.debug('In read_ligands()')
     handle = open(non_polymer, 'r')
-    for line in handle.readlines()[1:]:
+    for line in handle.readlines():
+        if line.startswith('PDB_ID'):
+            continue
         words = line.split()
         if words:
             try:
@@ -122,7 +128,9 @@ def read_ph(ph, queries):
     """
     logger.debug('In read_ph()')
     handle = open(ph, 'r')
-    for line in handle.readlines()[1:]:
+    for line in handle.readlines():
+        if line.startswith('PDB_ID'):
+            continue
         words = line.split()
         if words:
             try:
