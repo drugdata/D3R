@@ -812,7 +812,6 @@ class TestUtil(unittest.TestCase):
                          logging.CRITICAL)
         self.assertEqual(theargs.numericloglevel, logging.CRITICAL)
 
-
     def tearDown(self):
         pass
 
