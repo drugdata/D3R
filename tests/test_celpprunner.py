@@ -10,7 +10,6 @@ Tests for `celpprunner` module.
 
 import unittest
 import tempfile
-import logging
 import os
 import os.path
 import shutil
