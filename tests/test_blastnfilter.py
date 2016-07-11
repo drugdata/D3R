@@ -12,6 +12,7 @@ import unittest
 
 from d3r import blastnfilter
 
+
 class TestBlastnfilter(unittest.TestCase):
 
     def setUp(self):
@@ -45,7 +46,6 @@ class TestBlastnfilter(unittest.TestCase):
         theargs.append('DEBUG')
         result = blastnfilter._parse_arguments('hi', theargs)
         self.assertEqual(result.loglevel, 'DEBUG')
-
 
     def test_main_args_set_but_invalid(self):
         theargs = ['blastnfilter',
