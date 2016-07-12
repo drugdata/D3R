@@ -3,6 +3,16 @@
 History
 -------
 
+1.3.2 (2016-07-12)
+--------------------
+
+* Removed #8 blastnfilter timeout since it was causing blastnfilter
+  script to hang.
+
+* Blastnfilter.py now uses argparse to parse command line arguments
+
+* Added loggging support into blastnfilter.py 
+
 1.3.1 (2016-07-01)
 ---------------------
 
