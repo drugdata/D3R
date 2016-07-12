@@ -556,47 +556,6 @@ class TestD3rTask(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
-    def test_run_external_command_cmd_times_out(self):
-        temp_dir = tempfile.mkdtemp()
-        try:
-            params = D3RParameters()
-            task = D3RTask(None, params)
-            task.set_name('foo')
-            task.set_stage(1)
-            task.set_path(temp_dir)
-            task.create_dir()
-            task.set_path(temp_dir)
-
-            # create small python script
-            script = os.path.join(temp_dir, 'yo.py')
-            f = open(script, 'w')
-            f.write('#! /usr/bin/env python\n\n')
-            f.write('import sys\n')
-            f.write('import time\n')
-            f.write('sys.stdout.write("sleeping")\n')
-            f.write('sys.stderr.write("error")\n')
-            f.write('time.sleep(1000)\n')
-            f.write('sys.exit(0)')
-            f.flush()
-            f.close()
-            os.chmod(script, stat.S_IRWXU)
-
-            ecode = task.run_external_command('hi', script, True, timeout=1)
-
-            self.assertEquals(task.get_error(), 'Non zero exit code: -100 '
-                                                'received. Standard out:  '
-                                                'Standard error: error')
-            self.assertEqual(ecode, -100)
-            self.assertEquals(task.get_status(), D3RTask.ERROR_STATUS)
-            self.assertEquals(os.path.exists(os.path.join(task.get_dir(),
-                                                          'hi.stdout')),
-                              True)
-            self.assertEquals(os.path.exists(os.path.join(task.get_dir(),
-                                                          'hi.stderr')),
-                              True)
-        finally:
-            shutil.rmtree(temp_dir)
-
     def tearDown(self):
         pass
 

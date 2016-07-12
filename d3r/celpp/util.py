@@ -402,16 +402,11 @@ def get_file_line_count(the_file):
     return counter
 
 
-def run_external_command(cmd_to_run, timeout=None):
+def run_external_command(cmd_to_run):
     """Runs command via external process
        Executes command in `cmd_to_run` which should
        be a single string command ie: ls -la or /bin/true
        :param cmd_to_run: The command with arguments to run
-       :param timeout: Sets # second to allow process to run
-                       If exceeded terminate() is called
-                       NOTE: if process is killed this way
-                             stderr and stdout output may be
-                             lost and exitcode will be -100
        :raises: All exceptions from subprocess.Popen()
        :returns: tuple (exitcode, stdout, stderr)
     """
@@ -419,34 +414,11 @@ def run_external_command(cmd_to_run, timeout=None):
     if cmd_to_run is None:
         return 256, '', 'Command must be set'
 
-    if timeout is None:
-        logger.info("Running command " + cmd_to_run)
-    else:
-        logger.info("Running command " + cmd_to_run + ' with timeout ' +
-                    str(timeout))
+    logger.info("Running command " + cmd_to_run)
 
     p = subprocess.Popen(shlex.split(cmd_to_run),
                          stdout=subprocess.PIPE,
                          stderr=subprocess.PIPE)
-
-    # wait timeout seconds for process to
-    # finish.  If its still running.  Kill
-    # it
-    if timeout is not None:
-        counter = 0
-        while counter < timeout:
-            if p.poll() is not None:
-                break
-            time.sleep(1)
-            counter += 1
-
-        # if counter exceeded timeout kill the task
-        if counter >= timeout:
-            logger.info("Process exceeded timeout calling terminate()")
-            p.terminate()
-            time.sleep(1)
-            out, err = p.communicate()
-            return -100, out, err
 
     out, err = p.communicate()
     return p.returncode, out, err

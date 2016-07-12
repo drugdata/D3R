@@ -588,7 +588,7 @@ class D3RTask(object):
         return D3RTask.UNKNOWN_STATUS
 
     def run_external_command(self, command_name, cmd_to_run,
-                             command_failure_is_fatal, timeout=None):
+                             command_failure_is_fatal):
         """Runs external command line process
 
         Method runs external process logging the command
@@ -606,8 +606,6 @@ class D3RTask(object):
                exception then status of task is set to
                D3RTask.ERROR_STATUS and failure message appended
                to email log and task.set_error is set
-        :param timeout: Sets allowed runtime of process in seconds.
-                        To allow infinite run omit value or set to None
         :return: exit code of process
         :raise: UnsetNameError if command_name is None
         :raise: UnsetCommandError if cmd_to_run is None
@@ -626,8 +624,7 @@ class D3RTask(object):
         self.append_to_email_log('Running command: ' + cmd_to_run + '\n')
 
         try:
-            returncode, out, err = util.run_external_command(cmd_to_run,
-                                                             timeout=timeout)
+            returncode, out, err = util.run_external_command(cmd_to_run)
         except Exception as e:
             logger.exception("Error caught exception")
             self.set_status(D3RTask.ERROR_STATUS)

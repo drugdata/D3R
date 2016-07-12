@@ -321,6 +321,12 @@ class BlastNFilterTask(D3RTask):
 
         make_blastdb = MakeBlastDBTask(self._path, self._args)
 
+        try:
+            loglevel = self.get_args().loglevel
+        except AttributeError:
+            logger.debug('No log level set in arguments using WARNING')
+            loglevel = 'WARNING'
+
         cmd_to_run = (self.get_args().blastnfilter + ' --nonpolymertsv ' +
                       data_import.get_nonpolymer_tsv() +
                       ' --sequencetsv ' +
@@ -333,20 +339,14 @@ class BlastNFilterTask(D3RTask):
                       data_import.get_crystalph_tsv() +
                       ' --pdbdb ' +
                       self.get_args().pdbdb +
+                      ' --log ' +
+                      loglevel +
                       ' --outdir ' + self.get_dir())
 
         blastnfilter_name = os.path.basename(self.get_args().blastnfilter)
 
-        try:
-            btimeout = int(self.get_args().blastnfiltertimeout)
-        except:
-            btimeout = None
-
-        logger.debug('BlastnFilter script timeout set to ' + str(btimeout) +
-                     ' seconds')
-
         self.run_external_command(blastnfilter_name,
-                                  cmd_to_run, False, timeout=btimeout)
+                                  cmd_to_run, False,)
 
         self.set_status(D3RTask.COMPLETE_STATUS)
 

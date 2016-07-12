@@ -687,64 +687,6 @@ class TestUtil(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
-    def test_run_external_command_success_with_timeout(self):
-        temp_dir = tempfile.mkdtemp()
-        try:
-            script = os.path.join(temp_dir, 'yo.py')
-
-            # create a small python script that outputs args passed
-            # in to standard out, writes error to standard error
-            #  and exits with 0 exit code
-            f = open(script, 'w')
-            f.write('#! /usr/bin/env python\n\n')
-            f.write('import sys\n')
-            f.write('sys.stdout.write(sys.argv[1])\n')
-            f.write('sys.stdout.write(sys.argv[2])\n')
-            f.write('sys.stderr.write("error")\n')
-            f.write('sys.exit(0)\n')
-            f.flush()
-            f.close()
-            os.chmod(script, stat.S_IRWXU)
-
-            ecode, out, err = util.run_external_command(script + ' hi how',
-                                                        timeout=10)
-
-            self.assertEqual(err, 'error')
-            self.assertEqual(out, 'hihow')
-            self.assertEqual(ecode, 0)
-
-        finally:
-            shutil.rmtree(temp_dir)
-
-    def test_run_external_command_process_exceeds_timeout(self):
-        temp_dir = tempfile.mkdtemp()
-        try:
-            script = os.path.join(temp_dir, 'yo.py')
-
-            # create a small python script that outputs args passed
-            # in to standard out, writes error to standard error
-            #  and exits with 0 exit code
-            f = open(script, 'w')
-            f.write('#! /usr/bin/env python\n\n')
-            f.write('import sys\n')
-            f.write('import time\n')
-            f.write('sys.stdout.write(sys.argv[1])\n')
-            f.write('sys.stdout.write(sys.argv[2])\n')
-            f.write('sys.stderr.write("error")\n')
-            f.write('time.sleep(10)\n')
-            f.write('sys.exit(0)\n')
-            f.flush()
-            f.close()
-            os.chmod(script, stat.S_IRWXU)
-
-            ecode, out, err = util.run_external_command(script +
-                                                        ' hi how', timeout=1)
-
-            self.assertTrue(ecode, -100)
-
-        finally:
-            shutil.rmtree(temp_dir)
-
     def test_run_external_command_fail_with_output(self):
         temp_dir = tempfile.mkdtemp()
         try:

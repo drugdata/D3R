@@ -269,7 +269,8 @@ def _parse_arguments(desc, args):
                         help='Path to BlastnFilter script '
                              '(default blastnfilter.py)')
     parser.add_argument("--blastnfiltertimeout", default=36000, type=int,
-                        help='Time in seconds script is allowed to run before'
+                        help='DOES NOT WORK WILL BE IGNORED. '
+                             'Time in seconds script is allowed to run before'
                              'being killed (default 36000)')
     parser.add_argument("--postanalysis", default='postanalysis.py',
                         help='Path to PostAnalysis script '
