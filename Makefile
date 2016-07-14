@@ -1,4 +1,4 @@
-.PHONY: clean-pyc clean-build docs clean updateversion
+.PHONY: clean-pyc clean-build docs clean updateversion singularity
 
 define BROWSER_PYSCRIPT
 import os, webbrowser, sys
@@ -26,6 +26,7 @@ help:
 	@echo "dist - package"
 	@echo "install - install the package to the active Python's site-packages"
 	@echo "updateversion - updates version value in setup.py & d3r/__init__.py"
+	@echo "singularity - Creates singularity image"
 
 clean: clean-build clean-pyc clean-test
 
@@ -92,3 +93,10 @@ updateversion:
 	grep "version" setup.py ; 
 	@echo -n "  Updated d3r/__init__.py: " ; \
 	grep "__version__" d3r/__init__.py
+
+singularity: dist
+	@echo 'Creating Singularity image'
+	@sudo singularity create -s 4096 dist/d3rcentos.img
+	@sudo singularity bootstrap dist/d3rcentos.img singularity/d3rcentos.def
+	@echo 'Singularity Image created dist/d3rcentos.img'
+	ls -l dist

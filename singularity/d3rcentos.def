@@ -1,0 +1,19 @@
+RELEASE=7
+
+if [ -n "${1:-}" ]; then
+    RELEASE="$1"
+fi
+echo "Setting RELEASE=$RELEASE"
+
+DistType "redhat"
+MirrorURL "http://mirror.centos.org/centos-${RELEASE}/${RELEASE}/os/\$basearch/"
+
+Setup
+Bootstrap
+
+InstallPkgs yum vim-minimal make python python-devel git epel-release python-pip python-argparse python-lockfile python-psutil python-biopython python-virtualenv python-tox pylint python-coverage perl-Archive-Tar perl-List-MoreUtils wget perl-Digest perl-Digest-MD5
+
+RunCmd rpm -ivh ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/2.3.0/ncbi-blast-2.3.0+-1.x86_64.rpm 
+
+Cleanup
+
