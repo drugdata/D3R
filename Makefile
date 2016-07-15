@@ -96,7 +96,12 @@ updateversion:
 
 singularity: dist
 	@echo 'Creating Singularity image'
-	@sudo singularity create -s 4096 dist/d3rcentos.img
-	@sudo singularity bootstrap dist/d3rcentos.img singularity/d3rcentos.def
-	@echo 'Singularity Image created dist/d3rcentos.img'
+	vers=`egrep '^\s+version=' setup.py | sed "s/^.*='//" | sed "s/'.*//"`; \
+	echo 'version $vers'; \
+	imgfile=`echo dist/d3r-$$vers.img` ; \
+	whfile=`echo d3r-$$vers-py2.py3-none-any.whl` ; \
+	echo 'image file $imgfile' ; \
+	sudo singularity create -s 4096 $$imgfile ; \
+	sudo singularity bootstrap $$imgfile singularity/d3rcentos.def ; \
+	echo 'Singularity Image created $imgfile'
 	ls -l dist
