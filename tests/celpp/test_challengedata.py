@@ -950,7 +950,6 @@ open(os.path.join(thedir,'lig_63N.smi'),'a').close()
             ftp = FtpFileTransfer(None)
             ftp.set_ftp_remote_challenge_dir('/challenge')
             ftp.set_ftp_connection(mockftp)
-            ftp.connect()
             chall.set_file_transfer(ftp)
 
             dimport = DataImportTask(temp_dir, params)

@@ -375,6 +375,8 @@ Blastnfilter Summary
             logger.debug('Attempting to upload ' + challenge_file + ' to '
                          + remote_dir)
 
+            logger.debug('Connecting to remote server to upload challenge data'
+                         'package')
             # connect to remote server
             uploader.connect()
 
