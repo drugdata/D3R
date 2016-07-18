@@ -3,6 +3,12 @@
 History
 -------
 
+1.3.3 (2016-07-18)
+--------------------
+
+* Fixed issue #60 where challenge data package was NOT being
+  uploaded to remote server
+
 1.3.2 (2016-07-12)
 --------------------
 
