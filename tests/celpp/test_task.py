@@ -16,7 +16,6 @@ Tests for `task` module.
 import shutil
 import platform
 import os
-import stat
 
 from d3r.celpp.task import D3RParameters
 from d3r.celpp.task import UnsetPathError
