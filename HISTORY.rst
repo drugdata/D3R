@@ -3,6 +3,12 @@
 History
 -------
 
+1.3.4
+--------------------
+
+* Fixed issue #58 in chimera_proteinligprep.py code now uses rdkit 
+  for 3d conf gen instead of babel
+
 1.3.3 (2016-07-18)
 --------------------
 
