@@ -102,6 +102,6 @@ singularity: dist
 	whfile=`echo d3r-$$vers-py2.py3-none-any.whl` ; \
 	echo 'image file $imgfile' ; \
 	sudo singularity create -s 4096 $$imgfile ; \
-	sudo singularity bootstrap $$imgfile singularity/d3rcentos.def ; \
+	sudo singularity bootstrap $$imgfile singularity/d3rcentos.def $$vers; \
 	echo 'Singularity Image created $imgfile'
 	ls -l dist
