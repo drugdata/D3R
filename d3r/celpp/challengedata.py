@@ -375,6 +375,9 @@ Blastnfilter Summary
             logger.debug('Attempting to upload ' + challenge_file + ' to '
                          + remote_dir)
 
+            # connect to remote server
+            uploader.connect()
+
             if uploader.upload_file_direct(challenge_file, remote_dir,
                                            os.path.basename(challenge_file)) \
                     is False:
