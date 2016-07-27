@@ -29,6 +29,7 @@ mol = rdkit.Chem.MolFromSmiles(smiles)
 molH = rdkit.Chem.AddHs(mol)
 rdkit.Chem.AllChem.EmbedMolecule(molH)
 rdkit.Chem.AllChem.UFFOptimizeMolecule(molH)
+
 w = rdkit.Chem.SDWriter(sys.argv[2])
 w.write(molH)
 w.close()
