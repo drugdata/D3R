@@ -11,7 +11,7 @@ MirrorURL "http://mirror.centos.org/centos-${RELEASE}/${RELEASE}/os/\$basearch/"
 Setup
 Bootstrap
 
-InstallPkgs yum vim-minimal make python python-devel git wget 
+InstallPkgs yum vim-minimal make python python-devel git wget tar openbabel 
 
 InstallPkgs epel-release 
 
@@ -19,6 +19,10 @@ InstallPkgs python-pip python-argparse python-psutil
 InstallPkgs python-biopython python-virtualenv python-tox pylint 
 InstallPkgs python-coverage perl-Archive-Tar perl-List-MoreUtils 
 InstallPkgs perl-Digest perl-Digest-MD5
+
+# install python-rdkit
+RunCmd "cd /etc/yum.repos.d;wget https://copr.fedorainfracloud.org/coprs/giallu/rdkit/repo/epel-6/giallu-rdkit-epel-6.repo"
+InstallPkgs python-rdkit
 
 RunCmd "pip install xlsxwriter"
 RunCmd "pip install ftpretty"
@@ -30,6 +34,10 @@ InstallFile singularity/runscript.sh /singularity
 RunCmd "chmod a+x /singularity"
 RunCmd "pip install /d3r-${d3rversion}-py2.py3-none-any.whl"
 RunCmd "rpm -ivh ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/2.3.0/ncbi-blast-2.3.0+-1.x86_64.rpm"
+
+RunCmd "cd /;wget http://vina.scripps.edu/download/autodock_vina_1_1_2_linux_x86.tgz;tar -zxf autodock_vina_1_1_2_linux_x86.tgz;mv autodock_vina_1_1_2_linux_x86/bin/* /usr/local/bin/."
+
+RunCmd "cd /usr/local;wget http://mgltools.scripps.edu/downloads/downloads/tars/releases/REL1.5.6/mgltools_x86_64Linux2_1.5.6.tar.gz;tar -zxf mgltools_x86_64Linux2_1.5.6.tar.gz;cd mgltools_x86_64Linux2_1.5.6;./install.sh -d /usr/local/mgltools"
 
 Cleanup
 
