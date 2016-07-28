@@ -24,14 +24,14 @@ from d3r.celpp.task import UnsetNameError
 from d3r.celpp.task import UnsetCommandError
 from d3r.celpp.task import UnsetFileNameError
 from d3r.celpp.task import D3RTask
-from d3r.celpp.uploader import FileUploader
+from d3r.celpp.filetransfer import FtpFileTransfer
 
 
 class MockException(Exception):
     pass
 
 
-class MockFileUploader(FileUploader):
+class MockFileTransfer(FtpFileTransfer):
     """Fake FileUploader
     """
     def __init__(self):
@@ -39,6 +39,7 @@ class MockFileUploader(FileUploader):
         self._upload_summary_except_object = None
         self._upload_summary = None
         self._upload_files = None
+        self._connect = True
 
     def set_upload_files(self, val):
         self._upload_files = val
@@ -72,6 +73,15 @@ class MockFileUploader(FileUploader):
 
         return self._upload_summary
 
+    def set_connect(self, val):
+        self._connect = val
+
+    def connect(self):
+        return self._connect
+
+    def disconnect(self):
+        pass
+
 
 class TestD3rTask(unittest.TestCase):
 
@@ -91,18 +101,18 @@ class TestD3rTask(unittest.TestCase):
         task.set_stage(4)
         task.set_status(D3RTask.START_STATUS)
         task.set_error('error')
-        task.set_file_uploader('yah')
+        task.set_file_transfer('yah')
 
         self.assertEqual(task.get_name(), 'foo')
         self.assertEqual(task.get_path(), 'blah')
         self.assertEqual(task.get_stage(), 4)
         self.assertEqual(task.get_status(), D3RTask.START_STATUS)
         self.assertEqual(task.get_error(), 'error')
-        self.assertEqual(task.get_file_uploader(), 'yah')
+        self.assertEqual(task.get_file_transfer(), 'yah')
 
         params.ftpconfig = '/somefile'
         task = D3RTask('/path', params)
-        self.assertEqual(task.get_file_uploader(), None)
+        self.assertEqual(task.get_file_transfer(), None)
 
     def test_get_dir_name(self):
         params = D3RParameters()
@@ -150,6 +160,23 @@ class TestD3rTask(unittest.TestCase):
         task.set_name('foo')
 
         self.assertEqual(task.get_dir(), '/blah/stage.1.foo')
+
+    def test_get_set_email_log(self):
+        params = D3RParameters()
+        task = D3RTask(None, params)
+        self.assertEqual(task.get_email_log(), None)
+        task.set_email_log('hi')
+        self.assertEqual(task.get_email_log(), 'hi')
+
+    def test_get_program_name(self):
+        params = D3RParameters()
+        task = D3RTask(None, params)
+        self.assertTrue(task._get_program_name().find('task.py') > 0,
+                        task._get_program_name())
+        params.program = 'proggy'
+        params.version = 'versy'
+        task = D3RTask(None, params)
+        self.assertEqual(task._get_program_name(), 'proggy versy')
 
     def test_get_uploadable_files(self):
         task = D3RTask(None, D3RParameters())
@@ -208,10 +235,10 @@ class TestD3rTask(unittest.TestCase):
 
         # try calling upload_task where _file_uploader.upload_files
         # throws exception
-        uploader = MockFileUploader()
+        uploader = MockFileTransfer()
         uploader.set_upload_files_exception(MockException('hi'))
         task = D3RTask(None, D3RParameters())
-        task.set_file_uploader(uploader)
+        task.set_file_transfer(uploader)
         task._upload_task()
 
         # try calling where upload_summary throws exception

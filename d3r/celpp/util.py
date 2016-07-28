@@ -4,16 +4,27 @@ import os
 import logging
 import re
 import urllib
-import time
 import gzip
+import subprocess
+import shlex
+import time
+import urllib2
+from dateutil.parser import parse
 from datetime import date
+from datetime import datetime
 from datetime import timedelta
+from dateutil.tz import tzlocal
+
 
 logger = logging.getLogger(__name__)
 
 DAYS_IN_WEEK = 7
 
+FRIDAY_WEEKDAY = 4
+
 DATA_SET_WEEK_PREFIX = 'dataset.week.'
+
+LOG_FORMAT = "%(asctime)-15s %(levelname)s %(name)s %(message)s"
 
 
 class DownloadError(Exception):
@@ -181,6 +192,62 @@ def get_celpp_week_number_from_path(dir):
     return weeknum
 
 
+def get_previous_friday_from_date(the_datetime):
+    """Given a date, function finds date of previous Friday
+       Given `the_date` code finds the date of the previous
+       Friday with same hour, minute, and second.
+       :return: datetime object containing date of previous Friday
+       :raises: Exception if `the_date` is None
+    """
+    if the_datetime is None:
+        raise Exception('Must pass a valid datetime')
+    assert isinstance(the_datetime, datetime)
+
+    weekday = the_datetime.weekday()
+    if weekday == FRIDAY_WEEKDAY:
+        return the_datetime
+
+    if weekday > FRIDAY_WEEKDAY:
+        tdelta = timedelta(days=(weekday - FRIDAY_WEEKDAY))
+    else:
+        if weekday < FRIDAY_WEEKDAY:
+            tdelta = timedelta(days=(3 + weekday))
+
+    return the_datetime - tdelta
+
+
+def is_datetime_after_celpp_week_start(the_datetime):
+    """Determines if `the_datetime` is after celpp week start
+    :returns: True if yes otherwise False
+    :raises Exception: If `the_datetime` is not a valid datetime object
+    """
+    if the_datetime is None:
+        raise Exception('Must pass a valid datetime')
+    assert isinstance(the_datetime, datetime)
+
+    prev_friday = get_previous_friday_from_date(datetime.now(tzlocal()))
+
+    if the_datetime >= prev_friday:
+        return True
+
+    return False
+
+
+def has_url_been_updated_since_start_of_celpp_week(url):
+    """Checks if url has been updated since start of celpp week
+    """
+    if url is None:
+        raise Exception('url cannot be None')
+
+    req = urllib2.Request(url)
+    resp = urllib2.urlopen(req)
+
+    last_modified = resp.info()['Last-Modified']
+    logger.debug(url + ' last modified: ' + last_modified)
+    lmdate = parse(last_modified)
+    return is_datetime_after_celpp_week_start(lmdate)
+
+
 def get_celpp_week_of_year_from_date(the_date):
     """ Returns CELPP week of year
         The CELPP week of year matches ISO week of year, but it
@@ -333,3 +400,103 @@ def get_file_line_count(the_file):
         counter += 1
     f.close()
     return counter
+
+
+def run_external_command(cmd_to_run):
+    """Runs command via external process
+       Executes command in `cmd_to_run` which should
+       be a single string command ie: ls -la or /bin/true
+       :param cmd_to_run: The command with arguments to run
+       :raises: All exceptions from subprocess.Popen()
+       :returns: tuple (exitcode, stdout, stderr)
+    """
+
+    if cmd_to_run is None:
+        return 256, '', 'Command must be set'
+
+    logger.info("Running command " + cmd_to_run)
+
+    p = subprocess.Popen(shlex.split(cmd_to_run),
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE)
+
+    out, err = p.communicate()
+    return p.returncode, out, err
+
+
+def setup_logging(theargs):
+    """Sets up the logging for application
+
+    Loggers are setup for:
+    d3r.celpprunner
+    d3r.celpp.blastnfilter
+    d3r.celpp.dataimport
+    d3r.celpp.glide
+    d3r.celpp.makeblastdb
+    d3r.celpp.proteinligprep
+    d3r.celpp.evaluation
+    d3r.celpp.task
+    d3r.celpp.util
+    d3r.celpp.uploader
+    d3r.celpp.chimeraprep
+
+    NOTE:  If new modules are added please add their loggers to this
+    function
+
+    The loglevel is set by theargs.loglevel and the format is set
+    by LOG_FORMAT set at the top of this module.
+    :param: theargs should have .loglevel set to one of the
+    following strings: DEBUG, INFO, WARNING, ERROR, CRITICAL
+    """
+    theargs.logformat = LOG_FORMAT
+    theargs.numericloglevel = logging.NOTSET
+    if theargs.loglevel == 'DEBUG':
+        theargs.numericloglevel = logging.DEBUG
+    if theargs.loglevel == 'INFO':
+        theargs.numericloglevel = logging.INFO
+    if theargs.loglevel == 'WARNING':
+        theargs.numericloglevel = logging.WARNING
+    if theargs.loglevel == 'ERROR':
+        theargs.numericloglevel = logging.ERROR
+    if theargs.loglevel == 'CRITICAL':
+        theargs.numericloglevel = logging.CRITICAL
+
+    logger.setLevel(theargs.numericloglevel)
+    logging.basicConfig(format=theargs.logformat)
+
+    # There should be a line below for every package aka .py file
+    # under celpp module
+    logging.getLogger('d3r.blastnfilter')\
+        .setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpprunner')\
+        .setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celppreports')\
+        .setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.blastnfilter')\
+        .setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.challengedata')\
+        .setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.dataimport').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.glide').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.vina').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.makeblastdb')\
+        .setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.proteinligprep')\
+        .setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.evaluation').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.task').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.util').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.filetransfer')\
+        .setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.chimeraprep')\
+        .setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.blast.ligand').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.blast.hit').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.blast.hit_sequence')\
+        .setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.blast.query').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.filter.filter').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.utilities.analysis')\
+        .setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.utilities.in_put').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.utilities.run').setLevel(theargs.numericloglevel)

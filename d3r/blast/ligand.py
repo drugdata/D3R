@@ -41,6 +41,7 @@ class Ligand(object):
                     resname = words[1]
                     Ligand.inchi_component[format(resname)] = format(inchi)
                 except:
+                    logger.exception('Caught exception trying to read ' + str(compinchi) + ' file')
                     continue
             handle.close()
         except IOError:
@@ -66,7 +67,6 @@ class Ligand(object):
         :return: Boolean
         """
         if not inchi and not self.inchi:
-            print("Please set an inchi string")
             logger.error('No inchi string set')
             return False
         elif not inchi and self.inchi:
@@ -108,6 +108,8 @@ class Ligand(object):
         :return: the MCSS (rd mol object) or None
         """
         try:
+            logger.debug('Trying to find MCS')
+
             res = rdFMCS.FindMCS([reference.rd_mol, self.rd_mol], timeout=Ligand.FINDMCS_TIMEOUT)
             mcss = Chem.MolFromSmarts(res.smartsString)
             return mcss
@@ -122,6 +124,7 @@ class Ligand(object):
         :param ref_name: d3r.blast.ligand object with the rd_mol attribute set
         :param mcss_mol: the maximum common substructure (rd mol object)
         """
+        logger.debug('set_mcss()')
         mcss = MCSS(reference.resname, mcss_mol)
         mcss.set_size()
         mcss.test = self.resname

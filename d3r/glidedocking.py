@@ -29,31 +29,42 @@ def grid (grid_center, prep_pro, prefix):
     else:
         return False
 
-def dock(ligand_file, out_grid, protein_title):
+def dock(ligand_file, out_grid, protein_title, precision='SP'):
+    allowed_precisions = ['SP','XP']
+    if not(precision in allowed_precisions):
+        logging.info('Invalid precision setting %s. Must be one of %r. Switching precision to %s' %(precision, allowed_precisions, allowed_precisions[0]))
+        precision = allowed_precisions[0]
     dock_in = protein_title + "_dock.in"
-    dock_1 = "GRIDFILE \t %s \n"%out_grid
-    dock_2 = "LIGANDFILE \t %s \n"%ligand_file
-    dock_3 = "POSTDOCK_XP_DELE \t 0.5 \n"
-    dock_4 = "PRECISION \t XP \n"
-    dock_5 = "EXPANDED_SAMPLING \t True \n"
-    dock_6 = "POSES_PER_LIG \t 10 \n"
-    dock_7 = "WRITE_XP_DESC \t False \n"
+    dock_lines = []
+    dock_lines += ["GRIDFILE \t %s \n"%out_grid]
+    dock_lines += ["LIGANDFILE \t %s \n"%ligand_file]
+    dock_lines += ["POSES_PER_LIG \t 10 \n"]
+    if precision == 'SP':
+        dock_lines += ["PRECISION \t XP \n"]
+    elif precision == 'XP':
+        dock_lines += ["PRECISION \t XP \n"]
+        dock_lines += ["POSTDOCK_XP_DELE \t 0.5 \n"]
+        dock_lines += ["EXPANDED_SAMPLING \t True \n"]
+        dock_lines += ["WRITE_XP_DESC \t False \n"]
     f = open(dock_in, "w")
-    for dock_line in (dock_1, dock_2, dock_3, dock_4, dock_5, dock_6, dock_7):
+    for dock_line in dock_lines:
         f.writelines(dock_line)
     f.close()
     out_dock_file = protein_title + "_dock_pv.maegz"
     commands.getoutput("$SCHRODINGER/glide -WAIT %s"%dock_in)
     return out_dock_file
 
-def main_glide (stage_3_result, stage_4_working, update= True):
+def main_glide (stage_3_result, stage_4_working, update= True, usexp=False):
+    if usexp:
+        precision = 'XP'
+    else:
+        precision = 'SP'
     os.chdir(stage_4_working)
     current_dir = os.getcwd()
     dockable_paths = []
-    for all_pdb_path in os.walk(stage_3_result):
-        if all_pdb_path[0] != stage_3_result:
+    for all_pdb_path in os.walk(stage_3_result): 
+       if all_pdb_path[0] != stage_3_result:
             dockable_paths.append(all_pdb_path[0])
-
     for dockable_path in dockable_paths:
         commands.getoutput("cp -r %s %s" %(dockable_path, stage_4_working))
         target_name = os.path.basename(dockable_path)
@@ -118,11 +129,11 @@ def main_glide (stage_3_result, stage_4_working, update= True):
                 commands.getoutput("cp ../%s ." %(ligand_mae))
                 logging.info("Trying to dock...")
                 if update:
-                    out_dock = dock("ligand.mae", out_grid, candidate_prefix)
+                    out_dock = dock("ligand.mae", out_grid, candidate_prefix, precision=precision)
                 else:
                     out_dock = candidate_prefix + "_dock_pv.maegz"
                     if not os.path.isfile(out_dock):
-                        out_dock = dock(ligand_mae, out_grid, candidate_prefix)
+                        out_dock = dock(ligand_mae, out_grid, candidate_prefix, precision=precision)
                 logging.info("Finished docking, beginning post-docking file conversion")
                 
                 # Split the results into receptor and poses
@@ -160,15 +171,20 @@ if ("__main__") == (__name__):
     parser.add_argument("-s", "--structuredir", metavar="PATH", help = "PATH where we can find the proteinligprep output")
     parser.add_argument("-o", "--outdir", metavar = "PATH", help = "PATH where we will put the docking output")
     parser.add_argument("-u", "--update", action = "store_true",  help = "Update the docking result", default = False) 
+    parser.add_argument("-x", "--usexp", action = "store_true",  help = "Perform docking using glide XP instead of SP", default = False) 
     logger = logging.getLogger()
     logging.basicConfig( format  = '%(asctime)s: %(message)s', datefmt = '%m/%d/%y %I:%M:%S', filename = 'final.log', filemode = 'w', level = logging.INFO )
     opt = parser.parse_args()
     proteinligprep_dir = opt.structuredir
     dock_result_dir = opt.outdir
     update = opt.update
+    usexp = opt.usexp
     #running under this dir
     running_dir = os.getcwd()
-    main_glide(proteinligprep_dir, dock_result_dir, update = update)
+    main_glide(proteinligprep_dir, 
+               dock_result_dir, 
+               update = update,
+               usexp = usexp)
     #move the final log file to the result dir
     log_file_path = os.path.join(running_dir, 'final.log')
     commands.getoutput("mv %s %s"%(log_file_path, dock_result_dir))

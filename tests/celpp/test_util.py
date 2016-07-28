@@ -6,6 +6,15 @@ import unittest
 import tempfile
 import os.path
 import gzip
+import stat
+import logging
+
+from urllib2 import URLError
+from datetime import datetime
+from dateutil.tz import tzutc
+from dateutil.tz import tzlocal
+from datetime import timedelta
+
 
 """
 test_task
@@ -18,11 +27,16 @@ import shutil
 from datetime import date
 from d3r.celpp import util
 from d3r.celpp.util import DownloadError
+from d3r.celpp.task import D3RParameters
 
 
 class TestUtil(unittest.TestCase):
     def setUp(self):
         pass
+
+    def get_total_seconds(self, td):
+        return (td.microseconds +
+                (td.seconds + td.days * 24 * 3600) * 10**6) / 10**6
 
     def test_find_latest_year(self):
         temp_dir = tempfile.mkdtemp()
@@ -489,6 +503,256 @@ class TestUtil(unittest.TestCase):
                                                    + util.DATA_SET_WEEK_PREFIX
                                                    + '12')
         self.assertEqual(foo, '12')
+
+    def test_get_previous_date_of_previous_friday_from_date(self):
+        # test None passed in
+        try:
+            util.get_previous_friday_from_date(None)
+            self.fail('Expected exception')
+        except Exception:
+            pass
+
+        # test non date passed in
+        try:
+            util.get_previous_friday_from_date('hello')
+            self.fail('Expected exception')
+        except Exception:
+            pass
+
+        # test date on Friday
+        dt = datetime(2016, 6, 17, 8, 0, 5)
+        newdt = util.get_previous_friday_from_date(dt)
+        self.assertTrue(newdt.year == 2016)
+        self.assertTrue(newdt.day == 17)
+        self.assertTrue(newdt.month == 6)
+        self.assertTrue(newdt.hour == 8)
+        self.assertTrue(newdt.minute == 0)
+        self.assertTrue(newdt.second == 5)
+
+        # test date on Saturday
+        dt = datetime(2015, 8, 1, 15, 20, 2)
+        newdt = util.get_previous_friday_from_date(dt)
+        self.assertTrue(newdt.year == 2015)
+        self.assertTrue(newdt.day == 31)
+        self.assertTrue(newdt.month == 7)
+        self.assertTrue(newdt.hour == 15)
+        self.assertTrue(newdt.minute == 20)
+        self.assertTrue(newdt.second == 2)
+
+        # test date on Sunday
+        dt = datetime(2016, 6, 19, 8, 0, 5)
+        newdt = util.get_previous_friday_from_date(dt)
+        self.assertTrue(newdt.year == 2016)
+        self.assertTrue(newdt.day == 17)
+        self.assertTrue(newdt.month == 6)
+
+        # test date on Monday
+        dt = datetime(2016, 6, 20, 8, 0, 5)
+        newdt = util.get_previous_friday_from_date(dt)
+        self.assertTrue(newdt.year == 2016)
+        self.assertTrue(newdt.day == 17)
+        self.assertTrue(newdt.month == 6)
+
+        # test date on Tuesday
+        dt = datetime(2016, 6, 21, 8, 0, 5)
+        newdt = util.get_previous_friday_from_date(dt)
+        self.assertTrue(newdt.year == 2016)
+        self.assertTrue(newdt.day == 17)
+        self.assertTrue(newdt.month == 6)
+
+        # test date on Wednesday
+        dt = datetime(2016, 6, 22, 8, 0, 5)
+        newdt = util.get_previous_friday_from_date(dt)
+        self.assertTrue(newdt.year == 2016)
+        self.assertTrue(newdt.day == 17)
+        self.assertTrue(newdt.month == 6)
+
+        # test date on Thursday
+        dt = datetime(2016, 6, 23, 8, 0, 5)
+        newdt = util.get_previous_friday_from_date(dt)
+        self.assertTrue(newdt.year == 2016)
+        self.assertTrue(newdt.day == 17)
+        self.assertTrue(newdt.month == 6)
+
+    def test_is_datetime_after_celpp_week_start(self):
+
+        try:
+            util.is_datetime_after_celpp_week_start(None)
+            self.fail('Expected exception')
+        except Exception:
+            pass
+        try:
+            util.is_datetime_after_celpp_week_start('hi')
+            self.fail('Expected exception')
+        except AssertionError:
+            pass
+
+        prev_friday = util.get_previous_friday_from_date(
+            datetime.now(tzlocal()))
+        oneday = timedelta(days=1)
+        sat = prev_friday + oneday
+        self.assertTrue(util.is_datetime_after_celpp_week_start(sat))
+        thurs = prev_friday - oneday
+        self.assertFalse(util.is_datetime_after_celpp_week_start(thurs))
+
+    def test_has_url_been_updated_since_start_of_celpp_week(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            try:
+                util.has_url_been_updated_since_start_of_celpp_week(None)
+                self.fail('Expected exception')
+            except Exception:
+                pass
+
+            fakefile = os.path.join(temp_dir, 'foo')
+
+            try:
+                util.has_url_been_updated_since_start_of_celpp_week('file://' +
+                                                                    fakefile)
+                self.fail('Expected exception')
+            except URLError:
+                pass
+
+            f = open(fakefile, 'w')
+            f.write('hi\n')
+            f.flush()
+            f.close()
+
+            prev_friday = util.get_previous_friday_from_date(
+                datetime.now(tzlocal()))
+
+            thurs = prev_friday - timedelta(days=1)
+            dse = thurs - datetime(1970, 01, 01, tzinfo=tzutc())
+            secs_since_epoch = self.get_total_seconds(dse)
+            os.utime(fakefile, (secs_since_epoch, secs_since_epoch))
+            val = util.has_url_been_updated_since_start_of_celpp_week(
+                'file://' + fakefile)
+            self.assertEqual(val, False)
+
+            sat = prev_friday + timedelta(days=1)
+            dse = sat - datetime(1970, 01, 01, tzinfo=tzutc())
+            secs_since_epoch = self.get_total_seconds(dse)
+            os.utime(fakefile, (secs_since_epoch, secs_since_epoch))
+            val = util.has_url_been_updated_since_start_of_celpp_week(
+                'file://' + fakefile)
+            self.assertEqual(val, True)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_run_external_command_command_not_set(self):
+        ecode, out, err = util.run_external_command(None)
+        self.assertEqual(ecode, 256)
+        self.assertEqual(out, '')
+        self.assertEqual(err, 'Command must be set')
+
+    def test_run_external_command_cmd_does_not_exist(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            try:
+                noexist = os.path.join(temp_dir, 'noexist')
+                ecode, out, err = util.run_external_command(noexist)
+                self.fail('Expected OSError')
+            except OSError:
+                pass
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_run_external_command_success_with_output(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            script = os.path.join(temp_dir, 'yo.py')
+
+            # create a small python script that outputs args passed
+            # in to standard out, writes error to standard error
+            #  and exits with 0 exit code
+            f = open(script, 'w')
+            f.write('#! /usr/bin/env python\n\n')
+            f.write('import sys\n')
+            f.write('sys.stdout.write(sys.argv[1])\n')
+            f.write('sys.stdout.write(sys.argv[2])\n')
+            f.write('sys.stderr.write("error")\n')
+            f.write('sys.exit(0)\n')
+            f.flush()
+            f.close()
+            os.chmod(script, stat.S_IRWXU)
+
+            ecode, out, err = util.run_external_command(script + ' hi how')
+
+            self.assertEqual(err, 'error')
+            self.assertEqual(out, 'hihow')
+            self.assertEqual(ecode, 0)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_run_external_command_fail_with_output(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            script = os.path.join(temp_dir, 'yo.py')
+
+            # create a small python script that outputs args passed
+            # in to standard out, writes error to standard error
+            #  and exits with 0 exit code
+            f = open(script, 'w')
+            f.write('#! /usr/bin/env python\n\n')
+            f.write('import sys\n')
+            f.write('sys.stdout.write(sys.argv[1])\n')
+            f.write('sys.stdout.write(sys.argv[2])\n')
+            f.write('sys.stderr.write("2error")\n')
+            f.write('sys.exit(2)\n')
+            f.flush()
+            f.close()
+            os.chmod(script, stat.S_IRWXU)
+
+            ecode, out, err = util.run_external_command(script + ' hi how')
+
+            self.assertEqual(err, '2error')
+            self.assertEqual(out, 'hihow')
+            self.assertEqual(ecode, 2)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_setup_logging(self):
+        logger = logging.getLogger('funlogger')
+        theargs = D3RParameters()
+        theargs.loglevel = 'INFO'
+        util.setup_logging(theargs)
+        self.assertEqual(logging.getLogger('d3r.celpp.task')
+                         .getEffectiveLevel(),
+                         logging.INFO)
+        self.assertEqual(theargs.numericloglevel, logging.INFO)
+        logger.debug('test')
+
+        theargs.loglevel = 'DEBUG'
+        util.setup_logging(theargs)
+        self.assertEqual(logging.getLogger('d3r.celpp.task')
+                         .getEffectiveLevel(),
+                         logging.DEBUG)
+        self.assertEqual(theargs.numericloglevel, logging.DEBUG)
+
+        theargs.loglevel = 'WARNING'
+        util.setup_logging(theargs)
+        self.assertEqual(logging.getLogger('d3r.celpp.task')
+                         .getEffectiveLevel(),
+                         logging.WARNING)
+        self.assertEqual(theargs.numericloglevel, logging.WARNING)
+
+        theargs.loglevel = 'ERROR'
+        util.setup_logging(theargs)
+        self.assertEqual(logging.getLogger('d3r.celpp.task')
+                         .getEffectiveLevel(),
+                         logging.ERROR)
+        self.assertEqual(theargs.numericloglevel, logging.ERROR)
+
+        theargs.loglevel = 'CRITICAL'
+        util.setup_logging(theargs)
+        self.assertEqual(logging.getLogger('d3r.celpp.task')
+                         .getEffectiveLevel(),
+                         logging.CRITICAL)
+        self.assertEqual(theargs.numericloglevel, logging.CRITICAL)
 
     def tearDown(self):
         pass

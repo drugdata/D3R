@@ -51,9 +51,9 @@ class Hit(Base):
         try:
             fasta_handle = open(fasta, 'r')
         except IOError:
-            print("could not open {file}".format(file=fasta))
+            logger.exception('Caught exeption opening fasta file')
             sys.exit(1)
-
+        logger.debug('Parsing ' + fasta)
         for record in SeqIO.parse(fasta_handle, "fasta"):
             # only add protein sequences
             if 'mol:protein' in record.description:
@@ -138,24 +138,27 @@ class Hit(Base):
             test.read_pdb()
         :return: Boolean
         """
+        logger.debug('In read_pdb()')
         if not self.pdb_id:
-            print "Test.pdb_id must be set prior to calling the read_pdb method"
+            logger.error("Test.pdb_id must be set prior to calling the read_pdb method")
             return False
         pdb_file = os.path.join(Hit.pdb_dir, self.pdb_id[1:3], 'pdb' + self.pdb_id + '.ent')
         try:
             handle = open(pdb_file, 'r')
             handle.close()
         except IOError as e:
-            print("Problems when assigning the ligand for wwPDB ID: {f1}\n{er}".format(f1=self.pdb_id, er=e))
+            logger.exception('Problems when assigning the ligrand for wwPDB ID: ' + self.pdb_id)
             return False
         try:
             parser = PDBParser()
             self.pdb = parser.get_structure(format(self.pdb_id), pdb_file)
             if not self.pdb:
+                logger.error('Unable to get structure for pdb')
                 return False
             else:
                 return True
         except:
+            logger.exception('Caught exception')
             return False
 
     def set_coverage(self, coverage):
@@ -169,7 +172,9 @@ class Hit(Base):
         Looks for pdb sequence in the contents of the 'pdb_seqres.txt' file, stored in pdb_dict
         :param pdb_id: 4-letter pdb id
         """
+
         id = '{pdb_id}_{chain_id}'.format(pdb_id = pdb_id.lower(), chain_id = chain_id.upper())
+        logger.debug('Looking for ' + id + ' in pdb_seqres.txt')
         if id in self.sequence_membership.keys():
             self.sequences[self.sequence_membership[id]].set_query_alignment(record, alignment)
         else:
@@ -196,6 +201,7 @@ class Hit(Base):
         components co-crystallized with the protein would be picked up by the fill_sequence method. This should only
         be called after the set_hits method is called
         """
+        logger.debug('In fill_sequence()')
         for id, seq_record in Hit.pdb_dict.get_matching(self.pdb_id):
             if id in self.sequence_membership.keys():
                 # the chain exists in the sequence list, so no need to do anything
@@ -246,6 +252,7 @@ class Hit(Base):
             test.read_pdb()
             test.set_ligands()
         """
+        logger.debug('In set_ligands()')
         model_list = Selection.unfold_entities(self.pdb, 'M')
         res_list = Selection.unfold_entities(model_list[0], 'R')
         hetero_list = [res for res in res_list if 'H_' in res.id[0] and res.id[0] != 'H_MSE']
@@ -278,9 +285,11 @@ class Hit(Base):
         If the resolution cannot be set, False is returned, otherwise True is returned.
         :return: Boolean
         """
+        logger.debug('In set_resolution()')
         if not self.pdb_id or not self.pdb:
-            print "Before the set_resolution method is called, the pdb_id attribute must be set, and the read_pdb " \
-                  "method must be called."
+            logger.error("Before the set_resolution method is called, the pdb_id attribute must be set, "
+                         "and the read_pdb "
+                         "method must be called.")
             return False
         # TO DO: add error checking for NMR structures, and other experimental methods from which resolution is
         # unavailable
@@ -291,6 +300,7 @@ class Hit(Base):
             else:
                 return False
         except:
+            logger.exception('Caught exception')
             return False
 
     def set_expt_method(self):
@@ -304,9 +314,10 @@ class Hit(Base):
         If the resolution cannot be set, False is returned, otherwise True is returned.
         :return: Boolean
         """
+        logger.debug('In set_expt_method()')
         if not self.pdb_id or not self.pdb:
-            print("Before the set_expt_method method is called, the pdb_id attribute must be set, and the read_pdb "
-                  "method must be called.")
+            logger.error("Before the set_expt_method method is called, the pdb_id attribute must be set, and the read_pdb "
+                         "method must be called.")
             return False
         try:
             self.exp_method = self.pdb.header['structure_method']

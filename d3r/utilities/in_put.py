@@ -1,7 +1,10 @@
 __author__ = 'robswift'
 
+import logging
 from d3r.filter.filtering_sets import do_not_call
 from d3r.blast.query import Query
+
+logger = logging.getLogger(__name__)
 
 
 def create_queries(polymer, non_polymer, ph):
@@ -14,6 +17,10 @@ def create_queries(polymer, non_polymer, ph):
     :return: (d3r.blast.Target() object)
     """
     queries = read_sequences(polymer)
+    if queries is not None:
+        logger.debug('Found ' + str(len(queries)) + ' queries from ' +
+                     polymer + ' file')
+
     read_ph(ph, queries)
     read_ligands(non_polymer, queries)
     return queries
@@ -28,7 +35,10 @@ def read_sequences(polymer):
     """
     queries = []
     handle = open(polymer, 'r')
-    for line in handle.readlines()[1:]:
+    for line in handle.readlines():
+        if line.startswith('PDB_ID'):
+            continue
+
         words = line.split()
         try:
             pdb_id = words[0].lower()
@@ -36,6 +46,7 @@ def read_sequences(polymer):
             seq = words[2]
             queries = add_sequence(queries, seq, pdb_id, chain_id)
         except:
+            logger.exception('Caught exception')
             continue
     handle.close()
     return queries
@@ -43,7 +54,8 @@ def read_sequences(polymer):
 
 def add_sequence(queries, seq, pdb_id, chain_id):
     """
-    Adds a FASTA sequence, with a specific chain and wwPDB ID, to the appropriate target object.
+    Adds a FASTA sequence, with a specific chain and wwPDB ID, to the
+    appropriate target object.
     :param queries: a list of target objects, which may be empty
     :param seq: a FASTA sequence. It will be converted to a Bio.SeqRecord
     :param pdb_id: The corresponding wwPDB id.
@@ -62,14 +74,19 @@ def add_sequence(queries, seq, pdb_id, chain_id):
 
 def read_ligands(non_polymer, queries):
     """
-    Reads the information in a new_release_structure_nonpolymer.tsv file. The ligands are mapped to the appropriate
-    target object by their wwPDB IDs. Morerover, each ligand is labeled as 'do_not_call' or 'dock' depending on whether
-    or not the resname of the ligand is found in the do_not_call set in the filter.filtering_sets module.
+    Reads the information in a new_release_structure_nonpolymer.tsv file. The
+    ligands are mapped to the appropriate
+    target object by their wwPDB IDs. Morerover, each ligand is labeled as
+    'do_not_call' or 'dock' depending on whether
+    or not the resname of the ligand is found in the do_not_call set in the
+    filter.filtering_sets module.
     :param non_polymer: absolute path to the pre-release non_polymer.tsv file
     :param queries, a list of target objects.
     """
     handle = open(non_polymer, 'r')
-    for line in handle.readlines()[1:]:
+    for line in handle.readlines():
+        if line.startswith('PDB_ID'):
+            continue
         words = line.split()
         if words:
             try:
@@ -79,6 +96,7 @@ def read_ligands(non_polymer, queries):
                 ligand_label = label(resname)
                 add_ligand(pdb_id, resname, inchi, ligand_label, queries)
             except:
+                logger.exception('Caught exception')
                 continue
     handle.close()
 
@@ -104,7 +122,9 @@ def read_ph(ph, queries):
     :return:
     """
     handle = open(ph, 'r')
-    for line in handle.readlines()[1:]:
+    for line in handle.readlines():
+        if line.startswith('PDB_ID'):
+            continue
         words = line.split()
         if words:
             try:
@@ -112,6 +132,7 @@ def read_ph(ph, queries):
                 exp_ph = words[1]
                 add_ph(pdb_id, exp_ph, queries)
             except:
+                logger.exception('Caught exception')
                 continue
     handle.close()
 

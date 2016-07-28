@@ -20,7 +20,8 @@ requirements = [
     "psutil",
     "biopython",
     "xlsxwriter",
-    "ftpretty"
+    "ftpretty",
+    "python-dateutil"
 ]
 
 test_requirements = [
@@ -30,16 +31,19 @@ test_requirements = [
     "biopython",
     "xlsxwriter",
     "ftpretty",
+    "python-dateutil",
     "mock"
 ]
 
 setup(
     name='d3r',
-    version='1.0.0',
+    version='1.3.3',
     description='Drug Design Data Resource CELPP Runner is an application to run the filtering, docking, and '
                 'evaluation of new sequences from wwpdb',
     long_description=readme + '\n\n' + history,
-    author='Christopher Churas <churas@ncmir.ucsd.edu>, Shaui Liu <shuailiu25@gmail.com>, '
+    author='Christopher Churas <churas@ncmir.ucsd.edu>,'
+           'Shaui Liu <shuailiu25@gmail.com>,'
+           'Jeff Wagner <j5wagner@ucsd.edu>,'
            'Rob Swift <rvswift@ucsd.edu>',
     author_email='drugdesigndata@gmail.com',
     url='https://github.com/drugdata/D3R',
@@ -66,7 +70,8 @@ setup(
     scripts = ['d3r/celpprunner.py', 'd3r/blastnfilter.py',
                'd3r/postanalysis.py', 'd3r/proteinligprep.py',
                'd3r/glidedocking.py', 'd3r/evaluate.py',
-               'd3r/celppreports.py', 'd3r/vinadocking.py'],
+               'd3r/celppreports.py', 'd3r/vinadocking.py',
+               'd3r/genchallengedata.py','d3r/chimera_proteinligprep.py'],
     test_suite='tests',
     tests_require=test_requirements
 )

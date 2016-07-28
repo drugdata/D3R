@@ -7,6 +7,9 @@ Drug Design Data Resource CELPP Runner
 
 .. image:: https://img.shields.io/pypi/v/D3R.svg
         :target: https://pypi.python.org/pypi/D3R
+        
+.. image:: https://coveralls.io/repos/github/drugdata/D3R/badge.svg?branch=master 
+        :target: https://coveralls.io/github/drugdata/D3R?branch=master
 
 
 Drug Design Data Resource is a suite of software to enable 
@@ -29,7 +32,9 @@ Requires
  * ftpretty
  * NCBI Blast (https://blast.ncbi.nlm.nih.gov/Blast.cgi?PAGE_TYPE=BlastDocs&DOC_TYPE=Download) (needed by blastnfilter.py)
  * rdkit (needed by blastnfilter.py and proteinligprep.py)
- * schrodinger (needed by proteinligprep.py and glidedocking.py)
+ * schrodinger (needed by proteinligprep.py, glidedocking.py, chimera_proteinligprep.py & vinadocking.py)
+ * babel (needed by chimera_proteinligprep.py)
+ * Autodock Vina & MGL Tools (needed by vinadocking.py)
 
 Installation
 ------------
@@ -41,6 +46,9 @@ Pip install is coming, but in the meantime:
   git clone https://github.com/drugdata/D3R
   cd D3R
   make install
+  # or 
+  make dist
+  pip install dist/d3r*whl
 
 Usage
 -----

@@ -6,7 +6,7 @@ import os
 import logging
 
 from d3r.celpp.task import D3RTask
-from d3r.celpp.proteinligprep import ProteinLigPrepTask
+from d3r.celpp.chimeraprep import ChimeraProteinLigPrepTask
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +19,7 @@ class AutoDockVinaTask(D3RTask):
         super(AutoDockVinaTask, self).__init__(path, args)
         self.set_name('autodockvina')
 
-        prep = ProteinLigPrepTask(path, args)
+        prep = ChimeraProteinLigPrepTask(path, args)
         self.set_stage(prep.get_stage() + 1)
         self.set_status(D3RTask.UNKNOWN_STATUS)
 
@@ -46,14 +46,14 @@ class AutoDockVinaTask(D3RTask):
         self._can_run = False
         self._error = None
         # check blast
-        protligprep = ProteinLigPrepTask(self._path, self._args)
-        protligprep.update_status_from_filesystem()
-        if protligprep.get_status() != D3RTask.COMPLETE_STATUS:
+        ligprep = ChimeraProteinLigPrepTask(self._path, self._args)
+        ligprep.update_status_from_filesystem()
+        if ligprep.get_status() != D3RTask.COMPLETE_STATUS:
             logger.info('Cannot run ' + self.get_name() + 'task ' +
-                        'because ' + protligprep.get_name() + 'task' +
-                        'has a status of ' + protligprep.get_status())
-            self.set_error(protligprep.get_name() + ' task has ' +
-                           protligprep.get_status() + ' status')
+                        'because ' + ligprep.get_name() + 'task' +
+                        'has a status of ' + ligprep.get_status())
+            self.set_error(ligprep.get_name() + ' task has ' +
+                           ligprep.get_status() + ' status')
             return False
 
         # check this task is not complete and does not exist
@@ -74,7 +74,7 @@ class AutoDockVinaTask(D3RTask):
         return True
 
     def run(self):
-        """Runs AutoDockVinaTask after verifying proteinligprep was good
+        """Runs AutoDockVinaTask after verifying chimeraproteinligprep was good
 
            Method requires can_run() to be called before hand with
            successful outcome
@@ -99,14 +99,14 @@ class AutoDockVinaTask(D3RTask):
             self.end()
             return
 
-        proteinligprep = ProteinLigPrepTask(self._path, self._args)
+        ligprep = ChimeraProteinLigPrepTask(self._path, self._args)
 
         #
-        # vinadocking.py --structuredir <path to stage.3.proteinligprep> \
+        # vinadocking.py --structuredir <path to stage.3.chimeraprep> \
         # --outdir <path to stage.4.vina>
         #
         cmd_to_run = (self.get_args().vina + ' --structuredir ' +
-                      proteinligprep.get_dir() +
+                      ligprep.get_dir() +
                       ' --outdir ' + self.get_dir())
 
         vina_name = os.path.basename(self.get_args().vina)
