@@ -49,6 +49,96 @@ with open(sys.argv[2],'wb') as of:
     writeMol2([mol], of)
 '''
 
+pymol_align_text = '''
+import __main__
+__main__.pymol_argv = [ 'pymol', '-c'] #put -cq here to suppress pymol output
+import pymol
+pymol.finish_launching()
+import sys
+
+caAlignment = True
+proxim_filter_distance = 15
+
+molPrefixes = ['largest_splitted_receptor1',
+               'smallest_splitted_receptor1',
+               'apo_splitted_receptor1',
+               'holo_splitted_receptor1',]
+
+for molPrefix in molPrefixes:
+    pymol.cmd.load('/extra/banzai2/j5wagner/CELPP/2016_07_14_pymol_alignment/test_data/5ev8/%s.pdb' %(molPrefix))
+
+
+### Geometric filter ###
+# >>> help(pymol.cmd.pseudoatom)
+#Help on function pseudoatom in module pymol.creating:
+#
+#pseudoatom(object='', selection='', name='PS1', resn='PSD', resi='1', chain='P', segi='PSDO', elem='PS', vdw=-1.0, hetatm=1, b=0.0, q=0.0, color='', label='', pos=None, state=0, mode='rms', quiet=1,)
+
+center = open('/extra/banzai2/j5wagner/CELPP/2016_07_14_pymol_alignment/test_data/5ev8/center.txt').read().split()
+center = [float(i.strip(',')) for i in center]
+print center
+pymol.cmd.pseudoatom('largest_lig_center', pos=center)
+pymol.cmd.select('reference',"(/largest_splitted_receptor1//A//CA) and (byres (largest_lig_center around %i))" %(proxim_filter_dist) ) # Remove reference to chain A in actual deploy - Shuai's solution to issue 56 will cover this
+
+
+for molPrefix in molPrefixes[1:]:
+    print
+    print
+    print '=========================='
+    print "PROCESSING", molPrefix
+
+
+    ### Secondary structure filter ###  
+    # Get resnums and their SS types
+    #resiSS = pymol.cmd.iterate('/apo_splitted_receptor1////CA','(resi,resv,ss)')
+    pymol.stored.tuples = []
+    resiSS = pymol.cmd.iterate(molPrefix,'stored.tuples.append((resn,resv,ss))')
+    print pymol.stored.tuples
+
+    # Filter to "H" and "S" with list comp
+    print "FILTERING FOR SS"
+    ss_near_bs = [i for i in pymol.stored.tuples if i[2] in ['H','S']]
+    print ss_near_bs
+    resv_sel_str = '+'.join([str(i[1]) for i in ss_near_bs])
+    print resv_sel_str
+
+
+
+    ### 3D alignment ###
+
+
+    ##  API reference  ##
+    ## http://www.pymolwiki.org/index.php/Align
+    #cmd.align( string mobile, string target, float cutoff=2.0,
+    #           int cycles=5, float gap=-10.0, float extend=-0.5,
+    #           int max_gap=50, string object=None, string matrix='BLOSUM62',
+    #           int mobile_state=0, int target_state=0, int quiet=1,
+    #           int max_skip=0, int transform=1, int reset=0 )
+
+
+
+    # Remove the A chain label when this reaches production - Shuai's fix to issue 56 will only leave one chain.
+    if caAlignment:
+        alnOut = pymol.cmd.align('/%s//A//CA'%(molPrefix),
+                                 'reference'
+                                 #'/largest_splitted_receptor1//A/`%s/CA'%(resv_sel_str)
+                                 )# Remove reference to chain A in actual deploy - Shuai's solution to issue 56 will cover this
+    else:
+        alnOut = pymol.cmd.align('/%s//A//'%(molPrefix),
+                                 'reference',
+                                 #'/largest_splitted_receptor1//A//CA',
+                                 )# Remove reference to chain A in actual deploy - Shuai's solution to issue 56 will cover this
+    pymol.cmd.save('%s_aligned.pdb' %(molPrefix),
+                   '/%s' %(molPrefix)
+                   )
+    print alnOut
+pymol.cmd.save('largest_reference.pdb' ,
+               'reference'
+               )
+
+#print sys.stdout.read()
+pymol.cmd.quit()
+'''
 
 def extract_info_from_s2(stage_2_out):
     info_dic = {}
@@ -122,7 +212,7 @@ def ligand_prepare(ligand_smile, out_lig_file):
     unprep_lig_file_1 = ligand_smile.replace('.smi','_unprep_step1.sdf')
     with open('rdkit_smiles_to_3d_sdf.py','wb') as of:
         of.write(rdkit_smiles_to_3d_sdf_text) 
-    commands.getoutput('python rdkit_smiles_to_3d_sdf.py %s %s' %(ligand_smile, unprep_lig_file_1))
+    commands.getoutput('/var/home/j5wagner/miniconda2/bin/python rdkit_smiles_to_3d_sdf.py %s %s' %(ligand_smile, unprep_lig_file_1))
     unprep_lig_file_2 = ligand_smile.replace('.smi','_unprep_step2.mol2')
     commands.getoutput('babel -isdf %s -omol2 %s' %(unprep_lig_file_1, unprep_lig_file_2))
     #unprep_lig_file = ligand_smile.replace('.smi','_unprep.mol2')
@@ -135,7 +225,10 @@ def ligand_prepare(ligand_smile, out_lig_file):
 
 
 def align_proteins (target_protein, pre_prepare_protein, post_prepare_protein):
-    commands.getoutput("$SCHRODINGER/utilities/structalign %s %s"%(target_protein, pre_prepare_protein))
+    #commands.getoutput("$SCHRODINGER/utilities/structalign %s %s"%(target_protein, pre_prepare_protein))
+    with open('pymolAlign.py','wb') as of:
+        of.write(pymol_align_text)
+    commands.getoutput("python pymolAlign.py %s %s"%(target_protein, pre_prepare_protein))
     rotated_protein = "rot-" + pre_prepare_protein
     if os.path.isfile(rotated_protein):
         commands.getoutput("mv %s %s"%(rotated_protein, post_prepare_protein))
