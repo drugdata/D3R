@@ -98,7 +98,7 @@ def main_glide (stage_3_result, stage_4_working, update= True, usexp=False):
             os.chdir(current_dir)
             continue
             
-        #for possible_protein in ("largest.maegz", "smallest.maegz", "holo.maegz", "apo.maegz"):
+        #for possible_protein in ("LMCSS.maegz", "SMCSS.maegz", "hiResHolo.maegz", "hiResApo.maegz"):
         for candidate_protein in candidate_proteins:
             candidate_prefix = candidate_protein.replace('_prepared.mae','')
 

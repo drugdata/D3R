@@ -87,7 +87,7 @@ Below is a definition of the files and directories within this tar file:
                   -- Summary of Blastnfilter results for target protein
                      with PDBID.
 
-               [largest-<target id>_<candidate id>-<candidate ligand id>.pdb]
+               [LMCSS-<target id>_<candidate id>-<candidate ligand id>.pdb]
 
                   -- Candidate protein for docking which:
                       1) Passes the Blastnfilter criteria
@@ -98,7 +98,7 @@ Below is a definition of the files and directories within this tar file:
                          Note:  If multiple proteins founded, the protein
                                 with the highest resolution will be picked.
 
-               [smallest-<target id>_<candidate id>-<candidate ligand id>.pdb]
+               [SMCSS-<target id>_<candidate id>-<candidate ligand id>.pdb]
 
                   -- Candidate protein for docking which:
                       1) Passes the Blastnfilter criteria.
@@ -109,25 +109,25 @@ Below is a definition of the files and directories within this tar file:
                          Note:  If multiple proteins founded, the protein
                                 with the highest resolution will be picked.
 
-               [holo-<target id>_<candidate id>-<candidate ligand id>.pdb]
+               [hiResHolo-<target id>_<candidate id>-<candidate ligand id>.pdb]
 
                    -- Candidate protein for docking which:
                       1) Passes the Blastnfilter criteria.
 
                       2) Has the highest resolution among all holo proteins.
 
-               [apo-<target id>_<candidate id>-<candidate ligand id>.pdb]
+               [hiResApo-<target id>_<candidate id>-<candidate ligand id>.pdb]
 
                    -- Candidate protein for docking which:
                       1) Passes the Blastnfilter criteria.
 
                       2) Has the highest resolution among all apo proteins.
 
-               [largest-<target id>_<candidate id>-<candidate ligand id> \
+               [LMCSS-<target id>_<candidate id>-<candidate ligand id> \
                                                                       -lig.pdb]
 
                     -- Contains the 3D coordinate of the atoms for the ligand
-                       in the MaxMCSS candidate (largest) protein.
+                       in the MaxMCSS candidate (LMCSS) protein.
 
                [lig_<candidate ligand id>.smi]
 

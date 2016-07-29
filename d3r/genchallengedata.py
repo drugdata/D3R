@@ -14,7 +14,7 @@ def parse_txt (txt_filename):
     #parsing the result txt file and give back the
 
     #1, inchi string for the ligand 
-    #2, largest, smallest, holo, apo structure ID
+    #2, LMCSS, SMCSS, hiResHolo, hiResApo structure ID
     info_dic = {}
     target_name_txt = os.path.basename(txt_filename).split(".")[0]
     txt_file = open(txt_filename, "r")
@@ -119,13 +119,13 @@ def main_gendata (s3_result_path, path_2_ent, s4_result_path):
         except:
             logging.info("Could not parse this blasternfilter outfile: %s"%(single_bfout))
             continue
-        #check if the is a protein start with largest
-        if not "largest" in info_dic:
-            logging.info("For this query protein: %s, there is no protein sharing the largest ligand with. Not able to generate Docking grid, pass for this case..."%target_name)
+        #check if the is a protein start with LMCSS
+        if not "LMCSS" in info_dic:
+            logging.info("For this query protein: %s, there is no protein sharing the LMCSS ligand with. Not able to generate Docking grid, pass for this case..."%target_name)
             os.chdir (current_dir_layer_1)
             continue
-        elif len(info_dic["largest"]) != 2:
-            logging.info("For this query protein: %s, the laregest protein has wrong number of informations associate with this id..."%target_name)
+        elif len(info_dic["LMCSS"]) != 2:
+            logging.info("For this query protein: %s, the LMCSS protein has wrong number of informations associate with this id..."%target_name)
             os.chdir(current_dir_layer_1)
             continue
         elif not "inchi" in info_dic:
@@ -147,28 +147,28 @@ def main_gendata (s3_result_path, path_2_ent, s4_result_path):
             continue
         #copy all ent file here and rename it
         query_pro = info_dic["query"]
-        largest_pro_id = info_dic["largest"][0]
-        largest_pro_ligand = info_dic["largest"][1]
-        largest_pdb_folder_name = largest_pro_id[1:3]
-        largest_ent_file = "pdb" + largest_pro_id  + ".ent"
-        largest_pdbloc = os.path.join(path_2_ent, largest_pdb_folder_name, largest_ent_file)
-        if not os.path.isfile(largest_pdbloc):            
-            logging.info("Unable to find the ent file associate with the largest pdb: %s at location %s"%(largest_pro_id, largest_pdbloc))
+        LMCSS_pro_id = info_dic["LMCSS"][0]
+        LMCSS_pro_ligand = info_dic["LMCSS"][1]
+        LMCSS_pdb_folder_name = LMCSS_pro_id[1:3]
+        LMCSS_ent_file = "pdb" + LMCSS_pro_id  + ".ent"
+        LMCSS_pdbloc = os.path.join(path_2_ent, LMCSS_pdb_folder_name, LMCSS_ent_file)
+        if not os.path.isfile(LMCSS_pdbloc):            
+            logging.info("Unable to find the ent file associate with the LMCSS pdb: %s at location %s"%(LMCSS_pro_id, LMCSS_pdbloc))
             os.chdir(current_dir_layer_1)
             continue
         else:
             #TC = target candidate                                
-            TC_id = "%s_%s"%(query_pro, largest_pro_id)             
-            largest_protein_name = "largest-%s-%s.pdb"%(TC_id, largest_pro_ligand)
-            largest_ligand_name = "largest-%s-%s-lig.pdb"%(TC_id, largest_pro_ligand)
-            #try to extract the largest ligand from the largest protein
-            commands.getoutput("cp %s %s"%(largest_pdbloc,largest_protein_name))
-            if not pull_ligand_out (largest_protein_name, largest_pro_ligand, largest_ligand_name):
+            TC_id = "%s_%s"%(query_pro, LMCSS_pro_id)             
+            LMCSS_protein_name = "LMCSS-%s-%s.pdb"%(TC_id, LMCSS_pro_ligand)
+            LMCSS_ligand_name = "LMCSS-%s-%s-lig.pdb"%(TC_id, LMCSS_pro_ligand)
+            #try to extract the LMCSS ligand from the LMCSS protein
+            commands.getoutput("cp %s %s"%(LMCSS_pdbloc,LMCSS_protein_name))
+            if not pull_ligand_out (LMCSS_protein_name, LMCSS_pro_ligand, LMCSS_ligand_name):
                 os.chdir(current_dir_layer_1)
                 continue
                 
-            logging.info("Succsessfully generate this protein:%s"%largest_protein_name)
-            for rest_protein in ("smallest", "holo", "apo"):
+            logging.info("Succsessfully generate this protein:%s"%LMCSS_protein_name)
+            for rest_protein in ("SMCSS", "hiResHolo", "hiResApo"):
                 if rest_protein in info_dic:
                     if len(info_dic[rest_protein]) == 2:
                         rest_protein_id = info_dic[rest_protein][0] 
@@ -191,18 +191,18 @@ def main_gendata (s3_result_path, path_2_ent, s4_result_path):
                         else:
                             rest_protein_name = "%s-%s.pdb"%(rest_protein, TC_id_rest)
                             commands.getoutput("cp %s %s"%(rest_pdbloc, rest_protein_name))
-                        #align all rest proteins onto the largest protein
+                        #align all rest proteins onto the LMCSS protein
                         
                         try:
-                            do_alignment = align_proteins (largest_protein_name, rest_protein_name, rest_protein_name)
+                            do_alignment = align_proteins (LMCSS_protein_name, rest_protein_name, rest_protein_name)
                         except:
                             logging.info("The alignment could not be done for this protein:%s"%(rest_protein_name))
                             os.chdir(current_dic_layer_1)
                             continue
 
-                            #remove the "rot-%s"%largest_protein_name
-                        if os.path.isfile("rot-%s"%largest_protein_name):
-                            commands.getoutput("rm rot-%s"%largest_protein_name) 
+                            #remove the "rot-%s"%LMCSS_protein_name
+                        if os.path.isfile("rot-%s"%LMCSS_protein_name):
+                            commands.getoutput("rm rot-%s"%LMCSS_protein_name) 
                         logging.info("Succsessfully generate this protein:%s"%(rest_protein_name))
                         #here we got the valid aligned structures
                         valid = True

@@ -184,7 +184,7 @@ def main_rmsd(ref_struc, fit_struc):
             match_info.append(ss[mcss])
         for filename in glob.glob('*_new_atom_symbol.pdb'):             
             os.remove(filename) 
-        smallest_number_index = mcss_rmsd_list.index(min(mcss_rmsd_list))
+        SMCSS_number_index = mcss_rmsd_list.index(min(mcss_rmsd_list))
         biggest_number_index = mcss_rmsd_list.index(max(mcss_rmsd_list))
     return min(mcss_rmsd_list)
 
@@ -246,27 +246,27 @@ def layout_result (pickle_file, txt_file):
     p_file = open(pickle_file,"r")
     score_dic = pickle.load(p_file)
     p_file.close()
-    data = ["%-20s%-10s%-10s%-10s%-10s \n"%(" ", "largest", "smallest", "apo", "holo")]
-    all_pro_type = ["largest", "smallest", "apo", "holo"]
-    largest_list =  []
-    smallest_list = []
-    apo_list = []
-    holo_list = []
+    data = ["%-20s%-10s%-10s%-10s%-10s \n"%(" ", "LMCSS", "SMCSS", "hiResApo", "hiResHolo")]
+    all_pro_type = ["LMCSS", "SMCSS", "hiResApo", "hiResHolo"]
+    LMCSS_list =  []
+    SMCSS_list = []
+    hiResApo_list = []
+    hiResHolo_list = []
     abnormal_dic = {}
     total_pdb = 0
     for pdbid in score_dic:
         for pro_type in all_pro_type:
             if pro_type in score_dic[pdbid]:
-                if pro_type == "largest":
-                    largest_list.append(score_dic[pdbid][pro_type])
+                if pro_type == "LMCSS":
+                    LMCSS_list.append(score_dic[pdbid][pro_type])
                     if float(score_dic[pdbid][pro_type]) > 8.0:
                         abnormal_dic[pdbid] = score_dic[pdbid][pro_type]
-                if pro_type == "smallest":
-                    smallest_list.append(score_dic[pdbid][pro_type])
-                if pro_type == "apo":
-                    apo_list.append(score_dic[pdbid][pro_type]) 
-                if pro_type == "holo":
-                    holo_list.append(score_dic[pdbid][pro_type])
+                if pro_type == "SMCSS":
+                    SMCSS_list.append(score_dic[pdbid][pro_type])
+                if pro_type == "hiResApo":
+                    hiResApo_list.append(score_dic[pdbid][pro_type]) 
+                if pro_type == "hiResHolo":
+                    hiResHolo_list.append(score_dic[pdbid][pro_type])
         total_pdb += 1
     for pdbid in score_dic:
         new_line_score = ""
@@ -284,8 +284,8 @@ def layout_result (pickle_file, txt_file):
             data.append(new_line)
     data.append("=====Total number of query protein: %s =====\n"%total_pdb)
     #append total number of valid pdb for each type 
-    data.append("%-20s%-10s%-10s%-10s%-10s\n"%("Valid cases", len(largest_list), len(smallest_list), len(apo_list), len(holo_list)))
-    data.append("%-20s%-10.3f%-10.3f%-10.3f%-10.3f\n"%("Average", numpy.average(largest_list), numpy.average(smallest_list), numpy.average(apo_list), numpy.average(holo_list)))
+    data.append("%-20s%-10s%-10s%-10s%-10s\n"%("Valid cases", len(LMCSS_list), len(SMCSS_list), len(hiResApo_list), len(holo_list)))
+    data.append("%-20s%-10.3f%-10.3f%-10.3f%-10.3f\n"%("Average", numpy.average(LMCSS_list), numpy.average(SMCSS_list), numpy.average(hiResApo_list), numpy.average(holo_list)))
     data.append("=====Abnormal RMSDs =====\n")
     for abnormal_id in abnormal_dic:
         data.append("%-20s%-10.3f\n"%(abnormal_id, abnormal_dic[abnormal_id]))
@@ -416,7 +416,7 @@ def main_score (dock_dir, pdb_protein_path, evaluate_dir, update= True):
         for docked_lig_mol, docked_receptor in all_docked_structures:
             
             ## Get the method type, target, and candidate info from the filename
-            # for example, this will parse 'apo-5hib_2eb2_docked.mol' into [('apo', '5hib', '2eb2')]
+            # for example, this will parse 'hiResApo-5hib_2eb2_docked.mol' into [('hiResApo', '5hib', '2eb2')]
             parsed_name = re.findall('([a-zA-Z0-9]+)-([a-zA-Z0-9]+)_([a-zA-Z0-9]+)_docked.mol',docked_lig_mol)
             if len(parsed_name) != 1:
                 logging.info('Failed to parse docked structure name "%s". Parsing yielded %r' %(docked_lig_mol, parsed_name))
@@ -456,7 +456,7 @@ def main_score (dock_dir, pdb_protein_path, evaluate_dir, update= True):
             #all_docked_structure_pdb = all_docked_structure_title + ".pdb"
             #commands.getoutput("$SCHRODINGER/run split_structure.py -many_files -m ligand %s %s"%(all_docked_structure, all_docked_structure_pdb))
             
-            # should get largest_dock_pv_receptor1.pdb and largest_dock_pv_ligand1.pdb, may get largest_dock_pv_ligand2.pdb
+            # should get LMCSS_dock_pv_receptor1.pdb and LMCSS_dock_pv_ligand1.pdb, may get LMCSS_dock_pv_ligand2.pdb
             # now combine receptor and ligand
             #all_docked_structure_receptor = all_docked_structure_title + "_receptor1.pdb"
             
