@@ -213,7 +213,7 @@ def ligand_prepare(ligand_smile, out_lig_file):
     unprep_lig_file_1 = ligand_smile.replace('.smi','_unprep_step1.sdf')
     with open('rdkit_smiles_to_3d_sdf.py','wb') as of:
         of.write(rdkit_smiles_to_3d_sdf_text) 
-    commands.getoutput('/var/home/j5wagner/miniconda2/bin/python rdkit_smiles_to_3d_sdf.py %s %s' %(ligand_smile, unprep_lig_file_1))
+    commands.getoutput('/var/home/j5wagner/miniconda2/bin/python rdkit_smiles_to_3d_sdf.py %s %s >& rdkit_smiles_to_3d_sdf_out' %(ligand_smile, unprep_lig_file_1))
     unprep_lig_file_2 = ligand_smile.replace('.smi','_unprep_step2.mol2')
     commands.getoutput('babel -isdf %s -omol2 %s' %(unprep_lig_file_1, unprep_lig_file_2))
     #unprep_lig_file = ligand_smile.replace('.smi','_unprep.mol2')
@@ -229,7 +229,7 @@ def align_proteins (target_protein, pre_prepare_protein, post_prepare_protein):
     #commands.getoutput("$SCHRODINGER/utilities/structalign %s %s"%(target_protein, pre_prepare_protein))
     with open('pymolAlign.py','wb') as of:
         of.write(pymol_align_text)
-    commands.getoutput("python pymolAlign.py %s %s"%(target_protein, pre_prepare_protein))
+    commands.getoutput("python pymolAlign.py %s %s >& pymol_align_out"%(target_protein, pre_prepare_protein))
     rotated_protein = "rot-" + pre_prepare_protein
     if os.path.isfile(rotated_protein):
         commands.getoutput("mv %s %s"%(rotated_protein, post_prepare_protein))
