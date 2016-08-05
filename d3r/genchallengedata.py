@@ -97,16 +97,21 @@ def pull_ligand_out (proteinfile, ligname, ligandfile):
         return False
         
 def main_gendata (s3_result_path, path_2_ent, s4_result_path):
+    print 1
     os.chdir(s4_result_path)
+    print 5
     current_dir_layer_1 = os.getcwd()
+    print 10
     blastnfilterout = glob.glob("%s/*.txt"%s3_result_path)
     summary_file = "%s/summary.txt"%s3_result_path                         
+    print 15
     if summary_file in blastnfilterout:                                    
         blastnfilterout.remove(summary_file)
     problem_cases = []
     valid_cases = []
     all_cases = []
     for single_bfout in blastnfilterout:
+        print 20
         valid = False
         target_name = os.path.basename(single_bfout).split(".txt")[0]
         all_cases.append(target_name)
