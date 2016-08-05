@@ -63,7 +63,7 @@ proxim_filter_distance = 15
 molPrefixes = ['LMCSS_splitted_receptor1',
                'SMCSS_splitted_receptor1',
                'hiResApo_splitted_receptor1',
-               'holo_splitted_receptor1',]
+               'hiResHolo_splitted_receptor1',]
 
 for molPrefix in molPrefixes:
     pymol.cmd.load('/extra/banzai2/j5wagner/CELPP/2016_07_14_pymol_alignment/test_data/5ev8/%s.pdb' %(molPrefix))
