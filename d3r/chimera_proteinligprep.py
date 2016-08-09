@@ -1,4 +1,4 @@
-#!/usr/bin/evn python
+#!/usr/bin/env python
 
 import commands
 import os
@@ -63,7 +63,7 @@ proxim_filter_distance = 15
 molPrefixes = ['LMCSS_splitted_receptor1',
                'SMCSS_splitted_receptor1',
                'hiResApo_splitted_receptor1',
-               'holo_splitted_receptor1',]
+               'hiResHolo_splitted_receptor1',]
 
 for molPrefix in molPrefixes:
     pymol.cmd.load('/extra/banzai2/j5wagner/CELPP/2016_07_14_pymol_alignment/test_data/5ev8/%s.pdb' %(molPrefix))
@@ -213,7 +213,7 @@ def ligand_prepare(ligand_smile, out_lig_file):
     unprep_lig_file_1 = ligand_smile.replace('.smi','_unprep_step1.sdf')
     with open('rdkit_smiles_to_3d_sdf.py','wb') as of:
         of.write(rdkit_smiles_to_3d_sdf_text) 
-    commands.getoutput('/var/home/j5wagner/miniconda2/bin/python rdkit_smiles_to_3d_sdf.py %s %s >& rdkit_smiles_to_3d_sdf_out' %(ligand_smile, unprep_lig_file_1))
+    commands.getoutput('/data/celpp/miniconda2/bin/python rdkit_smiles_to_3d_sdf.py %s %s >& rdkit_smiles_to_3d_sdf_out' %(ligand_smile, unprep_lig_file_1))
     unprep_lig_file_2 = ligand_smile.replace('.smi','_unprep_step2.mol2')
     commands.getoutput('babel -isdf %s -omol2 %s' %(unprep_lig_file_1, unprep_lig_file_2))
     #unprep_lig_file = ligand_smile.replace('.smi','_unprep.mol2')
@@ -357,7 +357,7 @@ def main_proteinprep (challenge_data_path, pdb_protein_path, working_folder ):
 #         else:
 #         ########################################################
 #         #step 5, align all proteins
-#             for method_type in ("SMCSS", "holo", "hiResApo"):
+#             for method_type in ("SMCSS", "hiResHolo", "hiResApo"):
 #                 if method_type in query_dic:
 #                     #copy to here
 #                     if len(query_dic[method_type]) == 2:

@@ -445,6 +445,7 @@ Blastnfilter Summary
         challenge_dir = ''
         try:
             challenge_dir = self._create_challenge_dir()
+            logger.debug('Made challenge dir %s' %(challenge_dir))
         except OSError:
                 logger.exception('Problem making challenge dir ' +
                                  challenge_dir)
@@ -463,7 +464,6 @@ Blastnfilter Summary
                       ' --outdir ' + challenge_dir)
 
         genchallenge_name = os.path.basename(self.get_args().genchallenge)
-
         self.run_external_command(genchallenge_name, cmd_to_run,
                                   True)
 
@@ -483,6 +483,7 @@ Blastnfilter Summary
         except Exception as e:
             logger.exception('Caught exception')
             self.set_error('Caught exception ' + str(e))
-
         # assess the result
+        logger.debug('About to complete challengedata.py')
         self.end()
+        logger.debug('Completed challengedata.py')

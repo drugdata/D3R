@@ -1,4 +1,4 @@
-#!/usr/bin/evn python
+#!/usr/bin/env python
 __author__ = 'sliu'
 #from stage 3 blastnfilter result generating the stage 4 dataset to release to the participant
 import os
@@ -6,7 +6,7 @@ import sys
 import glob
 import logging
 from rdkit import Chem
-from rdkit.Chem import AllChem as allChem
+from rdkit.Chem import AllChem
 import commands
 
 
@@ -69,9 +69,9 @@ def generate_ligand (inchi, ligand_title, ):
     inchi_file.writelines(valid_inchi)
     mol_filename = "lig_" + ligand_title + ".mol"
     #rd_mol_H = Chem.AddHs(rd_mol)
-    #allChem.EmbedMolecule(rd_mol_H)
-    #allChem.UFFOptimizeMolecule(rd_mol_H)
-    allChem.Compute2DCoords(rd_mol)
+    #AllChem.EmbedMolecule(rd_mol_H)
+    #AllChem.UFFOptimizeMolecule(rd_mol_H)
+    AllChem.Compute2DCoords(rd_mol)
     Chem.MolToMolFile (rd_mol, mol_filename, includeStereo=True)
 
 def pull_ligand_out (proteinfile, ligname, ligandfile):

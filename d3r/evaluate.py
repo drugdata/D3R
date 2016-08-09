@@ -1,4 +1,4 @@
-#!/usr/bin/evn python
+#!/usr/bin/env python
 
 import commands
 import os
@@ -284,8 +284,8 @@ def layout_result (pickle_file, txt_file):
             data.append(new_line)
     data.append("=====Total number of query protein: %s =====\n"%total_pdb)
     #append total number of valid pdb for each type 
-    data.append("%-20s%-10s%-10s%-10s%-10s\n"%("Valid cases", len(LMCSS_list), len(SMCSS_list), len(hiResApo_list), len(holo_list)))
-    data.append("%-20s%-10.3f%-10.3f%-10.3f%-10.3f\n"%("Average", numpy.average(LMCSS_list), numpy.average(SMCSS_list), numpy.average(hiResApo_list), numpy.average(holo_list)))
+    data.append("%-20s%-10s%-10s%-10s%-10s\n"%("Valid cases", len(LMCSS_list), len(SMCSS_list), len(hiResApo_list), len(hiResHolo_list)))
+    data.append("%-20s%-10.3f%-10.3f%-10.3f%-10.3f\n"%("Average", numpy.average(LMCSS_list), numpy.average(SMCSS_list), numpy.average(hiResApo_list), numpy.average(hiResHolo_list)))
     data.append("=====Abnormal RMSDs =====\n")
     for abnormal_id in abnormal_dic:
         data.append("%-20s%-10.3f\n"%(abnormal_id, abnormal_dic[abnormal_id]))
