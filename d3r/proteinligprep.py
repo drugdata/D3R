@@ -1,4 +1,4 @@
-#!/usr/bin/evn python
+#!/usr/bin/env python
 
 import commands
 import os
@@ -48,36 +48,6 @@ def extract_info_from_s2(stage_2_out):
 
 #copy all the txt files from the output stage 2 location and create folder for each of this named by the query entry
 #check if it finished later needed 
-def get_center(ligand_pdb):
-    xyz_lines = open(ligand_pdb,"r").readlines()
-    multi_ligand = False
-    atom_list = []
-    x = y = z = 0
-    for xyz_line in xyz_lines:
-        if "HETATM" in xyz_line:
-            #logging.debug("Check the get center of this protein: %s for this ligand: %s"%(protein_file, ligname))
-            atom_name = xyz_line[12:16]
-            if atom_name in atom_list:
-                multi_ligand = True
-            else:
-                atom_list.append(atom_name)
-                try:
-                    x += float(xyz_line[30:38])
-                    y+= float(xyz_line[38:46])
-                    z+= float(xyz_line[46:54])
-                except:
-                    logging.debug("Fatal error: Cannot find the XYZ coordinate for this ligand:%s"%ligand_pdb)
-                    return False
-    if not multi_ligand:
-        lig_center = "%8.3f, %8.3f, %8.3f"%(x/len(atom_list), y/len(atom_list), z/len(atom_list))
-        logging.debug("Ligand center for this case:%s is %s"%(ligand_pdb, lig_center))
-        return lig_center
-    else:
-        logging.debug("Fatal error: Found multiple ligands in file:%s"%ligand_pdb)
-        return False
-    
-    
-    
     
 def ligand_prepare(ligand_smile, out_lig_file):
     if os.path.isfile(out_lig_file):
@@ -132,13 +102,13 @@ def main_proteinprep ( challenge_data_path, pdb_protein_path, working_folder ):
 #         query_dic = extract_info_from_s2(target_id + ".txt")
 # 
 #     ######################
-#     #step 1, check if there is a protein start with largest if not then don't need to continue
+#     #step 1, check if there is a protein start with LMCSS if not then don't need to continue
 #     ######################
-#         if not "largest" in query_dic:
-#             logging.info("For this target protein: %s, there is no protein sharing the largest ligand witt. Not able to generate Docking grid, pass for this case..."%target_id)
+#         if not "LMCSS" in query_dic:
+#             logging.info("For this target protein: %s, there is no protein sharing the LMCSS ligand witt. Not able to generate Docking grid, pass for this case..."%target_id)
 #             os.chdir(current_dir_layer_1)     
 #             continue
-#         elif len(query_dic["largest"]) != 2:
+#         elif len(query_dic["LMCSS"]) != 2:
 #             logging.info("For this target protein: %s, the laregest protein has wrong number of informations associate with this id..."%target_id)
 #             os.chdir(current_dir_layer_1)
 #             continue
@@ -150,33 +120,33 @@ def main_proteinprep ( challenge_data_path, pdb_protein_path, working_folder ):
 #             logging.info("============Start to work in this target protein: %s============"%target_id)
 #             #raw_input()
 #         ######################
-#         #step 2, if there is a largest protein then copy this portein to this folder and generate the center of the ligand
+#         #step 2, if there is a LMCSS protein then copy this portein to this folder and generate the center of the ligand
 #         ######################
-#             largest_candidate_id = query_dic["largest"][0]
-#             largest_candidate_filename = "largest-%s_%s.pdb" %(target_id, largest_candidate_id)
-#             largest_pdb_folder_name = largest_candidate_id[1:3]
-#             largest_ent_file = "pdb" + largest_candidate_id  + ".ent"
-#             largest_pdbloc = os.path.join(pdb_protein_path, largest_pdb_folder_name, largest_ent_file)
-#             if not os.path.isfile(largest_pdbloc):
-#                 logging.info("Unable to find the ent file associate with the largest candidate pdb: %s at location %s"%(largest_candidate_id, largest_pdbloc)) 
+#             LMCSS_candidate_id = query_dic["LMCSS"][0]
+#             LMCSS_candidate_filename = "LMCSS-%s_%s.pdb" %(target_id, LMCSS_candidate_id)
+#             LMCSS_pdb_folder_name = LMCSS_candidate_id[1:3]
+#             LMCSS_ent_file = "pdb" + LMCSS_candidate_id  + ".ent"
+#             LMCSS_pdbloc = os.path.join(pdb_protein_path, LMCSS_pdb_folder_name, LMCSS_ent_file)
+#             if not os.path.isfile(LMCSS_pdbloc):
+#                 logging.info("Unable to find the ent file associate with the LMCSS candidate pdb: %s at location %s"%(LMCSS_candidate_id, LMCSS_pdbloc)) 
 #                 os.chdir(current_dir_layer_1)
 #                 continue
 #             else:
-#                 commands.getoutput("cp %s %s"%(largest_pdbloc, largest_candidate_filename))
-#                 valid_candidates[target_id].append(largest_candidate_filename)
+#                 commands.getoutput("cp %s %s"%(LMCSS_pdbloc, LMCSS_candidate_filename))
+#                 valid_candidates[target_id].append(LMCSS_candidate_filename)
 # 
 #         ######################
-#         #step 3, get the center of the ligand in the largest pdb
+#         #step 3, get the center of the ligand in the LMCSS pdb
 #         ######################
 #         try:
-#             largest_ligand = query_dic["largest"][1] 
+#             LMCSS_ligand = query_dic["LMCSS"][1] 
 #         except:
-#             logging.info("There is no ligand information for this largest candidate protein: %s"%(largest_candidate_id))
+#             logging.info("There is no ligand information for this LMCSS candidate protein: %s"%(LMCSS_candidate_id))
 #             os.chdir(current_dir_layer_1)
 #             continue
-#         ligand_center = get_center (largest_candidate_filename, largest_ligand) 
+#         ligand_center = get_center (LMCSS_candidate_filename, LMCSS_ligand) 
 #         if not ligand_center:
-#             logging.info("Unable to find the center of the ligand for the largest candidate pdb: %s"%(largest_candidate_id))
+#             logging.info("Unable to find the center of the ligand for the LMCSS candidate pdb: %s"%(LMCSS_candidate_id))
 #             os.chdir(current_dir_layer_1)
 #             continue
 #         else:
@@ -212,7 +182,7 @@ def main_proteinprep ( challenge_data_path, pdb_protein_path, working_folder ):
 #         else:
 #         ########################################################
 #         #step 5, align all proteins
-#             for method_type in ("smallest", "holo", "apo"):
+#             for method_type in ("SMCSS", "hiResHolo", "hiResApo"):
 #                 if method_type in query_dic:
 #                     #copy to here
 #                     if len(query_dic[method_type]) == 2:
@@ -226,14 +196,14 @@ def main_proteinprep ( challenge_data_path, pdb_protein_path, working_folder ):
 #                     method_ent_file = "pdb" + method_type_id  + ".ent"
 #                     method_pdbloc = os.path.join(pdb_protein_path, method_type_folder_name, method_ent_file)
 #                     if not os.path.isfile(method_pdbloc):
-#                         logging.info("Unable to find the ent file associate with the %s pdb with ID: %s at location %s"%(method_type, method_type_id, largest_pdbloc))
+#                         logging.info("Unable to find the ent file associate with the %s pdb with ID: %s at location %s"%(method_type, method_type_id, LMCSS_pdbloc))
 #                         os.chdir(current_dir_layer_1)
 #                         continue
 #                     else:
 #                         method_type_filename = "%s-%s_%s.pdb" %(method_type, target_id, method_type_id)
 #                         commands.getoutput("cp %s %s"%(method_pdbloc, method_type_filename))
 #                         valid_candidates[target_id].append(method_type_filename)
-#                     align_proteins (largest_candidate_filename, method_type_filename, method_type_filename)
+#                     align_proteins (LMCSS_candidate_filename, method_type_filename, method_type_filename)
  
          
     ## Get all potential target directories and candidates within
@@ -264,25 +234,13 @@ def main_proteinprep ( challenge_data_path, pdb_protein_path, working_folder ):
         commands.getoutput('cp %s %s' %(lig_smiles_file, dest_smiles_file))
 
     
-        ## Get the ligand center of mass for the "largest" candidate (all of the other candidates have been aligned to this one)
-        largest_ligand_filenames = glob.glob('%s/largest-*-lig.pdb'%(target_dir_path))
-        if len(largest_ligand_filenames) != 1:
-            logging.info("Failed to find largest structure's ligand file. There should be one match but I found %r" %(largest_ligand_filenames))
-        largest_ligand_filename = largest_ligand_filenames[0]
-        ligand_center = get_center (largest_ligand_filename) 
-        if not ligand_center:
-            logging.info("Unable to find the center of the ligand for the largest candidate pdb: %s"%(pot_target_id))
-            os.chdir(current_dir_layer_1)
-            continue
-        else:
-            with open("%s/center.txt" %(pot_target_id), "w") as center_file:
-                center_file.writelines(ligand_center)
-                    
+        center_file = os.path.join(target_dir_path,'center.txt')
+        commands.getoutput('cp %s %s' %(center_file, pot_target_id))
 
         
         # Copy in each valid candidate
         for candidate_file in glob.glob('%s/*-%s_*.pdb' %(target_dir_path, pot_target_id)):
-            # The largest ligand will be in a pdb file called something like celpp_week19_2016/1fcz/largest-1fcz_1fcz-156-lig.pdb
+            # The LMCSS ligand will be in a pdb file called something like celpp_week19_2016/1fcz/LMCSS-1fcz_1fcz-156-lig.pdb
             # We want to make sure we don't treat this like a receptor
             if 'lig.pdb' in candidate_file:
                 continue
@@ -301,7 +259,7 @@ def main_proteinprep ( challenge_data_path, pdb_protein_path, working_folder ):
             
             ## Parse the candidate name 
             ## Get the method type, target, and candidate info from the filename
-            # for example, this will parse 'apo-5hib_2eb2_docked.mol' into [('apo', '5hib', '2eb2')]
+            # for example, this will parse 'hiResApo-5hib_2eb2_docked.mol' into [('hiResApo', '5hib', '2eb2')]
             
             parsed_name = re.findall('([a-zA-Z0-9]+)-([a-zA-Z0-9]+)_([a-zA-Z0-9]+)-?([a-zA-Z0-9]*).pdb', candidate_filename)
             if len(parsed_name) != 1:
