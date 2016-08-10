@@ -85,7 +85,7 @@ def extract_info_from_s2(stage_2_out):
 #copy all the txt files from the output stage 2 location and create folder for each of this named by the query entry
 #check if it finished later needed 
 
-def ligand_prepare(ligand_smile, out_lig_file):
+def ligand_prepare(ligand_smile, out_lig_file, rdkit_python):
 #    commands.getoutput("$SCHRODINGER/ligprep -WAIT -i 0 -nt -s 1 -g -ismi %s -omae %s"%(ligand_smile, out_lig_file) ) 
 #    return os.path.isfile(out_lig_file)
     if os.path.isfile(out_lig_file):
@@ -95,7 +95,7 @@ def ligand_prepare(ligand_smile, out_lig_file):
     unprep_lig_file_1 = ligand_smile.replace('.smi','_unprep_step1.sdf')
     with open('rdkit_smiles_to_3d_sdf.py','wb') as of:
         of.write(rdkit_smiles_to_3d_sdf_text) 
-    commands.getoutput('/data/celpp/miniconda2/bin/python rdkit_smiles_to_3d_sdf.py %s %s >& rdkit_smiles_to_3d_sdf_out' %(ligand_smile, unprep_lig_file_1))
+    commands.getoutput('%s/bin/python rdkit_smiles_to_3d_sdf.py %s %s >& rdkit_smiles_to_3d_sdf_out' %(rdkit_python, ligand_smile, unprep_lig_file_1))
     unprep_lig_file_2 = ligand_smile.replace('.smi','_unprep_step2.mol2')
     commands.getoutput('babel -isdf %s -omol2 %s' %(unprep_lig_file_1, unprep_lig_file_2))
     #unprep_lig_file = ligand_smile.replace('.smi','_unprep.mol2')
@@ -105,19 +105,6 @@ def ligand_prepare(ligand_smile, out_lig_file):
     commands.getoutput('chimera --nogui --script "chimeraPrep.py %s %s" >& chimeraLigPrep.out' %(unprep_lig_file_2, out_lig_file))
     #time.sleep(sleep_time) 
     return os.path.isfile(out_lig_file)
-
-
-def align_proteins (target_protein, pre_prepare_protein, post_prepare_protein):
-    #commands.getoutput("$SCHRODINGER/utilities/structalign %s %s"%(target_protein, pre_prepare_protein))
-    with open('pymolAlign.py','wb') as of:
-        of.write(pymol_align_text)
-    commands.getoutput("python pymolAlign.py %s %s >& pymol_align_out"%(target_protein, pre_prepare_protein))
-    rotated_protein = "rot-" + pre_prepare_protein
-    if os.path.isfile(rotated_protein):
-        commands.getoutput("mv %s %s"%(rotated_protein, post_prepare_protein))
-        return True
-    else:
-        return False
 
 def split_complex (part, complex_file, out_split):
     commands.getoutput("$SCHRODINGER/run split_structure.py -many_files -m %s %s %s"%(part, complex_file, out_split))
@@ -140,7 +127,7 @@ def prepare_protein (protein_file, prepared_protein, sleep_time = 300):
         return False
 
 
-def main_proteinprep (challenge_data_path, pdb_protein_path, working_folder ):
+def main_proteinprep (challenge_data_path, pdb_protein_path, working_folder, rdkit_python ):
     os.chdir(working_folder)
     current_dir_layer_1 = os.getcwd()
 #     all_stage_2_out = glob.glob("%s/*.txt"%challenge_data_path)
@@ -328,7 +315,7 @@ def main_proteinprep (challenge_data_path, pdb_protein_path, working_folder ):
             candidate_structure_ligand = parsed_name[0][2]
             
             # Prepare the ligand
-            if not ligand_prepare(smiles_filename, smiles_filename.replace('.smi','_prepared.mol2')):
+            if not ligand_prepare(smiles_filename, smiles_filename.replace('.smi','_prepared.mol2'), rdkit_python):
                 logging.info("Unable to prepare the ligand for this query protein:%s"%target_id)
                 #os.chdir(current_dir_layer_1)
                 continue 
@@ -374,6 +361,7 @@ if ("__main__") == (__name__):
     parser.add_argument("-p", "--pdbdb", metavar = "PATH", help = "PDB DATABANK which we will dock into")
     parser.add_argument("-c", "--candidatedir", metavar="PATH", help = "PATH where we could find the stage 2 output")
     parser.add_argument("-o", "--outdir", metavar = "PATH", help = "PATH where we run stage 3")
+    parser.add_argument("-r", "--rdkitpython", metavar = "PATH", help = "Path for python build with new version of rdkit.", default="/data/celpp/miniconda2/")
     #parser.add_option("-s", "--sleep", metavar = "VALUE", help = "Sleep time for protein prep")
     #parser.add_option("-u", "--update", default = False, action = "store_true", help = "update the protein generation and docking step")
     logger = logging.getLogger()
@@ -382,10 +370,11 @@ if ("__main__") == (__name__):
     pdb_location = opt.pdbdb
     challenge_data_path = opt.candidatedir
     result_path = opt.outdir
+    rdkit_python = opt.rdkitpython
     #sleep_time = opt.sleep
     #running under this dir
     running_dir = os.getcwd()
-    main_proteinprep(challenge_data_path, pdb_location, result_path)
+    main_proteinprep(challenge_data_path, pdb_location, result_path, rdkit_python)
     #move the final log file to the result dir
     log_file_path = os.path.join(running_dir, 'final.log')
     commands.getoutput("mv %s %s"%(log_file_path, result_path))
