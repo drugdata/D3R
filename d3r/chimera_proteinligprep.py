@@ -50,7 +50,6 @@ with open(sys.argv[2],'wb') as of:
     writeMol2([mol], of)
 '''
 
-
 def extract_info_from_s2(stage_2_out):
     info_dic = {}
     f = open(stage_2_out,"r")
