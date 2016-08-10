@@ -48,36 +48,6 @@ def extract_info_from_s2(stage_2_out):
 
 #copy all the txt files from the output stage 2 location and create folder for each of this named by the query entry
 #check if it finished later needed 
-def get_center(ligand_pdb):
-    xyz_lines = open(ligand_pdb,"r").readlines()
-    multi_ligand = False
-    atom_list = []
-    x = y = z = 0
-    for xyz_line in xyz_lines:
-        if "HETATM" in xyz_line:
-            #logging.debug("Check the get center of this protein: %s for this ligand: %s"%(protein_file, ligname))
-            atom_name = xyz_line[12:16]
-            if atom_name in atom_list:
-                multi_ligand = True
-            else:
-                atom_list.append(atom_name)
-                try:
-                    x += float(xyz_line[30:38])
-                    y+= float(xyz_line[38:46])
-                    z+= float(xyz_line[46:54])
-                except:
-                    logging.debug("Fatal error: Cannot find the XYZ coordinate for this ligand:%s"%ligand_pdb)
-                    return False
-    if not multi_ligand:
-        lig_center = "%8.3f, %8.3f, %8.3f"%(x/len(atom_list), y/len(atom_list), z/len(atom_list))
-        logging.debug("Ligand center for this case:%s is %s"%(ligand_pdb, lig_center))
-        return lig_center
-    else:
-        logging.debug("Fatal error: Found multiple ligands in file:%s"%ligand_pdb)
-        return False
-    
-    
-    
     
 def ligand_prepare(ligand_smile, out_lig_file):
     if os.path.isfile(out_lig_file):
@@ -264,20 +234,8 @@ def main_proteinprep ( challenge_data_path, pdb_protein_path, working_folder ):
         commands.getoutput('cp %s %s' %(lig_smiles_file, dest_smiles_file))
 
     
-        ## Get the ligand center of mass for the "LMCSS" candidate (all of the other candidates have been aligned to this one)
-        LMCSS_ligand_filenames = glob.glob('%s/LMCSS-*-lig.pdb'%(target_dir_path))
-        if len(LMCSS_ligand_filenames) != 1:
-            logging.info("Failed to find LMCSS structure's ligand file. There should be one match but I found %r" %(LMCSS_ligand_filenames))
-        LMCSS_ligand_filename = LMCSS_ligand_filenames[0]
-        ligand_center = get_center (LMCSS_ligand_filename) 
-        if not ligand_center:
-            logging.info("Unable to find the center of the ligand for the LMCSS candidate pdb: %s"%(pot_target_id))
-            os.chdir(current_dir_layer_1)
-            continue
-        else:
-            with open("%s/center.txt" %(pot_target_id), "w") as center_file:
-                center_file.writelines(ligand_center)
-                    
+        center_file = os.path.join(target_dir_path,'center.txt')
+        commands.getoutput('cp %s %s' %(center_file, pot_target_id))
 
         
         # Copy in each valid candidate

@@ -50,96 +50,6 @@ with open(sys.argv[2],'wb') as of:
     writeMol2([mol], of)
 '''
 
-pymol_align_text = '''
-import __main__
-__main__.pymol_argv = [ 'pymol', '-c'] #put -cq here to suppress pymol output
-import pymol
-pymol.finish_launching()
-import sys
-
-caAlignment = True
-proxim_filter_distance = 15
-
-molPrefixes = ['LMCSS_splitted_receptor1',
-               'SMCSS_splitted_receptor1',
-               'hiResApo_splitted_receptor1',
-               'hiResHolo_splitted_receptor1',]
-
-for molPrefix in molPrefixes:
-    pymol.cmd.load('/extra/banzai2/j5wagner/CELPP/2016_07_14_pymol_alignment/test_data/5ev8/%s.pdb' %(molPrefix))
-
-
-### Geometric filter ###
-# >>> help(pymol.cmd.pseudoatom)
-#Help on function pseudoatom in module pymol.creating:
-#
-#pseudoatom(object='', selection='', name='PS1', resn='PSD', resi='1', chain='P', segi='PSDO', elem='PS', vdw=-1.0, hetatm=1, b=0.0, q=0.0, color='', label='', pos=None, state=0, mode='rms', quiet=1,)
-
-center = open('/extra/banzai2/j5wagner/CELPP/2016_07_14_pymol_alignment/test_data/5ev8/center.txt').read().split()
-center = [float(i.strip(',')) for i in center]
-print center
-pymol.cmd.pseudoatom('LMCSS_lig_center', pos=center)
-pymol.cmd.select('reference',"(/LMCSS_splitted_receptor1//A//CA) and (byres (LMCSS_lig_center around %i))" %(proxim_filter_dist) ) # Remove reference to chain A in actual deploy - Shuai's solution to issue 56 will cover this
-
-
-for molPrefix in molPrefixes[1:]:
-    print
-    print
-    print '=========================='
-    print "PROCESSING", molPrefix
-
-
-    ### Secondary structure filter ###  
-    # Get resnums and their SS types
-    #resiSS = pymol.cmd.iterate('/hiResApo_splitted_receptor1////CA','(resi,resv,ss)')
-    pymol.stored.tuples = []
-    resiSS = pymol.cmd.iterate(molPrefix,'stored.tuples.append((resn,resv,ss))')
-    print pymol.stored.tuples
-
-    # Filter to "H" and "S" with list comp
-    print "FILTERING FOR SS"
-    ss_near_bs = [i for i in pymol.stored.tuples if i[2] in ['H','S']]
-    print ss_near_bs
-    resv_sel_str = '+'.join([str(i[1]) for i in ss_near_bs])
-    print resv_sel_str
-
-
-
-    ### 3D alignment ###
-
-
-    ##  API reference  ##
-    ## http://www.pymolwiki.org/index.php/Align
-    #cmd.align( string mobile, string target, float cutoff=2.0,
-    #           int cycles=5, float gap=-10.0, float extend=-0.5,
-    #           int max_gap=50, string object=None, string matrix='BLOSUM62',
-    #           int mobile_state=0, int target_state=0, int quiet=1,
-    #           int max_skip=0, int transform=1, int reset=0 )
-
-
-
-    # Remove the A chain label when this reaches production - Shuai's fix to issue 56 will only leave one chain.
-    if caAlignment:
-        alnOut = pymol.cmd.align('/%s//A//CA'%(molPrefix),
-                                 'reference'
-                                 #'/LMCSS_splitted_receptor1//A/`%s/CA'%(resv_sel_str)
-                                 )# Remove reference to chain A in actual deploy - Shuai's solution to issue 56 will cover this
-    else:
-        alnOut = pymol.cmd.align('/%s//A//'%(molPrefix),
-                                 'reference',
-                                 #'/LMCSS_splitted_receptor1//A//CA',
-                                 )# Remove reference to chain A in actual deploy - Shuai's solution to issue 56 will cover this
-    pymol.cmd.save('%s_aligned.pdb' %(molPrefix),
-                   '/%s' %(molPrefix)
-                   )
-    print alnOut
-pymol.cmd.save('LMCSS_reference.pdb' ,
-               'reference'
-               )
-
-#print sys.stdout.read()
-pymol.cmd.quit()
-'''
 
 def extract_info_from_s2(stage_2_out):
     info_dic = {}
@@ -175,33 +85,6 @@ def extract_info_from_s2(stage_2_out):
 
 #copy all the txt files from the output stage 2 location and create folder for each of this named by the query entry
 #check if it finished later needed 
-def get_center(ligand_pdb):
-    xyz_lines = open(ligand_pdb,"r").readlines()
-    multi_ligand = False
-    atom_list = []
-    x = y = z = 0
-    for xyz_line in xyz_lines:
-        if "HETATM" in xyz_line:
-            #logging.debug("Check the get center of this protein: %s for this ligand: %s"%(protein_file, ligname))
-            atom_name = xyz_line[12:16]
-            if atom_name in atom_list:
-                multi_ligand = True
-            else:
-                atom_list.append(atom_name)
-                try:
-                    x += float(xyz_line[30:38])
-                    y+= float(xyz_line[38:46])
-                    z+= float(xyz_line[46:54])
-                except:
-                    logging.debug("Fatal error: Cannot find the XYZ coordinate for this ligand:%s"%ligand_pdb)
-                    return False
-    if not multi_ligand:
-        lig_center = "%8.3f, %8.3f, %8.3f"%(x/len(atom_list), y/len(atom_list), z/len(atom_list))
-        logging.debug("Ligand center for this case:%s is %s"%(ligand_pdb, lig_center))
-        return lig_center
-    else:
-        logging.debug("Fatal error: Found multiple ligands in file:%s"%ligand_pdb)
-        return False
 
 def ligand_prepare(ligand_smile, out_lig_file):
 #    commands.getoutput("$SCHRODINGER/ligprep -WAIT -i 0 -nt -s 1 -g -ismi %s -omae %s"%(ligand_smile, out_lig_file) ) 
@@ -407,21 +290,13 @@ def main_proteinprep (challenge_data_path, pdb_protein_path, working_folder ):
         local_smiles_file = os.path.basename(lig_smiles_file)
         dest_smiles_file = os.path.join(pot_target_id, local_smiles_file)
         commands.getoutput('cp %s %s' %(lig_smiles_file, dest_smiles_file))
-    
+        center_file = os.path.join(target_dir_path,'center.txt')
+        commands.getoutput('cp %s %s' %(center_file, pot_target_id))
         ## Get the ligand center of mass for the "LMCSS" candidate (all of the other candidates have been aligned to this one)
         LMCSS_ligand_filenames = glob.glob('%s/LMCSS-*-lig.pdb'%(target_dir_path))
         if len(LMCSS_ligand_filenames) != 1:
             logging.info("Failed to find LMCSS structure's ligand file. There should be one match but I found %r" %(LMCSS_ligand_filenames))
         LMCSS_ligand_filename = LMCSS_ligand_filenames[0]
-        ligand_center = get_center (LMCSS_ligand_filename) 
-        if not ligand_center:
-            logging.info("Unable to find the center of the ligand for the LMCSS candidate pdb: %s"%(pot_target_id))
-            os.chdir(current_dir_layer_1)
-            continue
-        else:
-            with open("%s/center.txt" %(pot_target_id), "w") as center_file:
-                center_file.writelines(ligand_center)
-                    
         
         # Copy in each valid candidate
         for candidate_file in glob.glob('%s/*-%s_*.pdb' %(target_dir_path, pot_target_id)):

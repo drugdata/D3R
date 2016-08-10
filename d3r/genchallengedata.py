@@ -10,6 +10,97 @@ from rdkit.Chem import AllChem
 import commands
 
 
+pymol_align_text = '''
+import __main__
+__main__.pymol_argv = [ 'pymol', '-c'] #put -cq here to suppress pymol output
+import pymol
+pymol.finish_launching()
+import sys
+
+caAlignment = True
+proxim_filter_dist = 20
+
+#molPrefixes = ['LMCSS_splitted_receptor1',
+#               'SMCSS_splitted_receptor1',
+#               'hiResApo_splitted_receptor1',
+#               'hiResHolo_splitted_receptor1',]
+
+reference_pdb = sys.argv[1]
+mobile_pdb = sys.argv[2]
+print 'reference_pdb is', reference_pdb
+print 'mobie_pdb is', mobile_pdb
+
+reference_pdb_obj_name = reference_pdb.split('/')[-1].split('.pdb')[0]
+mobile_pdb_obj_name = mobile_pdb.split('/')[-1].split('.pdb')[0]
+
+pymol.cmd.load(reference_pdb)
+pymol.cmd.load(mobile_pdb)
+
+
+### Geometric filter ###
+# >>> help(pymol.cmd.pseudoatom)
+#Help on function pseudoatom in module pymol.creating:
+#
+#pseudoatom(object='', selection='', name='PS1', resn='PSD', resi='1', chain='P', segi='PSDO', elem='PS', vdw=-1.0, hetatm=1, b=0.0, q=0.0, color='', label='', pos=None, state=0, mode='rms', quiet=1,)
+
+center = open('center.txt').read().split()
+center = [float(i.strip(',')) for i in center]
+print center
+pymol.cmd.pseudoatom('LMCSS_lig_center', pos=center)
+pymol.cmd.select('reference',"(/%s////CA) and (byres (LMCSS_lig_center around %i))" %(reference_pdb_obj_name,proxim_filter_dist) )
+
+
+print
+print
+print '=========================='
+print "PROCESSING", mobile_pdb_obj_name
+
+
+### Secondary structure filter ###  
+# Get resnums and their SS types
+pymol.stored.tuples = []
+resiSS = pymol.cmd.iterate(mobile_pdb_obj_name,'stored.tuples.append((resn,resv,ss))')
+
+# Filter to "H" and "S" with list comp
+print "FILTERING FOR SS"
+ss_near_bs = [i for i in pymol.stored.tuples if i[2] in ['H','S']]
+resv_sel_str = '+'.join([str(i[1]) for i in ss_near_bs])
+
+
+### 3D alignment ###
+
+
+##  API reference  ##
+## http://www.pymolwiki.org/index.php/Align
+#cmd.align( string mobile, string target, float cutoff=2.0,
+#           int cycles=5, float gap=-10.0, float extend=-0.5,
+#           int max_gap=50, string object=None, string matrix='BLOSUM62',
+#           int mobile_state=0, int target_state=0, int quiet=1,
+#           int max_skip=0, int transform=1, int reset=0 )
+
+
+if caAlignment:
+    alnOut = pymol.cmd.align('/%s////CA'%(mobile_pdb_obj_name),
+                             'reference'
+                             )
+else:
+    alnOut = pymol.cmd.align('/%s////'%(mobile_pdb_obj_name),
+                             'reference',
+                             )
+pymol.cmd.save('rot-%s.pdb' %(mobile_pdb_obj_name),
+               '/%s' %(mobile_pdb_obj_name)
+               )
+print alnOut
+pymol.cmd.save('alignment_reference.pdb' ,
+               'reference'
+               )
+
+#print sys.stdout.read()
+pymol.cmd.quit()
+'''
+
+                                                                                                                                                                                           
+
 def parse_txt (txt_filename):
     #parsing the result txt file and give back the
 
@@ -49,12 +140,22 @@ def parse_txt (txt_filename):
     return info_dic  
 
 def align_proteins (target_protein, pre_prepare_protein, post_prepare_protein):
-    commands.getoutput("$SCHRODINGER/utilities/structalign %s %s"%(target_protein, pre_prepare_protein))
+    #commands.getoutput("$SCHRODINGER/utilities/structalign %s %s"%(target_protein, pre_prepare_protein))
+    with open('pymolAlign.py','wb') as of:
+        of.write(pymol_align_text)
+    stdout_file = 'pymol_align_%s_out' %(pre_prepare_protein)
+    stderr_file = 'pymol_align_%s_err' %(pre_prepare_protein)
+    cmd = "python pymolAlign.py %s %s 2> %s 1> %s"%(target_protein, pre_prepare_protein, stderr_file, stdout_file)
+    logging.info('Running alignment command %s' %(cmd))
+    commands.getoutput(cmd)
+
     rotated_protein = "rot-" + pre_prepare_protein
-    if os.path.isfile(rotated_protein):
+    stderr_output = open(stderr_file).read().strip()
+    if os.path.isfile(rotated_protein) and stderr_output== '':
         commands.getoutput("mv %s %s"%(rotated_protein, post_prepare_protein))
         return True
     else:
+        logging.info('Alignment failed. Command was %s. Stderr output was %r' %(cmd, stderr_output))
         return False
 
 def generate_ligand (inchi, ligand_title, ):
@@ -95,6 +196,41 @@ def pull_ligand_out (proteinfile, ligname, ligandfile):
     else:
         logging.info("Fatal error: Found multiple ligand for this protein:%s"%proteinfile)
         return False
+
+
+
+def get_center(ligand_pdb):
+    xyz_lines = open(ligand_pdb,"r").readlines()
+    multi_ligand = False
+    atom_list = []
+    x = y = z = 0
+    for xyz_line in xyz_lines:
+        if "HETATM" in xyz_line:
+            #logging.debug("Check the get center of this protein: %s for this ligand: %s"%(protein_file, ligname))                                                                                                               
+            atom_name = xyz_line[12:16]
+            if atom_name in atom_list:
+                multi_ligand = True
+            else:
+                atom_list.append(atom_name)
+                try:
+                    x += float(xyz_line[30:38])
+                    y+= float(xyz_line[38:46])
+                    z+= float(xyz_line[46:54])
+                except:
+                    logging.debug("Fatal error: Cannot find the XYZ coordinate for this ligand:%s"%ligand_pdb)
+                    return False
+    if not multi_ligand:
+        lig_center = "%8.3f, %8.3f, %8.3f"%(x/len(atom_list), y/len(atom_list), z/len(atom_list))
+        logging.debug("Ligand center for this case:%s is %s"%(ligand_pdb, lig_center))
+        return lig_center
+    else:
+        logging.debug("Fatal error: Found multiple ligands in file:%s"%ligand_pdb)
+        return False
+
+
+
+
+
         
 def main_gendata (s3_result_path, path_2_ent, s4_result_path):
     os.chdir(s4_result_path)
@@ -164,10 +300,27 @@ def main_gendata (s3_result_path, path_2_ent, s4_result_path):
             #try to extract the LMCSS ligand from the LMCSS protein
             commands.getoutput("cp %s %s"%(LMCSS_pdbloc,LMCSS_protein_name))
             if not pull_ligand_out (LMCSS_protein_name, LMCSS_pro_ligand, LMCSS_ligand_name):
+                logging.info('Unable to remove ligand from %s. Skipping!' %(LMCSS_protein_name))
                 os.chdir(current_dir_layer_1)
                 continue
                 
             logging.info("Succsessfully generate this protein:%s"%LMCSS_protein_name)
+
+            ## Get the center of mass for the "LMCSS" candidate ligand (all of the other candidates have been aligned to this one)                                                                                          
+            #LMCSS_ligand_filename = glob.glob('LMCSS-%s_%s-%s-lig.pdb'%(target_name,LMCSS_pro_id-LMCSS_pro_ligand))
+            ligand_center = get_center (LMCSS_ligand_name)
+            if not ligand_center:
+                logging.info("Unable to find the center of the ligand for the LMCSS candidate pdb: %s"%(pot_target_id))
+                os.chdir(current_dir_layer_1)
+                continue
+            else:
+                with open("center.txt" , "w") as center_file:
+                    center_file.writelines(ligand_center)
+
+
+
+
+
             for rest_protein in ("SMCSS", "hiResHolo", "hiResApo"):
                 if rest_protein in info_dic:
                     if len(info_dic[rest_protein]) == 2:
@@ -193,11 +346,12 @@ def main_gendata (s3_result_path, path_2_ent, s4_result_path):
                             commands.getoutput("cp %s %s"%(rest_pdbloc, rest_protein_name))
                         #align all rest proteins onto the LMCSS protein
                         
-                        try:
-                            do_alignment = align_proteins (LMCSS_protein_name, rest_protein_name, rest_protein_name)
-                        except:
+                        #try:
+                        do_alignment = align_proteins (LMCSS_protein_name, rest_protein_name, rest_protein_name)
+                        if do_alignment == False:
+#except:
                             logging.info("The alignment could not be done for this protein:%s"%(rest_protein_name))
-                            os.chdir(current_dic_layer_1)
+                            os.chdir(current_dir_layer_1)
                             continue
 
                             #remove the "rot-%s"%LMCSS_protein_name
