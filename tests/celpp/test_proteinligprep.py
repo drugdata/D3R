@@ -56,33 +56,33 @@ class TestProteinLigPrepTask(unittest.TestCase):
             self.assertEqual(len(flist), 2)
             flist.index(ligand)
 
-            # try with pbdid folder with largest.maegz
-            largest = os.path.join(pbdid, 'largest.maegz')
-            open(largest, 'a').close()
+            # try with pbdid folder with LMCSS.maegz
+            LMCSS = os.path.join(pbdid, 'LMCSS.maegz')
+            open(LMCSS, 'a').close()
             flist = task.get_uploadable_files()
             self.assertEqual(len(flist), 3)
-            flist.index(largest)
+            flist.index(LMCSS)
 
-            # try with pbdid folder with smallest.maegz
-            smallest = os.path.join(pbdid, 'smallest.maegz')
-            open(smallest, 'a').close()
+            # try with pbdid folder with SMCSS.maegz
+            SMCSS = os.path.join(pbdid, 'SMCSS.maegz')
+            open(SMCSS, 'a').close()
             flist = task.get_uploadable_files()
             self.assertEqual(len(flist), 4)
-            flist.index(smallest)
+            flist.index(SMCSS)
 
-            # try with pbdid folder with apo.maegz
-            apo = os.path.join(pbdid, 'apo.maegz')
-            open(apo, 'a').close()
+            # try with pbdid folder with hiResApo.maegz
+            hiResApo = os.path.join(pbdid, 'hiResApo.maegz')
+            open(hiResApo, 'a').close()
             flist = task.get_uploadable_files()
             self.assertEqual(len(flist), 5)
-            flist.index(apo)
+            flist.index(hiResApo)
 
-            # try with pbdid folder with holo.maegz
-            holo = os.path.join(pbdid, 'holo.maegz')
-            open(holo, 'a').close()
+            # try with pbdid folder with hiResHolo.maegz
+            hiResHolo = os.path.join(pbdid, 'hiResHolo.maegz')
+            open(hiResHolo, 'a').close()
             flist = task.get_uploadable_files()
             self.assertEqual(len(flist), 6)
-            flist.index(holo)
+            flist.index(hiResHolo)
 
             # add error out files and try with second pbdid folder
             # with ligand.mae
@@ -101,11 +101,11 @@ class TestProteinLigPrepTask(unittest.TestCase):
             flist.index(outfile)
             flist.index(ligand)
             flist.index(ligandtwo)
-            flist.index(apo)
-            flist.index(largest)
+            flist.index(hiResApo)
+            flist.index(LMCSS)
             flist.index(final_log)
-            flist.index(holo)
-            flist.index(smallest)
+            flist.index(hiResHolo)
+            flist.index(SMCSS)
 
         finally:
             shutil.rmtree(temp_dir)
