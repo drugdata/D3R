@@ -8,13 +8,9 @@ Tests for `vinadocking` module.
 """
 
 import unittest
-import tempfile
-import logging
-import os
-import os.path
-import shutil
 
 from d3r import vinadocking
+
 
 class TestVinaDocking(unittest.TestCase):
 
@@ -29,7 +25,7 @@ class TestVinaDocking(unittest.TestCase):
         try:
             vinadocking.dock('ligand', 'protein', center)
         except IndexError as ie:
-            self.assertEqual(str(ie),'list index out of range',str(ie))
+            self.assertEqual(str(ie), 'list index out of range', str(ie))
 
 if __name__ == '__main__':
     unittest.main()
