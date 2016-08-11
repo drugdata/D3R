@@ -90,7 +90,8 @@ class TestEvaluation(unittest.TestCase):
             flist.index(hiResApo)
 
             # try with score/rot-hiResHolo_doc_pv_complex1.pdb
-            hiResHolo = os.path.join(score, 'rot-hiResHolo_dock_pv_complex1.pdb')
+            hiResHolo = os.path.join(score,
+                                     'rot-hiResHolo_dock_pv_complex1.pdb')
             open(hiResHolo, 'a').close()
             flist = task.get_uploadable_files()
             self.assertEqual(len(flist), 6)
