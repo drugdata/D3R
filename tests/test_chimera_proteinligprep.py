@@ -54,7 +54,7 @@ class TestChimera_ProteinLigPrep(unittest.TestCase):
             fakepython = os.path.join(temp_bin_dir, 'python')
 
             f = open(fakepython, 'w')
-            f.write('#! /usr/bin/env python\n\n')
+            f.write('#!/usr/bin/env python\n\n')
             f.write('import sys\n')
             f.write('f = open(sys.argv[2], "w")\n')
             f.write('f.write(sys.argv[1] + ":")\n')
@@ -72,7 +72,7 @@ class TestChimera_ProteinLigPrep(unittest.TestCase):
             print os.listdir(temp_dir)
             print os.listdir(temp_bin_dir)
             f = open(fakepython, 'r')
-            print f.read()
+            print 'fakepython-----------\n' + f.read() + '\n------------\n'
             f.close()
             f = open(lig_smile, 'r')
             line = f.readline()
