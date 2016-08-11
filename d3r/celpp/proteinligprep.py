@@ -14,8 +14,8 @@ class ProteinLigPrepTask(D3RTask):
 
     """
 
-    MAE_FILES = ['ligand.mae', 'largest.maegz', 'smallest.maegz',
-                 'apo.maegz', 'holo.maegz']
+    MAE_FILES = ['ligand.mae', 'LMCSS.maegz', 'SMCSS.maegz',
+                 'hiResApo.maegz', 'hiResHolo.maegz']
 
     FINAL_LOG = 'final.log'
 
@@ -37,10 +37,10 @@ class ProteinLigPrepTask(D3RTask):
 
            final.log
            <pbid>/ligand.mae
-           <pdbid>/largest.maegz
-           <pdbid>/smallest.maegz
-           <pdbid>/apo.maegz
-           <pdbid>/holo.maegz
+           <pdbid>/LMCSS.maegz
+           <pdbid>/SMCSS.maegz
+           <pdbid>/hiResApo.maegz
+           <pdbid>/hiResHolo.maegz
 
            :returns: list of files that can be uploaded.
         """

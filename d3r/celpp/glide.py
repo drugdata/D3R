@@ -13,10 +13,10 @@ class GlideTask(D3RTask):
     """Performs glide docking
 
     """
-    MAE_FILES = ['largest' + os.sep + 'largest_dock_pv.maegz',
-                 'smallest' + os.sep + 'smallest_dock_pv.maegz',
-                 'apo' + os.sep + 'apo_dock_pv.maegz',
-                 'holo' + os.sep + 'holo_dock_pv.maegz']
+    MAE_FILES = ['LMCSS' + os.sep + 'LMCSS_dock_pv.maegz',
+                 'SMCSS' + os.sep + 'SMCSS_dock_pv.maegz',
+                 'hiResApo' + os.sep + 'hiResApo_dock_pv.maegz',
+                 'hiResHolo' + os.sep + 'hiResHolo_dock_pv.maegz']
 
     FINAL_LOG = 'final.log'
     PBDID_TXT_SUFFIX = '.txt'
@@ -36,10 +36,10 @@ class GlideTask(D3RTask):
            plus stderr/stdout files
 
            final.log
-           pbdid/largest/largest_dock_pv.maegz
-           pbdid/smallest/smallest_dock_pv.maegz
-           pbdid/apo/apo_dock_pv.maegz
-           pbdid/holo/holo_dock_pv.maegz
+           pbdid/LMCSS/LMCSS_dock_pv.maegz
+           pbdid/SMCSS/SMCSS_dock_pv.maegz
+           pbdid/hiResApo/hiResApo_dock_pv.maegz
+           pbdid/hiResHolo/hiResHolo_dock_pv.maegz
            pbdid/pbdid.txt
 
            "returns: list of files that can be uploaded.
