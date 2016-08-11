@@ -69,8 +69,14 @@ class TestChimera_ProteinLigPrep(unittest.TestCase):
             val = chimera_proteinligprep.ligand_prepare(lig_smile,
                                                         ligfile, temp_dir)
             self.assertFalse(val)
-            f = open(lig_smile)
+            print os.listdir(temp_dir)
+            print os.listdir(temp_bin_dir)
+            f = open(fakepython, 'r')
+            print f.read()
+            f.close()
+            f = open(lig_smile, 'r')
             line = f.readline()
+            f.close()
             unprep = lig_smile.replace('.smi','_unprep_step1.sdf')
             self.assertEqual(line, 'rdkit_smiles_to_3d_sdf.py:' +
                              lig_smile + ':' + unprep)
@@ -78,6 +84,6 @@ class TestChimera_ProteinLigPrep(unittest.TestCase):
             os.chdir(curdir)
             shutil.rmtree(temp_dir)
 
-            
+
 if __name__ == '__main__':
     unittest.main()
