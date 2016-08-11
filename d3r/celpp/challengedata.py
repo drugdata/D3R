@@ -445,7 +445,7 @@ Blastnfilter Summary
         challenge_dir = ''
         try:
             challenge_dir = self._create_challenge_dir()
-            logger.debug('Made challenge dir %s' %(challenge_dir))
+            logger.debug('Made challenge dir ' + challenge_dir)
         except OSError:
                 logger.exception('Problem making challenge dir ' +
                                  challenge_dir)
