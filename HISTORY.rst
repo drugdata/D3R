@@ -3,6 +3,12 @@
 History
 -------
 
+1.4.0 (2016-08-11)
+--------------------
+
+* Fixed issue #66 Change candidate category names. Largest is now LMCSS,
+  Smallest is now SMCSS, Apo is now HiResApo, Holo is now HiResHolo
+
 1.3.4
 --------------------
 
