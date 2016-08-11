@@ -96,10 +96,9 @@ def ligand_prepare(ligand_smile, out_lig_file, rdkit_python):
     with open('rdkit_smiles_to_3d_sdf.py','wb') as of:
         of.write(rdkit_smiles_to_3d_sdf_text)
     rdkitpythonpath = os.path.join(rdkit_python, 'bin', 'python')
-    out = commands.getoutput(rdkitpythonpath + ' rdkit_smiles_to_3d_sdf.py ' +
-                             ligand_smile + ' ' + unprep_lig_file_1 +
-                             ' > rdkit_smiles_to_3d_sdf_out 2>&1')
-    print 'command output: ' + out
+    commands.getoutput(rdkitpythonpath + ' rdkit_smiles_to_3d_sdf.py ' +
+                       ligand_smile + ' ' + unprep_lig_file_1 +
+                       ' > rdkit_smiles_to_3d_sdf_out 2>&1')
     unprep_lig_file_2 = ligand_smile.replace('.smi','_unprep_step2.mol2')
     commands.getoutput('babel -isdf %s -omol2 %s' %(unprep_lig_file_1, unprep_lig_file_2))
     #unprep_lig_file = ligand_smile.replace('.smi','_unprep.mol2')
