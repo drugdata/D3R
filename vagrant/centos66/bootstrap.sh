@@ -48,10 +48,11 @@ popd
 # install rdkit
 pushd /vagrant
 wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh
+chmod a+x Miniconda2-latest-Linux-x86_64.sh
 ./Miniconda2-latest-Linux-x86_64.sh -b -p /opt/miniconda2
 export PATH="/opt/miniconda2/bin:$PATH"
 conda update --yes conda
-conda install -c rdkit rdkit=2016.03.3
+conda install -y -c rdkit rdkit=2016.03.3
 
 if [ -f "/vagrant/chimera-1.10.2-linux_x86_64.bin" ] ; then
   pushd /vagrant
@@ -78,7 +79,7 @@ if [ -f "/vagrant/Schrodinger_Suites_2016-2_Linux-x86_64.tar" ] ; then
   pushd /vagrant
   tar -xf Schrodinger_Suites_2016-2_Linux-x86_64.tar
   pushd /vagrant/Schrodinger_Suites_2016-2_Linux-x86_64
-  ./INSTALL -d `pwd` -b -s /vagrant/schrodinger -k /usr/tmp -t /vagrant/schrodinger/thirdparty *.gz
+  ./INSTALL -d `pwd` -b -s /vagrant/schrodinger -k /usr/tmp -t /vagrant/schrodinger/thirdparty mmshare*.gz glide*.gz maestro*gz
   popd
   popd
 else
