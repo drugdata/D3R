@@ -7,6 +7,9 @@ Drug Design Data Resource CELPP Runner
 
 .. image:: https://img.shields.io/pypi/v/D3R.svg
         :target: https://pypi.python.org/pypi/D3R
+        
+.. image:: https://coveralls.io/repos/github/drugdata/D3R/badge.svg?branch=master 
+        :target: https://coveralls.io/github/drugdata/D3R?branch=master
 
 
 Drug Design Data Resource is a suite of software to enable 

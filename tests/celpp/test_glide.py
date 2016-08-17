@@ -57,41 +57,41 @@ class TestGlideTask(unittest.TestCase):
             self.assertEqual(len(flist), 2)
             flist.index(pbdidtxt)
 
-            # try with largest/largest_dock_pv.maegz
-            largestd = os.path.join(pbdid, 'largest')
-            os.mkdir(largestd)
-            largest = os.path.join(largestd, 'largest_dock_pv.maegz')
-            open(largest, 'a').close()
+            # try with LMCSS/LMCSS_dock_pv.maegz
+            LMCSSd = os.path.join(pbdid, 'LMCSS')
+            os.mkdir(LMCSSd)
+            LMCSS = os.path.join(LMCSSd, 'LMCSS_dock_pv.maegz')
+            open(LMCSS, 'a').close()
             flist = task.get_uploadable_files()
             self.assertEqual(len(flist), 3)
-            flist.index(largest)
+            flist.index(LMCSS)
 
-            # try with smallest/smallest_dock_pv.maegz
-            smallestd = os.path.join(pbdid, 'smallest')
-            os.mkdir(smallestd)
-            smallest = os.path.join(smallestd, 'smallest_dock_pv.maegz')
-            open(smallest, 'a').close()
+            # try with SMCSS/SMCSS_dock_pv.maegz
+            SMCSSd = os.path.join(pbdid, 'SMCSS')
+            os.mkdir(SMCSSd)
+            SMCSS = os.path.join(SMCSSd, 'SMCSS_dock_pv.maegz')
+            open(SMCSS, 'a').close()
             flist = task.get_uploadable_files()
             self.assertEqual(len(flist), 4)
-            flist.index(smallest)
+            flist.index(SMCSS)
 
-            # try with apo/apo_dock_pv.maegz
-            apod = os.path.join(pbdid, 'apo')
-            os.mkdir(apod)
-            apo = os.path.join(apod, 'apo_dock_pv.maegz')
-            open(apo, 'a').close()
+            # try with hiResApo/hiResApo_dock_pv.maegz
+            hiResApod = os.path.join(pbdid, 'hiResApo')
+            os.mkdir(hiResApod)
+            hiResApo = os.path.join(hiResApod, 'hiResApo_dock_pv.maegz')
+            open(hiResApo, 'a').close()
             flist = task.get_uploadable_files()
             self.assertEqual(len(flist), 5)
-            flist.index(apo)
+            flist.index(hiResApo)
 
-            # try with holo/holo_dock_pv.maegz
-            holod = os.path.join(pbdid, 'holo')
-            os.mkdir(holod)
-            holo = os.path.join(holod, 'holo_dock_pv.maegz')
-            open(holo, 'a').close()
+            # try with hiResHolo/hiResHolo_dock_pv.maegz
+            hiResHolod = os.path.join(pbdid, 'hiResHolo')
+            os.mkdir(hiResHolod)
+            hiResHolo = os.path.join(hiResHolod, 'hiResHolo_dock_pv.maegz')
+            open(hiResHolo, 'a').close()
             flist = task.get_uploadable_files()
             self.assertEqual(len(flist), 6)
-            flist.index(holo)
+            flist.index(hiResHolo)
 
             # try with stderr/out files
             errfile = os.path.join(task.get_dir(), 'glidedocking.py.stderr')
@@ -103,10 +103,10 @@ class TestGlideTask(unittest.TestCase):
             flist.index(errfile)
             flist.index(outfile)
             flist.index(final_log)
-            flist.index(largest)
-            flist.index(smallest)
-            flist.index(apo)
-            flist.index(holo)
+            flist.index(LMCSS)
+            flist.index(SMCSS)
+            flist.index(hiResApo)
+            flist.index(hiResHolo)
             flist.index(pbdidtxt)
 
         finally:

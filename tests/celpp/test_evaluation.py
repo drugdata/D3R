@@ -63,38 +63,39 @@ class TestEvaluation(unittest.TestCase):
             self.assertEqual(len(flist), 2)
             flist.index(rmsd)
 
-            # try with score/rot-largest_doc_pv_complex1.pdb
+            # try with score/rot-LMCSS_doc_pv_complex1.pdb
             score = os.path.join(pbdid, 'score')
             os.mkdir(score)
             flist = task.get_uploadable_files()
             self.assertEqual(len(flist), 2)
 
-            largest = os.path.join(score, 'rot-largest_dock_pv_complex1.pdb')
-            open(largest, 'a').close()
+            LMCSS = os.path.join(score, 'rot-LMCSS_dock_pv_complex1.pdb')
+            open(LMCSS, 'a').close()
             flist = task.get_uploadable_files()
             self.assertEqual(len(flist), 3)
-            flist.index(largest)
+            flist.index(LMCSS)
 
-            # try with score/rot-smallest_doc_pv_complex1.pdb
-            smallest = os.path.join(score, 'rot-smallest_dock_pv_complex1.pdb')
-            open(smallest, 'a').close()
+            # try with score/rot-SMCSS_doc_pv_complex1.pdb
+            SMCSS = os.path.join(score, 'rot-SMCSS_dock_pv_complex1.pdb')
+            open(SMCSS, 'a').close()
             flist = task.get_uploadable_files()
             self.assertEqual(len(flist), 4)
-            flist.index(smallest)
+            flist.index(SMCSS)
 
-            # try with score/rot-apo_doc_pv_complex1.pdb
-            apo = os.path.join(score, 'rot-apo_dock_pv_complex1.pdb')
-            open(apo, 'a').close()
+            # try with score/rot-hiResApo_doc_pv_complex1.pdb
+            hiResApo = os.path.join(score, 'rot-hiResApo_dock_pv_complex1.pdb')
+            open(hiResApo, 'a').close()
             flist = task.get_uploadable_files()
             self.assertEqual(len(flist), 5)
-            flist.index(apo)
+            flist.index(hiResApo)
 
-            # try with score/rot-holo_doc_pv_complex1.pdb
-            holo = os.path.join(score, 'rot-holo_dock_pv_complex1.pdb')
-            open(holo, 'a').close()
+            # try with score/rot-hiResHolo_doc_pv_complex1.pdb
+            hiResHolo = os.path.join(score,
+                                     'rot-hiResHolo_dock_pv_complex1.pdb')
+            open(hiResHolo, 'a').close()
             flist = task.get_uploadable_files()
             self.assertEqual(len(flist), 6)
-            flist.index(holo)
+            flist.index(hiResHolo)
 
             # try with score/crystal.pdb
             crystal = os.path.join(score, 'crystal.pdb')
@@ -111,10 +112,10 @@ class TestEvaluation(unittest.TestCase):
             flist = task.get_uploadable_files()
             self.assertEqual(len(flist), 9)
             flist.index(crystal)
-            flist.index(holo)
-            flist.index(apo)
-            flist.index(smallest)
-            flist.index(largest)
+            flist.index(hiResHolo)
+            flist.index(hiResApo)
+            flist.index(SMCSS)
+            flist.index(LMCSS)
             flist.index(errfile)
             flist.index(outfile)
             flist.index(final_log)
