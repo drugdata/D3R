@@ -11,11 +11,11 @@ MirrorURL "http://mirror.centos.org/centos-${RELEASE}/${RELEASE}/os/\$basearch/"
 Setup
 Bootstrap
 
-InstallPkgs yum vim-minimal make python python-devel git wget tar openbabel 
+InstallPkgs yum vim-minimal make python python-devel git wget tar
 
 InstallPkgs epel-release 
 
-InstallPkgs python-pip python-argparse python-psutil 
+InstallPkgs python-pip python-argparse python-psutil openbabel 
 InstallPkgs python-biopython python-virtualenv python-tox pylint 
 InstallPkgs python-coverage perl-Archive-Tar perl-List-MoreUtils 
 InstallPkgs perl-Digest perl-Digest-MD5
