@@ -8,7 +8,23 @@ import logging
 from rdkit import Chem
 from rdkit.Chem import AllChem as allChem
 import commands
+from Bio import PDB
 
+def split_chain(pdb_filename, out_path, pdb_id, chain_letters):
+    parser = PDB.PDBParser()
+    writer = PDB.PDBIO()
+    chain_letters = [chain.upper() for chain in chain_letters]
+    struct = parser.get_structure (pdb_id, pdb_filename)
+    writer.set_structure(struct)
+    writer.save(out_path, select=SelectChains(chain_letters))
+
+class SelectChains(PDB.Select):
+    """ Only accept the specified chains when saving. """
+    def __init__(self, chain_letters):
+        self.chain_letters = chain_letters
+
+    def accept_chain(self, chain):
+        return (chain.get_id() in self.chain_letters)
 
 def parse_txt (txt_filename):
     #parsing the result txt file and give back the
@@ -23,9 +39,15 @@ def parse_txt (txt_filename):
     for line in lines:
         info_title = line.split(",")[0]
         info_value_1 = line.split(",")[1]
+        info_value_3 = False
         if line.split(",")[0] == "inchi":
             info_title = line.split(", InChI=")[0]
             info_value_1 = line.split(", InChI=")[1].split("\n")[0]
+        elif line.split(",")[0] == "largest":
+            info_title = line.split(",")[0]
+            info_value_1 = line.split(",")[1].strip()
+            info_value_2 = line.split(",")[2].strip()
+            info_value_3 = line.split(",")[3].split(":")[1].strip()
         else:
             try:
                 info_value_2 = line.split(",")[2].split("\n")[0].strip()
@@ -40,13 +62,17 @@ def parse_txt (txt_filename):
             #just use the first item if there are multiple entries (use the highest resolution one)
             if info_title not in info_dic:                    
                 info_dic[info_title] = info_value_1           
-        else:                                                 
+        if info_value_3:                                                 
             if info_title not in info_dic:                    
-                info_dic[info_title] = (info_value_1,info_value_2)           
+                info_dic[info_title] = (info_value_1,info_value_2, info_value_3)           
+        else:
+            if info_title not in info_dic:
+                info_dic[info_title] = (info_value_1,info_value_2) 
     #check if the query protein id is identical with the filename
     if not info_dic["query"] == target_name_txt:
         logging.info("The query pdb ID:%s is different from the filename: %s, need to check"%(info_dic["query"], target_name_txt)) 
     return info_dic  
+
 
 def align_proteins (target_protein, pre_prepare_protein, post_prepare_protein):
     commands.getoutput("$SCHRODINGER/utilities/structalign %s %s"%(target_protein, pre_prepare_protein))
@@ -87,14 +113,13 @@ def pull_ligand_out (proteinfile, ligname, ligandfile):
             else:
                 atom_list.append(atom_name)
                 l_xyz_lines.append(p_xyz_line)
-    if not multi_ligand:
-        f = open(ligandfile, "w")
-        f.writelines(l_xyz_lines)
-        f.close()
-        return ligandfile
-    else:
-        logging.info("Fatal error: Found multiple ligand for this protein:%s"%proteinfile)
-        return False
+    if multi_ligand:
+        logging.info("Warning: Found multiple ligand for this protein:%s"%proteinfile)
+    #here change to save ligand even there are mutiple ligands
+    f = open(ligandfile, "w")
+    f.writelines(l_xyz_lines)
+    f.close()
+    return ligandfile
         
 def main_gendata (s3_result_path, path_2_ent, s4_result_path):
     os.chdir(s4_result_path)
@@ -124,7 +149,7 @@ def main_gendata (s3_result_path, path_2_ent, s4_result_path):
             logging.info("For this query protein: %s, there is no protein sharing the largest ligand with. Not able to generate Docking grid, pass for this case..."%target_name)
             os.chdir (current_dir_layer_1)
             continue
-        elif len(info_dic["largest"]) != 2:
+        elif len(info_dic["largest"]) != 3:
             logging.info("For this query protein: %s, the laregest protein has wrong number of informations associate with this id..."%target_name)
             os.chdir(current_dir_layer_1)
             continue
@@ -149,6 +174,7 @@ def main_gendata (s3_result_path, path_2_ent, s4_result_path):
         query_pro = info_dic["query"]
         largest_pro_id = info_dic["largest"][0]
         largest_pro_ligand = info_dic["largest"][1]
+        largest_mcss_chain = info_dic["largest"][2]
         largest_pdb_folder_name = largest_pro_id[1:3]
         largest_ent_file = "pdb" + largest_pro_id  + ".ent"
         largest_pdbloc = os.path.join(path_2_ent, largest_pdb_folder_name, largest_ent_file)
@@ -163,6 +189,8 @@ def main_gendata (s3_result_path, path_2_ent, s4_result_path):
             largest_ligand_name = "largest-%s-%s-lig.pdb"%(TC_id, largest_pro_ligand)
             #try to extract the largest ligand from the largest protein
             commands.getoutput("cp %s %s"%(largest_pdbloc,largest_protein_name))
+            #extract chain where contain the largest mcss
+            split_chain(largest_protein_name, largest_protein_name, largest_pro_id, largest_mcss_chain)
             if not pull_ligand_out (largest_protein_name, largest_pro_ligand, largest_ligand_name):
                 os.chdir(current_dir_layer_1)
                 continue
