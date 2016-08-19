@@ -2,6 +2,7 @@ __author__ = 'robswift'
 __project__ = 'blastnfilter'
 
 import os
+import logging
 import in_put
 from d3r.blast.hit import Hit
 from d3r.blast.ligand import Ligand
@@ -9,6 +10,8 @@ from d3r.filter.filter import QueryFilter
 from d3r.filter.filter import HitFilter
 from d3r.filter.filter import CandidateFilter
 import out_put
+
+logger = logging.getLogger(__name__)
 
 
 def split_input(options):
@@ -42,14 +45,20 @@ def blast_the_query(query, pdb_db, pdb_path, fasta, out_dir, compinchi):
     :return: query
     """
     if not Hit.pdb_dir:
+        logger.debug('Hit.set_pdb_dir')
         Hit.set_pdb_dir(pdb_path)
     if not Hit.pdb_dict:
+        logger.debug('Hit.set_pdb_dict')
         Hit.set_pdb_dict(fasta)
     if not Ligand.inchi_component:
+        logger.debug('Ligand.set_inchi_component')
         Ligand.set_inchi_component(compinchi)
+    logger.debug('query.run_blast')
     records = query.run_blast(pdb_db, out_dir)
     if records:
+        logger.debug('query.set_hits')
         query.set_hits(records)
+        logger.debug('query.fill_sequences')
         query.fill_sequences()
     return query
 
@@ -67,8 +76,9 @@ def calculate_mcss(query):
             for hit_ligand in hit.dock:
                 for query_ligand in query.dock:
                     mcss_mol = hit_ligand.mcss(query_ligand)
-                    if mcss_mol:
-                        hit_ligand.set_mcss(query_ligand, mcss_mol)
+                    tanimoto_score = hit_ligand.calc_tanimoto(query_ligand)
+                    if mcss_mol and tanimoto_score:
+                        hit_ligand.set_mcss(query_ligand, mcss_mol, tanimoto_score)
             hit.set_maxmin_mcss()
 
 
@@ -114,24 +124,34 @@ def candidate_filter(queries):
     c_filter.filter_for_least_similar()
 
 
+#from memory_profiler import profile
+#@profile(precision=4)
 def run(options):
     """
     Run the BlastNFilter components
     :param options:
     """
     non_polymer, polymer, ph, out_dir, blast_dir, pdb_db, pdb_path, fasta, compinchi = split_input(options)
+    logger.debug('Creating queries')
     queries = in_put.create_queries(polymer, non_polymer, ph)
     out_put.input_analysis(out_dir, queries)
     out_analysis = out_put.OutController()
     out_analysis.print_filter_criteria(out_dir)
+    logger.debug("# queries " + str(len(queries)))
     while queries:
+        #here the pop method extract the last item in the list and remove this item from the original list
         query = queries.pop()
         query_filter(query)
         if not query.triage:
+            logger.debug('Blasting query:  ' + query.pdb_id)
             query = blast_the_query(query, pdb_db, pdb_path, fasta, out_dir, compinchi)
+            logger.debug('calculate mcss')
             calculate_mcss(query)
+            logger.debug('hit_filter')
             hit_filter(query)
+            logger.debug('hit_filter')
             candidate_filter(query)
+            logger.debug('set_query')
         out_analysis.set_query(query)
         out_put.writer(out_dir, query, True)
     out_analysis.print_to_file(out_dir)
