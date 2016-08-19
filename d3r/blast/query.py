@@ -1,6 +1,7 @@
 __author__ = 'robswift'
 
 import os
+import logging
 from StringIO import StringIO
 from Bio.Blast.Applications import NcbiblastpCommandline
 from Bio.Blast import NCBIXML
@@ -11,6 +12,8 @@ from Bio.SeqRecord import SeqRecord
 from d3r.blast.base import Base
 from d3r.blast.hit import Hit
 from d3r.blast.ligand import Ligand
+
+logger = logging.getLogger(__name__)
 
 class Query(Base):
     """
@@ -51,12 +54,17 @@ class Query(Base):
         :param inchi: (string) the inchi string, which uniquely identifies the ligand
         :param label: (string) set to either 'dock' or 'do_not_call'
         """
+        logger.debug('In set_ligand()')
         ligand = Ligand(resname, inchi)
+        #modified by sliu 08/08, set the ligand size, rot bond etc
         if label == 'dock':
             if ligand.set_rd_mol_from_inchi():
                 self.inchi_error = False
             else:
                 self.inchi_error = True
+            ligand.set_size()
+            ligand.set_heavy_size()
+            ligand.set_rot()
             self.dock.append(ligand)
             self.dock_count += 1
             self.ligand_count += 1
@@ -94,13 +102,17 @@ class Query(Base):
         BLASTP and is deleted after the BLASTP search is completed.
         :return: Bio.blast.Record object
         """
+        logger.debug('In run_blast()')
         if self.sequence_count == 0:
-            print "Fasta sequences have not been added to the Target.sequences list, and BLAST cannot be run"
+            logger.error("Fasta sequences have not been added to the " +
+                         "Target.sequences list, and BLAST cannot be run")
             return False
         elif self.sequence_count == 1:
+            logger.debug('Running blast_monomer')
             record = self.blast_monomer(pdb_db, out_dir)
             return record
         elif self.sequence_count > 1:
+            logger.debug('Running blast_multimer')
             records = self.blast_multimer(pdb_db, out_dir)
             return records
 
@@ -112,10 +124,19 @@ class Query(Base):
         :return: Bio.blast.Record
         """
         records = []
+        try:
+            logger.debug('There are ' +
+                         str(len(self.sequences)) + ' to ' +
+                         'analyze but this code will only analyze '
+                         'the first sequence???')
+        except:
+            logger.exception('Caught exception logging debug information')
         for sequence in self.sequences:
             fasta = self.write_fasta(sequence, out_dir)
             if fasta:
+                logger.debug('Starting blastp of ' + fasta)
                 record = self.blastp(fasta, pdb_db)
+                logger.debug('Removing file ' + fasta)
                 os.remove(fasta)
                 if record:
                     records.append(record)
@@ -126,15 +147,22 @@ class Query(Base):
         Runs a BLASTP search of sequences in the wwPDB for each unique chain in a multimer.
         :param pdb_db: (string) The absolute path to a BLASTP database
         :param out_dir: (string) The absolute path to the output directory. A fasta file is writen here prior to running
-        :return: Bio.blast.Record
+        :return: Bio.blast.Record or None
         """
         records = []
+        try:
+            logger.debug('There are ' + str(len(self.sequences)) + ' to analyze')
+        except:
+            logger.exception('Caught exception logging debug information')
         for sequence in self.sequences:
             fasta = self.write_fasta(sequence, out_dir)
             if fasta:
+                logger.debug('Starting blastp of ' + fasta)
                 records.append(self.blastp(fasta, pdb_db))
+                logger.debug('Removing ' + fasta + ' file')
                 os.remove(fasta)
         if records:
+            logger.debug('Getting intersection of records')
             self.get_intersection(records)
             return records
 
@@ -146,6 +174,11 @@ class Query(Base):
         :return: record, a Bio.blast.Record object
         """
         ids=[]
+        try:
+            logger.debug('In get_intersection() examining ' +
+                         str(len(records)) + ' records')
+        except:
+            logger.exception('caught exception printing log message')
         for record in records:
             ids.append(set([self.get_pdb_id_from_alignment(a) for a in record.alignments]))
         id_intersection = set.intersection(*ids)
@@ -191,10 +224,12 @@ class Query(Base):
         return: the absolute path to the fasta file
         """
         fasta = os.path.join(os.path.abspath(out_dir), '_'.join((self.pdb_id, sequence.id)) + '.fasta')
+        logger.debug('Writing fasta file: ' + fasta)
         try:
             SeqIO.write(sequence, fasta, "fasta")
             return fasta
-        except:
+        except: 
+            logger.exception('Caught exception')
             return False
 
     def get_pdb_id_from_alignment(self, alignment):
@@ -234,12 +269,18 @@ class Query(Base):
         """
         # do something to set chain count and include those chains not in alignments
         #### add stuff to make this work...move this stuff inside Query
+        logger.debug('Found ' + str(len(records)) + ' of hits')
         for record in records:
+            logger.debug('Found ' + str(len(record.alignments)) + ' alignments for record')
             for alignment in record.alignments:
                 pdb_id = self.get_pdb_id_from_alignment(alignment)
+                #print "\tCheck the alignment:%s, and pdb ID:%s "%(alignment, pdb_id)
                 chain_id = self.get_chain_id_from_alignment(alignment)
+                #print "\tCheck the chain ID", chain_id
                 if pdb_id in self.hit_membership.keys():
                     self.hits[self.hit_membership[pdb_id]].set_sequence(pdb_id, chain_id, record, alignment)
+                    #sliu 0808 add chain info in query
+                    self.hits[self.hit_membership[pdb_id]].set_ligands(chain_id)
                 else:
                     hit = Hit()
                     hit.pdb_id = pdb_id
@@ -248,7 +289,9 @@ class Query(Base):
                     hit.set_resolution()
                     hit.set_expt_method()
                     hit.set_sequence(pdb_id, chain_id, record, alignment)
-                    hit.set_ligands()
+                    hit.set_ligands(chain_id)
+                    #print "Inside query set hits> set ligands check after set ligands"
+                    #raw_input()
                     self.hits.append(hit)
                     self.hit_membership[pdb_id] = len(self.hits) - 1
 
