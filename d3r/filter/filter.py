@@ -1,8 +1,10 @@
 __author__ = 'robswift'
 
+import logging
 from Bio import Alphabet
 from d3r.filter.filtering_sets import stabilisers, buffers, ions, excipients
 
+logger = logging.getLogger(__name__)
 
 class BaseFilter(object):
     """
@@ -87,8 +89,10 @@ class HitFilter(BaseFilter):
     # default filtering values
     identity_threshold = 0.95
     coverage_threshold = 0.90
-    sequence_threshold = 4
-    dockable_ligand_threshold = 1
+    sequence_threshold = 2 
+    #dockable_ligand_threshold = 1
+    #sliu change to big number to "turn off" the dockable ligand filter 08/04  
+    dockable_ligand_threshold = 10
     method = 'x-ray diffraction'
 
     def __init__(self, *args, **kwargs):
@@ -105,6 +109,7 @@ class HitFilter(BaseFilter):
         structure is also labeled 'tosser.'
         :param threshold: (float) percent identity threshold. Default = 0.95
         """
+        logger.debug('In filter_by_identity()')
         if threshold is None:
             threshold = HitFilter.identity_threshold
             for hit in self.query.hits:
@@ -129,7 +134,7 @@ class HitFilter(BaseFilter):
         labeled 'tosser.'
         :param threshold: (float) percent coverage threshold. Default = 0.90
         """
-
+        logger.debug('In filter_by_coverage()')
         # If the highest coverage for one or more chains is less than the threshold, then triage
         if threshold == None:
             threshold = HitFilter.coverage_threshold
@@ -152,9 +157,12 @@ class HitFilter(BaseFilter):
         labeled 'tosser.'
         :param threshold: (int) threshold value for the number of unique sequences in each hit structure. Default = 4
         """
+        logger.debug('In filter_by_sequence_count()')
         if threshold == None:
             threshold = HitFilter.sequence_threshold
             for hit in self.query.hits:
+                #print "Check in the hit filter step sequence count:%s in this pdb id: %s"%(hit.sequence_count, hit.pdb_id)
+                #raw_input()
                 if hit.sequence_count > threshold:
                     hit.set_reason(3)
             if len([hit for hit in self.query.hits if hit.triage]) == len(self.query.hits):
@@ -165,6 +173,7 @@ class HitFilter(BaseFilter):
         If a blast search of the wwPDB using the query sequence only returns apo hit structures, then the query will
         be labeled 'tosser'.
         """
+        logger.debug('In filter_apo()')
         if len([hit for hit in self.query.hits if hit.dock_count == 0]) == len(self.query.hits):
             for hit in self.query.hits:
                 hit.set_reason(10)
@@ -179,6 +188,7 @@ class HitFilter(BaseFilter):
         :param method: (string) an experimental structure determination method used to solve wwPDB structures.
         Default = 'x-ray diffraction'
         """
+        logger.debug('In filter_by_method()')
         if not method: method = HitFilter.method
         for hit in self.query.hits:
             if hit.exp_method != method.lower():
@@ -193,9 +203,12 @@ class HitFilter(BaseFilter):
         threshold will be labeled'tosser'.
         :param threshold: (int) threshold value for the number of unique dockable ligands in each query. Default = 1.
         """
+        logger.debug('In filter_by_dockable_ligand_count()')
         if threshold is None:
             threshold = HitFilter.dockable_ligand_threshold
             for hit in self.query.hits:
+                #print "Check in the hit filter step dock_count%s in this pdb id:%s "%(hit.dock_count, hit.pdb_id)
+                #raw_input()
                 if hit.dock_count > threshold:
                     hit.set_reason(4)
 
@@ -215,33 +228,42 @@ class CandidateFilter(BaseFilter):
     def filter_for_most_similar(self):
         # sort the hit list by decreasing MCSS size and increasing resolution
         # the most similar will be at the front of the list, the least similar will be at the end of the list.
+        logger.debug('In filter_for_most_similar()')
         hits = [hit for hit in self.query.hits if not hit.triage and hit.largest_mcss]
         if hits:
             hits.sort(key=lambda hit: (int(hit.largest_mcss.size), float(hit.resolution)), reverse=True)
             # hits[0].set_retain_reason(1)    # picks off the largest mcss with the highest resolution crystal structure
             lowest = hits[0].resolution     # lowest resolution
-            largest = hits[0].largest_mcss  # largest maximum common substructure
+            largest = hits[0].largest_mcss.size  # largest maximum common substructure
+            #print "Check the TTTTop largest mcss: %s and resolution: %s"%(largest, lowest)
+            #raw_input()
             for hit in hits:
-                if hit.resolution > lowest or hit.largest_mcss < largest:
+                #print "Check the largest mcss: %s and resolution: %s for this hit:%s "%(hit.largest_mcss.size ,hit.resolution, hit.pdb_id)
+                #raw_input()
+                if hit.resolution > lowest or hit.largest_mcss.size < largest:
                     break
                 else:
+                    #print "Check the largest mcss: %s and resolution: %s for this hit:%s "%(hit.largest_mcss.size ,hit.resolution, hit.pdb_id)
+                    #raw_input()
                     hit.set_retain_reason(1)
 
     def filter_for_least_similar(self):
+        logger.debug('In filter_for_least_similar()')
         # sort the hits by increasing MCSS size and increasing resolution
         hits = [hit for hit in self.query.hits if not hit.triage and hit.smallest_mcss]
         if hits:
             hits.sort(key=lambda hit: (int(hit.smallest_mcss.size), float(hit.resolution)))
             # hits[0].set_retain_reason(2)   # picks off the smallest mcss with the highest resolution crystal structure
             lowest = hits[0].resolution       # lowest resolution
-            smallest = hits[0].smallest_mcss  # largest maximum common substructure
+            smallest = hits[0].smallest_mcss.size  # largest maximum common substructure
             for hit in hits:
-                if hit.resolution > lowest or hit.smallest_mcss > smallest:
+                if hit.resolution > lowest or hit.smallest_mcss.size > smallest:
                     break
                 else:
                     hit.set_retain_reason(2)
 
     def filter_holo(self):
+        logger.debug('In filter_holo()')
         hits = [hit for hit in self.query.hits if hit.resolution and not hit.triage and hit.dock_count > 0]
         if hits:
             hits.sort(key=lambda hit: hit.resolution)
@@ -257,6 +279,7 @@ class CandidateFilter(BaseFilter):
         Hits are only considered apo if: i) the number of dockable ligands is 0 and ii) all the non-dockable ligands
         may only be buffers, ions, excipients, or stabilisers (the sets in filter.filtering_sets.py).
         """
+        logger.debug('In filter_apo()')
         allowable_apo = set()
         allowable_apo.update(stabilisers)
         allowable_apo.update(buffers)
