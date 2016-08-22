@@ -12,6 +12,10 @@ from datetime import datetime
 from dateutil.tz import tzutc
 from dateutil.tz import tzlocal
 from datetime import timedelta
+from mock import Mock
+from d3r.celpp.filetransfer import FtpFileTransfer
+
+
 
 """
 test_dataimport
@@ -63,6 +67,13 @@ class TestDataImportTask(unittest.TestCase):
         self.assertEqual(task.get_crystalph_tsv(),
                          '/foo/' + task.get_dir_name() +
                          '/new_release_crystallization_pH.tsv')
+
+    def test_get_participant_list_csv(self):
+        params = D3RParameters()
+        task = DataImportTask('/foo', params)
+        self.assertEqual(task.get_participant_list_csv(),
+                         '/foo/' + task.get_dir_name() +
+                         '/' + DataImportTask.PARTICIPANT_LIST_CSV)
 
     def test_append_standard_to_files(self):
         temp_dir = tempfile.mkdtemp()
@@ -288,7 +299,7 @@ class TestDataImportTask(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
-    def test_run_all_success(self):
+    def test_run_all_success_except_participant_download_fails(self):
         temp_dir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
@@ -322,6 +333,58 @@ class TestDataImportTask(unittest.TestCase):
                 task.get_sequence_tsv()), 1)
             self.assertEqual(util.get_file_line_count(
                 task.get_crystalph_tsv()), 1)
+
+            self.assertTrue(task.get_email_log()
+                            .startswith('\nWARNING: Unable to download'))
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_run_all_success(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            fakeftp = FtpFileTransfer(None)
+            mftp = D3RParameters()
+
+            fakeftp.set_ftp_connection(mftp)
+            fakeftp.set_ftp_remote_dir('/foo2')
+            mftp.get = Mock()
+
+            params = D3RParameters()
+            params.pdbfileurl = 'file://' + temp_dir
+            params.compinchi = 'file://' + temp_dir
+
+            make_blast = MakeBlastDBTask(temp_dir, params)
+            make_blast.create_dir()
+            open(os.path.join(make_blast.get_dir(),
+                              D3RTask.COMPLETE_FILE), 'a').close()
+
+            task = DataImportTask(temp_dir, params)
+            task.set_file_transfer(fakeftp)
+            task._retrysleep = 0
+            open(os.path.join(temp_dir,
+                              task.NONPOLYMER_TSV), 'a').close()
+            open(os.path.join(temp_dir,
+                              task.SEQUENCE_TSV), 'a').close()
+            open(os.path.join(temp_dir,
+                              task.CRYSTALPH_TSV), 'a').close()
+            open(os.path.join(temp_dir,
+                              task.COMPINCHI_ICH), 'a').close()
+
+            task.run()
+            self.assertEquals(task.get_error(), None)
+
+            # check line count is 1 now which indicates
+            # standard was added
+            self.assertEqual(util.get_file_line_count(
+                task.get_nonpolymer_tsv()), 1)
+            self.assertEqual(util.get_file_line_count(
+                task.get_sequence_tsv()), 1)
+            self.assertEqual(util.get_file_line_count(
+                task.get_crystalph_tsv()), 1)
+
+            mftp.get.assert_called_with('/foo2/' +
+                                        DataImportTask.PARTICIPANT_LIST_CSV,
+                                        local=task.get_participant_list_csv())
         finally:
             shutil.rmtree(temp_dir)
 
@@ -726,8 +789,71 @@ class TestDataImportTask(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
+    def test_download_participant_list_no_filetransfer(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = DataImportTask(temp_dir, params)
+            task.create_dir()
+            task._download_participant_list_csv()
+            self.assertEqual(task.get_email_log(),
+                             '\nWARNING: Unable to download '
+                             'participant_list.csv which means '
+                             'external users will NOT get evaluation '
+                             'email : \'NoneType\' object has no attribute '
+                             '\'connect\'\n')
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_download_participant_list_file_not_found(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            foo = FtpFileTransfer(None)
+            mockftp = D3RParameters()
+            mockftp.get = Mock()
+            foo.set_ftp_remote_dir('/foo')
+            foo.set_ftp_connection(mockftp)
+
+            params = D3RParameters()
+            task = DataImportTask(temp_dir, params)
+            task.set_file_transfer(foo)
+            task.create_dir()
+            task._download_participant_list_csv()
+            self.assertEqual(task.get_email_log(),
+                             '\nWARNING: participant_list.csv not downloaded '
+                             'which means external users will NOT get '
+                             'evaluation email\n')
+            mockftp.get.assert_called_with('/foo/' +
+                                           DataImportTask.PARTICIPANT_LIST_CSV,
+                                           local=task.get_participant_list_csv())
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_download_participant_list_success(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            foo = FtpFileTransfer(None)
+            mockftp = D3RParameters()
+            mockftp.get = Mock()
+            foo.set_ftp_remote_dir('/foo')
+            foo.set_ftp_connection(mockftp)
+
+            params = D3RParameters()
+            task = DataImportTask(temp_dir, params)
+            task.set_file_transfer(foo)
+            task.create_dir()
+            open(task.get_participant_list_csv(), 'a').close()
+            task._download_participant_list_csv()
+            self.assertEqual(task.get_email_log(), None)
+            mockftp.get.assert_called_with('/foo/' +
+                                           DataImportTask.PARTICIPANT_LIST_CSV,
+                                           local=task.get_participant_list_csv())
+        finally:
+            shutil.rmtree(temp_dir)
+
     def tearDown(self):
         pass
+
 
 if __name__ == '__main__':
     unittest.main()
