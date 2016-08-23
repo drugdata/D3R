@@ -16,7 +16,6 @@ from mock import Mock
 from d3r.celpp.filetransfer import FtpFileTransfer
 
 
-
 """
 test_dataimport
 ----------------------------------
@@ -823,9 +822,10 @@ class TestDataImportTask(unittest.TestCase):
                              '\nWARNING: participant_list.csv not downloaded '
                              'which means external users will NOT get '
                              'evaluation email\n')
-            mockftp.get.assert_called_with('/foo/' +
-                                           DataImportTask.PARTICIPANT_LIST_CSV,
-                                           local=task.get_participant_list_csv())
+            mockftp.get\
+                .assert_called_with('/foo/' +
+                                    DataImportTask.PARTICIPANT_LIST_CSV,
+                                    local=task.get_participant_list_csv())
         finally:
             shutil.rmtree(temp_dir)
 
@@ -845,9 +845,10 @@ class TestDataImportTask(unittest.TestCase):
             open(task.get_participant_list_csv(), 'a').close()
             task._download_participant_list_csv()
             self.assertEqual(task.get_email_log(), None)
-            mockftp.get.assert_called_with('/foo/' +
-                                           DataImportTask.PARTICIPANT_LIST_CSV,
-                                           local=task.get_participant_list_csv())
+            mockftp.get\
+                .assert_called_with('/foo/' +
+                                    DataImportTask.PARTICIPANT_LIST_CSV,
+                                    local=task.get_participant_list_csv())
         finally:
             shutil.rmtree(temp_dir)
 
