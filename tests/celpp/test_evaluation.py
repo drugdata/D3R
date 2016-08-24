@@ -22,12 +22,6 @@ from d3r.celpp.glide import GlideTask
 from d3r.celpp.evaluation import PathNotDirectoryError
 
 
-def write_rmsd_txt_file(rmsd):
-    """Writes fake RMSD.txt file to `rmsd` parameter
-    """
-    f = open(rmsd, 'w')
-
-
 class TestEvaluation(unittest.TestCase):
     def setUp(self):
         pass
@@ -523,18 +517,80 @@ class TestEvaluation(unittest.TestCase):
 
             # test with valid RMSD.txt file
             task.create_dir()
-            write_rmsd_txt_file(task.get_rmsd_txt())
+            f = open(task.get_rmsd_txt(), 'w')
+            f.write('LMCSS\n1fcz 0.465\n')
+            f.flush()
+            f.close()
             val = task._get_evaluation_summary()
             self.assertEqual(val,
                              '\nEvaluation of docking\n'
-                             '=====================\n' +
-                             task.get_rmsd_txt() + ' file found.\n')
+                             '=====================\n'
+                             'LMCSS\n1fcz 0.465\n\n')
 
+            # test where reading RMSD.txt throws exception
+            os.chmod(task.get_rmsd_txt(), 0)
+            val = task._get_evaluation_summary()
+            self.assertTrue(val.startswith('\nEvaluation of docking\n'
+                                           '=====================\n'
+                                           'Unable to generate evaluation'
+                                           ' summary ('))
         finally:
             shutil.rmtree(temp_dir)
 
-#    def test_send_external_submission_email(self):
-#        self.assertEqual(1, 2, 'Need to finish implementation and write tests')
+    def test_get_rmsd_txt(self):
+        params = D3RParameters()
+        task = EvaluationTask('/ha', 'foo', None, params)
+        self.assertEqual(task.get_rmsd_txt(),
+                         os.path.join('/ha', task.get_dir_name(),
+                                      EvaluationTask.RMSD_TXT))
+
+    def test_am_i_an_external_submission(self):
+        params = D3RParameters()
+        task = EvaluationTask('/ha', 'foo', None, params)
+        self.assertEqual(task._am_i_an_external_submission(), False)
+        task.set_name('blah' + EvaluationTask.EXT_SUBMISSION_SUFFIX)
+        self.assertEqual(task._am_i_an_external_submission(), True)
+
+    def test_get_participant_database_no_csv_file_found(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            etf = EvaluationTaskFactory(temp_dir, params)
+            pdb = etf._get_participant_database()
+            self.assertEqual(pdb, None)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_participant_database_with_valid_csvfile(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            dimport = DataImportTask(temp_dir, params)
+            dimport.create_dir()
+            csvfile = dimport.get_participant_list_csv()
+            f = open(csvfile, 'w')
+            f.write('name,d3rusername,guid,email\n')
+            f.write('joe,jj,123,j@j.com\n')
+            f.flush()
+            f.close()
+            etf = EvaluationTaskFactory(temp_dir, params)
+            pdb = etf._get_participant_database()
+            p = pdb.get_participant_by_guid('123')
+            self.assertEqual(p.get_email(), 'j@j.com')
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_guid_from_task_name_for_external_task(self):
+        params = D3RParameters()
+        task = EvaluationTask('/foo', '123' +
+                              EvaluationTask.EXT_SUBMISSION_SUFFIX,
+                              None,
+                              params)
+        self.assertEqual(task._get_guid_from_task_name_for_external_task(),
+                         '123')
+
+    def test_send_external_submission_email(self):
+        self.assertEqual(1, 2, 'Need to finish implementation and write tests')
 
     def tearDown(self):
         pass
