@@ -191,6 +191,14 @@ class EvaluationTask(D3RTask):
             return (start_line + 'Unable to generate evaluation summary (' +
                     str(e) + ')\n')
 
+    def _get_guid_from_task_name_for_external_task(self):
+        """Examines task name removing external submission suffix
+           to hopefully obtain guid
+        :returns: guid from task name
+        """
+        return self.get_name().replace(EvaluationTask.EXT_SUBMISSION_SUFFIX,
+                                       '')
+
     def _send_external_submission_email(self, eval_summary):
         """Sends email providing summary of docking evaluation
         """
@@ -204,10 +212,24 @@ class EvaluationTask(D3RTask):
             return
 
         # need to get guid from task name stage.#.GUID.extsubmission
+        guid = self._get_guid_from_task_name_for_external_task()
 
         # then need to get email for guid
+        part = self._participantdatabase.get_participant_by_guid(guid)
 
-        # finally build email and send it
+        if part is None:
+            logger.error('No participant found with guid: ' + guid)
+            self.append_to_email_log('\nNo participant found with guid: ' +
+                                     guid + '\n')
+            return
+
+        if part.get_email() is None:
+            logger.error('Email not set for participant')
+            self.append_to_email_log('\nEmail not set for participant\n')
+            return
+
+        # TODO finally build email and send it
+
         return
 
     def get_uploadable_files(self):
