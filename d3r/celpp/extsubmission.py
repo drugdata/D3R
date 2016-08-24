@@ -9,6 +9,7 @@ import shutil
 from d3r.celpp.task import D3RTask
 from d3r.celpp.challengedata import ChallengeDataTask
 from d3r.celpp.evaluation import EvaluationTaskFactory
+from d3r.celpp.evaluation import EvaluationTask
 from d3r.celpp.filetransfer import FtpFileTransfer
 
 logger = logging.getLogger(__name__)
@@ -154,11 +155,9 @@ class ExternalDataSubmissionTask(D3RTask):
     """Downloads external user docking Submissions
     """
 
-    EXT_SUBMISSION_SUFFIX = '.extsubmission'
-
     def __init__(self, path, name, remotefile, args):
         super(ExternalDataSubmissionTask, self).__init__(path, args)
-        self.set_name(name + ExternalDataSubmissionTask.EXT_SUBMISSION_SUFFIX)
+        self.set_name(name + EvaluationTask.EXT_SUBMISSION_SUFFIX)
         self.set_stage(EvaluationTaskFactory.DOCKSTAGE)
         self.set_status(D3RTask.UNKNOWN_STATUS)
         self.set_remote_challenge_data_package(remotefile)
