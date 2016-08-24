@@ -22,6 +22,12 @@ from d3r.celpp.glide import GlideTask
 from d3r.celpp.evaluation import PathNotDirectoryError
 
 
+def write_rmsd_txt_file(rmsd):
+    """Writes fake RMSD.txt file to `rmsd` parameter
+    """
+    f = open(rmsd, 'w')
+
+
 class TestEvaluation(unittest.TestCase):
     def setUp(self):
         pass
@@ -503,8 +509,32 @@ class TestEvaluation(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
-    def test_send_external_submission_email(self):
-        self.assertEqual(1, 2, 'Need to finish implementation and write tests')
+    def test_get_evaluation_summary(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = EvaluationTask(temp_dir, 'foo', None, params)
+            # test where no RMSD.txt file is found
+            val = task._get_evaluation_summary()
+            self.assertEqual(val,
+                             '\nEvaluation of docking\n'
+                             '=====================\nNo ' +
+                             task.get_rmsd_txt() + ' file found.\n')
+
+            # test with valid RMSD.txt file
+            task.create_dir()
+            write_rmsd_txt_file(task.get_rmsd_txt())
+            val = task._get_evaluation_summary()
+            self.assertEqual(val,
+                             '\nEvaluation of docking\n'
+                             '=====================\n' +
+                             task.get_rmsd_txt() + ' file found.\n')
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+#    def test_send_external_submission_email(self):
+#        self.assertEqual(1, 2, 'Need to finish implementation and write tests')
 
     def tearDown(self):
         pass
