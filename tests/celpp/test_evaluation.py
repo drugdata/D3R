@@ -503,6 +503,9 @@ class TestEvaluation(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
+    def test_send_external_submission_email(self):
+        self.assertEqual(1, 2, 'Need to finish implementation and write tests')
+
     def tearDown(self):
         pass
 

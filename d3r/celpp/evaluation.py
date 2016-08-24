@@ -6,6 +6,11 @@ import logging
 from d3r.celpp.task import D3RTask
 from d3r.celpp.task import D3RParameters
 from d3r.celpp.proteinligprep import ProteinLigPrepTask
+from d3r.celpp.dataimport import DataImportTask
+from d3r.celpp.participant import ParticipantDatabaseFromCSVFactory
+from d3r.celpp.participant import ParticipantDatabase
+from d3r.celpp.participant import Participant
+
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +62,15 @@ class EvaluationTaskFactory(object):
         """
         return self._path
 
+    def _get_participant_database(self):
+        """Creates `ParticipantDatabase`
+        :returns: ParticipantDatabase
+        """
+        dimport = DataImportTask(self.get_path(), self.get_args())
+        csvfile = dimport.get_participant_list_csv()
+        pfac = ParticipantDatabaseFromCSVFactory(csvfile)
+        return pfac.get_participant_database()
+
     def get_evaluation_tasks(self):
         """Generate EvaluationTasks
 
@@ -75,6 +89,8 @@ class EvaluationTaskFactory(object):
         scoring_tasks = []
 
         path_list = os.listdir(path)
+
+        participant_db = self._get_participant_database()
 
         for entry in path_list:
             logger.debug('Checking if ' + entry + ' is a docking task')
@@ -99,6 +115,7 @@ class EvaluationTaskFactory(object):
                                            self.get_args())
                     if stask.can_run():
                         logger.debug('Adding task ' + stask.get_name())
+                        stask.set_participant_database(participant_db)
                         scoring_tasks.append(stask)
                     else:
                         logger.debug(stask.get_name() + ' cannot be' +
@@ -114,6 +131,7 @@ class EvaluationTask(D3RTask):
 
     FINAL_LOG = 'final.log'
     RMSD_TXT = 'RMSD.txt'
+    EXT_SUBMISSION_SUFFIX = '.extsubmission'
 
     PDB_FILES = ['score' + os.sep + 'rot-LMCSS_dock_pv_complex1.pdb',
                  'score' + os.sep + 'rot-SMCSS_dock_pv_complex1.pdb',
@@ -127,6 +145,70 @@ class EvaluationTask(D3RTask):
         self.set_stage(EvaluationTaskFactory.DOCKSTAGE + 1)
         self.set_status(D3RTask.UNKNOWN_STATUS)
         self._docktask = docktask
+        self._participantdatabase = None
+
+    def set_participant_database(self, participant_database):
+        """Sets the participant database
+        :param participant_database: database of participants
+        """
+        self._participantdatabase = participant_database
+
+    def _am_i_an_external_submission(self):
+        """Checks if this evaluation task is analyzing an external submission
+        The check is done by looking at suffix of name to see if it matches
+        `ExternalDataSubmissionTask.EXT_SUBMISSION_SUFFIX`
+        :returns: True for yes otherwise False
+        """
+        if self.get_name().endswith(EvaluationTask.EXT_SUBMISSION_SUFFIX):
+            return True
+        return False
+
+    def get_rmsd_txt(self):
+        """Returns full path to RMSD.txt file
+        :returns: full path to RMSD.txt file
+        """
+        return os.path.join(self.get_dir(), EvaluationTask.RMSD_TXT)
+
+    def _get_evaluation_summary(self):
+        """Parses RMSD.txt and generates human readable summary
+        evaluating docking
+        :returns: report of docking as string.
+        """
+        rmsd = self.get_rmsd_txt()
+
+        start_line = '\nEvaluation of docking\n=====================\n'
+
+        if not os.path.isfile(rmsd):
+            return start_line + 'No ' + rmsd + ' file found.\n'
+
+        try:
+            f = open(rmsd, 'r')
+            summary = f.read()
+            f.close()
+            return start_line + summary + '\n'
+        except Exception as e:
+            logger.exception('Caught exception')
+            return (start_line + 'Unable to generate evaluation summary (' +
+                    str(e) + ')\n')
+
+    def _send_external_submission_email(self, eval_summary):
+        """Sends email providing summary of docking evaluation
+        """
+        if self._am_i_an_external_submission() is False:
+            return
+
+        if self._participantdatabase is None:
+            logger.error('Participant Database is None')
+            self.append_to_email_log('\nParticipant Database is None cannot send'
+                                     ' docking evaluation email!!!\n')
+            return
+
+        # need to get guid from task name stage.#.GUID.extsubmission
+
+        # then need to get email for guid
+
+        # finally build email and send it
+        return
 
     def get_uploadable_files(self):
         """Returns list of files that can be uploaded to remote server
@@ -257,5 +339,15 @@ class EvaluationTask(D3RTask):
 
         self.run_external_command(eval_name, cmd_to_run,
                                   True)
+
+        # get evaluation summary
+        eval_summary = self._get_evaluation_summary()
+
+        # append to email
+        self.append_to_email_log(eval_summary)
+
+        # if external submission send summary email
+        self._send_external_submission_email(eval_summary)
+
         # assess the result
         self.end()
