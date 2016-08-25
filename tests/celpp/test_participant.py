@@ -84,6 +84,10 @@ class TestParticipant(unittest.TestCase):
 
             csvfile = os.path.join(temp_dir,'participant_list.csv')
 
+            # parse None as file
+            pfac = ParticipantDatabaseFromCSVFactory(None)
+            self.assertEqual(pfac.get_participant_database(), None)
+
             # parse non existant file
             pfac = ParticipantDatabaseFromCSVFactory(csvfile)
             self.assertEqual(pfac.get_participant_database(), None)
