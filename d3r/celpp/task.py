@@ -69,6 +69,10 @@ class TaskFailedError(TaskException):
     """
     pass
 
+class EmailSendError(TaskException):
+    """Exception to denote when SmtpEmailer was unable to send an email
+    """
+    pass
 
 class D3RTask(object):
     """Represents a base Task that can be run.
@@ -650,3 +654,87 @@ class D3RTask(object):
                                          "received. Standard out: " + out +
                                          " Standard error : " + err)
         return returncode
+
+
+class SmtpEmailer(object):
+    """Simple Wrapper class to send email via smtplib
+    """
+
+    def __init__(self, smtp_host='localhost', port=25):
+        """Constructor
+        :param smtp_host: host of stmp server
+        :param port: port stmp server is on
+        """
+        self._smtp_host = smtp_host
+        self._port = port
+        self._alt_smtp_server = None
+
+    def set_alternate_smtp_server(self, server):
+        """Sets alternate smtp server to use
+        """
+        self._alt_smtp_server = server
+
+    def send_email(self, from_address, to_list, subject, message, reply_to=None):
+        """Sends email
+        :param from_address: from email address
+        :param to_list: list of email addresses as strings to send email to
+        :param subject: Subject of email
+        :param message: Body of email
+        :param reply_to: optional parameter to alter the reply to email
+        :raises EmailSendError: if there was an error creating or sending
+        the email
+        """
+        server = None
+        try:
+            mime_msg = self._build_mime_message(from_address, to_list,
+                                                subject, message, reply_to)
+            server = self._get_server()
+            server.sendmail(from_address, to_list, mime_msg.as_string())
+        except smtplib.SMTPConnectError as e:
+            logger.exception('Caught exception')
+            raise EmailSendError('Unable to connect to smtp server ' + str(e))
+        except Exception as e:
+            logger.exception('Caught exception')
+            raise EmailSendError('Caught exception ' + str(e))
+        finally:
+            if server is not None:
+                server.quit()
+
+    def generate_from_address_using_login_and_host(self):
+        """Creates from email address from login and hostname
+        of machine running this script.
+        :returns: from email address as string
+        """
+        hostname = platform.node()
+        if hostname is '':
+            hostname = 'localhost'
+        return os.getlogin() + '@' + hostname
+
+    def _get_server(self):
+        """Gets Smtp server
+        :returns: smtplib.SMTP object unless set_alternate_smtp_server was set in
+        which case that object is returned
+        """
+        if self._alt_smtp_server is not None:
+            return self._alt_smtp_server
+
+        return smtplib.SMTP(self._smtp_host,
+                            self._port)
+
+    def _build_mime_message(self, from_address, to_list,
+                            subject, message, reply_to):
+        """Creates MIMEText object and returns it
+        :param from_address: from email address
+        :param to_list: list of email addresses as strings to send email to
+        :param subject: Subject of email
+        :param message: Body of email
+        :returns MIMEText object upon success or None upon error
+        """
+        mime_msg = MIMEText(message)
+        mime_msg['Subject'] = subject
+        mime_msg['From'] = from_address
+        mime_msg['To'] = ", ".join(to_list)
+        if reply_to is not None:
+            mime_msg.add_header('reply-to', reply_to)
+
+        return mime_msg

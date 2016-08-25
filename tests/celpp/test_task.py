@@ -17,6 +17,10 @@ import shutil
 import platform
 import os
 
+from mock import Mock
+from email.mime.text import MIMEText
+
+
 from d3r.celpp.task import D3RParameters
 from d3r.celpp.task import UnsetPathError
 from d3r.celpp.task import UnsetStageError
@@ -24,6 +28,8 @@ from d3r.celpp.task import UnsetNameError
 from d3r.celpp.task import UnsetCommandError
 from d3r.celpp.task import UnsetFileNameError
 from d3r.celpp.task import D3RTask
+from d3r.celpp.task import SmtpEmailer
+from d3r.celpp.task import EmailSendError
 from d3r.celpp.filetransfer import FtpFileTransfer
 
 
@@ -554,6 +560,60 @@ class TestD3rTask(unittest.TestCase):
 
         finally:
             shutil.rmtree(temp_dir)
+
+    def test_smtp_emailer_generate_from_address_using_login_and_host(self):
+        emailer = SmtpEmailer()
+        val = emailer.generate_from_address_using_login_and_host()
+        self.assertEqual(val, os.getlogin() + '@' + platform.node())
+
+    def test_sending_real_email_but_to_invalid_port_and_host(self):
+        emailer = SmtpEmailer(port=1231231231232)
+        try:
+            emailer.send_email('bob@bob.com', ['joe@joe.com'], 'subby2',
+                               'hi\n')
+            self.fail('Expected EmailSendError')
+        except EmailSendError:
+            pass
+
+    def test_get_server_with_altserver_set(self):
+        emailer = SmtpEmailer()
+        fake = D3RParameters()
+        fake.hi = 'fake'
+        emailer.set_alternate_smtp_server(fake)
+        self.assertEqual(emailer._get_server().hi, fake.hi)
+
+    def test_send_valid_email_to_fake_server(self):
+        emailer = SmtpEmailer()
+        mockserver = D3RParameters()
+        mockserver.sendmail = Mock()
+        mockserver.quit = Mock()
+
+        mime_msge = emailer._build_mime_message('bob@bob.com',
+                                                ['joe@joe.com'], 'subby2',
+                                                'hi\n','rep@rep.com')
+
+        emailer.set_alternate_smtp_server(mockserver)
+        emailer.send_email('bob@bob.com', ['joe@joe.com'], 'subby2',
+                               'hi\n', reply_to='rep@rep.com')
+        mockserver.quit.assert_any_call()
+        mockserver.sendmail.assert_called_with('bob@bob.com', ['joe@joe.com'],
+                                               mime_msge.as_string())
+
+    def test_send_invalid_email_to_fake_server_that_throws_exception(self):
+        emailer = SmtpEmailer()
+        mockserver = D3RParameters()
+        mockserver.sendmail = Mock(side_effect=IOError('some error'))
+        mockserver.quit = Mock()
+
+        emailer.set_alternate_smtp_server(mockserver)
+        try:
+            emailer.send_email('bob@bob.com', ['joe@joe.com'], 'subby2',
+                               'hi\n', reply_to='rep@rep.com')
+        except EmailSendError:
+            pass
+
+        mockserver.quit.assert_any_call()
+
 
     def tearDown(self):
         pass
