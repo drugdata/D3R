@@ -428,6 +428,7 @@ def setup_logging(theargs):
     """Sets up the logging for application
 
     Loggers are setup for:
+    d3r.blastnfilter
     d3r.celpprunner
     d3r.celpp.blastnfilter
     d3r.celpp.dataimport
@@ -439,6 +440,15 @@ def setup_logging(theargs):
     d3r.celpp.util
     d3r.celpp.uploader
     d3r.celpp.chimeraprep
+    d3r.celpp.participant
+    d3r.blast.ligand
+    d3r.blast.hit
+    d3r.blast.hit_sequence
+    d3r.blast.query
+    d3r.filter.filter
+    d3r.utilities.analysis
+    d3r.utilities.in_put
+    d3r.utilities.run
 
     NOTE:  If new modules are added please add their loggers to this
     function
@@ -489,6 +499,8 @@ def setup_logging(theargs):
     logging.getLogger('d3r.celpp.filetransfer')\
         .setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.celpp.chimeraprep')\
+        .setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.participant')\
         .setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.blast.ligand').setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.blast.hit').setLevel(theargs.numericloglevel)
