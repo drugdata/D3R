@@ -3,13 +3,12 @@
 import os
 import time
 import logging
-import subprocess
-import shlex
 import smtplib
 import platform
 from email.mime.text import MIMEText
 
-from d3r.celpp.uploader import FtpFileUploader
+from d3r.celpp.filetransfer import FtpFileTransfer
+from d3r.celpp import util
 
 
 logger = logging.getLogger(__name__)
@@ -116,7 +115,7 @@ class D3RTask(object):
 
         try:
             logger.debug('ftpconfig set to ' + args.ftpconfig)
-            self._file_uploader = FtpFileUploader(args.ftpconfig)
+            self._file_uploader = FtpFileTransfer(args.ftpconfig)
         except:
             logger.debug('FtpFileUploader not set.  This may not be '
                          'an error')
@@ -170,12 +169,12 @@ class D3RTask(object):
     def set_error(self, error):
         self._error = error
 
-    def get_file_uploader(self):
+    def get_file_transfer(self):
         """Gets the file uploader
         """
         return self._file_uploader
 
-    def set_file_uploader(self, file_uploader):
+    def set_file_transfer(self, file_uploader):
         """Sets file uploader
         """
         self._file_uploader = file_uploader
@@ -344,15 +343,18 @@ class D3RTask(object):
 
            :return: None
         """
-        if self.get_file_uploader() is None:
+        if self.get_file_transfer() is None:
             return
         try:
             uploadable_files = self.get_uploadable_files()
-            self.get_file_uploader().upload_files(uploadable_files)
-            summary = self.get_file_uploader().get_upload_summary()
+            self.get_file_transfer().connect()
+            self.get_file_transfer().upload_files(uploadable_files)
+            summary = self.get_file_transfer().get_upload_summary()
             self.append_to_email_log('\n' + summary + '\n')
         except:
             logger.exception('Caught exception trying to upload files')
+        finally:
+            self.get_file_transfer().disconnect()
 
     def start(self):
         """Denotes start of task
@@ -620,10 +622,9 @@ class D3RTask(object):
         logger.info("Running command " + cmd_to_run)
 
         self.append_to_email_log('Running command: ' + cmd_to_run + '\n')
+
         try:
-            p = subprocess.Popen(shlex.split(cmd_to_run),
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE)
+            returncode, out, err = util.run_external_command(cmd_to_run)
         except Exception as e:
             logger.exception("Error caught exception")
             self.set_status(D3RTask.ERROR_STATUS)
@@ -632,22 +633,20 @@ class D3RTask(object):
             self.end()
             return 1
 
-        out, err = p.communicate()
-
         self.write_to_file(err, command_name + D3RTask.STDERR_SUFFIX)
         self.write_to_file(out, command_name + D3RTask.STDOUT_SUFFIX)
 
-        if p.returncode != 0:
+        if returncode != 0:
             if command_failure_is_fatal:
                 self.set_status(D3RTask.ERROR_STATUS)
-                self.set_error("Non zero exit code: " + str(p.returncode) +
+                self.set_error("Non zero exit code: " + str(returncode) +
                                " received. Standard out: " + out +
                                " Standard error: " + err)
             else:
                 self.append_to_email_log("Although considered non fatal " +
                                          "for processing of stage a " +
                                          "non zero exit code: " +
-                                         str(p.returncode) +
+                                         str(returncode) +
                                          "received. Standard out: " + out +
                                          " Standard error : " + err)
-        return p.returncode
+        return returncode

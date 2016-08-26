@@ -10,3 +10,4 @@
 dist/
 htmlcov/
 build/
+vagrant/centos66/.vagrant/

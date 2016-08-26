@@ -4,7 +4,7 @@ import os
 import logging
 
 from d3r.celpp.task import D3RTask
-from d3r.celpp.blastnfilter import BlastNFilterTask
+from d3r.celpp.challengedata import ChallengeDataTask
 
 logger = logging.getLogger(__name__)
 
@@ -14,8 +14,8 @@ class ProteinLigPrepTask(D3RTask):
 
     """
 
-    MAE_FILES = ['ligand.mae', 'largest.maegz', 'smallest.maegz',
-                 'apo.maegz', 'holo.maegz']
+    MAE_FILES = ['ligand.mae', 'LMCSS.maegz', 'SMCSS.maegz',
+                 'hiResApo.maegz', 'hiResHolo.maegz']
 
     FINAL_LOG = 'final.log'
 
@@ -24,8 +24,8 @@ class ProteinLigPrepTask(D3RTask):
         self.set_name('proteinligprep')
 
         # Make stage number one higher then BlastNFilter Stage
-        blast = BlastNFilterTask(path, args)
-        self.set_stage(blast.get_stage() + 1)
+        chall = ChallengeDataTask(path, args)
+        self.set_stage(chall.get_stage() + 1)
 
         self.set_status(D3RTask.UNKNOWN_STATUS)
 
@@ -37,10 +37,10 @@ class ProteinLigPrepTask(D3RTask):
 
            final.log
            <pbid>/ligand.mae
-           <pdbid>/largest.maegz
-           <pdbid>/smallest.maegz
-           <pdbid>/apo.maegz
-           <pdbid>/holo.maegz
+           <pdbid>/LMCSS.maegz
+           <pdbid>/SMCSS.maegz
+           <pdbid>/hiResApo.maegz
+           <pdbid>/hiResHolo.maegz
 
            :returns: list of files that can be uploaded.
         """
@@ -80,14 +80,14 @@ class ProteinLigPrepTask(D3RTask):
         self._can_run = False
         self._error = None
         # check blast
-        blastnfilter = BlastNFilterTask(self._path, self._args)
-        blastnfilter.update_status_from_filesystem()
-        if blastnfilter.get_status() != D3RTask.COMPLETE_STATUS:
+        chall = ChallengeDataTask(self._path, self._args)
+        chall.update_status_from_filesystem()
+        if chall.get_status() != D3RTask.COMPLETE_STATUS:
             logger.info('Cannot run ' + self.get_name() + 'task ' +
-                        'because ' + blastnfilter.get_name() + 'task' +
-                        'has a status of ' + blastnfilter.get_status())
-            self.set_error(blastnfilter.get_name() + ' task has ' +
-                           blastnfilter.get_status() + ' status')
+                        'because ' + chall.get_name() + 'task' +
+                        'has a status of ' + chall.get_status())
+            self.set_error(chall.get_name() + ' task has ' +
+                           chall.get_status() + ' status')
             return False
 
         # check this task is not complete and does not exist
@@ -108,7 +108,7 @@ class ProteinLigPrepTask(D3RTask):
         return True
 
     def run(self):
-        """Runs ProteinLigPrepTask after verifying blastnfilter was good
+        """Runs ProteinLigPrepTask after verifying ChallengeDataTask was good
 
            Method requires can_run() to be called before hand with
            successful outcome
@@ -141,13 +141,16 @@ class ProteinLigPrepTask(D3RTask):
             self.end()
             return
 
-        blastnfilter = BlastNFilterTask(self._path, self._args)
+        chall = ChallengeDataTask(self._path, self._args)
 
         #
-        # proteinligprep.py --candidatedir <path to stage.2.blastnfilter> \
+        # proteinligprep.py --candidatedir <path to stage.3.challengedata> \
         # --outdir <path to stage.3.proteinligprep>
+
+        challdir = os.path.join(chall.get_dir(),
+                                chall.get_celpp_challenge_data_dir_name())
         cmd_to_run = (self.get_args().proteinligprep + ' --candidatedir ' +
-                      blastnfilter.get_dir() +
+                      challdir +
                       ' --pdbdb ' + self.get_args().pdbdb +
                       ' --outdir ' + self.get_dir())
 

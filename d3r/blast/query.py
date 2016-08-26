@@ -15,6 +15,7 @@ from d3r.blast.ligand import Ligand
 
 logger = logging.getLogger(__name__)
 
+
 class Query(Base):
     """
     This class contains information about the macromolecular structures uniquely identified by a wwPDB in the
@@ -131,6 +132,7 @@ class Query(Base):
                          'the first sequence???')
         except:
             logger.exception('Caught exception logging debug information')
+        
         for sequence in self.sequences:
             fasta = self.write_fasta(sequence, out_dir)
             if fasta:
@@ -209,6 +211,7 @@ class Query(Base):
         :param pdb_db: A BLASTP database
         :return: Bio.blast.Record object
         """
+        logger.debug('Running blastp ' + fasta)
         cline = NcbiblastpCommandline(cmd='blastp', query=fasta, db=pdb_db, evalue=0.001, outfmt=5)
         std_out, std_err = cline()
         blast_records = NCBIXML.parse(StringIO(std_out))
@@ -217,20 +220,25 @@ class Query(Base):
 
     def write_fasta(self, sequence, out_dir):
         """
-        Writes the input BioPython sequence records to a fasta file in the specified directory. If the fasta file was
-        written successfully, the absolute path to the fasta file is returned. Otherwise False is returned.
+        Writes the input BioPython sequence records to a fasta file in the
+        specified directory. If the fasta file was
+        written successfully, the absolute path to the fasta file is
+        returned. Otherwise False is returned.
         :sequence: (Bio.SeqRecord)
-        :param outdir: (string) The absolute path of the directory where the fasta file will be written
-        return: the absolute path to the fasta file
+        :param outdir: (string) The absolute path of the directory
+        where the fasta file will be written
+        return: the absolute path to the fasta file upon success or
+        False upon failure
         """
         fasta = os.path.join(os.path.abspath(out_dir), '_'.join((self.pdb_id, sequence.id)) + '.fasta')
         logger.debug('Writing fasta file: ' + fasta)
         try:
             SeqIO.write(sequence, fasta, "fasta")
             return fasta
-        except: 
+        except:
             logger.exception('Caught exception')
             return False
+        return False
 
     def get_pdb_id_from_alignment(self, alignment):
         """

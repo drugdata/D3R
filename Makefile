@@ -1,4 +1,16 @@
-.PHONY: clean-pyc clean-build docs clean
+.PHONY: clean-pyc clean-build docs clean updateversion singularity
+
+define BROWSER_PYSCRIPT
+import os, webbrowser, sys
+try:
+        from urllib import pathname2url
+except:
+        from urllib.request import pathname2url
+
+webbrowser.open("file://" + pathname2url(os.path.abspath(sys.argv[1])))
+endef
+export BROWSER_PYSCRIPT
+BROWSER := python -c "$$BROWSER_PYSCRIPT"
 
 help:
 	@echo "clean - remove all build, test, coverage and Python artifacts"
@@ -13,6 +25,8 @@ help:
 	@echo "release - package and upload a release"
 	@echo "dist - package"
 	@echo "install - install the package to the active Python's site-packages"
+	@echo "updateversion - updates version value in setup.py & d3r/__init__.py"
+	@echo "singularity - Creates singularity image"
 
 clean: clean-build clean-pyc clean-test
 
@@ -47,7 +61,7 @@ coverage:
 	coverage run --source d3r setup.py test
 	coverage report -m
 	coverage html
-	open htmlcov/index.html
+	$(BROWSER) htmlcov/index.html
 
 docs:
 	rm -f docs/d3r.rst
@@ -68,3 +82,26 @@ dist: clean
 
 install: clean
 	python setup.py install
+
+updateversion:
+	@cv=`egrep '^\s+version=' setup.py | sed "s/^.*='//" | sed "s/'.*//"`; \
+	read -p "Current ($$cv) enter new version: " vers; \
+	echo "Updating setup.py & d3r/__init__.py with new version: $$vers"; \
+	sed -i "s/version='.*',/version='$$vers',/" setup.py ; \
+	sed -i "s/__version__ = '.*'/__version__ = '$$vers'/" d3r/__init__.py
+	@echo -n "  Updated setup.py: " ; \
+	grep "version" setup.py ; 
+	@echo -n "  Updated d3r/__init__.py: " ; \
+	grep "__version__" d3r/__init__.py
+
+singularity: dist
+	@echo 'Creating Singularity image'
+	vers=`egrep '^\s+version=' setup.py | sed "s/^.*='//" | sed "s/'.*//"`; \
+	echo 'version $vers'; \
+	imgfile=`echo dist/d3r-$$vers.img` ; \
+	whfile=`echo d3r-$$vers-py2.py3-none-any.whl` ; \
+	echo 'image file $imgfile' ; \
+	sudo singularity create -s 4096 $$imgfile ; \
+	sudo singularity bootstrap $$imgfile singularity/d3rcentos.def $$vers; \
+	echo 'Singularity Image created $imgfile'
+	ls -l dist

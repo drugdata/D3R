@@ -115,10 +115,10 @@ class EvaluationTask(D3RTask):
     FINAL_LOG = 'final.log'
     RMSD_TXT = 'RMSD.txt'
 
-    PDB_FILES = ['score' + os.sep + 'rot-largest_dock_pv_complex1.pdb',
-                 'score' + os.sep + 'rot-smallest_dock_pv_complex1.pdb',
-                 'score' + os.sep + 'rot-apo_dock_pv_complex1.pdb',
-                 'score' + os.sep + 'rot-holo_dock_pv_complex1.pdb',
+    PDB_FILES = ['score' + os.sep + 'rot-LMCSS_dock_pv_complex1.pdb',
+                 'score' + os.sep + 'rot-SMCSS_dock_pv_complex1.pdb',
+                 'score' + os.sep + 'rot-hiResApo_dock_pv_complex1.pdb',
+                 'score' + os.sep + 'rot-hiResHolo_dock_pv_complex1.pdb',
                  'score' + os.sep + 'crystal.pdb']
 
     def __init__(self, path, name, docktask, args):
@@ -136,10 +136,10 @@ class EvaluationTask(D3RTask):
 
            RMSD.txt
            final.log
-           pbdid/score/rot-largest_dock_pv_complex1.pdb
-           pbdid/score/rot-smallest_dock_pv_complex1.pdb
-           pbdid/score/rot-apo_dock_pv_complex1.pdb
-           pbdid/score/rot-holo_dock_pv_complex1.pdb
+           pbdid/score/rot-LMCSS_dock_pv_complex1.pdb
+           pbdid/score/rot-SMCSS_dock_pv_complex1.pdb
+           pbdid/score/rot-hiResApo_dock_pv_complex1.pdb
+           pbdid/score/rot-hiResHolo_dock_pv_complex1.pdb
            pbdid/score/crystal.pdb
 
            :returns: list of files that can be uploaded

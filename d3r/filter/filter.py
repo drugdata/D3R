@@ -6,6 +6,7 @@ from d3r.filter.filtering_sets import stabilisers, buffers, ions, excipients
 
 logger = logging.getLogger(__name__)
 
+
 class BaseFilter(object):
     """
 
@@ -226,6 +227,7 @@ class CandidateFilter(BaseFilter):
         super(CandidateFilter, self).__init__(*args, **kwargs)
 
     def filter_for_most_similar(self):
+        logger.debug('In filter_for_most_similar()')
         # sort the hit list by decreasing MCSS size and increasing resolution
         # the most similar will be at the front of the list, the least similar will be at the end of the list.
         logger.debug('In filter_for_most_similar()')

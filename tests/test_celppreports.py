@@ -46,7 +46,7 @@ class TestCelppReports(unittest.TestCase):
                          .getEffectiveLevel(), logging.DEBUG)
         self.assertEqual(logging.getLogger('d3r.celpp.util')
                          .getEffectiveLevel(), logging.DEBUG)
-        self.assertEqual(logging.getLogger('d3r.celpp.uploader')
+        self.assertEqual(logging.getLogger('d3r.celpp.filetransfer')
                          .getEffectiveLevel(), logging.DEBUG)
 
         theargs.loglevel = 'INFO'

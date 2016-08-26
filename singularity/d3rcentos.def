@@ -1,0 +1,35 @@
+
+RELEASE=7
+d3rversion="$1"
+
+echo "Setting RELEASE=$RELEASE"
+echo "D3R release version=$d3rversion"
+
+DistType "redhat"
+MirrorURL "http://mirror.centos.org/centos-${RELEASE}/${RELEASE}/os/\$basearch/"
+
+Setup
+Bootstrap
+
+InstallPkgs yum vim-minimal make python python-devel git wget 
+
+InstallPkgs epel-release 
+
+InstallPkgs python-pip python-argparse python-psutil 
+InstallPkgs python-biopython python-virtualenv python-tox pylint 
+InstallPkgs python-coverage perl-Archive-Tar perl-List-MoreUtils 
+InstallPkgs perl-Digest perl-Digest-MD5
+
+RunCmd "pip install xlsxwriter"
+RunCmd "pip install ftpretty"
+RunCmd "pip install wheel"
+RunCmd "pip install flake8"
+RunCmd "pip install lockfile --upgrade"
+InstallFile dist/d3r-${d3rversion}-py2.py3-none-any.whl /d3r-${d3rversion}-py2.py3-none-any.whl
+InstallFile singularity/runscript.sh /singularity
+RunCmd "chmod a+x /singularity"
+RunCmd "pip install /d3r-${d3rversion}-py2.py3-none-any.whl"
+RunCmd "rpm -ivh ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/2.3.0/ncbi-blast-2.3.0+-1.x86_64.rpm"
+
+Cleanup
+

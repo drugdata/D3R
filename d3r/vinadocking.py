@@ -1,4 +1,4 @@
-#!/usr/bin/evn python
+#!/usr/bin/env python
 
 import commands
 import os
@@ -20,49 +20,29 @@ print struct
 struct.write(outFile)
 '''
 
-#def grid (grid_center, prep_pro):
-#    protein_name = prep_pro.split(".")[0]
-#    out_grid = protein_name + ".zip"
-#    grid_in  = protein_name +  "_grid.in"
-#    grid_1 = "GRID_CENTER \t %s \n"%grid_center
-#    grid_2 = "GRIDFILE \t %s \n"%out_grid
-#    grid_3 = "INNERBOX \t 10, 10, 10 \n"
-#    grid_4 = "OUTERBOX \t 30, 30, 30 \n"
-#    grid_5 = "RECEP_FILE \t %s \n"%prep_pro
-#    f = open (grid_in, "w")
-#    for grid_line in (grid_1, grid_2, grid_3, grid_4, grid_5):
-#        f.writelines(grid_line)
-#    f.close()
-#    commands.getoutput("$SCHRODINGER/glide -WAIT %s"%grid_in)
-#    if os.path.isfile(out_grid):
-#        return out_grid
-#    else:
-#        return False
-
-#def dock(ligand_file, out_grid, protein_title):
 def dock(ligand_pdbqt,  protein_pdbqt, grid_center,):
     center_list = grid_center.split(',')
-    command = 'vina --receptor %s  --ligand %s --center_x %s --center_y %s --center_z %s --size_x 15 --size_y 15 --size_z 15 --seed 999' %(protein_pdbqt, ligand_pdbqt, center_list[0], center_list[1], center_list[2])
-    commands.getoutput(command)
-    #return out_dock_file
+    vina_command = 'vina --receptor %s  --ligand %s --center_x %s --center_y %s --center_z %s --size_x 15 --size_y 15 --size_z 15 --seed 999 >& vina_output' %(protein_pdbqt, ligand_pdbqt, center_list[0], center_list[1], center_list[2])
+    out_dock_file = ligand_pdbqt.replace('.pdbqt','_out.pdbqt')
+
+    commands.getoutput(vina_command)
+    if not(os.path.isfile(out_dock_file)):
+        logging.info("Docking failed for protein %s and ligand %s" %(protein_pdbqt, ligand_pdbqt))
+        return False
+    return out_dock_file
 
 def main_vina (stage_3_result, stage_4_working, update= True):
     os.chdir(stage_4_working)
     current_dir = os.getcwd()
     dockable_paths = []
     for all_pdb_path in os.walk(stage_3_result):
-        #print 'all_pdb_path',all_pdb_path
-        #print 'stage_3_result', stage_3_result
         if all_pdb_path[0] != stage_3_result:
-            #print 'AAA'
             dockable_paths.append(all_pdb_path[0])
 
     for dockable_path in dockable_paths:
-        #print 'dockable_path',dockable_path
         commands.getoutput("cp -r %s %s" %(dockable_path, stage_4_working))
-        dockable_path_local = os.path.basename(dockable_path)
-        #print 'dockable_path_local',dockable_path_local
-        os.chdir(dockable_path_local)
+        target_name = os.path.basename(dockable_path)
+        os.chdir(target_name)
         current_dir_layer_2 = os.getcwd()
         ##################
         #Do the docking here
@@ -70,93 +50,113 @@ def main_vina (stage_3_result, stage_4_working, update= True):
         #1, get the center
         try:
             grid_center = open("center.txt","r").readlines()[0]
-            logging.info("=============Start working in this case:%s=========="%dockable_path_local)
+            logging.info("=============Start working on this case:%s=========="%target_name)
         except:
-            logging.info("Fatal error: Unable to find the center file for this case %s"%dockable_path_local)
+            logging.info("Fatal error: Unable to find the center file for this case %s"%target_name)
             os.chdir(current_dir)
             continue
-        for possible_protein in ("largest.mol2", "smallest.mol2", "holo.mol2", "apo.mol2"):
-        #for possible_protein in ("smallest.maegz", "holo.maegz", "apo.maegz"):
-            
-            if os.path.isfile(possible_protein):
-                logging.info( "Working on this pdb: %s"%possible_protein )
-                protein_title = possible_protein.split(".")[0]
-                if not os.path.isdir(protein_title):
-                    os.mkdir(protein_title)
-                os.chdir(protein_title)
-                ##################
-                #do docking inside
-                commands.getoutput("cp ../%s ."%possible_protein)
-                commands.getoutput("cp ../ligand.mol2 .")
-                ## Technical prep: Prepare protein and ligand
-                ## If we want to use schrodinger's prepped ligand, convert from mae to pdb
-                ## First convert mae to pdb. This is a horrible, awful hack that I'll use until protein prep is implemented
-                #with open('mae2Pdb.py','wb') as of:
-                #    of.write(pdb2MaePyText)
-                #commands.getoutput('PYTHONPATH= $SCHRODINGER/run python mae2Pdb.py ligand.mae ligand.pdb')
-                ## On nif1
-                #commands.getoutput('cp /usr/local/mgltools/MGLToolsPckgs/AutoDockTools/Utilities24/prepare_ligand4.py .')
-                ## On canoes
-                #commands.getoutput('cp /soft/mgltools/latest/MGLToolsPckgs/AutoDockTools/Utilities24/prepare_ligand4.py .')
-                commands.getoutput('pythonsh $MGL_ROOT/MGLToolsPckgs/AutoDockTools/Utilities24/prepare_ligand4.py -l ligand.mol2')
-                #commands.getoutput('/usr/local/mgltools/bin/pythonsh prepare_ligand4.py -l ligand.mol2')
-                ligandPdbqtFile = 'ligand.pdbqt'
+        
+        # Get the candidate protein names in this directory
+        candidate_proteins = glob.glob('./*-????_????_prepared.mol2')
+        
+        logging.info('Found candidates %r' %(candidate_proteins))
+        # Get the ligand names in this directory
+        ligand_mol2s = glob.glob('lig_*_prepared.mol2')
+        ligand_mol2s = [i for i in ligand_mol2s if not "unprep" in i]
+        if len(ligand_mol2s) == 0:
+            logging.info('No ligand files found for target %s. Skipping.' %(dockable_path))
+            os.chdir(current_dir)
+            continue
+        if len(ligand_mol2s) > 1:
+            logging.info('Multiple ligand files found for target %s (found ligands %r). The workflow currently should only be sending one ligand. Skipping. ' %(dockable_path, ligand_mol2s))
+            os.chdir(current_dir)
+            continue
 
-                ## Technical prep: Prepare the protein
-                #receptorPdbFile = '.'.join(possible_protein.split('.')[:-1]) + '.pdb'
-                receptorMol2File = '.'.join(possible_protein.split('.')[:-1]) + '.mol2'
-                
-                ## If we want to use schrodinger's prepped ligand, convert from mae to pdb
-                ## First convert mae to pdb. This is a horrible, awful hack that I'll use until protein prep is implemented
-                #commands.getoutput('PYTHONPATH= $SCHRODINGER/run python mae2Pdb.py %s %s' %(possible_protein, receptorMol2File))
-                ## On canoes
-                #commands.getoutput('cp /soft/mgltools/latest/MGLToolsPckgs/AutoDockTools/Utilities24/prepare_receptor4.py .')
-                ## On nif1
-                #commands.getoutput('cp /usr/local/mgltools/MGLToolsPckgs/AutoDockTools/Utilities24/prepare_receptor4.py .')
-                commands.getoutput('pythonsh $MGL_ROOT/MGLToolsPckgs/AutoDockTools/Utilities24/prepare_receptor4.py -r %s' %(receptorMol2File))
-                receptorPdbqtFile = receptorMol2File.replace('.mol2','.pdbqt')
-                #generate grid
-                #logging.info("Trying to get the grid file...")
-                #if update: 
-                #    out_grid = grid(grid_center, possible_protein) 
-                #    #time.sleep(200) 
-                #else:
-                #    #check if there is old grid
-                #    out_grid = possible_protein.split(".")[0] + ".zip"
-                #    if not os.path.isfile(out_grid):
-                #        out_grid = grid(grid_center, possible_protein)
-                #        #time.sleep(200)
-                #logging.info("Finish grid generation...")
+        
+        
+        for candidate_protein in candidate_proteins:
+            candidate_prefix = candidate_protein.replace('_prepared.mol2','')
+            #if os.path.isfile(candidate_protein):
+            logging.info( "Working on this receptor: %s"%candidate_protein )
+            if not os.path.isdir(candidate_prefix):
+                os.mkdir(candidate_prefix)
+            os.chdir(candidate_prefix)
+            ##################
+            #do docking inside
+            commands.getoutput("cp ../%s ."%candidate_protein)
+            
+            ## Technical prep: Prepare the protein
+            #receptorMol2File = '.'.join(possible_protein.split('.')[:-1]) + '.mol2'
+            commands.getoutput('. /usr/local/mgltools/bin/mglenv.sh; pythonsh $MGL_ROOT/MGLToolsPckgs/AutoDockTools/Utilities24/prepare_receptor4.py -r %s' %(candidate_protein))
+            receptorPdbqtFile = candidate_protein.replace('.mol2','.pdbqt')
+
+
+            for ligand_mol2 in ligand_mol2s:
+                ## Technical prep: Prepare the ligand
+                ligand_name = ligand_mol2.replace('lig_','').replace('_prepped.mol2','')
+                ligandPdbqtFile = ligand_mol2.replace('.mol2','.pdbqt')
+                commands.getoutput("cp ../%s ." %(ligand_mol2))
+                commands.getoutput('. /usr/local/mgltools/bin/mglenv.sh; pythonsh $MGL_ROOT/MGLToolsPckgs/AutoDockTools/Utilities24/prepare_ligand4.py -l %s' %(ligand_mol2))
+    
+                ## Do the docking
                 logging.info("Trying to dock...")
+                out_dock_file = dock(ligandPdbqtFile, receptorPdbqtFile, grid_center)
+                if out_dock_file == False:
+                    logging.info("Docking failed - Skipping")
+                    continue
+                logging.info("Finished docking, beginning post-docking file conversion")
                 
-                dock(ligandPdbqtFile, receptorPdbqtFile, grid_center)
-                #if update:
-                #    out_dock = dock("ligand.mae", out_grid, protein_title)
-                #else:
-                #    out_dock = protein_title + "_dock_pv.maegz"
-                #    if not os.path.isfile(out_dock):
-                #        out_dock = dock("ligand.mae", out_grid, protein_title)
-                logging.info("Finish docking...")
+                ## Convert the receptor to pdb
+                intermediates_prefix = '%s_postdocking' %(candidate_prefix)
+                output_prefix = '%s_docked' %(candidate_prefix)
+                #receptorPdbqt = out_dock_file.replace('ligand_out',candidate_name)
+                #receptorPdbqt = candidate_prefix+'.pdbqt'
+                ## This receptor pdb will be one of our final outputs
+                outputReceptorPdb = "%s.pdb" %(output_prefix)
+                commands.getoutput('. /usr/local/mgltools/bin/mglenv.sh; python $MGL_ROOT/MGLToolsPckgs/AutoDockTools/Utilities24/pdbqt_to_pdb.py -f %s -o %s' %(receptorPdbqtFile, outputReceptorPdb))
+                
+                ## Then make the ligand mol
+                ## pdbqt_to_pdb.py can't split up the multiple poses in vina's output files, so we do that by hand
+                with open(out_dock_file) as fo:
+                    fileData = fo.read()
+                fileDataSp = fileData.split('ENDMDL')
+                
+                ## Write out each pose to its own pdb and mol file, then merge with the receptor to make the complex files.
+                for index, poseText in enumerate(fileDataSp[:-1]):
+                    this_pose_pdbqt = intermediates_prefix+'_ligand'+str(index+1)+'.pdbqt'
+                    this_pose_pdb = intermediates_prefix+'_ligand'+str(index+1)+'.pdb'
+                    this_pose_mol = intermediates_prefix+'_ligand'+str(index+1)+'.mol'
+                    with open(this_pose_pdbqt,'wb') as wf:
+                        wf.write(poseText+'ENDMDL')
+                    commands.getoutput('. /usr/local/mgltools/bin/mglenv.sh; python $MGL_ROOT/MGLToolsPckgs/AutoDockTools/Utilities24/pdbqt_to_pdb.py -f %s -o %s' %(this_pose_pdbqt, this_pose_pdb))
+                    commands.getoutput('babel -ipdb %s -omol %s' %(this_pose_pdb, this_pose_mol))
+                
+                ## Here convert our top-ranked pose to the final submission for this docking
+                ## Right now we're ignoring everything other than the top pose
+                top_intermediate_mol = intermediates_prefix+'_ligand1.mol'
+                final_ligand_mol = output_prefix+'.mol'
+                commands.getoutput('cp %s %s' %( top_intermediate_mol, final_ligand_mol))
+                    
                 ##################
-                os.chdir(current_dir_layer_2)
+            os.chdir(current_dir_layer_2)
         os.chdir(current_dir)
         ##################
 
 if ("__main__") == (__name__):
-    from optparse import OptionParser
-    parser = OptionParser()
-    parser.add_option("-s", "--structuredir", metavar="PATH", help = "PATH where we could find the stage 2 output")
-    parser.add_option("-o", "--outdir", metavar = "PATH", help = "PATH where we run stage 3")
-    parser.add_option("-u", "--update", action = "store_true",  help = "Update the docking result", default = False) 
+    from argparse import ArgumentParser
+    parser = ArgumentParser()
+    parser.add_argument("-s", "--structuredir", metavar="PATH", help = "PATH where we can find the proteinligprep output")
+    parser.add_argument("-o", "--outdir", metavar = "PATH", help = "PATH where we will put the docking output")
+    parser.add_argument("-u", "--update", action = "store_true",  help = "Update the docking result", default = False) 
     logger = logging.getLogger()
     logging.basicConfig( format  = '%(asctime)s: %(message)s', datefmt = '%m/%d/%y %I:%M:%S', filename = 'final.log', filemode = 'w', level   = logging.INFO )
-    (opt, args) = parser.parse_args()
-    stage_3_result = opt.structuredir
-    stage_4_result = opt.outdir
+    opt = parser.parse_args()
+    proteinligprep_dir = opt.structuredir
+    dock_result_dir = opt.outdir
     update = opt.update
     #running under this dir
     running_dir = os.getcwd()
-    main_vina(stage_3_result, stage_4_result, update = update)
+    main_vina(proteinligprep_dir, dock_result_dir, update = update)
     #move the final log file to the result dir
     log_file_path = os.path.join(running_dir, 'final.log')
-    commands.getoutput("mv %s %s"%(log_file_path, stage_4_result))
+    commands.getoutput("mv %s %s"%(log_file_path, dock_result_dir))

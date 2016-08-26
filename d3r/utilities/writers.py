@@ -218,12 +218,12 @@ class WriteText(object):
         out = []
         for lig in hit.dock[:2]:
             for mcss in lig.mcsss:
-                out.append("holo, {pdb_id}, {lig}".format(pdb_id=hit.pdb_id, lig=mcss.test))
+                out.append("hiResHolo, {pdb_id}, {lig}".format(pdb_id=hit.pdb_id, lig=mcss.test))
         for l in out: self.handle.write("%s\n" % l)
 
     def write_apo(self, hit):
         out = []
-        out.append("apo, {pdb_id}".format(pdb_id=hit.pdb_id))
+        out.append("hiResApo, {pdb_id}".format(pdb_id=hit.pdb_id))
         for l in out: self.handle.write("%s\n" %l)
 
     def reinitialize(self, query):
