@@ -205,13 +205,13 @@ class WriteText(object):
         #only write out the dockable mcss in the first ordered chain
         largest_lig = hit.dock[hit.largest_index[0]]
         for mcss in largest_lig.mcsss:
-            out.append("largest, {pdb_id}, {lig}, chain: {chain_id}, (size: {lig_size}, mcss_size: {mcss_size}, tanimoto_similarity: {tanimoto}) ".format(pdb_id=hit.pdb_id, lig=mcss.test, chain_id=hit.largest_mcss_chain[0], lig_size= largest_lig.size, mcss_size= mcss.size, tanimoto= "%4.4s"%(mcss.tanimoto) ))
+            out.append("LMCSS, {pdb_id}, {lig}, chain: {chain_id}, (size: {lig_size}, mcss_size: {mcss_size}, tanimoto_similarity: {tanimoto}) ".format(pdb_id=hit.pdb_id, lig=mcss.test, chain_id=hit.largest_mcss_chain[0], lig_size= largest_lig.size, mcss_size= mcss.size, tanimoto= "%4.4s"%(mcss.tanimoto) ))
         for l in out: self.handle.write("%s\n" % l)
 
     def write_smallest(self, hit):
         out = []
         for mcss in hit.dock[hit.smallest_index[0]].mcsss:
-            out.append("smallest, {pdb_id}, {lig} ".format(pdb_id=hit.pdb_id, lig=mcss.test ))
+            out.append("SMCSS, {pdb_id}, {lig} ".format(pdb_id=hit.pdb_id, lig=mcss.test ))
         for l in out: self.handle.write("%s\n" % l)
 
     def write_holo(self, hit):
