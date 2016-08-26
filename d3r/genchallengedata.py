@@ -1,4 +1,4 @@
-#!/usr/bin/evn python
+#!/usr/bin/env python
 __author__ = 'sliu'
 #from stage 3 blastnfilter result generating the stage 4 dataset to release to the participant
 import os
