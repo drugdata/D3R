@@ -120,6 +120,34 @@ def pull_ligand_out (proteinfile, ligname, ligandfile):
     f.writelines(l_xyz_lines)
     f.close()
     return ligandfile
+
+def get_center(ligand_pdb):
+    xyz_lines = open(ligand_pdb,"r").readlines()
+    multi_ligand = False
+    atom_list = []
+    x = y = z = 0
+    for xyz_line in xyz_lines:
+        if "HETATM" in xyz_line:
+            #logging.debug("Check the get center of this protein: %s for this ligand: %s"%(protein_file, ligname))                                                                                                               
+            atom_name = xyz_line[12:16]
+            if atom_name in atom_list:
+                multi_ligand = True
+            else:
+                atom_list.append(atom_name)
+                try:
+                    x += float(xyz_line[30:38])
+                    y+= float(xyz_line[38:46])
+                    z+= float(xyz_line[46:54])
+                except:
+                    logging.debug("Fatal error: Cannot find the XYZ coordinate for this ligand:%s"%ligand_pdb)
+                    return False
+    if not multi_ligand:
+        lig_center = "%8.3f, %8.3f, %8.3f"%(x/len(atom_list), y/len(atom_list), z/len(atom_list))
+        logging.debug("Ligand center for this case:%s is %s"%(ligand_pdb, lig_center))
+        return lig_center
+    else:
+        logging.debug("Fatal error: Found multiple ligands in file:%s"%ligand_pdb)
+        return False
         
 def main_gendata (s3_result_path, path_2_ent, s4_result_path):
     os.chdir(s4_result_path)
@@ -196,6 +224,14 @@ def main_gendata (s3_result_path, path_2_ent, s4_result_path):
                 continue
                 
             logging.info("Succsessfully generate this protein:%s"%LMCSS_protein_name)
+            ligand_center = get_center (LMCSS_ligand_name)
+            if not ligand_center:
+                logging.info("Unable to find the center of the ligand for the LMCSS candidate pdb: %s"%(pot_target_id))
+                os.chdir(current_dir_layer_1)
+                continue
+            else:
+                with open("center.txt" , "w") as center_file:
+                    center_file.writelines(ligand_center)
             for rest_protein in ("SMCSS", "hiResHolo", "hiResApo"):
                 if rest_protein in info_dic:
                     if len(info_dic[rest_protein]) == 2:
