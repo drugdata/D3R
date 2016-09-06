@@ -90,8 +90,10 @@ class HitFilter(BaseFilter):
     # default filtering values
     identity_threshold = 0.95
     coverage_threshold = 0.90
-    sequence_threshold = 4
-    dockable_ligand_threshold = 1
+    sequence_threshold = 2 
+    #dockable_ligand_threshold = 1
+    #sliu change to big number to "turn off" the dockable ligand filter 08/04  
+    dockable_ligand_threshold = 10
     method = 'x-ray diffraction'
 
     def __init__(self, *args, **kwargs):
@@ -160,6 +162,8 @@ class HitFilter(BaseFilter):
         if threshold == None:
             threshold = HitFilter.sequence_threshold
             for hit in self.query.hits:
+                #print "Check in the hit filter step sequence count:%s in this pdb id: %s"%(hit.sequence_count, hit.pdb_id)
+                #raw_input()
                 if hit.sequence_count > threshold:
                     hit.set_reason(3)
             if len([hit for hit in self.query.hits if hit.triage]) == len(self.query.hits):
@@ -204,6 +208,8 @@ class HitFilter(BaseFilter):
         if threshold is None:
             threshold = HitFilter.dockable_ligand_threshold
             for hit in self.query.hits:
+                #print "Check in the hit filter step dock_count%s in this pdb id:%s "%(hit.dock_count, hit.pdb_id)
+                #raw_input()
                 if hit.dock_count > threshold:
                     hit.set_reason(4)
 
@@ -224,16 +230,23 @@ class CandidateFilter(BaseFilter):
         logger.debug('In filter_for_most_similar()')
         # sort the hit list by decreasing MCSS size and increasing resolution
         # the most similar will be at the front of the list, the least similar will be at the end of the list.
+        logger.debug('In filter_for_most_similar()')
         hits = [hit for hit in self.query.hits if not hit.triage and hit.largest_mcss]
         if hits:
             hits.sort(key=lambda hit: (int(hit.largest_mcss.size), float(hit.resolution)), reverse=True)
             # hits[0].set_retain_reason(1)    # picks off the largest mcss with the highest resolution crystal structure
             lowest = hits[0].resolution     # lowest resolution
-            largest = hits[0].largest_mcss  # largest maximum common substructure
+            largest = hits[0].largest_mcss.size  # largest maximum common substructure
+            #print "Check the TTTTop largest mcss: %s and resolution: %s"%(largest, lowest)
+            #raw_input()
             for hit in hits:
-                if hit.resolution > lowest or hit.largest_mcss < largest:
+                #print "Check the largest mcss: %s and resolution: %s for this hit:%s "%(hit.largest_mcss.size ,hit.resolution, hit.pdb_id)
+                #raw_input()
+                if hit.resolution > lowest or hit.largest_mcss.size < largest:
                     break
                 else:
+                    #print "Check the largest mcss: %s and resolution: %s for this hit:%s "%(hit.largest_mcss.size ,hit.resolution, hit.pdb_id)
+                    #raw_input()
                     hit.set_retain_reason(1)
 
     def filter_for_least_similar(self):
@@ -244,9 +257,9 @@ class CandidateFilter(BaseFilter):
             hits.sort(key=lambda hit: (int(hit.smallest_mcss.size), float(hit.resolution)))
             # hits[0].set_retain_reason(2)   # picks off the smallest mcss with the highest resolution crystal structure
             lowest = hits[0].resolution       # lowest resolution
-            smallest = hits[0].smallest_mcss  # largest maximum common substructure
+            smallest = hits[0].smallest_mcss.size  # largest maximum common substructure
             for hit in hits:
-                if hit.resolution > lowest or hit.smallest_mcss > smallest:
+                if hit.resolution > lowest or hit.smallest_mcss.size > smallest:
                     break
                 else:
                     hit.set_retain_reason(2)

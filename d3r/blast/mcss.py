@@ -12,6 +12,8 @@ class MCSS(object):
         self.rd_mol = rd_mol            # A rd mol object that represents the maximum common substructure between -->
                                         # --> the reference molecule and the molecule that contains the MCSS object.
         self.size = None                # The number of atoms in the MCSS (int)
+        self.heavy = None
+        self.tanimoto = None
 
     def set_size(self):
         """
@@ -26,3 +28,9 @@ class MCSS(object):
             pass
         else:
             self.size = len(self.rd_mol.GetAtoms())
+    #added by sliu 08/08 to add the info for heavy atoms
+    def set_heavy_size(self):
+        if not self.rd_mol:
+            pass
+        else:
+            self.heavy = self.rd_mol.GetNumHeavyAtoms()

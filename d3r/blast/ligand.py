@@ -10,6 +10,9 @@ logger = logging.getLogger(__name__)
 try:
     from rdkit import Chem
     from rdkit.Chem import rdFMCS
+    from rdkit import DataStructs
+    from rdkit.Chem.Fingerprints import FingerprintMols
+    from rdkit.Chem import Descriptors
 except ImportError:
     logger.exception('Unable to import rdkit Ligand class will not work')
 
@@ -53,9 +56,17 @@ class Ligand(object):
     def __init__(self, resname=None, inchi=None):
         self.resname = resname
         self.inchi = inchi
+        #modified by sliu 08/04, here to add chain info for ligand 
+        self.chain = None 
         self.label = None
         self.rd_mol = None              # a rd mol object that represents
+        #modified by sliu 08/08 to add info for the ligand size
+        self.size = None 
+        self.heavy = None
+        self.rot = None
         self.mcsss = []                 # A list of d3r.blast.Mcss objects
+        #self.tanimoto = []              # A list of (tanimoto_score, reference_ligand_name)
+        self.tanimoto = {}              # A dic of reference_ligand_name:tanimoto_score
         self.mcss_error = None          # set to True, False or None
 
     def set_rd_mol_from_inchi(self, inchi = None):
@@ -93,7 +104,51 @@ class Ligand(object):
         except:
             logger.exception('Unable to create rdkit.Chem.rdmol from resname')
             return False
+    
+    def set_heavy_size (self,):
+        """
+        Get number of heavy atoms from the rd_mol object associated with this ligand
+        """
+        if not self.rd_mol:
+            print("Please set an rd mol object before calculating num of heavy atoms")
+            logger.error('No rd mol set')
+            return False
+        try: 
+            self.heavy = self.rd_mol.GetNumHeavyAtoms()
+            return True
+        except:
+            logger.exception('Unable to get num of heavy atoms from rd mol object')
+            return False
 
+    def set_size (self,):
+        """
+        Get number of atoms from the rd_mol object associated with this ligand
+        """
+        if not self.rd_mol:
+            print("Please set an rd mol object before calculating num of atoms")
+            logger.error('No rd mol set')
+            return False
+        try:
+            self.size = len(self.rd_mol.GetAtoms())
+            return True
+        except:
+            logger.exception('Unable to get num of heavy atoms from rd mol object')
+            return False
+
+    def set_rot(self,):
+        """
+        set number of rotatable bond
+        """
+        if not self.rd_mol:
+            print("Please set an rd mol object before calculating num of atoms")
+            logger.error('No rd mol set')
+            return False
+        try:
+            self.rot = Descriptors.NumRotatableBonds(self.rd_mol)
+            return True
+        except:
+            logger.exception('Unable to set the num of rotatable bond from rd mol object')
+            return False
     def mcss(self, reference):
         """
         Determines the maximum common substructure (MCSS) between the input, or reference ligand and itself. The MCSS is
@@ -117,7 +172,19 @@ class Ligand(object):
             logger.exception('Caught exception attempting to run rdkit FindMCS or MolFromSmarts')
             return None
 
-    def set_mcss(self, reference, mcss_mol):
+    def calc_tanimoto(self, reference):
+        """
+        Determin the tanimoto similarity score based on the rd mol fingureprint
+        """
+        try:
+            fps_ref = FingerprintMols.FingerprintMol(reference.rd_mol)
+            fps_self = FingerprintMols.FingerprintMol(self.rd_mol)
+            tanimoto = DataStructs.FingerprintSimilarity(fps_ref, fps_self)
+            return tanimoto
+        except:
+            logger.exception('Caught exception attempting to run rdkit FingerprintMols.FingerprintMol or DataStructs.FingerprintSimilarity')
+            return None
+    def set_mcss(self, reference, mcss_mol, tanimoto_score):
         """
         Creates an Mcss object and appends it to the list, Ligand.mcsss. It's assumed that the input maximum common
         substructure was determined using the input reference ligand and the ligand object to which the method belongs.
@@ -126,6 +193,15 @@ class Ligand(object):
         """
         logger.debug('set_mcss()')
         mcss = MCSS(reference.resname, mcss_mol)
+        #here mcss object is stored the mcss rd mol returned from mcss fucntion 
         mcss.set_size()
+        #mcss.set_heavy_size()
         mcss.test = self.resname
+        mcss.tanimoto = tanimoto_score
         self.mcsss.append(mcss)
+    def set_tanimoto(self, reference, tanimoto_score):
+        """
+        store the tanimoto score and corresponding reference ligand resname
+        """
+        #self.tanimoto.append((tanimoto_score, reference.resname))
+        self.tanimoto[reference.resname] = tanimoto_score

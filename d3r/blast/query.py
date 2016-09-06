@@ -57,11 +57,15 @@ class Query(Base):
         """
         logger.debug('In set_ligand()')
         ligand = Ligand(resname, inchi)
+        #modified by sliu 08/08, set the ligand size, rot bond etc
         if label == 'dock':
             if ligand.set_rd_mol_from_inchi():
                 self.inchi_error = False
             else:
                 self.inchi_error = True
+            ligand.set_size()
+            ligand.set_heavy_size()
+            ligand.set_rot()
             self.dock.append(ligand)
             self.dock_count += 1
             self.ligand_count += 1
@@ -128,7 +132,7 @@ class Query(Base):
                          'the first sequence???')
         except:
             logger.exception('Caught exception logging debug information')
-
+        
         for sequence in self.sequences:
             fasta = self.write_fasta(sequence, out_dir)
             if fasta:
@@ -278,9 +282,13 @@ class Query(Base):
             logger.debug('Found ' + str(len(record.alignments)) + ' alignments for record')
             for alignment in record.alignments:
                 pdb_id = self.get_pdb_id_from_alignment(alignment)
+                #print "\tCheck the alignment:%s, and pdb ID:%s "%(alignment, pdb_id)
                 chain_id = self.get_chain_id_from_alignment(alignment)
+                #print "\tCheck the chain ID", chain_id
                 if pdb_id in self.hit_membership.keys():
                     self.hits[self.hit_membership[pdb_id]].set_sequence(pdb_id, chain_id, record, alignment)
+                    #sliu 0808 add chain info in query
+                    self.hits[self.hit_membership[pdb_id]].set_ligands(chain_id)
                 else:
                     hit = Hit()
                     hit.pdb_id = pdb_id
@@ -289,7 +297,9 @@ class Query(Base):
                     hit.set_resolution()
                     hit.set_expt_method()
                     hit.set_sequence(pdb_id, chain_id, record, alignment)
-                    hit.set_ligands()
+                    hit.set_ligands(chain_id)
+                    #print "Inside query set hits> set ligands check after set ligands"
+                    #raw_input()
                     self.hits.append(hit)
                     self.hit_membership[pdb_id] = len(self.hits) - 1
 

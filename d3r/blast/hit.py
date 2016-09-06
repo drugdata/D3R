@@ -75,6 +75,10 @@ class Hit(Base):
         self.resolution = None          # structural resolution (angstroms)
         self.exp_method = None          # Method used to determine the structure, e.g. x-ray diffraction'
         self.largest_mcss = None        # The size of the largest MCSS contained in the self.dock.mcsss list
+        self.largest_mcss_chain = []    # The chain ID of the largest MCSS
+        self.smallest_mcss_chain = []   # The chain ID of the smallest MCSS
+        self.largest_index = []         # The index of the largest MCSS in the self.dock list
+        self.smallest_index = []        # The index of the smallest MCSS in the self.dock list
         self.smallest_mcss = None       # The size of the smallest MCSS contained in the self.dock.mcsss list
         self.sequence_membership = {}   # {'pdb_id'_'chain_id' : index} where index is the index of the -->
                                         # --> corresponding HitSequence object in the sequences list.
@@ -120,12 +124,40 @@ class Hit(Base):
         else:
             self.largest_mcss = self.dock[0].mcsss[0]
             self.smallest_mcss = self.dock[0].mcsss[0]
-            for ligand in self.dock:
+            self.largest_mcss_chain = []
+            self.smallest_mcss_chain = []
+            #store the index of the largest mcss in the self.dock object 
+            self.largest_index = []
+            #store the index of the smallest mcss in the self.dock object 
+            self.smallest_index = [] 
+            for (ligand_index, ligand) in enumerate (self.dock):
+                    #modified by sliu 08/04 to add chain info
                     for mcss in ligand.mcsss:
                         if mcss.size > self.largest_mcss.size:
                             self.largest_mcss = mcss
+                            #if this mcss is bigger then clean up the chain list and pick this one  
+                            self.largest_mcss_chain = []
+                            self.largest_mcss_chain.append(ligand.chain)
+                            self.largest_index = []
+                            self.largest_index.append(ligand_index)
+                        if mcss.size == self.largest_mcss.size:
+                            #if this mcss is the same as the original one, just append
+                            self.largest_mcss_chain.append(ligand.chain)
+                            self.largest_index.append(ligand_index)
                         if mcss.size < self.largest_mcss.size:
                             self.smallest_mcss = mcss
+                            self.smallest_mcss_chain = []
+                            self.smallest_mcss_chain.append(ligand.chain)      
+                            self.smallest_index = []                                
+                            self.smallest_index.append(ligand_index)
+                        if mcss.size == self.smallest_mcss.size:
+                            self.smallest_mcss_chain.append(ligand.chain)
+                            self.smallest_index.append(ligand_index)
+            #sort the chain list so that later we could anyway pick the first one.
+            (self.largest_mcss_chain, self.largest_index) = (list(x) for x in zip(*sorted(zip(self.largest_mcss_chain, self.largest_index))))
+            #print "CCCCCCCCCCCCCCC", (self.largest_mcss_chain, self.largest_index)  
+            (self.smallest_mcss_chain, self.smallest_index) = (list(x) for x in zip(*sorted(zip(self.smallest_mcss_chain, self.smallest_index))))
+            #here we need to clean up the self.dock to only reserve one ligand
 
     def read_pdb(self):
         """
@@ -239,7 +271,7 @@ class Hit(Base):
         else:
             return False
 
-    def set_ligands(self):
+    def set_ligands(self, chain_id):
         """
         Creates a d3r.blast.Ligand object for each of the bound ligands found in the PDB, and appends
         this object to the appropriate list, either dock or do_not_call. If the ligand object is added
@@ -254,15 +286,32 @@ class Hit(Base):
         """
         logger.debug('In set_ligands()')
         model_list = Selection.unfold_entities(self.pdb, 'M')
-        res_list = Selection.unfold_entities(model_list[0], 'R')
+        chain_list = Selection.unfold_entities(model_list[0], 'C')
+        chain_format = "<Chain id=%s>"%chain_id
+        chain_index = 0 
+        for (index, chain_object) in enumerate(chain_list):
+            if str(chain_object) == chain_format:
+                chain_index = index
+        #print "Chain index", chain_index
+        res_list = Selection.unfold_entities(chain_list[chain_index], 'R')
         hetero_list = [res for res in res_list if 'H_' in res.id[0] and res.id[0] != 'H_MSE']
+        #modified by sliu 08/04, add chain info for ligand
         for hetero in hetero_list:
-            assigned = [l.resname for l in self.dock] + [l.resname for l in self.do_not_call]
+            assigned = []
+            for l in self.dock:
+                ligand_info = (l.resname, l.chain)
+                assigned.append(ligand_info)
+            for l in self.do_not_call:
+                ligand_info = (l.resname, l.chain)
+                assigned.append(ligand_info)
+
             resname = hetero.resname.strip()
-            if resname in assigned:
+            if (resname, chain_id) in assigned:
+                #the resname, chain id info is already in stored
                 continue
             ligand = Ligand()
             ligand.resname = resname
+            ligand.chain = chain_id
             if resname in filtering_sets.do_not_call:
                 ligand.label = 'do_not_call'
                 self.do_not_call.append(ligand)
@@ -270,6 +319,9 @@ class Hit(Base):
             else:
                 ligand.label = 'dock'
                 ligand.set_rd_mol_from_resname(resname)
+                #modified by sliu 08/08
+                ligand.set_size()
+                ligand.set_heavy_size()
                 self.dock.append(ligand)
                 self.dock_count += 1
                 self.ligand_count += 1
@@ -339,3 +391,4 @@ class Hit(Base):
 
     def get_resolution(self):
         return self.resolution
+
