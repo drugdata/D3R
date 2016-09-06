@@ -20,10 +20,6 @@ InstallPkgs python-biopython python-virtualenv python-tox pylint
 InstallPkgs python-coverage perl-Archive-Tar perl-List-MoreUtils 
 InstallPkgs perl-Digest perl-Digest-MD5
 
-# install python-rdkit
-RunCmd "cd /etc/yum.repos.d;wget https://copr.fedorainfracloud.org/coprs/giallu/rdkit/repo/epel-6/giallu-rdkit-epel-6.repo"
-InstallPkgs python-rdkit
-
 RunCmd "pip install xlsxwriter"
 RunCmd "pip install ftpretty"
 RunCmd "pip install wheel"
