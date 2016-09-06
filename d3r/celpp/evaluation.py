@@ -146,6 +146,7 @@ class EvaluationTask(D3RTask):
         self.set_status(D3RTask.UNKNOWN_STATUS)
         self._docktask = docktask
         self._participantdatabase = None
+        self._alt_smtp_emailer = None
 
     def set_alternate_smtp_emailer(self, emailer):
         """Sets alternate smtp emailer
@@ -300,8 +301,8 @@ class EvaluationTask(D3RTask):
                                      ", ".join(to_list) + '\n')
         except Exception as e:
             logger.exception('Caught exception')
-            self.append_to_email_log('Caught exception trying to email '
-                                     'participant ' + str(e))
+            self.append_to_email_log('\nCaught exception trying to email '
+                                     'participant : ' + str(e) + '\n')
 
     def get_uploadable_files(self):
         """Returns list of files that can be uploaded to remote server

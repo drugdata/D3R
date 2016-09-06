@@ -748,8 +748,91 @@ class TestEvaluation(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
-        def test_send_external_submission_email(self):
-            self.assertEqual(1, 2, 'Look at evaluation code coverage for remaining tests to write')
+    def test_send_external_submission_email_sendmail_exception(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            params.program = 'foo'
+            params.version = '1'
+            task = EvaluationTask(temp_dir,
+                                  '12345' +
+                                  EvaluationTask.EXT_SUBMISSION_SUFFIX,
+                                  None, params)
+            plist = [Participant('1name', '1d3rusername', '12345',
+                                 'bob@bob.com')]
+            # try single email address
+            task.set_participant_database(ParticipantDatabase(plist))
+            emailer = SmtpEmailer()
+            mockserver = D3RParameters()
+            mockserver.sendmail = Mock(side_effect=IOError('ha'))
+            mockserver.quit = Mock()
+            emailer.set_alternate_smtp_server(mockserver)
+            task.set_alternate_smtp_emailer(emailer)
+            task._send_external_submission_email('foo')
+            mockserver.quit.assert_any_call()
+            self.assertEqual(task.get_email_log(),
+                             '\nCaught exception trying to email '
+                             'participant : Caught exception ha\n')
+
+
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_send_external_submission_email_no_submitter_email(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            params.program = 'foo'
+            params.version = '1'
+            task = EvaluationTask(temp_dir,
+                                  '12345' +
+                                  EvaluationTask.EXT_SUBMISSION_SUFFIX,
+                                  None, params)
+            plist = [Participant('1name', '1d3rusername', '1234',
+                                 'bob@bob.com')]
+            # try single email address
+            task.set_participant_database(ParticipantDatabase(plist))
+            emailer = SmtpEmailer()
+            task.set_alternate_smtp_emailer(emailer)
+            task._send_external_submission_email('foo')
+            from_addr = emailer.generate_from_address_using_login_and_host()
+            self.assertEqual(task.get_email_log(),
+                             '\nNo participant found with guid: 12345\n')
+        finally:
+            shutil.rmtree(temp_dir)
+
+
+    def test_get_reply_to_address(self):
+        params = D3RParameters()
+
+        # test get reply_to where no replytoaddress is set
+        task = EvaluationTask('/foo', '123' +
+                              EvaluationTask.EXT_SUBMISSION_SUFFIX,
+                              None, params)
+        val = task._get_reply_to_address('bob@bob.com')
+        self.assertEqual(val, 'bob@bob.com')
+
+        params.replytoaddress = 'joe@joe.com'
+        task = EvaluationTask('/foo', '123' +
+                              EvaluationTask.EXT_SUBMISSION_SUFFIX,
+                              None, params)
+        val = task._get_reply_to_address('bob@bob.com')
+        self.assertEqual(val, 'joe@joe.com')
+
+
+    def test_get_smtp_emailer_valid(self):
+        try:
+            params = D3RParameters()
+            params.smtp = 'localhost'
+            params.smtpport = '25'
+            task = EvaluationTask('/foo', '123' +
+                                  EvaluationTask.EXT_SUBMISSION_SUFFIX,
+                              None, params)
+            ss = task._get_smtp_emailer()
+            self.assertTrue(ss is not None)
+        finally:
+            pass
 
     def tearDown(self):
         pass
