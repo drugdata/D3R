@@ -6,7 +6,7 @@ yum install -y python-pip
 yum install -y python-argparse python-lockfile python-psutil
 yum install -y python-biopython python-virtualenv python-tox
 yum install -y pylint python-coverage libXft mesa-* openbabel
-yum install -y perl-Archive-Tar perl-List-MoreUtils xauth
+yum install -y perl-Archive-Tar perl-List-MoreUtils xauth pymol
 
 echo "pip installing some packages"
 pip install xlsxwriter
