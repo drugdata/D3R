@@ -3,6 +3,13 @@
 History
 -------
 
+1.5.0 (2016-09-06)
+
+* Fixed issue #49, evaluation task now emails results of 
+  evaluation to external submitter.
+
+* In blastnfilter, tanimoto has been added to
+
 1.4.0 (2016-08-11)
 --------------------
 
