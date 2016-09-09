@@ -122,6 +122,7 @@ def candidate_filter(queries):
     c_filter.filter_apo()
     c_filter.filter_for_most_similar()
     c_filter.filter_for_least_similar()
+    c_filter.filter_for_highest_tanimoto()
 
 
 #from memory_profiler import profile
