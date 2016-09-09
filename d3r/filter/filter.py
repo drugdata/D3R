@@ -299,3 +299,23 @@ class CandidateFilter(BaseFilter):
                         break
                     else:
                         hit.set_retain_reason(4)
+    def filter_for_highest_tanimoto(self):
+        logger.debug('In filter_for_highest_tanimoto()')
+        # sort the hit list by decreasing MCSS size and increasing resolution
+        # the most similar will be at the front of the list, the least similar will be at the end of the list.
+        hits = [hit for hit in self.query.hits if not hit.triage and hit.highest_tanimoto]
+        if hits:
+            hits.sort(key=lambda hit: (int(hit.highest_tanimoto.tanimoto), float(hit.resolution)), reverse=True)
+            # hits[0].set_retain_reason(1)    # picks off the largest mcss with the highest resolution crystal structure
+            lowest = hits[0].resolution     # lowest resolution
+            highest = hits[0].highest_tanimoto.tanimoto  # highest tanimoto 
+            #print "Check the TTTTop largest mcss: %s and resolution: %s"%(largest, lowest)
+            for hit in hits:
+                #print "Check the largest mcss: %s and resolution: %s for this hit:%s "%(hit.largest_mcss.size ,hit.resolution, hit.pdb_id)
+                #raw_input()
+                if hit.resolution > lowest or hit.highest_tanimoto.tanimoto < highest:
+                    break
+                else:
+                    #print "Check the largest mcss: %s and resolution: %s for this hit:%s "%(hit.largest_mcss.size ,hit.resolution, hit.pdb_id)
+                    #raw_input()
+                    hit.set_retain_reason(5)
