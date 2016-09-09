@@ -299,6 +299,7 @@ class CandidateFilter(BaseFilter):
                         break
                     else:
                         hit.set_retain_reason(4)
+    #add this new fuction to filter the highest tanimoto 0901 sliu
     def filter_for_highest_tanimoto(self):
         logger.debug('In filter_for_highest_tanimoto()')
         # sort the hit list by decreasing MCSS size and increasing resolution
