@@ -246,12 +246,14 @@ def layout_result (pickle_file, txt_file):
     p_file = open(pickle_file,"r")
     score_dic = pickle.load(p_file)
     p_file.close()
-    data = ["%-20s%-10s%-10s%-10s%-10s \n"%(" ", "LMCSS", "SMCSS", "hiResApo", "hiResHolo")]
-    all_pro_type = ["LMCSS", "SMCSS", "hiResApo", "hiResHolo"]
+    data = ["%-20s%-10s%-10s%-10s%-10s%-10s \n"%(" ", "LMCSS", "SMCSS", "hiResApo", "hiResHolo", "hiTanimoto")]
+    #add hiTanimoto 0909 sliu
+    all_pro_type = ["LMCSS", "SMCSS", "hiResApo", "hiResHolo", "hiTanimoto"]
     LMCSS_list =  []
     SMCSS_list = []
     hiResApo_list = []
     hiResHolo_list = []
+    hiTanimoto_list = []
     abnormal_dic = {}
     total_pdb = 0
     for pdbid in score_dic:
@@ -267,6 +269,8 @@ def layout_result (pickle_file, txt_file):
                     hiResApo_list.append(score_dic[pdbid][pro_type]) 
                 if pro_type == "hiResHolo":
                     hiResHolo_list.append(score_dic[pdbid][pro_type])
+                if pro_type == "hiTanimoto":
+                    hiTanimoto_list.append(score_dic[pdbid][pro_type])
         total_pdb += 1
     for pdbid in score_dic:
         new_line_score = ""
@@ -284,8 +288,8 @@ def layout_result (pickle_file, txt_file):
             data.append(new_line)
     data.append("=====Total number of query protein: %s =====\n"%total_pdb)
     #append total number of valid pdb for each type 
-    data.append("%-20s%-10s%-10s%-10s%-10s\n"%("Valid cases", len(LMCSS_list), len(SMCSS_list), len(hiResApo_list), len(hiResHolo_list)))
-    data.append("%-20s%-10.3f%-10.3f%-10.3f%-10.3f\n"%("Average", numpy.average(LMCSS_list), numpy.average(SMCSS_list), numpy.average(hiResApo_list), numpy.average(hiResHolo_list)))
+    data.append("%-20s%-10s%-10s%-10s%-10s%-10s\n"%("Valid cases", len(LMCSS_list), len(SMCSS_list), len(hiResApo_list), len(hiResHolo_list), len(hiTanimoto_list)))
+    data.append("%-20s%-10.3f%-10.3f%-10.3f%-10.3f%-10.3f\n"%("Average", numpy.average(LMCSS_list), numpy.average(SMCSS_list), numpy.average(hiResApo_list), numpy.average(hiResHolo_list), numpy.average(hiTanimoto_list)))
     data.append("=====Abnormal RMSDs =====\n")
     for abnormal_id in abnormal_dic:
         data.append("%-20s%-10.3f\n"%(abnormal_id, abnormal_dic[abnormal_id]))

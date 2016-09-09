@@ -43,7 +43,7 @@ def parse_txt (txt_filename):
         if line.split(",")[0] == "inchi":
             info_title = line.split(", InChI=")[0]
             info_value_1 = line.split(", InChI=")[1].split("\n")[0]
-        elif line.split(",")[0] == "LMCSS":
+        elif line.split(",")[0] in ["LMCSS", "SMCSS", "hiResHolo", "hiTanimoto"]:
             info_title = line.split(",")[0]
             info_value_1 = line.split(",")[1].strip()
             info_value_2 = line.split(",")[2].strip()
@@ -232,11 +232,12 @@ def main_gendata (s3_result_path, path_2_ent, s4_result_path):
             else:
                 with open("center.txt" , "w") as center_file:
                     center_file.writelines(ligand_center)
-            for rest_protein in ("SMCSS", "hiResHolo", "hiResApo"):
+            for rest_protein in ("SMCSS", "hiResHolo", "hiResApo", "hiTanimoto"):
                 if rest_protein in info_dic:
-                    if len(info_dic[rest_protein]) == 2:
+                    if len(info_dic[rest_protein]) == 3:
                         rest_protein_id = info_dic[rest_protein][0] 
                         rest_ligand_id = info_dic[rest_protein][1]
+                        rest_ligand_chain = info_dic[rest_protein][2]
                     else:
                         rest_protein_id = info_dic[rest_protein]
                         rest_ligand_id = False
@@ -252,6 +253,8 @@ def main_gendata (s3_result_path, path_2_ent, s4_result_path):
                         if rest_ligand_id:
                             rest_protein_name = "%s-%s-%s.pdb"%(rest_protein, TC_id_rest, rest_ligand_id)
                             commands.getoutput("cp %s %s"%(rest_pdbloc, rest_protein_name))
+                            #extract ligand chain from proteins with ligand, original just do this in LMCSS, 0908 sliu 
+                            split_chain(rest_protein_name, rest_protein_name, rest_protein_id, rest_ligand_chain)
                         else:
                             rest_protein_name = "%s-%s.pdb"%(rest_protein, TC_id_rest)
                             commands.getoutput("cp %s %s"%(rest_pdbloc, rest_protein_name))
