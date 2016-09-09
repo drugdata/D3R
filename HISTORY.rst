@@ -3,6 +3,19 @@
 History
 -------
 
+1.5.0 (2016-09-11)
+--------------------
+
+* Modified blastnfilter candidate txt file by adding hiTanimoto and 
+  adding more information to hiResHolo and SMCSS.
+
+* Genchallengedata.py modified to keep single chains for all holo
+  proteins (LMCSS, SMCSS, hiResHolo, hiTanimoto)
+
+* In blastnfilter, hiResHolo now only has top structure 
+  reported and only one chain. Where top structure is 
+  highest resolution hit.
+
 1.4.0 (2016-08-11)
 --------------------
 
