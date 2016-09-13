@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+__author__ = 'j5wagner'
+
 import commands
 import os
 import shutil
@@ -80,6 +82,7 @@ CELPP auto-generated docking box
         
     # Run the box generation command
     cmd = 'receptor_setup -protein ' + sci_prepped_receptor + ' -box ' + box_xyz_file + ' -receptor ' + docking_box_file + ' 2> ' + stderr_file + ' 1> ' + stdout_file
+    logging.info('Running tech prep command [%s]' %(cmd))
     commands.getoutput(cmd)
     
     # Check for succeess
@@ -130,6 +133,7 @@ def dock(tech_prepped_lig_list, tech_prepped_receptor_list, output_receptor_pdb,
 
     # Run the docking command
     dock_command = 'fred -receptor ' + tech_prepped_grid + ' -dbase ' + tech_prepped_lig + ' -docked_molecule_file ' + docked_lig_sdf + ' 2> ' + fred_stderr_file + ' 1> ' + fred_stdout_file
+    logging.info('Running docking command [%s]' %(dock_command))
     commands.getoutput(dock_command)
     if not(os.path.isfile(docked_lig_sdf)):
         logging.info("Docking failed for protein %s and ligand %s" %(tech_prepped_grid, tech_prepped_lig))
@@ -397,13 +401,13 @@ def main_dock (prep_result_dir, dock_dir, update= True):
             # Check for self-reported failure
             if dock_results == False:
                 logging.info('Docking returned False given inputs: tech_prepped_lig_file_list=%r   tech_prepped_prot_file_list=%r    output_receptor_pdb=%r     output_lig_mol=%r. Skipping docking to this candidate.' %(tech_prepped_lig_file_list,
-                                                                                                                                                                                  tech_prepped_prot_file_list,
-                                                                                                                                                                                  output_receptor_pdb,
-                                                                                                                                                                                  output_lig_mol))
+                                                                                                                                                                                                                          tech_prepped_prot_file_list,
+                                                                                                                                                                                                                          output_receptor_pdb,
+                                                                                                                                                                                                                          output_lig_mol))
                 continue
             # Ensure that correct output files exist
-            if not(os.path.exists(output_receptor_pdb)):
-                logging.info('Docking did not create receptor pdb file %s given inputs:'
+            if not(os.path.exists(output_receptor_pdb)) or (os.path.getsize(output_receptor_pdb)==0):
+                logging.info('Docking did not create receptor pdb file %s given inputs:   '
                              'tech_prepped_lig_file_list=%r   tech_prepped_prot_file_list=%r    '
                              'output_receptor_pdb=%r     output_lig_mol=%r. Skipping docking '
                              'to this candidate.' %(output_receptor_pdb,
@@ -412,8 +416,8 @@ def main_dock (prep_result_dir, dock_dir, update= True):
                                                     output_receptor_pdb,
                                                     output_lig_mol))
                 continue
-            if not(os.path.exists(output_lig_mol)):
-                logging.info('Docking did not create ligand mol file %s given inputs:'
+            if not(os.path.exists(output_lig_mol)) or (os.path.getsize(output_lig_mol)==0):
+                logging.info('Docking did not create ligand mol file %s given inputs:   '
                              'tech_prepped_lig_file_list=%r   tech_prepped_prot_file_list=%r    '
                              'output_receptor_pdb=%r     output_lig_mol=%r. Skipping docking '
                              'to this candidate.' %(output_lig_mol, 
@@ -423,7 +427,11 @@ def main_dock (prep_result_dir, dock_dir, update= True):
                                                     output_lig_mol))
                 continue
             
-            logging.info('Docking was successful for %s. Final receptor and ligand files %s and %s exist' %(cand_file, output_receptor_pdb, output_lig_mol))
+            logging.info('Docking was successful for %s. Final receptor and ligand '
+                         'files %s and %s exist and are nonzero size.' %(cand_file, 
+                                                                         output_receptor_pdb, 
+                                                                         output_lig_mol))
+
             # Prepare to copy docking results into final result directory
             abs_output_receptor_pdb = os.path.abspath(output_receptor_pdb)
             abs_output_lig_mol = os.path.abspath(output_lig_mol)
@@ -433,72 +441,6 @@ def main_dock (prep_result_dir, dock_dir, update= True):
             shutil.copyfile(abs_output_receptor_pdb, output_receptor_pdb)
             shutil.copyfile(abs_output_lig_mol, output_lig_mol)
 
-
-'''
-        for cand_protein in cand_proteins:
-            logging.info( "Working on this receptor: %s"%cand_protein )
-            if not os.path.isdir(cand_prefix):
-                os.mkdir(cand_prefix)
-            os.chdir(cand_prefix)
-            commands.getoutput("cp ../%s ."%cand_protein)
-            
-            ## Technical prep: Prepare the protein
-            #receptorMol2File = '.'.join(possible_protein.split('.')[:-1]) + '.mol2'
-            commands.getoutput('. /usr/local/mgltools/bin/mglenv.sh; pythonsh $MGL_ROOT/MGLToolsPckgs/AutoDockTools/Utilities24/prepare_receptor4.py -r %s' %(cand_protein))
-            receptorPdbqtFile = cand_protein.replace('.mol2','.pdbqt')
-
-
-            for ligand_mol2 in ligand_mol2s:
-                ## Technical prep: Prepare the ligand
-                ligand_name = ligand_mol2.replace('lig_','').replace('_prepped.mol2','')
-                ligandPdbqtFile = ligand_mol2.replace('.mol2','.pdbqt')
-                commands.getoutput("cp ../%s ." %(ligand_mol2))
-                commands.getoutput('. /usr/local/mgltools/bin/mglenv.sh; pythonsh $MGL_ROOT/MGLToolsPckgs/AutoDockTools/Utilities24/prepare_ligand4.py -l %s' %(ligand_mol2))
-    
-                ## Do the docking
-                logging.info("Trying to dock...")
-                out_dock_file = dock(ligandPdbqtFile, receptorPdbqtFile, grid_center)
-                if out_dock_file == False:
-                    logging.info("Docking failed - Skipping")
-                    continue
-                logging.info("Finished docking, beginning post-docking file conversion")
-                
-                ## Convert the receptor to pdb
-                intermediates_prefix = '%s_postdocking' %(cand_prefix)
-                output_prefix = '%s_docked' %(cand_prefix)
-                #receptorPdbqt = out_dock_file.replace('ligand_out',cand_name)
-                #receptorPdbqt = cand_prefix+'.pdbqt'
-                ## This receptor pdb will be one of our final outputs
-                outputReceptorPdb = "%s.pdb" %(output_prefix)
-                commands.getoutput('. /usr/local/mgltools/bin/mglenv.sh; python $MGL_ROOT/MGLToolsPckgs/AutoDockTools/Utilities24/pdbqt_to_pdb.py -f %s -o %s' %(receptorPdbqtFile, outputReceptorPdb))
-                
-                ## Then make the ligand mol
-                ## pdbqt_to_pdb.py can't split up the multiple poses in vina's output files, so we do that by hand
-                with open(out_dock_file) as fo:
-                    fileData = fo.read()
-                fileDataSp = fileData.split('ENDMDL')
-                
-                ## Write out each pose to its own pdb and mol file, then merge with the receptor to make the complex files.
-                for index, poseText in enumerate(fileDataSp[:-1]):
-                    this_pose_pdbqt = intermediates_prefix+'_ligand'+str(index+1)+'.pdbqt'
-                    this_pose_pdb = intermediates_prefix+'_ligand'+str(index+1)+'.pdb'
-                    this_pose_mol = intermediates_prefix+'_ligand'+str(index+1)+'.mol'
-                    with open(this_pose_pdbqt,'wb') as wf:
-                        wf.write(poseText+'ENDMDL')
-                    commands.getoutput('. /usr/local/mgltools/bin/mglenv.sh; python $MGL_ROOT/MGLToolsPckgs/AutoDockTools/Utilities24/pdbqt_to_pdb.py -f %s -o %s' %(this_pose_pdbqt, this_pose_pdb))
-                    commands.getoutput('babel -ipdb %s -omol %s' %(this_pose_pdb, this_pose_mol))
-                
-                ## Here convert our top-ranked pose to the final submission for this docking
-                ## Right now we're ignoring everything other than the top pose
-                top_intermediate_mol = intermediates_prefix+'_ligand1.mol'
-                final_ligand_mol = output_prefix+'.mol'
-                commands.getoutput('cp %s %s' %( top_intermediate_mol, final_ligand_mol))
-                    
-                ##################
-            os.chdir(abs_target_dir)
-        os.chdir(abs_dock_dir)
-        ##################
-'''
 
 if ("__main__") == (__name__):
     from argparse import ArgumentParser
@@ -513,8 +455,10 @@ if ("__main__") == (__name__):
     dock_dir = opt.outdir
     update = opt.update
     #running under this dir
-    running_dir = os.getcwd()
+    abs_running_dir = os.getcwd()
+    log_file_path = os.path.join(abs_running_dir, 'final.log')
+    log_file_dest = os.path.join(os.path.abspath(dock_dir), 'final.log')
+
     main_dock(sci_prep_dir, dock_dir, update = update)
     #move the final log file to the result dir
-    #log_file_path = os.path.join(running_dir, 'final.log')
-    #commands.getoutput("mv %s %s"%(log_file_path, dock_dir))
+    commands.getoutput("mv %s %s"%(log_file_path, log_file_dest))

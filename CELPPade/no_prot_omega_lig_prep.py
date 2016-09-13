@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+__author__ = 'j5wagner'
+
 import commands
 import os
 import glob
@@ -29,30 +31,13 @@ output_lig_suffix = '.sdf'
 
 
 def ligand_prepare(lig_smi_file, out_lig_file, info_dic={}):
-#    commands.getoutput("$SCHRODINGER/ligprep -WAIT -i 0 -nt -s 1 -g -ismi %s -omae %s"%(ligand_smile, out_lig_file) ) 
-#    return os.path.isfile(out_lig_file)
     
     lig_prefix = os.path.basename(lig_smi_file).replace('.smi','')
-    #lig_unprep_sdf = lig_prefix + '_unprep.sdf'
-    
-    # Prepare a rough 3D version of the ligand using rdkit
-
-    #import rdkit.Chem
-    #import rdkit.Chem.AllChem
-    #smiles = open(lig_smi_file).read().strip()
-    #mol = rdkit.Chem.MolFromSmiles(smiles)
-    #molH = rdkit.Chem.AddHs(mol)
-    #rdkit.Chem.AllChem.EmbedMolecule(molH)
-    #rdkit.Chem.AllChem.UFFOptimizeMolecule(molH)
-    #
-    #w = rdkit.Chem.SDWriter(sys.argv[2])
-    #w.write(molH)
-    #w.close()
     
     # Perform conformer generation using omega
     omega_stdout_file = lig_prefix + '_omega_confgen_stdout'
     omega_stderr_file = lig_prefix + '_omega_confgen_stderr'
-    omega_cmd = 'omega2 -in ' + lig_smi_file + ' -out ' + out_lig_file + ' 2> ' + omega_stderr_file + ' 1> ' + omega_stdout_file
+    omega_cmd = 'omega2 -flipper true -in ' + lig_smi_file + ' -out ' + out_lig_file + ' 2> ' + omega_stderr_file + ' 1> ' + omega_stdout_file
     logging.info('Running omega command: ' + omega_cmd)
     commands.getoutput(omega_cmd)
     
@@ -65,7 +50,7 @@ def ligand_prepare(lig_smi_file, out_lig_file, info_dic={}):
 
 
 def prepare_protein (protein_file, prepared_protein_file, info_dic={}):
-
+    # We don't do any scientific prep here. Openeye docking can handle unprepared proteins
     commands.getoutput('cp %s %s' %(protein_file, prepared_protein_file))
     if not(os.path.isfile(prepared_protein_file)):
         logging.info('Prepared protein file %s does not exist. Assuming that prep failed.' %(prepared_protein_file))
@@ -82,12 +67,34 @@ def prepare_protein (protein_file, prepared_protein_file, info_dic={}):
 
 
 
-def split_complex (part, complex_file, out_split):
-    out_receptor = os.path.splitext(out_split)[0] + "_receptor1"+ os.path.splitext(out_split)[1]
-    if os.path.isfile(out_receptor):
-        return out_receptor 
-    else:
+def split_complex (complex_pdb):
+    # This function takes a pdb name of (potentially) a protein
+    # complex, and should return only the relevant protein part for
+    # docking
+    
+    # Poor man's receptor splitting - Remove all HETATM and
+    # CONECT lines
+    data = open(complex_pdb).readlines()
+    output_file = complex_pdb.replace('.pdb','_split.pdb')
+    with open(output_file,'wb') as of:
+        for line in data:
+            if (line[:6] == 'HETATM') or (line[:6] == 'CONECT'):
+                continue
+            else:
+                of.write(line)
+
+    # Ensure that the new file exists
+    if not(os.path.isfile(output_file)):
+        logging.info('Split pdb file %s not created' %(output_file))
         return False
+
+    # Ensure that the new file contains any data
+    if os.path.getsize(output_file) == 0:
+        logging.info('Splitting pdb file %s yielded empty file %s' %(complex_file, output_file))
+        return False
+
+    return output_file
+
 
 
 
@@ -159,11 +166,6 @@ def main_proteinprep (challenge_data_path, pdb_protein_path, working_folder):
         commands.getoutput('cp %s %s' %(lig_smiles_file, dest_smiles_file))
         center_file = os.path.join(target_dir_path,'center.txt')
         commands.getoutput('cp %s %s' %(center_file, pot_target_id))
-        ## Get the ligand center of mass for the "LMCSS" candidate (all of the other candidates have been aligned to this one)
-        #LMCSS_ligand_filenames = glob.glob('%s/LMCSS-*-lig.pdb'%(target_dir_path))
-        #if len(LMCSS_ligand_filenames) != 1:
-        #    logging.info("Failed to find LMCSS structure's ligand file. There should be one match but I found %r" %(LMCSS_ligand_filenames))
-        #LMCSS_ligand_filename = LMCSS_ligand_filenames[0]
         
         # Copy in each valid candidate
         for candidate_file in glob.glob('%s/*-%s_*.pdb' %(target_dir_path, pot_target_id)):
@@ -201,18 +203,16 @@ def main_proteinprep (challenge_data_path, pdb_protein_path, working_folder):
                 continue 
 
             # Split the complex 
-            #candidate_prefix = candidate_filename.replace('.pdb','')
             candidate_prefix = '%s-%s_%s' %(candidate_structure_type,
                                             candidate_structure_target,
                                             candidate_structure_candidate)
             
             split_intermediate_prefix = candidate_prefix+ "_split.pdb"
-            split_receptor_file = split_complex("pdb", candidate_filename, split_intermediate_prefix)
+            split_receptor_file = split_complex(candidate_filename)
             
             
             if not(split_receptor_file):
                 logging.info("Unable to split this protein:%s"%(candidate_filename))
-                #os.chdir(current_dir_layer_1)
                 continue
             
             logging.info("Successfully split this protein:%s, going to preparation step"%(candidate_filename))
@@ -221,15 +221,10 @@ def main_proteinprep (challenge_data_path, pdb_protein_path, working_folder):
             preparation_result = prepare_protein(split_receptor_file, prepared_protein_file)
             if not preparation_result:
                 logging.info("Unable to prepare this protein:%s"%(split_receptor_file))
-                #os.chdir(current_dir_layer_1)
                 continue
             #convert into pdb format
-            #out_prepare_pdb = candidate_prefix + "_prepared.pdb"
-            #commands.getoutput("$SCHRODINGER/utilities/pdbconvert -imae %s -opdb %s"%(prepared_protein_mol2, out_prepare_pdb))
             logging.info("Successfully prepared this protein:%s"%(prepared_protein_file))
 
-        #### FOR FAST TESTING PURPOSES ONLY ####    
-        # break
 
         os.chdir(current_dir_layer_1)
                         
@@ -241,20 +236,20 @@ if ("__main__") == (__name__):
     parser.add_argument("-p", "--pdbdb", metavar = "PATH", help = "PDB DATABANK which we will dock into")
     parser.add_argument("-c", "--challengedata", metavar="PATH", help = "PATH to the unpacked challenge data package")
     parser.add_argument("-o", "--prepdir", metavar = "PATH", help = "PATH to the output directory")
-    #parser.add_argument("-r", "--rdkitpython", metavar = "PATH", help = "Path for python build with new version of rdkit.", default="/data/celpp/miniconda2/")
-    #parser.add_option("-s", "--sleep", metavar = "VALUE", help = "Sleep time for protein prep")
-    #parser.add_option("-u", "--update", default = False, action = "store_true", help = "update the protein generation and docking step")
     logger = logging.getLogger()
     logging.basicConfig( format  = '%(asctime)s: %(message)s', datefmt = '%m/%d/%y %I:%M:%S', filename = 'final.log', filemode = 'w', level = logging.INFO )
     opt = parser.parse_args()
     pdb_location = opt.pdbdb
     challenge_data_path = opt.challengedata
     prep_result_path = opt.prepdir
-    #sleep_time = opt.sleep
+
     #running under this dir
-    running_dir = os.getcwd()
+    abs_running_dir = os.getcwd()
+    log_file_path = os.path.join(abs_running_dir, 'final.log')
+    log_file_dest = os.path.join(os.path.abspath(prep_result_path), 'final.log')
+
     main_proteinprep(challenge_data_path, pdb_location, prep_result_path)
+
     #move the final log file to the result dir
-    log_file_path = os.path.join('final.log')
     commands.getoutput("mv %s %s"%(log_file_path, prep_result_path))
 
