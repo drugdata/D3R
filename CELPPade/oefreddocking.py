@@ -191,7 +191,7 @@ def parse_lig_filename(sci_prepped_lig_file):
     lig_re_pattern = 'lig_([a-zA-Z0-9]{3})%s' %(sci_prepped_lig_suffix)
     lig_re_results = re.findall(lig_re_pattern, sci_prepped_lig_basename)
     if len(lig_re_results) != 1:
-        logging.info('Unable to parse prepared ligand %s. Regular expression matching yielded %r' %(lig_re_results))
+        logging.info('Unable to parse prepared ligand %s. Regular expression matching yielded %r' %(sci_prepped_lig_file, lig_re_results))
         return False
     lig_prefix = lig_re_results[0]
     return lig_prefix
