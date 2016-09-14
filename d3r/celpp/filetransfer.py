@@ -5,6 +5,7 @@ import logging
 import os
 import time
 from ftpretty import ftpretty
+import easywebdav
 
 logger = logging.getLogger(__name__)
 
@@ -15,9 +16,8 @@ class InvalidFtpConfigException(Exception):
     pass
 
 
-class FtpFileTransfer(object):
-    """Implements FileUploader class by enabling upload of files to ftp
-
+class FileTransfer(object):
+    """FileTransfer
     """
     HOST = 'host'
     USER = 'user'
@@ -26,7 +26,7 @@ class FtpFileTransfer(object):
     CHALLENGEPATH = 'challengepath'
     SUBMISSIONPATH = 'submissionpath'
 
-    def __init__(self, ftp_config):
+    def __init__(self, config):
         """Constructor
 
         """
@@ -44,10 +44,10 @@ class FtpFileTransfer(object):
         self._remote_challenge_dir = None
         self._remote_submission_dir = None
 
-        if ftp_config is not None:
-            self._parse_config(ftp_config)
+        if config is not None:
+            self._parse_config(config)
 
-    def _parse_config(self, ftp_config):
+    def _parse_config(self, config):
         """Parses ftp config file for user credentials
 
            The parsed values are stored internally in this
@@ -78,34 +78,34 @@ class FtpFileTransfer(object):
            :param ftp_config: Path to ftp config file
            :raises IOError: If there was an error opening the file
         """
-        if ftp_config is None:
+        if config is None:
             raise InvalidFtpConfigException('No ftp file specified')
 
         f = None
         try:
-            f = open(ftp_config, 'r')
+            f = open(config, 'r')
             for line in f:
                 split_line = line.split(' ')
                 if not len(split_line) == 2:
                     continue
-                if split_line[0] == FtpFileTransfer.HOST:
-                    self.set_ftp_host(split_line[1].rstrip())
-                elif split_line[0] == FtpFileTransfer.USER:
-                    self.set_ftp_user(split_line[1].rstrip())
-                elif split_line[0] == FtpFileTransfer.PASS:
-                    self.set_ftp_password(split_line[1].rstrip())
-                elif split_line[0] == FtpFileTransfer.PATH:
-                    self.set_ftp_remote_dir(split_line[1].rstrip())
-                elif split_line[0] == FtpFileTransfer.CHALLENGEPATH:
-                    self.set_ftp_remote_challenge_dir(split_line[1].rstrip())
-                elif split_line[0] == FtpFileTransfer.SUBMISSIONPATH:
-                    self.set_ftp_remote_submission_dir(split_line[1].rstrip())
+                if split_line[0] == FileTransfer.HOST:
+                    self.set_host(split_line[1].rstrip())
+                elif split_line[0] == FileTransfer.USER:
+                    self.set_user(split_line[1].rstrip())
+                elif split_line[0] == FileTransfer.PASS:
+                    self.set_password(split_line[1].rstrip())
+                elif split_line[0] == FileTransfer.PATH:
+                    self.set_remote_dir(split_line[1].rstrip())
+                elif split_line[0] == FileTransfer.CHALLENGEPATH:
+                    self.set_remote_challenge_dir(split_line[1].rstrip())
+                elif split_line[0] == FileTransfer.SUBMISSIONPATH:
+                    self.set_remote_submission_dir(split_line[1].rstrip())
 
         finally:
             if f is not None:
                 f.close()
 
-    def set_ftp_connection(self, ftp_con):
+    def set_connection(self, ftp_con):
         """Lets caller use library other then ftpretty for ftp connections
 
            If set it is assumed `ftp_con` is already connected to
@@ -115,32 +115,32 @@ class FtpFileTransfer(object):
         """
         self._alt_ftp_con = ftp_con
 
-    def set_ftp_remote_challenge_dir(self, challenge_dir):
+    def set_remote_challenge_dir(self, challenge_dir):
         """Sets the remote challenge directory for ftp upload
         """
         self._remote_challenge_dir = challenge_dir
 
-    def get_ftp_remote_challenge_dir(self):
+    def get_remote_challenge_dir(self):
         """Gets the remote challenge directory for ftp upload
         """
         return self._remote_challenge_dir
 
-    def set_ftp_remote_submission_dir(self, submission_dir):
+    def set_remote_submission_dir(self, submission_dir):
         """Sets the remote submission directory for ftp download
         """
         self._remote_submission_dir = submission_dir
 
-    def get_ftp_remote_submission_dir(self):
+    def get_remote_submission_dir(self):
         """Gets the remote submission directory for ftp download
         """
         return self._remote_submission_dir
 
-    def set_ftp_remote_dir(self, remote_dir):
+    def set_remote_dir(self, remote_dir):
         """Sets the remote directory where ftp files will be uploaded to
         """
         self._remote_dir = remote_dir
 
-    def get_ftp_remote_dir(self):
+    def get_remote_dir(self):
         """Gets remote directory prefix path
            :returns: Remote directory prefix path, if value is None empty str
                      is returned
@@ -149,27 +149,27 @@ class FtpFileTransfer(object):
             return ''
         return self._remote_dir
 
-    def set_ftp_host(self, ftp_host):
+    def set_host(self, ftp_host):
         """Sets ftp host to connect to
         :param: host should be hostname ie ftp.box.com
         """
         self._ftp_host = ftp_host
 
-    def get_ftp_host(self):
+    def get_host(self):
         """Gets ftp host
         """
         return self._ftp_host
 
-    def set_ftp_user(self, ftp_user):
+    def set_user(self, ftp_user):
         self._ftp_user = ftp_user
 
-    def get_ftp_user(self):
+    def get_user(self):
         return self._ftp_user
 
-    def set_ftp_password(self, ftp_pass):
+    def set_password(self, ftp_pass):
         self._ftp_pass = ftp_pass
 
-    def get_ftp_password(self):
+    def get_password(self):
         return self._ftp_pass
 
     def set_connect_timeout(self, timeout):
@@ -182,15 +182,82 @@ class FtpFileTransfer(object):
         return self._error_msg
 
     def connect(self):
+        """Dummy implementation
+        """
+        return True
+
+    def disconnect(self):
+        """Dummy implementation
+        """
+        pass
+
+    def delete_file(self, remote_file):
+        """Dummy implementation
+        """
+        self._error_msg = 'delete_file not implemented'
+        return False
+
+    def download_file(self, remote_file, local_file):
+        """Dummy implementation
+        """
+        self._error_msg = 'download_file not implemented'
+        return False
+
+    def list_dirs(self, remote_dir):
+        """Dummy
+        """
+        self._error_msg = 'list_dirs not implemented'
+        return None
+
+    def list_files(self, remote_dir):
+        """Dummy
+        """
+        self._error_msg = 'list_files not implemented'
+        return None
+
+    def upload_file_direct(self, file, remote_dir, remote_file_name):
+        """Dummy
+        """
+        self._error_msg = 'upload_file_direct not implemented'
+        return False
+
+    def upload_files(self, list_of_files):
+        """Dummy
+        """
+        self._error_msg = 'upload_files not implemented'
+        return False
+
+    def get_upload_summary(self):
+        """Gets summary of previous `upload_files` invocation
+            :returns: Human readable string summary of format
+            # files (# bytes) files uploaded in # seconds to
+            host HOST:REMOTE_DIR
+        """
+        summary = ''
+        if self._error_msg is not None:
+            summary = self._error_msg + '\n'
+        return summary
+
+
+class FtpFileTransfer(FileTransfer):
+    """Implements FileUploader class by enabling upload of files to ftp
+
+    """
+    def __init__(self, config):
+        """Constructor
+        """
+        super(FtpFileTransfer, self).__init__(config)
+
+    def connect(self):
         if self._alt_ftp_con is None:
             try:
 
                 logger.debug('Connecting to ' +
-                             str(self.get_ftp_host()) + ' with user ' +
-                             str(self.get_ftp_user()))
-                self._ftp = ftpretty(self.get_ftp_host(),
-                                     self.get_ftp_user(),
-                                     self.get_ftp_password(),
+                             str(self.get_host()) + ' with user ' +
+                             str(self.get_user()))
+                self._ftp = ftpretty(self.get_host(),
+                                     self.get_user(),
+                                     self.get_password(),
                                      timeout=self.get_connect_timeout())
                 return True
             except:
@@ -448,7 +515,7 @@ class FtpFileTransfer(object):
             logger.warning(file + ' is not a file')
             return
 
-        remote_path = os.path.normpath(self.get_ftp_remote_dir() +
+        remote_path = os.path.normpath(self.get_remote_dir() +
                                        os.sep + file)
         logger.debug('Uploading file: ' + file + ' to ' + remote_path)
 
@@ -530,13 +597,13 @@ class FtpFileTransfer(object):
             summary = self._error_msg + '\n'
 
         try:
-            logger.debug('ftp host: ' + self.get_ftp_host())
-            host = self.get_ftp_host()
+            logger.debug('ftp host: ' + self.get_host())
+            host = self.get_host()
         except TypeError:
             logger.exception('Ftp host not set')
             host = 'Unset'
 
-        remote_dir = self.get_ftp_remote_dir()
+        remote_dir = self.get_remote_dir()
         logger.debug('remote dir: ' + remote_dir)
 
         summary += (str(self._files_transferred) + ' (' +
@@ -546,3 +613,34 @@ class FtpFileTransfer(object):
                     host + ':' + remote_dir)
         logger.debug('upload summary: ' + summary)
         return summary
+
+
+class WebDavFileTransfer(FileTransfer):
+    """Implements FileUploader class by enabling upload of files to WebDav
+
+    """
+    def __init__(self, config):
+        """Constructor
+        """
+        super(WebDavFileTransfer, self).__init__(config)
+
+    def connect(self):
+        if self._alt_ftp_con is None:
+            try:
+
+                logger.debug('Connecting to ' +
+                             str(self.get_host()) + ' with user ' +
+                             str(self.get_user()))
+                self._ftp = easywebdav.connect(self.get_host(),
+                                               username=self.get_user(),
+                                               password=self.get_password(),
+                                               protocol='https')
+                return True
+            except:
+                logger.exception('Unable to connect to host')
+                self._error_msg = 'Unable to connect to host'
+                return False
+        self._ftp = self._alt_ftp_con
+        return True
+
+

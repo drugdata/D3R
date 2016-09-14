@@ -359,7 +359,7 @@ class DataImportTask(D3RTask):
         try:
             ft = self.get_file_transfer()
             ft.connect()
-            remotefile = os.path.join(ft.get_ftp_remote_dir(),
+            remotefile = os.path.join(ft.get_remote_dir(),
                                       DataImportTask.PARTICIPANT_LIST_CSV)
             logger.debug('Downloading ' + remotefile + ' to ' +
                          localfile)

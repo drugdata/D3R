@@ -21,7 +21,8 @@ requirements = [
     "biopython",
     "xlsxwriter",
     "ftpretty",
-    "python-dateutil"
+    "python-dateutil",
+    "easywebdav"
 ]
 
 test_requirements = [
@@ -32,7 +33,8 @@ test_requirements = [
     "xlsxwriter",
     "ftpretty",
     "python-dateutil",
-    "mock"
+    "mock",
+    "easywebdav"
 ]
 
 setup(

@@ -344,8 +344,8 @@ class TestDataImportTask(unittest.TestCase):
             fakeftp = FtpFileTransfer(None)
             mftp = D3RParameters()
 
-            fakeftp.set_ftp_connection(mftp)
-            fakeftp.set_ftp_remote_dir('/foo2')
+            fakeftp.set_connection(mftp)
+            fakeftp.set_remote_dir('/foo2')
             mftp.get = Mock()
 
             params = D3RParameters()
@@ -810,8 +810,8 @@ class TestDataImportTask(unittest.TestCase):
             foo = FtpFileTransfer(None)
             mockftp = D3RParameters()
             mockftp.get = Mock()
-            foo.set_ftp_remote_dir('/foo')
-            foo.set_ftp_connection(mockftp)
+            foo.set_remote_dir('/foo')
+            foo.set_connection(mockftp)
 
             params = D3RParameters()
             task = DataImportTask(temp_dir, params)
@@ -835,8 +835,8 @@ class TestDataImportTask(unittest.TestCase):
             foo = FtpFileTransfer(None)
             mockftp = D3RParameters()
             mockftp.get = Mock()
-            foo.set_ftp_remote_dir('/foo')
-            foo.set_ftp_connection(mockftp)
+            foo.set_remote_dir('/foo')
+            foo.set_connection(mockftp)
 
             params = D3RParameters()
             task = DataImportTask(temp_dir, params)

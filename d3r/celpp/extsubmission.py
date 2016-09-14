@@ -103,7 +103,7 @@ class ExternalDataSubmissionFactory(object):
         """
         try:
             ft = self.get_file_transfer()
-            latest_txt = os.path.join(ft.get_ftp_remote_challenge_dir(),
+            latest_txt = os.path.join(ft.get_remote_challenge_dir(),
                                       ChallengeDataTask.LATEST_TXT)
             logger.info('Attempting to remove ' + latest_txt)
             val = ft.delete_file(latest_txt)
@@ -128,7 +128,7 @@ class ExternalDataSubmissionFactory(object):
         try:
             self._file_transfer.connect()
             self._remove_latest_txt()
-            subdir = self._file_transfer.get_ftp_remote_submission_dir()
+            subdir = self._file_transfer.get_remote_submission_dir()
             dlist = self._get_submission_dirs(subdir)
             for d in dlist:
                 chall_file = self._get_challenge_data_package_file(subdir, d)
