@@ -48,7 +48,7 @@ setup(
     author_email='drugdesigndata@gmail.com',
     url='https://github.com/drugdata/D3R',
     packages=[
-        'd3r', 'd3r.blast', 'd3r.filter', 'd3r.utilities', 'd3r.celpp'
+        'd3r', 'd3r.blast', 'd3r.filter', 'd3r.utilities', 'd3r.celpp', 'd3r.celppade'
     ],
     package_dir={'d3r':
                  'd3r'},
