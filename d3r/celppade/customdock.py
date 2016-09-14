@@ -42,6 +42,9 @@ class Dock(object):
         docking. During this step, you should perform any file
         conversions or processing that are specific to your docking
         program.
+        :param sci_prepped_receptor: String containing file name of scientifically prepared receptor from previous step, according to requested suffix.
+        :param pocket_center: String containing predicted pocket center.
+        :returns: This implementation merely returns the value of 'sci_prepped_receptor" in a list
         """
 
         # Finally, we return the filenames that will be needed in the

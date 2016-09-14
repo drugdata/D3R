@@ -48,7 +48,8 @@ setup(
     author_email='drugdesigndata@gmail.com',
     url='https://github.com/drugdata/D3R',
     packages=[
-        'd3r', 'd3r.blast', 'd3r.filter', 'd3r.utilities', 'd3r.celpp'
+        'd3r', 'd3r.blast', 'd3r.filter', 'd3r.utilities', 'd3r.celpp', 
+        'd3r.celppade'
     ],
     package_dir={'d3r':
                  'd3r'},
@@ -71,7 +72,8 @@ setup(
                'd3r/postanalysis.py', 'd3r/proteinligprep.py',
                'd3r/glidedocking.py', 'd3r/evaluate.py',
                'd3r/celppreports.py', 'd3r/vinadocking.py',
-               'd3r/genchallengedata.py','d3r/chimera_proteinligprep.py'],
+               'd3r/genchallengedata.py','d3r/chimera_proteinligprep.py',
+               ],
     test_suite='tests',
     tests_require=test_requirements
 )
