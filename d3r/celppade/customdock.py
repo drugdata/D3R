@@ -109,16 +109,22 @@ class Dock(object):
 
 
 
-    def run_dock (self, prep_result_dir, dock_dir, update= True):
+    def run_dock(self, prot_sci_prep_dir, lig_sci_prep_dir, dock_dir):
         #os.chdir(prep_result_dir)
-        abs_prep_dir = os.path.abspath(prep_result_dir)
+        abs_lig_sci_prep_dir = os.path.abspath(lig_sci_prep_dir)
+        abs_prot_sci_prep_dir = os.path.abspath(prot_sci_prep_dir)
         abs_dock_dir = os.path.abspath(dock_dir)
 
-        targ_prep_dirs = glob.glob('%s/????' %(abs_prep_dir))
+        targ_prot_prep_dirs = glob.glob('%s/????' %(abs_prot_prep_dir))
+        #targ_lig_prep_dirs = glob.glob('%s/????' %(abs_lig_prep_dir))
+        #prepped_prot_targs = [os.path.basename(i.rstrip('/')) for i in targ_prot_prep_dirs]
+        #prepped_lig_targs = [os.path.basename(i.rstrip('/')) for i in targ_lig_prep_dirs]
+        
         targ_dic = {}
     
-        for targ_prep_dir in targ_prep_dirs:
-            targ_name = os.path.basename(targ_prep_dir.strip('/'))
+        for targ_prot_prep_dir in targ_prot_prep_dirs:
+            targ_name = os.path.basename(targ_prot_prep_dir.rstrip('/'))
+            targ_lig_prep_dir = os.path.join(abs_lig_sci_prep_dir, targ_name)
             targ_dock_dir = os.path.join(abs_dock_dir,targ_name)
             #os.mkdir(target_dock_dir)
             logging.info("============= Starting to process target:%s =============" %targ_name)
@@ -127,16 +133,16 @@ class Dock(object):
             targ_dic[targ_name]['valid_targ'] = False
         
             # Get the binding pocket center
-            pocket_center = self, self.get_pocket_center(targ_prep_dir)
+            pocket_center = self, self.get_pocket_center(targ_prot_prep_dir)
             if pocket_center == False:
-                logging.info('Failed to find pocket center file in dirctory %s. Skipping target %s.' %(targ_prep_dir, targ_name))
+                logging.info('Failed to find pocket center file in dirctory %s. Skipping target %s.' %(targ_prot_prep_dir, targ_name))
                 continue
 
             # Get the ligand name in this directory
-            sci_prepped_lig_file = self.get_sci_prepped_lig(targ_prep_dir,
-                                                       Dock.SCI_PREPPED_LIG_SUFFIX)
+            sci_prepped_lig_file = self.get_sci_prepped_lig(targ_lig_prep_dir,
+                                                            Dock.SCI_PREPPED_LIG_SUFFIX)
             if sci_prepped_lig_file == False:
-                logging.info('Unable to find single ligand for target dir %s. Skipping target %s.' %(targ_prep_dir, targ_name))
+                logging.info('Unable to find single ligand for target dir %s. Skipping target %s.' %(targ_lig_prep_dir, targ_name))
                 continue
 
             # Process ligand file names
@@ -145,7 +151,7 @@ class Dock(object):
                 logging.info('Unable to parse ligand filename %s. Skipping target %s.' %(sci_prepped_lig_file, targ_name))
 
             # Get the cand protein names in this directory
-            potential_cand_proteins = glob.glob('%s/*-????_????%s' %(targ_prep_dir, Dock.SCI_PREPPED_PROT_SUFFIX))
+            potential_cand_proteins = glob.glob('%s/*-????_????%s' %(targ_prot_prep_dir, Dock.SCI_PREPPED_PROT_SUFFIX))
 
             # Process potential cand protein names
             for potential_cand_protein in potential_cand_proteins:
@@ -155,7 +161,8 @@ class Dock(object):
                 # If this is the first valid cand for this target, make a new dictionary key and mark the target as valid
                 if not('valid_cands' in targ_dic[targ_name].keys()):
                     targ_dic[targ_name]['valid_targ'] = True
-                    targ_dic[targ_name]['prep_dir'] = targ_prep_dir
+                    targ_dic[targ_name]['prot_prep_dir'] = targ_prot_prep_dir
+                    targ_dic[targ_name]['lig_prep_dir'] = targ_lig_prep_dir
                     targ_dic[targ_name]['pocket_center'] = pocket_center
                     targ_dic[targ_name]['lig_file'] = sci_prepped_lig_file
                     targ_dic[targ_name]['lig_prefix'] = lig_prefix
