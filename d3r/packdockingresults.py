@@ -56,7 +56,10 @@ def make_result_dictionary(dock_dir):
 def main_pack_dock_results(dock_dir, pack_dir, ftp_config):
     abs_orig_dir = os.getcwd()
     abs_pack_dir = os.path.abspath(pack_dir)
-    abs_ftp_config = os.path.abspath(ftp_config)
+    if ftp_config is None:
+        abs_ftp_config = None
+    else:
+        abs_ftp_config = os.path.abspath(ftp_config)
     ## Find all possible uploadable target dirs
     result_dic = make_result_dictionary(dock_dir)
     
@@ -97,6 +100,11 @@ def main_pack_dock_results(dock_dir, pack_dir, ftp_config):
 
 
     ## Use ftp config to upload tarball
+    if ftp_config is None:
+        logging.info('No ftp_config file given. Skipping upload')
+        return
+
+    from d3r.celpp import filetransfer
     tar_base_name = os.path.basename(abs_tar_name)
     f_f_t_obj = WebDavFileTransfer(abs_ftp_config)
     f_f_t_obj.connect()
@@ -106,7 +114,7 @@ def main_pack_dock_results(dock_dir, pack_dir, ftp_config):
                                  tar_base_name)
     logging.info(f_f_t_obj.get_upload_summary())
     f_f_t_obj.disconnect()
-    
+
 
         
 

@@ -46,21 +46,28 @@ def download_tarball(unpack_dir, config, sleep, max_retry = 50):
             return False
         
     return chal_tar_name
-    
-
-    
 
 
-def main_get_challenge_data(unpack_dir, config, sleep):
+def main_get_challenge_data(unpack_dir, ftp_config, local_data_file, sleep):
     abs_orig_dir = os.getcwd()
     abs_unpack_dir = os.path.abspath(unpack_dir)
-    abs_config = os.path.abspath(config)
-
+    if ftp_config is None:
+        abs_ftp_config = None
+    else:
+        abs_ftp_config = os.path.abspath(ftp_config)
+    abs_local_data_file = os.path.abspath(local_data_file)
     ## Download most recent tarball
-    chal_tar_name = download_tarball(abs_unpack_dir, abs_config, sleep)
-    if chal_tar_name == False:
-        logging.info('Unable to download challenge package. Exiting.')
-        return False
+    
+    if local_data_file == '':
+        chal_tar_name = download_tarball(abs_unpack_dir, abs_ftp_config, sleep)
+        if chal_tar_name == False:
+            logging.info('Unable to download challenge package. Exiting.')
+            return False
+    else:
+        if not(os.path.exists(abs_local_data_file)):
+            logging.info('Specified local data package %s does not exist. Exiting.' %(local_data_file))
+            return False
+        chal_tar_name = abs_local_data_file
 
     ## Unpack it in the specified directory
     os.chdir(abs_unpack_dir)
@@ -75,6 +82,7 @@ if ("__main__") == (__name__):
     parser = ArgumentParser()
     parser.add_argument("-u", "--unpackdir", metavar="PATH", help = "Dir where the newest challenge data package should be unpacked")
     parser.add_argument("-f", "--ftpconfig", metavar="PATH", help = "File containing user ftp config information (see included example ftp config for specifics)")
+    parser.add_argument("-l", "--localdata", metavar="PATH", help = "Use a local challengedata tarball instead of downloading")
     parser.add_argument("-s", "--sleep", metavar="INT", help = "Number of seconds to wait between checking if challenge package exists", default=300)
 
     logger = logging.getLogger()
@@ -82,13 +90,14 @@ if ("__main__") == (__name__):
     args = parser.parse_args()
     unpack_dir = args.unpackdir
     ftp_config = args.ftpconfig
+    local_data = args.localdata
     sleep = args.sleep
     
     abs_running_dir = os.getcwd()
     log_file_path = os.path.join(abs_running_dir, 'final.log')
     log_file_dest = os.path.join(os.path.abspath(unpack_dir), 'final.log')
 
-    main_get_challenge_data(unpack_dir, ftp_config, sleep)
+    main_get_challenge_data(unpack_dir, ftp_config, local_data, sleep)
 
     #move the final log file to the result dir
     shutil.move(log_file_path, log_file_dest)
