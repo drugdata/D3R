@@ -123,6 +123,17 @@ Below is a definition of the files and directories within this tar file:
 
                       2) Has the highest resolution among all apo proteins.
 
+               [hiTanimoto-<target id>_<candidate id>-<candidate ligand id>.pdb]
+
+                   -- Candidate protein for docking which:
+                      1) Passes the Blastnfilter criteria.
+
+                      2) Contains the Ligand with the highest structural
+                         similarity in Tanimoto score to the Target Ligand.
+
+                         Note:  If multiple proteins founded, the protein
+                                with the highest resolution will be picked.
+
                [LMCSS-<target id>_<candidate id>-<candidate ligand id> \
                                                                       -lig.pdb]
 
