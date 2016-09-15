@@ -154,9 +154,9 @@ class ProteinPrep(object):
                 #logging.info("Successfully split this protein:%s, going to preparation step"%(candidate_filename))
                 prepared_protein_file = "%s_prepared%s" %(candidate_prefix, Prep.OUTPUT_PROTEIN_SUFFIX)
 
-                preparation_result = self.prepare_protein(split_receptor_file, prepared_protein_file)
+                preparation_result = self.prepare_protein(candidate_filename, prepared_protein_file)
                 if preparation_result == False:
-                    logging.info("Unable to prepare this protein:%s"%(split_receptor_file))
+                    logging.info("Unable to prepare this protein:%s"%(candidate_filename))
                     continue
                 if not(os.path.exists(prepared_protein_file)):
                     logging.info('Expected output file %s does not exist. Assuming that protein prep failed. Skipping candidate %s' %(prepared_protein_file, candidate_prefix))
