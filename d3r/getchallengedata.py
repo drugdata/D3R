@@ -92,7 +92,7 @@ if ("__main__") == (__name__):
     args = parser.parse_args()
     unpack_dir = args.unpackdir
     ftp_config = args.ftpconfig
-    local_data = args.local_data
+    local_data = args.localdata
     sleep = args.sleep
     
     abs_running_dir = os.getcwd()
