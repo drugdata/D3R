@@ -158,7 +158,7 @@ class LigandPrep(object):
             # Prepare the ligand
             lig_prefix = smiles_filename.replace('.smi','')
             prepared_lig_file = '%s_prepared%s' %(lig_prefix, LigandPrep.OUTPUT_LIG_SUFFIX)
-            lig_prep_result = self.prepare_ligand(smiles_filename, prepared_lig_file)
+            lig_prep_result = self.ligand_scientific_prep(smiles_filename, prepared_lig_file)
             if lig_prep_result == False:
                 logging.info("Unable to prepare the ligand for this target protein: %s. Skipping" %(target_id))
                 continue 
