@@ -32,10 +32,10 @@ class LigandPrep(object):
     
     def ligand_scientific_prep(self, lig_smi_file, out_lig_file, info_dic={}):
        """Does not do any scientific preparation - Passes ligand smiles file forward without any processing 
-        """
-        
-        shutil.copyfile(lig_smi_file, out_lig_file)
-        return True
+       """
+       
+       shutil.copyfile(lig_smi_file, out_lig_file)
+       return True
     
     '''
     def prepare_protein(self, protein_file, prepared_protein_file, info_dic={}):
@@ -119,7 +119,7 @@ class LigandPrep(object):
             lig_smiles_file = lig_smiles_files[0]
             local_smiles_file = os.path.basename(lig_smiles_file)
             dest_smiles_file = os.path.join(pot_target_id, local_smiles_file)
-            shutil.copyfile(lig_smiles_file, dest_smiles_file))
+            shutil.copyfile(lig_smiles_file, dest_smiles_file)
             
             '''
             center_file = os.path.join(target_dir_path,'center.txt')

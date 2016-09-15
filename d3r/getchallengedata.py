@@ -99,7 +99,7 @@ if ("__main__") == (__name__):
     log_file_path = os.path.join(abs_running_dir, 'final.log')
     log_file_dest = os.path.join(os.path.abspath(unpack_dir), 'final.log')
 
-    main_get_challenge_data(unpack_dir, ftp_config, localdata, sleep)
+    main_get_challenge_data(unpack_dir, ftp_config, local_data, sleep)
 
     #move the final log file to the result dir
     shutil.move(log_file_path, log_file_dest)
