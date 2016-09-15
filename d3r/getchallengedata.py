@@ -70,7 +70,7 @@ def main_get_challenge_data(unpack_dir, ftp_config, local_data_file, sleep):
         if not(os.path.exists(abs_local_data_file)):
             logging.info('Specified local data package %s does not exist. Exiting.' %(local_data_file))
             return False
-        chal_tar_name = local_data_file
+        chal_tar_name = abs_local_data_file
         
                    
 
