@@ -55,7 +55,10 @@ def make_result_dictionary(dock_dir):
 def main_pack_dock_results(dock_dir, pack_dir, ftp_config):
     abs_orig_dir = os.getcwd()
     abs_pack_dir = os.path.abspath(pack_dir)
-    abs_ftp_config = os.path.abspath(ftp_config)
+    if ftp_config is None:
+        abs_ftp_config = None
+    else:
+        abs_ftp_config = os.path.abspath(ftp_config)
     ## Find all possible uploadable target dirs
     result_dic = make_result_dictionary(dock_dir)
     

@@ -54,7 +54,10 @@ def download_tarball(unpack_dir, ftp_config, sleep, max_retry = 50):
 def main_get_challenge_data(unpack_dir, ftp_config, local_data_file, sleep):
     abs_orig_dir = os.getcwd()
     abs_unpack_dir = os.path.abspath(unpack_dir)
-    abs_ftp_config = os.path.abspath(ftp_config)
+    if ftp_config is None:
+        abs_ftp_config = None
+    else:
+        abs_ftp_config = os.path.abspath(ftp_config)
     abs_local_data_file = os.path.abspath(local_data_file)
     ## Download most recent tarball
     
