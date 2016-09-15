@@ -40,39 +40,19 @@ class ProteinPrep(object):
     def prepare_protein(self, protein_file, prepared_protein_file, info_dic={}):
         """Does not do any scientific preparation - Passes protein forward without any processing 
         """
-        shutil.copyfile(protein_file, prepared_protein_file)
-        return True
-
-
-
-    def split_complex(self, complex_pdb):
-        # This function takes a pdb name of (potentially) a protein
-        # complex, and should return only the atoms that should be
-        # seen during docking
-
+        
         # Poor man's receptor splitting - Remove all HETATM and
         # CONECT lines
-        data = open(complex_pdb).readlines()
-        output_file = complex_pdb.replace('.pdb','_split.pdb')
-        with open(output_file,'wb') as of:
-            for line in data:
-                if (line[:6] == 'HETATM') or (line[:6] == 'CONECT'):
-                    continue
-                else:
-                    of.write(line)
-
-        # Ensure that the new file exists
-        if not(os.path.isfile(output_file)):
-            logging.info('Split pdb file %s not created' %(output_file))
-            return False
-
-        # Ensure that the new file contains any data
-        if os.path.getsize(output_file) == 0:
-            logging.info('Splitting pdb file %s yielded empty file %s' %(complex_file, output_file))
-            return False
-
-        return output_file
-
+        #data = open(protein_file).readlines()
+        #with open(prepared_protein_file,'wb') as of:
+        #    for line in data:
+        #        if (line[:6] == 'HETATM') or (line[:6] == 'CONECT'):
+        #            continue
+        #        else:
+        #            of.write(line)
+        
+        shutil.copyfile(protein_file, prepared_protein_file)
+        return True
 
 
 
@@ -163,15 +143,15 @@ class ProteinPrep(object):
                                                 candidate_structure_target,
                                                 candidate_structure_candidate)
 
-                split_intermediate_prefix = candidate_prefix+ "_split.pdb"
-                split_receptor_file = self.split_complex(candidate_filename)
+                #split_intermediate_prefix = candidate_prefix+ "_split.pdb"
+                #split_receptor_file = self.split_complex(candidate_filename)
 
 
-                if not(split_receptor_file):
-                    logging.info("Unable to split this protein:%s"%(candidate_filename))
-                    continue
+                #if not(split_receptor_file):
+                #    logging.info("Unable to split this protein:%s"%(candidate_filename))
+                #    continue
 
-                logging.info("Successfully split this protein:%s, going to preparation step"%(candidate_filename))
+                #logging.info("Successfully split this protein:%s, going to preparation step"%(candidate_filename))
                 prepared_protein_file = "%s_prepared%s" %(candidate_prefix, Prep.OUTPUT_PROTEIN_SUFFIX)
 
                 preparation_result = self.prepare_protein(split_receptor_file, prepared_protein_file)
