@@ -73,6 +73,7 @@ setup(
                'd3r/glidedocking.py', 'd3r/evaluate.py',
                'd3r/celppreports.py', 'd3r/vinadocking.py',
                'd3r/genchallengedata.py','d3r/chimera_proteinligprep.py',
+               'd3r/getchallengedata.py','d3r/packdockingresults.py'
                ],
     test_suite='tests',
     tests_require=test_requirements
