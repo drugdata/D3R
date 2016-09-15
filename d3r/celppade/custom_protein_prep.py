@@ -152,7 +152,7 @@ class ProteinPrep(object):
                 #    continue
 
                 #logging.info("Successfully split this protein:%s, going to preparation step"%(candidate_filename))
-                prepared_protein_file = "%s_prepared%s" %(candidate_prefix, Prep.OUTPUT_PROTEIN_SUFFIX)
+                prepared_protein_file = "%s_prepared%s" %(candidate_prefix, ProteinPrep.OUTPUT_PROTEIN_SUFFIX)
 
                 preparation_result = self.prepare_protein(candidate_filename, prepared_protein_file)
                 if preparation_result == False:
