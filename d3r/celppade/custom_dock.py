@@ -115,7 +115,7 @@ class Dock(object):
         abs_prot_sci_prep_dir = os.path.abspath(prot_sci_prep_dir)
         abs_dock_dir = os.path.abspath(dock_dir)
 
-        targ_prot_prep_dirs = glob.glob('%s/????' %(abs_prot_prep_dir))
+        targ_prot_prep_dirs = glob.glob('%s/????' %(abs_prot_sci_prep_dir))
         #targ_lig_prep_dirs = glob.glob('%s/????' %(abs_lig_prep_dir))
         #prepped_prot_targs = [os.path.basename(i.rstrip('/')) for i in targ_prot_prep_dirs]
         #prepped_lig_targs = [os.path.basename(i.rstrip('/')) for i in targ_lig_prep_dirs]
