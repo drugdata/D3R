@@ -74,6 +74,8 @@ class Dock(object):
         except:
             logging.info("Unable to find the center file for this case %s" %(target_prep_dir))
             return False
+        pocket_center = pocket_center.split(',')
+        pocket_center = [float(i.strip()) for i in pocket_center]
         return pocket_center
 
     def get_sci_prepped_lig(self, target_prep_dir, sci_prepped_lig_suffix):
@@ -133,7 +135,7 @@ class Dock(object):
             targ_dic[targ_name]['valid_targ'] = False
         
             # Get the binding pocket center
-            pocket_center = self, self.get_pocket_center(targ_prot_prep_dir)
+            pocket_center =  self.get_pocket_center(targ_prot_prep_dir)
             if pocket_center == False:
                 logging.info('Failed to find pocket center file in dirctory %s. Skipping target %s.' %(targ_prot_prep_dir, targ_name))
                 continue
