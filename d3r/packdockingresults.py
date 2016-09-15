@@ -96,6 +96,10 @@ def main_pack_dock_results(dock_dir, pack_dir, ftp_config):
 
 
     ## Use ftp config to upload tarball
+    if ftp_config is None:
+        logging.info('No ftp_config file given. Skipping upload')
+        return
+
     from d3r.celpp import filetransfer
     tar_base_name = os.path.basename(abs_tar_name)
     f_f_t_obj = filetransfer.FtpFileTransfer(abs_ftp_config)
@@ -106,7 +110,7 @@ def main_pack_dock_results(dock_dir, pack_dir, ftp_config):
                                  tar_base_name)
     logging.info(f_f_t_obj.get_upload_summary())
     f_f_t_obj.disconnect()
-    
+
 
         
 
