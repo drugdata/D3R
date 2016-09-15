@@ -5,17 +5,17 @@ import shutil
 import os
 import time
 import tarfile
+from d3r.celpp.filetransfer import WebDavFileTransfer
 
 __author__ = 'j5wagner'
 
 
 
-def download_tarball(unpack_dir, ftp_config, sleep, max_retry = 50):
-    from d3r.celpp import filetransfer
+def download_tarball(unpack_dir, config, sleep, max_retry = 50):
 
     os.chdir(unpack_dir)
 
-    f_f_t_obj = filetransfer.FtpFileTransfer(ftp_config)
+    f_f_t_obj = WebDavFileTransfer(config)
     f_f_t_obj.connect()
     retries = 0
     while 1:
@@ -51,13 +51,13 @@ def download_tarball(unpack_dir, ftp_config, sleep, max_retry = 50):
     
 
 
-def main_get_challenge_data(unpack_dir, ftp_config, sleep):
+def main_get_challenge_data(unpack_dir, config, sleep):
     abs_orig_dir = os.getcwd()
     abs_unpack_dir = os.path.abspath(unpack_dir)
-    abs_ftp_config = os.path.abspath(ftp_config)
+    abs_config = os.path.abspath(config)
 
     ## Download most recent tarball
-    chal_tar_name = download_tarball(abs_unpack_dir, abs_ftp_config, sleep)
+    chal_tar_name = download_tarball(abs_unpack_dir, abs_config, sleep)
     if chal_tar_name == False:
         logging.info('Unable to download challenge package. Exiting.')
         return False
