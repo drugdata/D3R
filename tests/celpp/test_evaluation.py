@@ -560,7 +560,9 @@ class TestEvaluation(unittest.TestCase):
             params = D3RParameters()
             params.program = 'xxx'
             params.version = '1'
-            task = EvaluationTask(temp_dir, 'foo', None, params)
+            dtask = D3RTask('/foo', params)
+            dtask.set_name('foo')
+            task = EvaluationTask(temp_dir, dtask.get_name(), dtask, params)
             task.create_dir()
             rmsd = task.get_rmsd_txt()
             f = open(rmsd, 'w')
@@ -632,11 +634,21 @@ class TestEvaluation(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
-    def test_get_guid_from_task_name_for_external_task(self):
+    def test_get_guid_from_task_name_for_external_task_dock_is_none(self):
         params = D3RParameters()
-        task = EvaluationTask('/foo', '123' +
+        task = EvaluationTask('/foo','blah' +
                               EvaluationTask.EXT_SUBMISSION_SUFFIX,
                               None,
+                              params)
+        self.assertEqual(task._get_guid_from_task_name_for_external_task(),
+                         None)
+
+    def test_get_guid_from_task_name_for_external_task(self):
+        params = D3RParameters()
+        dtask = D3RTask('/foo', params)
+        dtask.set_name('123' + EvaluationTask.EXT_SUBMISSION_SUFFIX)
+        task = EvaluationTask('/foo', dtask.get_name(),
+                              dtask,
                               params)
         self.assertEqual(task._get_guid_from_task_name_for_external_task(),
                          '123')
@@ -671,9 +683,11 @@ class TestEvaluation(unittest.TestCase):
             f.close()
             fac = ParticipantDatabaseFromCSVFactory(csvfile)
             params = D3RParameters()
+            dtask = D3RTask('/foo', params)
+            dtask.set_name('444' + EvaluationTask.EXT_SUBMISSION_SUFFIX)
             task = EvaluationTask(temp_dir,
-                                  '444' + EvaluationTask.EXT_SUBMISSION_SUFFIX,
-                                  None, params)
+                                  dtask.get_name(),
+                                  dtask, params)
             task.set_participant_database(fac.get_participant_database())
             self.assertEqual(task._get_external_submitter_email(), None)
             self.assertEqual(task.get_email_log(),
@@ -684,9 +698,11 @@ class TestEvaluation(unittest.TestCase):
     def test_get_external_submitter_email_no_participant_email(self):
 
         params = D3RParameters()
+        dtask = D3RTask('/foo', params)
+        dtask.set_name('444' + EvaluationTask.EXT_SUBMISSION_SUFFIX)
         task = EvaluationTask('/foo',
-                              '444' + EvaluationTask.EXT_SUBMISSION_SUFFIX,
-                               None, params)
+                              dtask.get_name(),
+                              dtask, params)
         plist = [Participant('1name', '1d3rusername', '444',
                              None)]
         task.set_participant_database(ParticipantDatabase(plist))
@@ -697,9 +713,11 @@ class TestEvaluation(unittest.TestCase):
     def test_get_external_submitter_email_valid(self):
 
         params = D3RParameters()
+        dtask = D3RTask('/foo', params)
+        dtask.set_name('12345' + EvaluationTask.EXT_SUBMISSION_SUFFIX)
         task = EvaluationTask('/foo',
-                              '12345' + EvaluationTask.EXT_SUBMISSION_SUFFIX,
-                               None, params)
+                              dtask.get_name(),
+                              dtask, params)
         plist = [Participant('1name', '1d3rusername', '12345',
                              'bob@bob.com')]
         # try single email address

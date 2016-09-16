@@ -219,8 +219,13 @@ class EvaluationTask(D3RTask):
            to hopefully obtain guid
         :returns: guid from task name
         """
-        return self.get_name().replace(EvaluationTask.EXT_SUBMISSION_SUFFIX,
-                                       '')
+        if self._docktask is None:
+            logger.error('Parent DockTask is None, so guid is'
+                         ' NOT extractable')
+            return None
+
+        return self._docktask.get_name()\
+            .replace(EvaluationTask.EXT_SUBMISSION_SUFFIX, '')
 
     def _get_external_submitter_email(self):
         """Extracts external submitter email from ParticipantDatabase
@@ -229,6 +234,10 @@ class EvaluationTask(D3RTask):
         """
         # need to get guid from task name stage.#.GUID.extsubmission
         guid = self._get_guid_from_task_name_for_external_task()
+        if guid is None:
+            logger.error('guid is None')
+            self.append_to_email_log('\nUnable to extract guid\n')
+            return None
 
         # then need to get email for guid
         part = self._participantdatabase.get_participant_by_guid(guid)
@@ -261,7 +270,7 @@ class EvaluationTask(D3RTask):
         guid = self._get_guid_from_task_name_for_external_task()
         subject = (D3RTask.SUBJECT_LINE_PREFIX +
                    'Week ' + str(weekno) + ' evaluation results for ' +
-                   guid)
+                   str(guid))
         return subject, msg
 
     def _get_reply_to_address(self, from_address):
