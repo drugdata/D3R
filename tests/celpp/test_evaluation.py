@@ -76,21 +76,22 @@ class TestEvaluation(unittest.TestCase):
             flist = task.get_uploadable_files()
             self.assertEqual(len(flist), 2)
 
-            LMCSS = os.path.join(score, 'rot-LMCSS_dock_pv_complex1.pdb')
+            LMCSS = os.path.join(score, 'LMCSS-1fcz_1fcz_docked_complex.pdb')
             open(LMCSS, 'a').close()
             flist = task.get_uploadable_files()
             self.assertEqual(len(flist), 3)
             flist.index(LMCSS)
 
             # try with score/rot-SMCSS_doc_pv_complex1.pdb
-            SMCSS = os.path.join(score, 'rot-SMCSS_dock_pv_complex1.pdb')
+            SMCSS = os.path.join(score, 'SMCSS-1fcz_2lbd_docked_complex.pdb')
             open(SMCSS, 'a').close()
             flist = task.get_uploadable_files()
             self.assertEqual(len(flist), 4)
             flist.index(SMCSS)
 
             # try with score/rot-hiResApo_doc_pv_complex1.pdb
-            hiResApo = os.path.join(score, 'rot-hiResApo_dock_pv_complex1.pdb')
+            hiResApo = os.path.join(score,
+                                    'hiResHolo-1fcz_1fcy_docked_complex.pdb')
             open(hiResApo, 'a').close()
             flist = task.get_uploadable_files()
             self.assertEqual(len(flist), 5)
@@ -98,7 +99,7 @@ class TestEvaluation(unittest.TestCase):
 
             # try with score/rot-hiResHolo_doc_pv_complex1.pdb
             hiResHolo = os.path.join(score,
-                                     'rot-hiResHolo_dock_pv_complex1.pdb')
+                                     'hiTanimoto-1fcz_1fcz_docked_complex.pdb')
             open(hiResHolo, 'a').close()
             flist = task.get_uploadable_files()
             self.assertEqual(len(flist), 6)
@@ -595,9 +596,11 @@ class TestEvaluation(unittest.TestCase):
 
     def test_am_i_an_external_submission(self):
         params = D3RParameters()
-        task = EvaluationTask('/ha', 'foo', None, params)
+        dtask = D3RTask('/ha', params)
+        task = EvaluationTask('/ha', 'foo', dtask, params)
+        dtask.set_name('blah')
         self.assertEqual(task._am_i_an_external_submission(), False)
-        task.set_name('blah' + EvaluationTask.EXT_SUBMISSION_SUFFIX)
+        dtask.set_name('blah' + EvaluationTask.EXT_SUBMISSION_SUFFIX)
         self.assertEqual(task._am_i_an_external_submission(), True)
 
     def test_get_participant_database_no_csv_file_found(self):
@@ -719,9 +722,11 @@ class TestEvaluation(unittest.TestCase):
 
     def test_send_external_submission_email_no_database(self):
         params = D3RParameters()
+        dtask = D3RTask('/foo', params)
+        dtask.set_name('444' + EvaluationTask.EXT_SUBMISSION_SUFFIX)
         task = EvaluationTask('/foo',
-                              '444' + EvaluationTask.EXT_SUBMISSION_SUFFIX,
-                               None, params)
+                              dtask.get_name(),
+                               dtask, params)
         task._send_external_submission_email('foo')
         self.assertEqual(task.get_email_log(),
                          '\nParticipant database is None cannot send docking '
@@ -733,10 +738,11 @@ class TestEvaluation(unittest.TestCase):
             params = D3RParameters()
             params.program = 'foo'
             params.version = '1'
+            dtask = D3RTask('/foo', params)
+            dtask.set_name('12345' + EvaluationTask.EXT_SUBMISSION_SUFFIX)
             task = EvaluationTask(temp_dir,
-                                  '12345' +
-                                  EvaluationTask.EXT_SUBMISSION_SUFFIX,
-                                  None, params)
+                                  dtask.get_name(),
+                                  dtask, params)
             plist = [Participant('1name', '1d3rusername', '12345',
                                  'bob@bob.com')]
             # try single email address
@@ -771,10 +777,11 @@ class TestEvaluation(unittest.TestCase):
             params = D3RParameters()
             params.program = 'foo'
             params.version = '1'
+            dtask = D3RTask('/foo', params)
+            dtask.set_name('12345' + EvaluationTask.EXT_SUBMISSION_SUFFIX)
             task = EvaluationTask(temp_dir,
-                                  '12345' +
-                                  EvaluationTask.EXT_SUBMISSION_SUFFIX,
-                                  None, params)
+                                  dtask.get_name(),
+                                  dtask, params)
             plist = [Participant('1name', '1d3rusername', '12345',
                                  'bob@bob.com')]
             # try single email address
@@ -802,10 +809,11 @@ class TestEvaluation(unittest.TestCase):
             params = D3RParameters()
             params.program = 'foo'
             params.version = '1'
+            dtask = D3RTask('/foo', params)
+            dtask.set_name('12345' + EvaluationTask.EXT_SUBMISSION_SUFFIX)
             task = EvaluationTask(temp_dir,
-                                  '12345' +
-                                  EvaluationTask.EXT_SUBMISSION_SUFFIX,
-                                  None, params)
+                                  dtask.get_name(),
+                                  dtask, params)
             plist = [Participant('1name', '1d3rusername', '1234',
                                  'bob@bob.com')]
             # try single email address

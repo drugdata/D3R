@@ -133,12 +133,10 @@ class EvaluationTask(D3RTask):
     RMSD_TXT = 'RMSD.txt'
     RMSD_PICKLE = 'RMSD.pickle'
     EXT_SUBMISSION_SUFFIX = '.extsubmission'
+    SCORE_DIR = 'score'
+    COMPLEX_SUFFIX = '_complex.pdb'
 
-    PDB_FILES = ['score' + os.sep + 'rot-LMCSS_dock_pv_complex1.pdb',
-                 'score' + os.sep + 'rot-SMCSS_dock_pv_complex1.pdb',
-                 'score' + os.sep + 'rot-hiResApo_dock_pv_complex1.pdb',
-                 'score' + os.sep + 'rot-hiResHolo_dock_pv_complex1.pdb',
-                 'score' + os.sep + 'crystal.pdb']
+    PDB_FILES = [SCORE_DIR + os.sep + 'crystal.pdb']
 
     def __init__(self, path, name, docktask, args):
         super(EvaluationTask, self).__init__(path, args)
@@ -174,7 +172,11 @@ class EvaluationTask(D3RTask):
         `ExternalDataSubmissionTask.EXT_SUBMISSION_SUFFIX`
         :returns: True for yes otherwise False
         """
-        if self.get_name().endswith(EvaluationTask.EXT_SUBMISSION_SUFFIX):
+        if self._docktask is None:
+            return False
+
+        if self._docktask.get_name().endswith(
+                EvaluationTask.EXT_SUBMISSION_SUFFIX):
             return True
         return False
 
@@ -320,11 +322,8 @@ class EvaluationTask(D3RTask):
            RMSD.txt
            RMSD.pickle
            final.log
-           pbdid/score/rot-LMCSS_dock_pv_complex1.pdb
-           pbdid/score/rot-SMCSS_dock_pv_complex1.pdb
-           pbdid/score/rot-hiResApo_dock_pv_complex1.pdb
-           pbdid/score/rot-hiResHolo_dock_pv_complex1.pdb
            pbdid/score/crystal.pdb
+           pbdid/score/*_complex.pdb
 
            :returns: list of files that can be uploaded
         """
@@ -356,6 +355,14 @@ class EvaluationTask(D3RTask):
                     pdb = os.path.join(full_path, pdb_name)
                     if os.path.isfile(pdb):
                         file_list.append(pdb)
+                score_dir = os.path.join(full_path,
+                                         EvaluationTask.SCORE_DIR)
+                if os.path.isdir(score_dir):
+                    for score_entry in os.listdir(score_dir):
+                        if score_entry.endswith(EvaluationTask.COMPLEX_SUFFIX):
+                            pdb_f_path = os.path.join(score_dir, score_entry)
+                            if os.path.isfile(pdb_f_path):
+                                file_list.append(pdb_f_path)
         except OSError:
             logger.exception('Caught exception looking for pbdid folders')
         return file_list
