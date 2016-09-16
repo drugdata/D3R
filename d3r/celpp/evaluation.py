@@ -131,6 +131,7 @@ class EvaluationTask(D3RTask):
 
     FINAL_LOG = 'final.log'
     RMSD_TXT = 'RMSD.txt'
+    RMSD_PICKLE = 'RMSD.pickle'
     EXT_SUBMISSION_SUFFIX = '.extsubmission'
 
     PDB_FILES = ['score' + os.sep + 'rot-LMCSS_dock_pv_complex1.pdb',
@@ -182,6 +183,12 @@ class EvaluationTask(D3RTask):
         :returns: full path to RMSD.txt file
         """
         return os.path.join(self.get_dir(), EvaluationTask.RMSD_TXT)
+
+    def get_rmsd_pickle(self):
+        """Returns full path to RMSD.pickle file
+        :returns: full path to RMSD.pickle file
+        """
+        return os.path.join(self.get_dir(), EvaluationTask.RMSD_PICKLE)
 
     def _get_evaluation_summary(self):
         """Parses RMSD.txt and generates human readable summary
@@ -311,6 +318,7 @@ class EvaluationTask(D3RTask):
            plus stderr/stdout files
 
            RMSD.txt
+           RMSD.pickle
            final.log
            pbdid/score/rot-LMCSS_dock_pv_complex1.pdb
            pbdid/score/rot-SMCSS_dock_pv_complex1.pdb
@@ -330,9 +338,13 @@ class EvaluationTask(D3RTask):
             if os.path.isfile(final_log):
                 file_list.append(final_log)
 
-            rmsd = os.path.join(out_dir, EvaluationTask.RMSD_TXT)
+            rmsd = self.get_rmsd_txt()
             if os.path.isfile(rmsd):
                 file_list.append(rmsd)
+
+            rmsdpickle = self.get_rmsd_pickle()
+            if os.path.isfile(rmsdpickle):
+                file_list.append(rmsdpickle)
 
             for entry in os.listdir(out_dir):
                 full_path = os.path.join(out_dir, entry)

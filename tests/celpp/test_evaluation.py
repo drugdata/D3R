@@ -111,13 +111,21 @@ class TestEvaluation(unittest.TestCase):
             self.assertEqual(len(flist), 7)
             flist.index(crystal)
 
+            # try with RMSD.pickle
+            rmsdpickle = os.path.join(task.get_dir(),
+                                      EvaluationTask.RMSD_PICKLE)
+            open(rmsdpickle, 'a').close()
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 8)
+            flist.index(rmsdpickle)
+
             # try with stderr/stdout files
             errfile = os.path.join(task.get_dir(), 'evaluate.py.stderr')
             open(errfile, 'a').close()
             outfile = os.path.join(task.get_dir(), 'evaluate.py.stdout')
             open(outfile, 'a').close()
             flist = task.get_uploadable_files()
-            self.assertEqual(len(flist), 9)
+            self.assertEqual(len(flist), 10)
             flist.index(crystal)
             flist.index(hiResHolo)
             flist.index(hiResApo)
@@ -127,6 +135,7 @@ class TestEvaluation(unittest.TestCase):
             flist.index(outfile)
             flist.index(final_log)
             flist.index(rmsd)
+            flist.index(rmsdpickle)
         finally:
             shutil.rmtree(temp_dir)
 
@@ -569,12 +578,20 @@ class TestEvaluation(unittest.TestCase):
                                    '1fcz  0.2  0.4\n\n\n\nSincerely,\n\nxxx 1')
         finally:
             shutil.rmtree(temp_dir)
+
     def test_get_rmsd_txt(self):
         params = D3RParameters()
         task = EvaluationTask('/ha', 'foo', None, params)
         self.assertEqual(task.get_rmsd_txt(),
                          os.path.join('/ha', task.get_dir_name(),
                                       EvaluationTask.RMSD_TXT))
+
+    def test_get_rmsd_pickle(self):
+        params = D3RParameters()
+        task = EvaluationTask('/ha', 'foo', None, params)
+        self.assertEqual(task.get_rmsd_pickle(),
+                         os.path.join('/ha', task.get_dir_name(),
+                                      EvaluationTask.RMSD_PICKLE))
 
     def test_am_i_an_external_submission(self):
         params = D3RParameters()
