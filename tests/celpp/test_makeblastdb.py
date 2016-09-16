@@ -75,7 +75,7 @@ class TestMakeBlastDBTask(unittest.TestCase):
             self.assertEqual(len(flist), 2)
             flist.index(stdout)
             flist.index(stderr)
-            
+
 
         finally:
             shutil.rmtree(temp_dir)
