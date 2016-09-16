@@ -41,6 +41,50 @@ class TestDataImportTask(unittest.TestCase):
         return (td.microseconds +
                 (td.seconds + td.days * 24 * 3600) * 10**6) / 10**6
 
+    def test_get_uploadable_files(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = DataImportTask(temp_dir, params)
+            self.assertEqual(task.get_uploadable_files(), [])
+
+            task.create_dir()
+            # test empty dir
+            self.assertEqual(task.get_uploadable_files(), [])
+
+            # test with only compinchi
+            open(task.get_components_inchi_file(), 'a').close()
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 1)
+            flist.index(task.get_components_inchi_file())
+
+            # test with crystal file
+            open(task.get_crystalph_tsv(), 'a').close()
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 2)
+            flist.index(task.get_components_inchi_file())
+            flist.index(task.get_crystalph_tsv())
+
+            # test with nonpolymer file
+            open(task.get_nonpolymer_tsv(), 'a').close()
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 3)
+            flist.index(task.get_components_inchi_file())
+            flist.index(task.get_crystalph_tsv())
+            flist.index(task.get_nonpolymer_tsv())
+
+            # test with sequence file
+            open(task.get_sequence_tsv(), 'a').close()
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 4)
+            flist.index(task.get_components_inchi_file())
+            flist.index(task.get_crystalph_tsv())
+            flist.index(task.get_nonpolymer_tsv())
+            flist.index(task.get_sequence_tsv())
+
+        finally:
+            shutil.rmtree(temp_dir)
+
     def test_update_status_from_filesystem(self):
         params = D3RParameters()
         task = DataImportTask(None, params)

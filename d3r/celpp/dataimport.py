@@ -56,6 +56,44 @@ class DataImportTask(D3RTask):
         self._maxretries = 3
         self._retrysleep = 1
 
+    def get_uploadable_files(self):
+        """Returns list of files that can be uploaded to remote server
+
+           List will contain these files in addition to stderr/stdout files
+           if they are found on the filesystem
+
+           new_release_structure_nonpolymer.tsv
+           new_release_structure_sequence.tsv
+           new_release_crystallization_pH.tsv
+           Components-inchi.ich
+
+           :returns: list of files that can be uploaded.
+        """
+        # get the stderr/stdout files
+        file_list = super(DataImportTask, self).get_uploadable_files()
+
+        compinchi = self.get_components_inchi_file()
+
+        if os.path.isfile(compinchi):
+            file_list.append(compinchi)
+
+        crystal = self.get_crystalph_tsv()
+
+        if os.path.isfile(crystal):
+            file_list.append(crystal)
+
+        nonpoly = self.get_nonpolymer_tsv()
+
+        if os.path.isfile(nonpoly):
+            file_list.append(nonpoly)
+
+        seq = self.get_sequence_tsv()
+
+        if os.path.isfile(seq):
+            file_list.append(seq)
+
+        return file_list
+
     def get_nonpolymer_tsv(self):
         """Returns path to new_release_structure_nonpolymer.tsv file
         :return: full path to DataImportTask.NONPOLYMER_TSV file
