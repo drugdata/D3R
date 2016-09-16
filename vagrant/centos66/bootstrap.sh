@@ -14,15 +14,7 @@ pip install ftpretty
 pip install wheel
 pip install flake8
 pip install lockfile --upgrade
-
-#echo "adding rdkit yum repo"
-# install rdkit from yum repo
-#pushd /etc/yum.repos.d
-#wget https://copr.fedorainfracloud.org/coprs/giallu/rdkit/repo/epel-6/giallu-rdkit-epel-6.repo
-#popd
-
-#echo "installing rdkit"
-#yum install -y python-rdkit
+pip install easywebdav
 
 echo "Installing ncbi blast pre-reqs"
 # install ncbi blast
