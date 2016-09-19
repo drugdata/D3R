@@ -124,6 +124,6 @@ class ParticipantDatabaseFromCSVFactory(object):
                 counter = + 1
             f.close()
             return ParticipantDatabase(plist)
-        except Exception as e:
+        except Exception:
             logger.exception('Caught exception')
         return None
