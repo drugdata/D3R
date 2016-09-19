@@ -28,7 +28,9 @@ from d3r.celpp.task import UnsetFileNameError
 from d3r.celpp.task import D3RTask
 from d3r.celpp.task import SmtpEmailer
 from d3r.celpp.task import EmailSendError
+from d3r.celpp.task import Attachment
 from d3r.celpp.filetransfer import FtpFileTransfer
+
 
 
 class MockException(Exception):
@@ -586,16 +588,11 @@ class TestD3rTask(unittest.TestCase):
         mockserver.sendmail = Mock()
         mockserver.quit = Mock()
 
-        mime_msge = emailer._build_mime_message('bob@bob.com',
-                                                ['joe@joe.com'], 'subby2',
-                                                'hi\n', 'rep@rep.com')
-
         emailer.set_alternate_smtp_server(mockserver)
         emailer.send_email('bob@bob.com', ['joe@joe.com'], 'subby2',
                            'hi\n', reply_to='rep@rep.com')
         mockserver.quit.assert_any_call()
-        mockserver.sendmail.assert_called_with('bob@bob.com', ['joe@joe.com'],
-                                               mime_msge.as_string())
+        self.assertEqual(mockserver.sendmail.call_count, 1)
 
     def test_send_invalid_email_to_fake_server_that_throws_exception(self):
         emailer = SmtpEmailer()
@@ -611,6 +608,11 @@ class TestD3rTask(unittest.TestCase):
             pass
 
         mockserver.quit.assert_any_call()
+
+    def test_attachment_class(self):
+        a = Attachment('/foo', 'hi')
+        self.assertEqual(a.get_desired_name(), 'hi')
+        self.assertEqual(a.get_file_to_attach(), '/foo')
 
     def tearDown(self):
         pass

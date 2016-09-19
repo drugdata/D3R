@@ -847,15 +847,7 @@ class TestEvaluation(unittest.TestCase):
                 .generate_from_address_using_login_and_host()
             self.assertEqual(emailer.get_message_log(),
                              '\nSent evaluation email to: bob@bob.com\n')
-            subject, body = emailer\
-                ._generate_external_submission_email_body(task)
-            mime_msg = smtpemailer._build_mime_message(from_addr,
-                                                       ['bob@bob.com'],
-                                                       subject,
-                                                       body,
-                                                       from_addr)
-            mockserver.sendmail.assert_called_with(from_addr, ['bob@bob.com'],
-                                                   mime_msg.as_string())
+            self.assertEqual(mockserver.sendmail.call_count, 1)
 
         finally:
             shutil.rmtree(temp_dir)
