@@ -355,7 +355,8 @@ def _parse_arguments(desc, args):
                         'SEE: description of challengedata '
                         'stage above for example file')
     parser.add_argument('--replyto', dest='replytoaddress', default=None,
-                        help='Email address to set as reply-to for emails to external submitters')
+                        help='Email address to set as reply-to for emails to '
+                             'external submitters')
     parser.add_argument('--version', action='version',
                         version=('%(prog)s ' + d3r.__version__))
     return parser.parse_args(args, namespace=parsed_arguments)
