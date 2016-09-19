@@ -71,6 +71,16 @@ class EvaluationTaskFactory(object):
         pfac = ParticipantDatabaseFromCSVFactory(csvfile)
         return pfac.get_participant_database()
 
+    def _get_value_of_replytoaddress(self):
+        """Attempts to get value of replytoaddress from `get_args()`
+        :returns None if replytoaddress is None or does not exist in object
+        """
+        try:
+            return self.get_args().replytoaddress
+        except AttributeError:
+            logger.debug('replytoaddress not set in get_args()')
+            return None
+
     def get_evaluation_tasks(self):
         """Generate EvaluationTasks
 
@@ -91,6 +101,8 @@ class EvaluationTaskFactory(object):
         path_list = os.listdir(path)
 
         participant_db = self._get_participant_database()
+        emailer = EvaluationEmailer(participant_db,
+                                    self._get_value_of_replytoaddress())
 
         for entry in path_list:
             logger.debug('Checking if ' + entry + ' is a docking task')
@@ -115,13 +127,150 @@ class EvaluationTaskFactory(object):
                                            self.get_args())
                     if stask.can_run():
                         logger.debug('Adding task ' + stask.get_name())
-                        stask.set_participant_database(participant_db)
+                        stask.set_evaluation_emailer(emailer)
                         scoring_tasks.append(stask)
                     else:
                         logger.debug(stask.get_name() + ' cannot be' +
                                      ' added : ' + stask.get_error())
 
         return scoring_tasks
+
+
+class EvaluationEmailer(object):
+    """Sends evaluation email
+    """
+    def __init__(self, participant_database, reply_to_address,
+                 smtp='localhost', smtpport=25):
+        self._participantdatabase = participant_database
+        self._alt_smtp_emailer = None
+        self._msg_log = None
+        self._reply_to_address = reply_to_address
+        self._smtp = smtp
+        self._smtpport = smtpport
+
+    def set_alternate_smtp_emailer(self, emailer):
+        """Sets alternate smtp emailer
+        """
+        self._alt_smtp_emailer = emailer
+
+    def _get_smtp_emailer(self):
+        """Gets `SmtpEmailer` object or alternate
+        """
+        if self._alt_smtp_emailer is not None:
+            return self._alt_smtp_emailer
+        return SmtpEmailer(smtp_host=self._smtp,
+                           port=self._smtpport)
+
+    def _append_to_message_log(self, msg):
+        if self._msg_log is None:
+            self._msg_log = str(msg)
+            return
+        self._msg_log += str(msg)
+
+    def get_message_log(self):
+        """Gets the error log for this object
+        :returns: Error log as string
+        """
+        return self._msg_log
+
+    def _get_external_submitter_email(self, etask):
+        """Extracts external submitter email from ParticipantDatabase
+
+        :return: list of external submitter email or emails ot None if
+        not found
+        """
+        # need to get guid from task name stage.#.GUID.extsubmission
+        guid = etask.get_guid_for_task()
+        if guid is None:
+            logger.error('guid is None')
+            self._append_to_message_log('\nUnable to extract guid\n')
+            return None
+
+        # then need to get email for guid
+        part = self._participantdatabase.get_participant_by_guid(guid)
+
+        if part is None:
+            logger.error('No participant found with guid: ' + guid)
+            self._append_to_message_log('\nNo participant found with guid: ' +
+                                        guid + '\n')
+            return None
+
+        if part.get_email() is None:
+            logger.error('Email not set for participant')
+            self._append_to_message_log('\nEmail not set for participant\n')
+            return None
+
+        return part.get_email().split(',')
+
+    def _get_reply_to_address(self, from_address):
+        """Gets reply to address
+        :returns: reply to email address
+        """
+        if self._reply_to_address is None:
+            return from_address
+        return self._reply_to_address
+
+    def _generate_external_submission_email_body(self, etask):
+        """Creates body of email and subject
+        :returns subject,body: as strings
+        """
+        weekno = util.get_celpp_week_number_from_path(etask.get_path())
+
+        msg = 'Dear CELPP Participant,\n\nHere are your docking ' \
+              'evaluation results (RMSD, Angstroms) for CELPP week ' +\
+              str(weekno) + '\n\n'
+        msg += etask.get_evaluation_summary()
+
+        msg += '\n\nSincerely,\n\nCELPP Automation'
+
+        guid = etask.get_guid_for_task()
+        subject = (D3RTask.SUBJECT_LINE_PREFIX +
+                   'Week ' + str(weekno) + ' evaluation results for ' +
+                   str(guid))
+        return subject, msg
+
+    def send_evaluation_email(self, etask):
+        """Sends evaluation email
+        """
+        if etask is None:
+            logger.error('Task passed in is None')
+            self._append_to_message_log('\nTask passed in is None\n')
+            return
+
+        if etask.is_external_submission() is False:
+            logger.debug('Not an external submission, just returning')
+            self._append_to_message_log('\nNot an external submission\n')
+            return
+
+        if self._participantdatabase is None:
+            logger.error('Participant Database is None')
+            self._append_to_message_log('\nParticipant database is None '
+                                        'cannot send'
+                                        ' docking evaluation email!!!\n')
+            return
+        try:
+            emailer = self._get_smtp_emailer()
+
+            to_list = self._get_external_submitter_email(etask)
+            if to_list is None:
+                logger.debug('No external submitter email, just returning')
+                return
+
+            subject, msg = self\
+                ._generate_external_submission_email_body(etask)
+
+            from_addr = emailer.generate_from_address_using_login_and_host()
+
+            reply_to = self._get_reply_to_address(from_addr)
+
+            emailer.send_email(from_addr, to_list, subject, msg,
+                               reply_to=reply_to)
+            self._append_to_message_log('\nSent evaluation email to: ' +
+                                        ", ".join(to_list) + '\n')
+        except Exception as e:
+            logger.exception('Caught exception')
+            self._append_to_message_log('\nCaught exception trying to email '
+                                        'participant : ' + str(e) + '\n')
 
 
 class EvaluationTask(D3RTask):
@@ -144,29 +293,12 @@ class EvaluationTask(D3RTask):
         self.set_stage(EvaluationTaskFactory.DOCKSTAGE + 1)
         self.set_status(D3RTask.UNKNOWN_STATUS)
         self._docktask = docktask
-        self._participantdatabase = None
-        self._alt_smtp_emailer = None
+        self._emailer = None
 
-    def set_alternate_smtp_emailer(self, emailer):
-        """Sets alternate smtp emailer
-        """
-        self._alt_smtp_emailer = emailer
+    def set_evaluation_emailer(self, emailer):
+        self._emailer = emailer
 
-    def _get_smtp_emailer(self):
-        """Gets `SmtpEmailer` object or alternate
-        """
-        if self._alt_smtp_emailer is not None:
-            return self._alt_smtp_emailer
-        return SmtpEmailer(smtp_host=self.get_args().smtp,
-                              port=self.get_args().smtpport)
-
-    def set_participant_database(self, participant_database):
-        """Sets the participant database
-        :param participant_database: database of participants
-        """
-        self._participantdatabase = participant_database
-
-    def _am_i_an_external_submission(self):
+    def is_external_submission(self):
         """Checks if this evaluation task is analyzing an external submission
         The check is done by looking at suffix of name to see if it matches
         `ExternalDataSubmissionTask.EXT_SUBMISSION_SUFFIX`
@@ -192,7 +324,7 @@ class EvaluationTask(D3RTask):
         """
         return os.path.join(self.get_dir(), EvaluationTask.RMSD_PICKLE)
 
-    def _get_evaluation_summary(self):
+    def get_evaluation_summary(self):
         """Parses RMSD.txt and generates human readable summary
         evaluating docking
         :returns: report of docking as string.
@@ -214,7 +346,7 @@ class EvaluationTask(D3RTask):
             return (start_line + 'Unable to generate evaluation summary (' +
                     str(e) + ')\n')
 
-    def _get_guid_from_task_name_for_external_task(self):
+    def get_guid_for_task(self):
         """Examines task name removing external submission suffix
            to hopefully obtain guid
         :returns: guid from task name
@@ -226,101 +358,6 @@ class EvaluationTask(D3RTask):
 
         return self._docktask.get_name()\
             .replace(EvaluationTask.EXT_SUBMISSION_SUFFIX, '')
-
-    def _get_external_submitter_email(self):
-        """Extracts external submitter email from ParticipantDatabase
-
-        :return: list of external submitter email or emails ot None if not found
-        """
-        # need to get guid from task name stage.#.GUID.extsubmission
-        guid = self._get_guid_from_task_name_for_external_task()
-        if guid is None:
-            logger.error('guid is None')
-            self.append_to_email_log('\nUnable to extract guid\n')
-            return None
-
-        # then need to get email for guid
-        part = self._participantdatabase.get_participant_by_guid(guid)
-
-        if part is None:
-            logger.error('No participant found with guid: ' + guid)
-            self.append_to_email_log('\nNo participant found with guid: ' +
-                                     guid + '\n')
-            return None
-
-        if part.get_email() is None:
-            logger.error('Email not set for participant')
-            self.append_to_email_log('\nEmail not set for participant\n')
-            return None
-
-        return part.get_email().split(',')
-
-    def _generate_external_submission_email_body(self, eval_summary):
-        """Creates body of email and subject
-        :returns subject,body: as strings
-        """
-        weekno = util.get_celpp_week_number_from_path(self.get_path())
-
-        msg = 'Dear CELPP Participant,\n\nHere are the docking ' \
-              'evaluation results for CELPP week ' + str(weekno) + '\n\n'
-        msg += self._get_evaluation_summary()
-
-        msg += '\n\nSincerely,\n\n' + self._get_program_name()
-
-        guid = self._get_guid_from_task_name_for_external_task()
-        subject = (D3RTask.SUBJECT_LINE_PREFIX +
-                   'Week ' + str(weekno) + ' evaluation results for ' +
-                   str(guid))
-        return subject, msg
-
-    def _get_reply_to_address(self, from_address):
-        """Gets reply to address
-        :returns: reply to email address
-        """
-        try:
-            reply_to = self.get_args().replytoaddress
-            logger.debug('Reply-to email set to ' + reply_to)
-        except AttributeError:
-            logger.info('No replytoaddress set using ' + from_address)
-            reply_to = from_address
-        return reply_to
-
-    def _send_external_submission_email(self, eval_summary):
-        """Sends email providing summary of docking evaluation
-        """
-        if self._am_i_an_external_submission() is False:
-            logger.debug('Not an external submission, just returning')
-            return
-
-        if self._participantdatabase is None:
-            logger.error('Participant Database is None')
-            self.append_to_email_log('\nParticipant database is None '
-                                     'cannot send'
-                                     ' docking evaluation email!!!\n')
-            return
-        try:
-            emailer = self._get_smtp_emailer()
-
-            to_list = self._get_external_submitter_email()
-            if to_list is None:
-                logger.debug('No external submitter email, just returning')
-                return
-
-            subject, msg = self\
-                ._generate_external_submission_email_body(eval_summary)
-
-            from_addr = emailer.generate_from_address_using_login_and_host()
-
-            reply_to = self._get_reply_to_address(from_addr)
-
-            emailer.send_email(from_addr, to_list, subject, msg,
-                               reply_to=reply_to)
-            self.append_to_email_log('\nSent evaluation email to: ' +
-                                     ", ".join(to_list) + '\n')
-        except Exception as e:
-            logger.exception('Caught exception')
-            self.append_to_email_log('\nCaught exception trying to email '
-                                     'participant : ' + str(e) + '\n')
 
     def get_uploadable_files(self):
         """Returns list of files that can be uploaded to remote server
@@ -462,14 +499,15 @@ class EvaluationTask(D3RTask):
         self.run_external_command(eval_name, cmd_to_run,
                                   True)
 
-        # get evaluation summary
-        eval_summary = self._get_evaluation_summary()
-
-        # append to email
-        self.append_to_email_log(eval_summary)
-
-        # if external submission send summary email
-        self._send_external_submission_email(eval_summary)
+        # attempt to send evaluation email
+        try:
+            self._emailer.send_evaluation_email(self)
+            self.append_to_email_log(self._emailer.get_message_log())
+        except Exception as e:
+            logger.exception('Caught exception trying to send evaluation '
+                             'email')
+            self.append_to_email_log('Caught exception trying to send '
+                                     'evaluation email ' + str(e) + '\n')
 
         # assess the result
         self.end()

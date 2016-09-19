@@ -27,6 +27,7 @@ from d3r.celpp.participant import ParticipantDatabaseFromCSVFactory
 from d3r.celpp.participant import ParticipantDatabase
 from d3r.celpp.participant import Participant
 from d3r.celpp.task import SmtpEmailer
+from d3r.celpp.evaluation import EvaluationEmailer
 
 
 class TestEvaluation(unittest.TestCase):
@@ -487,7 +488,7 @@ class TestEvaluation(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
-    def test_run_succeeds(self):
+    def test_run_succeeds_no_emailer(self):
         temp_dir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
@@ -520,13 +521,61 @@ class TestEvaluation(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
+    def test_run_succeeds_with_emailer(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            params.evaluation = 'true'
+            params.pdbdb = '/data/pdb'
+            docktask = D3RTask(temp_dir, params)
+            docktask.set_name('12345' + EvaluationTask.EXT_SUBMISSION_SUFFIX)
+            docktask.set_stage(EvaluationTaskFactory.DOCKSTAGE)
+            docktask.create_dir()
+            open(os.path.join(docktask.get_dir(), D3RTask.COMPLETE_FILE),
+                 'a').close()
+            evaluation = EvaluationTask(temp_dir, docktask.get_name(),
+                                        docktask, params)
+            plist = [Participant('1name', '1d3rusername', '12345',
+                                 'bob@bob.com,joe@joe.com')]
+            smtpemailer = SmtpEmailer()
+            mockserver = D3RParameters()
+            mockserver.sendmail = Mock()
+            mockserver.quit = Mock()
+            smtpemailer.set_alternate_smtp_server(mockserver)
+            emailer = EvaluationEmailer(ParticipantDatabase(plist), None)
+            emailer.set_alternate_smtp_emailer(smtpemailer)
+            evaluation.set_evaluation_emailer(emailer)
+            evaluation.run()
+            self.assertEqual(evaluation.get_error(), None)
+            # test files get created
+            errfile = os.path.join(evaluation.get_dir(),
+                                   D3RTask.ERROR_FILE)
+            self.assertEqual(os.path.isfile(errfile), False)
+
+            compfile = os.path.join(evaluation.get_dir(),
+                                    D3RTask.COMPLETE_FILE)
+            self.assertEqual(os.path.isfile(compfile), True)
+            stderr = os.path.join(evaluation.get_dir(),
+                                  'true.stderr')
+            self.assertEqual(os.path.isfile(stderr), True)
+            stdout = os.path.join(evaluation.get_dir(),
+                                  'true.stdout')
+            self.assertEqual(os.path.isfile(stdout), True)
+            res = evaluation.get_email_log().endswith('\nSent evaluation '
+                                                      'email to: bob@bob.com,'
+                                                      ' joe@joe.com\n')
+            self.assertTrue(res)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
     def test_get_evaluation_summary(self):
         temp_dir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
             task = EvaluationTask(temp_dir, 'foo', None, params)
             # test where no RMSD.txt file is found
-            val = task._get_evaluation_summary()
+            val = task.get_evaluation_summary()
             self.assertEqual(val,
                              '\nEvaluation of docking\n'
                              '=====================\nNo ' +
@@ -538,7 +587,7 @@ class TestEvaluation(unittest.TestCase):
             f.write('LMCSS\n1fcz 0.465\n')
             f.flush()
             f.close()
-            val = task._get_evaluation_summary()
+            val = task.get_evaluation_summary()
             self.assertEqual(val,
                              '\nEvaluation of docking\n'
                              '=====================\n'
@@ -546,7 +595,7 @@ class TestEvaluation(unittest.TestCase):
 
             # test where reading RMSD.txt throws exception
             os.chmod(task.get_rmsd_txt(), 0)
-            val = task._get_evaluation_summary()
+            val = task.get_evaluation_summary()
             self.assertTrue(val.startswith('\nEvaluation of docking\n'
                                            '=====================\n'
                                            'Unable to generate evaluation'
@@ -558,27 +607,29 @@ class TestEvaluation(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
-            params.program = 'xxx'
-            params.version = '1'
             dtask = D3RTask('/foo', params)
             dtask.set_name('foo')
             task = EvaluationTask(temp_dir, dtask.get_name(), dtask, params)
             task.create_dir()
+            emailer = EvaluationEmailer(None, None)
+            task.set_evaluation_emailer(emailer)
             rmsd = task.get_rmsd_txt()
             f = open(rmsd, 'w')
             f.write('  LMCSS  XXX\n1fcz  0.2  0.4\n')
             f.flush()
             f.close()
-            eval_sum = task._get_evaluation_summary()
-            subject, body = task\
-                ._generate_external_submission_email_body(eval_sum)
+            subject, body = emailer\
+                ._generate_external_submission_email_body(task)
             self.assertEqual(subject,
                              '[d3rcelpp] Week 0 evaluation results for foo')
-            self.assertEqual(body, 'Dear CELPP Participant,\n\nHere are the '
-                                   'docking evaluation results for CELPP week '
+            self.assertEqual(body, 'Dear CELPP Participant,\n\nHere are your '
+                                   'docking evaluation results '
+                                   '(RMSD, Angstroms) '
+                                   'for CELPP week '
                                    '0\n\n\nEvaluation of docking'
                                    '\n=====================\n  LMCSS  XXX\n'
-                                   '1fcz  0.2  0.4\n\n\n\nSincerely,\n\nxxx 1')
+                                   '1fcz  0.2  0.4\n\n\n\nSincerely,\n\n'
+                                   'CELPP Automation')
         finally:
             shutil.rmtree(temp_dir)
 
@@ -596,14 +647,14 @@ class TestEvaluation(unittest.TestCase):
                          os.path.join('/ha', task.get_dir_name(),
                                       EvaluationTask.RMSD_PICKLE))
 
-    def test_am_i_an_external_submission(self):
+    def test_is_external_submission(self):
         params = D3RParameters()
         dtask = D3RTask('/ha', params)
         task = EvaluationTask('/ha', 'foo', dtask, params)
         dtask.set_name('blah')
-        self.assertEqual(task._am_i_an_external_submission(), False)
+        self.assertEqual(task.is_external_submission(), False)
         dtask.set_name('blah' + EvaluationTask.EXT_SUBMISSION_SUFFIX)
-        self.assertEqual(task._am_i_an_external_submission(), True)
+        self.assertEqual(task.is_external_submission(), True)
 
     def test_get_participant_database_no_csv_file_found(self):
         temp_dir = tempfile.mkdtemp()
@@ -634,40 +685,40 @@ class TestEvaluation(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
-    def test_get_guid_from_task_name_for_external_task_dock_is_none(self):
+    def test_get_guid_for_task_dock_is_none(self):
         params = D3RParameters()
-        task = EvaluationTask('/foo','blah' +
+        task = EvaluationTask('/foo', 'blah' +
                               EvaluationTask.EXT_SUBMISSION_SUFFIX,
                               None,
                               params)
-        self.assertEqual(task._get_guid_from_task_name_for_external_task(),
+        self.assertEqual(task.get_guid_for_task(),
                          None)
 
-    def test_get_guid_from_task_name_for_external_task(self):
+    def test_get_guid_for_task(self):
         params = D3RParameters()
         dtask = D3RTask('/foo', params)
         dtask.set_name('123' + EvaluationTask.EXT_SUBMISSION_SUFFIX)
         task = EvaluationTask('/foo', dtask.get_name(),
                               dtask,
                               params)
-        self.assertEqual(task._get_guid_from_task_name_for_external_task(),
+        self.assertEqual(task.get_guid_for_task(),
                          '123')
 
-    def test_get_smtp_emailer(self):
-        """Mainly to run through code so we'll make sure we get an exception
-        """
+    def test_eval_emailer_append_to_message_log(self):
+        emailer = EvaluationEmailer(None, None)
+        self.assertEqual(emailer.get_message_log(), None)
+        emailer._append_to_message_log('hi\n')
+        self.assertEqual(emailer.get_message_log(), 'hi\n')
+        emailer._append_to_message_log('how\n')
+        self.assertEqual(emailer.get_message_log(), 'hi\nhow\n')
+
+    def test_eval_emailer_get_external_submitter_email_none_from_guid(self):
+        emailer = EvaluationEmailer(None, None)
         params = D3RParameters()
-        params.fake = True
-        task = EvaluationTask('/foo', 'hi', None, params)
-        try:
-            task._get_smtp_emailer()
-            self.fail('Expect AttributeError cause smtp and smtpport are not set'
-                      'in args')
-        except AttributeError:
-            pass
-        task.set_alternate_smtp_emailer(params)
-        val = task._get_smtp_emailer()
-        self.assertEqual(val.fake, True)
+        task = EvaluationTask('/foo', None, None, params)
+        self.assertEqual(emailer._get_external_submitter_email(task), None)
+        self.assertEqual(emailer.get_message_log(),
+                         '\nUnable to extract guid\n')
 
     def test_get_external_submitter_email_participant_not_found(self):
         temp_dir = tempfile.mkdtemp()
@@ -688,9 +739,10 @@ class TestEvaluation(unittest.TestCase):
             task = EvaluationTask(temp_dir,
                                   dtask.get_name(),
                                   dtask, params)
-            task.set_participant_database(fac.get_participant_database())
-            self.assertEqual(task._get_external_submitter_email(), None)
-            self.assertEqual(task.get_email_log(),
+            emailer = EvaluationEmailer(fac.get_participant_database(), None)
+            self.assertEqual(emailer._get_external_submitter_email(task),
+                             None)
+            self.assertEqual(emailer.get_message_log(),
                              '\nNo participant found with guid: 444\n')
         finally:
             shutil.rmtree(temp_dir)
@@ -705,9 +757,9 @@ class TestEvaluation(unittest.TestCase):
                               dtask, params)
         plist = [Participant('1name', '1d3rusername', '444',
                              None)]
-        task.set_participant_database(ParticipantDatabase(plist))
-        self.assertEqual(task._get_external_submitter_email(), None)
-        self.assertEqual(task.get_email_log(),
+        emailer = EvaluationEmailer(ParticipantDatabase(plist), None)
+        self.assertEqual(emailer._get_external_submitter_email(task), None)
+        self.assertEqual(emailer.get_message_log(),
                          '\nEmail not set for participant\n')
 
     def test_get_external_submitter_email_valid(self):
@@ -721,32 +773,49 @@ class TestEvaluation(unittest.TestCase):
         plist = [Participant('1name', '1d3rusername', '12345',
                              'bob@bob.com')]
         # try single email address
-        task.set_participant_database(ParticipantDatabase(plist))
-        emails = task._get_external_submitter_email()
+        emailer = EvaluationEmailer(ParticipantDatabase(plist), None)
+        emails = emailer._get_external_submitter_email(task)
         self.assertEqual(emails[0], 'bob@bob.com')
         self.assertEqual(len(emails), 1)
-        self.assertEqual(task.get_email_log(), None)
+        self.assertEqual(emailer.get_message_log(), None)
 
         # try multiple email address
         plist = [Participant('1name', '1d3rusername', '12345',
                              'bob@bob.com,joe@joe.com')]
         # try single email address
-        task.set_participant_database(ParticipantDatabase(plist))
-        emails = task._get_external_submitter_email()
+        emailer = EvaluationEmailer(ParticipantDatabase(plist), None)
+        emails = emailer._get_external_submitter_email(task)
         self.assertEqual(emails[0], 'bob@bob.com')
         self.assertEqual(emails[1], 'joe@joe.com')
         self.assertEqual(len(emails), 2)
-        self.assertEqual(task.get_email_log(), None)
+        self.assertEqual(emailer.get_message_log(), None)
 
-    def test_send_external_submission_email_no_database(self):
+    def test_send_evaluation_email_none_task(self):
+        emailer = EvaluationEmailer(None, None)
+        emailer.send_evaluation_email(None)
+        self.assertEqual(emailer.get_message_log(),
+                         '\nTask passed in is None\n')
+
+    def test_send_evaluation_email_not_external_task(self):
+        emailer = EvaluationEmailer(None, None)
+        task = EvaluationTask('/foo', 'blah' +
+                              EvaluationTask.EXT_SUBMISSION_SUFFIX,
+                              None,
+                              D3RParameters())
+        emailer.send_evaluation_email(task)
+        self.assertEqual(emailer.get_message_log(),
+                         '\nNot an external submission\n')
+
+    def test_send_evaluation_email_no_database(self):
         params = D3RParameters()
         dtask = D3RTask('/foo', params)
         dtask.set_name('444' + EvaluationTask.EXT_SUBMISSION_SUFFIX)
         task = EvaluationTask('/foo',
                               dtask.get_name(),
-                               dtask, params)
-        task._send_external_submission_email('foo')
-        self.assertEqual(task.get_email_log(),
+                              dtask, params)
+        emailer = EvaluationEmailer(None, None)
+        emailer.send_evaluation_email(task)
+        self.assertEqual(emailer.get_message_log(),
                          '\nParticipant database is None cannot send docking '
                          'evaluation email!!!\n')
 
@@ -764,25 +833,27 @@ class TestEvaluation(unittest.TestCase):
             plist = [Participant('1name', '1d3rusername', '12345',
                                  'bob@bob.com')]
             # try single email address
-            task.set_participant_database(ParticipantDatabase(plist))
-            emailer = SmtpEmailer()
+            smtpemailer = SmtpEmailer()
             mockserver = D3RParameters()
             mockserver.sendmail = Mock()
             mockserver.quit = Mock()
-            emailer.set_alternate_smtp_server(mockserver)
-            task.set_alternate_smtp_emailer(emailer)
-            task._send_external_submission_email('foo')
+            smtpemailer.set_alternate_smtp_server(mockserver)
+            emailer = EvaluationEmailer(ParticipantDatabase(plist), None)
+
+            emailer.set_alternate_smtp_emailer(smtpemailer)
+            emailer.send_evaluation_email(task)
             mockserver.quit.assert_any_call()
-            from_addr = emailer.generate_from_address_using_login_and_host()
-            self.assertEqual(task.get_email_log(),
+            from_addr = smtpemailer\
+                .generate_from_address_using_login_and_host()
+            self.assertEqual(emailer.get_message_log(),
                              '\nSent evaluation email to: bob@bob.com\n')
-            eval_sum = task._get_evaluation_summary()
-            subject, body = task\
-                ._generate_external_submission_email_body(eval_sum)
-            mime_msg = emailer._build_mime_message(from_addr, ['bob@bob.com'],
-                                                   subject,
-                                                   body,
-                                                   from_addr)
+            subject, body = emailer\
+                ._generate_external_submission_email_body(task)
+            mime_msg = smtpemailer._build_mime_message(from_addr,
+                                                       ['bob@bob.com'],
+                                                       subject,
+                                                       body,
+                                                       from_addr)
             mockserver.sendmail.assert_called_with(from_addr, ['bob@bob.com'],
                                                    mime_msg.as_string())
 
@@ -803,20 +874,18 @@ class TestEvaluation(unittest.TestCase):
             plist = [Participant('1name', '1d3rusername', '12345',
                                  'bob@bob.com')]
             # try single email address
-            task.set_participant_database(ParticipantDatabase(plist))
-            emailer = SmtpEmailer()
+            smtpemailer = SmtpEmailer()
             mockserver = D3RParameters()
             mockserver.sendmail = Mock(side_effect=IOError('ha'))
             mockserver.quit = Mock()
-            emailer.set_alternate_smtp_server(mockserver)
-            task.set_alternate_smtp_emailer(emailer)
-            task._send_external_submission_email('foo')
+            smtpemailer.set_alternate_smtp_server(mockserver)
+            emailer = EvaluationEmailer(ParticipantDatabase(plist), None)
+            emailer.set_alternate_smtp_emailer(smtpemailer)
+            emailer.send_evaluation_email(task)
             mockserver.quit.assert_any_call()
-            self.assertEqual(task.get_email_log(),
+            self.assertEqual(emailer.get_message_log(),
                              '\nCaught exception trying to email '
                              'participant : Caught exception ha\n')
-
-
 
         finally:
             shutil.rmtree(temp_dir)
@@ -835,44 +904,29 @@ class TestEvaluation(unittest.TestCase):
             plist = [Participant('1name', '1d3rusername', '1234',
                                  'bob@bob.com')]
             # try single email address
-            task.set_participant_database(ParticipantDatabase(plist))
-            emailer = SmtpEmailer()
-            task.set_alternate_smtp_emailer(emailer)
-            task._send_external_submission_email('foo')
-            from_addr = emailer.generate_from_address_using_login_and_host()
-            self.assertEqual(task.get_email_log(),
+            emailer = EvaluationEmailer(ParticipantDatabase(plist), None)
+            smtpemailer = SmtpEmailer()
+            emailer.set_alternate_smtp_emailer(smtpemailer)
+            emailer.send_evaluation_email(task)
+            self.assertEqual(emailer.get_message_log(),
                              '\nNo participant found with guid: 12345\n')
         finally:
             shutil.rmtree(temp_dir)
 
-
     def test_get_reply_to_address(self):
-        params = D3RParameters()
-
         # test get reply_to where no replytoaddress is set
-        task = EvaluationTask('/foo', '123' +
-                              EvaluationTask.EXT_SUBMISSION_SUFFIX,
-                              None, params)
-        val = task._get_reply_to_address('bob@bob.com')
+        emailer = EvaluationEmailer(None, None)
+        val = emailer._get_reply_to_address('bob@bob.com')
         self.assertEqual(val, 'bob@bob.com')
 
-        params.replytoaddress = 'joe@joe.com'
-        task = EvaluationTask('/foo', '123' +
-                              EvaluationTask.EXT_SUBMISSION_SUFFIX,
-                              None, params)
-        val = task._get_reply_to_address('bob@bob.com')
+        emailer = EvaluationEmailer(None, 'joe@joe.com')
+        val = emailer._get_reply_to_address('bob@bob.com')
         self.assertEqual(val, 'joe@joe.com')
-
 
     def test_get_smtp_emailer_valid(self):
         try:
-            params = D3RParameters()
-            params.smtp = 'localhost'
-            params.smtpport = '25'
-            task = EvaluationTask('/foo', '123' +
-                                  EvaluationTask.EXT_SUBMISSION_SUFFIX,
-                              None, params)
-            ss = task._get_smtp_emailer()
+            emailer = EvaluationEmailer(None, None)
+            ss = emailer._get_smtp_emailer()
             self.assertTrue(ss is not None)
         finally:
             pass
