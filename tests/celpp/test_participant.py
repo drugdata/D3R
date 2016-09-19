@@ -22,8 +22,6 @@ from d3r.celpp.participant import ParticipantDatabase
 from d3r.celpp.participant import ParticipantDatabaseFromCSVFactory
 
 
-
-
 class TestParticipant(unittest.TestCase):
     def setUp(self):
         pass
@@ -77,12 +75,11 @@ class TestParticipant(unittest.TestCase):
         p = pdb.get_participant_by_guid('12345')
         self.assertEqual(p.get_name(), '3name')
 
-
     def test_participant_database_from_csv_factory(self):
         temp_dir = tempfile.mkdtemp()
         try:
 
-            csvfile = os.path.join(temp_dir,'participant_list.csv')
+            csvfile = os.path.join(temp_dir, 'participant_list.csv')
 
             # parse None as file
             pfac = ParticipantDatabaseFromCSVFactory(None)
@@ -150,7 +147,6 @@ class TestParticipant(unittest.TestCase):
 
         finally:
             shutil.rmtree(temp_dir)
-
 
     def tearDown(self):
         pass
