@@ -229,6 +229,7 @@ class FileTransfer(object):
 
     def get_upload_summary(self):
         """Gets summary of previous `upload_files` invocation
+
             :returns: Human readable string summary of format
             # files (# bytes) files uploaded in # seconds to
             host HOST:REMOTE_DIR
@@ -236,6 +237,23 @@ class FileTransfer(object):
         summary = ''
         if self._error_msg is not None:
             summary = self._error_msg + '\n'
+
+        try:
+            logger.debug('host: ' + self.get_host())
+            host = self.get_host()
+        except TypeError:
+            logger.exception('Host not set')
+            host = 'Unset'
+
+        remote_dir = self.get_remote_dir()
+        logger.debug('remote dir: ' + remote_dir)
+
+        summary += (str(self._files_transferred) + ' (' +
+                    str(self._bytes_transferred) +
+                    ' bytes) files uploaded in ' +
+                    str(self._duration) + ' seconds to host ' +
+                    host + ':' + remote_dir)
+        logger.debug('upload summary: ' + summary)
         return summary
 
 
@@ -584,35 +602,6 @@ class FtpFileTransfer(FileTransfer):
             self._duration = int(time.time()) - start_time
             logger.debug('End of upload_files operation took ' +
                          str(self._duration) + ' seconds')
-
-    def get_upload_summary(self):
-        """Gets summary of previous `upload_files` invocation
-
-            :returns: Human readable string summary of format
-            # files (# bytes) files uploaded in # seconds to
-            host HOST:REMOTE_DIR
-        """
-        summary = ''
-        if self._error_msg is not None:
-            summary = self._error_msg + '\n'
-
-        try:
-            logger.debug('ftp host: ' + self.get_host())
-            host = self.get_host()
-        except TypeError:
-            logger.exception('Ftp host not set')
-            host = 'Unset'
-
-        remote_dir = self.get_remote_dir()
-        logger.debug('remote dir: ' + remote_dir)
-
-        summary += (str(self._files_transferred) + ' (' +
-                    str(self._bytes_transferred) +
-                    ' bytes) files uploaded in ' +
-                    str(self._duration) + ' seconds to host ' +
-                    host + ':' + remote_dir)
-        logger.debug('upload summary: ' + summary)
-        return summary
 
 
 class WebDavFileTransfer(FileTransfer):
