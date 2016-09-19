@@ -123,7 +123,8 @@ Below is a definition of the files and directories within this tar file:
 
                       2) Has the highest resolution among all apo proteins.
 
-               [hiTanimoto-<target id>_<candidate id>-<candidate ligand id>.pdb]
+               [hiTanimoto-<target id>_<candidate id>-<candidate ligand id>\
+                                                                          .pdb]
 
                    -- Candidate protein for docking which:
                       1) Passes the Blastnfilter criteria.
