@@ -38,7 +38,6 @@ class TestMakeBlastDBTask(unittest.TestCase):
         self.assertEqual(task.get_dir_name(), 'stage.1.makeblastdb')
         test_task.try_update_status_from_filesystem(self, task)
 
-
     def test_get_uploadable_files(self):
         temp_dir = tempfile.mkdtemp()
         try:
@@ -75,12 +74,8 @@ class TestMakeBlastDBTask(unittest.TestCase):
             self.assertEqual(len(flist), 2)
             flist.index(stdout)
             flist.index(stderr)
-
-
         finally:
             shutil.rmtree(temp_dir)
-
-
 
     def test_get_pdbseqres_txt_gz(self):
         params = D3RParameters()
