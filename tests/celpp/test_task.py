@@ -18,8 +18,6 @@ import platform
 import os
 
 from mock import Mock
-from email.mime.text import MIMEText
-
 
 from d3r.celpp.task import D3RParameters
 from d3r.celpp.task import UnsetPathError
@@ -590,11 +588,11 @@ class TestD3rTask(unittest.TestCase):
 
         mime_msge = emailer._build_mime_message('bob@bob.com',
                                                 ['joe@joe.com'], 'subby2',
-                                                'hi\n','rep@rep.com')
+                                                'hi\n', 'rep@rep.com')
 
         emailer.set_alternate_smtp_server(mockserver)
         emailer.send_email('bob@bob.com', ['joe@joe.com'], 'subby2',
-                               'hi\n', reply_to='rep@rep.com')
+                           'hi\n', reply_to='rep@rep.com')
         mockserver.quit.assert_any_call()
         mockserver.sendmail.assert_called_with('bob@bob.com', ['joe@joe.com'],
                                                mime_msge.as_string())
@@ -613,7 +611,6 @@ class TestD3rTask(unittest.TestCase):
             pass
 
         mockserver.quit.assert_any_call()
-
 
     def tearDown(self):
         pass
