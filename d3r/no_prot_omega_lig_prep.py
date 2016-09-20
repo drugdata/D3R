@@ -15,12 +15,7 @@ logger = logging.getLogger()
 logging.basicConfig( format  = '%(asctime)s: %(message)s', datefmt = '%m/%d/%y %I:%M:%S', filename = 'final.log', filemode = 'w', level   = logging.DEBUG )
 
 
-
-
-
-
-
-class OmegaPrep(Prep)
+class OmegaPrep(Prep):
 
     # This prep script will be required to output files with the appropriate suffixes
     OUTPUT_PROTEIN_SUFFIX = '.pdb'

@@ -5,21 +5,21 @@ import shutil
 import os
 import time
 import tarfile
+from d3r.celpp.filetransfer import WebDavFileTransfer
 
 __author__ = 'j5wagner'
 
 
 
-def download_tarball(unpack_dir, ftp_config, sleep, max_retry = 50):
-    from d3r.celpp import filetransfer
+def download_tarball(unpack_dir, config, sleep, max_retry = 50):
 
     os.chdir(unpack_dir)
 
-    f_f_t_obj = filetransfer.FtpFileTransfer(ftp_config)
+    f_f_t_obj = WebDavFileTransfer(config)
     f_f_t_obj.connect()
     retries = 0
     while 1:
-        f_f_t_obj.download_file('/celppweekly/challengedata/latest.txt','./latest.txt')
+        f_f_t_obj.download_file('/dav/celppweekly/challengedata/latest.txt','./latest.txt')
         if os.path.getsize('latest.txt') != 0:
             break
         logging.info('Retry # %i: latest.txt not yet available from challengedata directory' %(retries))
@@ -30,7 +30,7 @@ def download_tarball(unpack_dir, ftp_config, sleep, max_retry = 50):
             return False
         
     chal_tar_name = open('latest.txt').read().strip()
-    box_chal_tar_name = '/celppweekly/challengedata/' + chal_tar_name
+    box_chal_tar_name = '/dav/celppweekly/challengedata/' + chal_tar_name
     logging.info('Downloaded latest.txt. Challenge package name is %s' %(box_chal_tar_name))
     
     retries = 0
@@ -46,9 +46,6 @@ def download_tarball(unpack_dir, ftp_config, sleep, max_retry = 50):
             return False
         
     return chal_tar_name
-    
-
-    
 
 
 def main_get_challenge_data(unpack_dir, ftp_config, local_data_file, sleep):
@@ -71,8 +68,6 @@ def main_get_challenge_data(unpack_dir, ftp_config, local_data_file, sleep):
             logging.info('Specified local data package %s does not exist. Exiting.' %(local_data_file))
             return False
         chal_tar_name = abs_local_data_file
-        
-                   
 
     ## Unpack it in the specified directory
     os.chdir(abs_unpack_dir)

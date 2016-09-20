@@ -9,6 +9,7 @@ import shutil
 from d3r.celpp.task import D3RTask
 from d3r.celpp.challengedata import ChallengeDataTask
 from d3r.celpp.evaluation import EvaluationTaskFactory
+from d3r.celpp.evaluation import EvaluationTask
 from d3r.celpp.filetransfer import FtpFileTransfer
 
 logger = logging.getLogger(__name__)
@@ -102,7 +103,7 @@ class ExternalDataSubmissionFactory(object):
         """
         try:
             ft = self.get_file_transfer()
-            latest_txt = os.path.join(ft.get_ftp_remote_challenge_dir(),
+            latest_txt = os.path.join(ft.get_remote_challenge_dir(),
                                       ChallengeDataTask.LATEST_TXT)
             logger.info('Attempting to remove ' + latest_txt)
             val = ft.delete_file(latest_txt)
@@ -127,7 +128,7 @@ class ExternalDataSubmissionFactory(object):
         try:
             self._file_transfer.connect()
             self._remove_latest_txt()
-            subdir = self._file_transfer.get_ftp_remote_submission_dir()
+            subdir = self._file_transfer.get_remote_submission_dir()
             dlist = self._get_submission_dirs(subdir)
             for d in dlist:
                 chall_file = self._get_challenge_data_package_file(subdir, d)
@@ -154,11 +155,9 @@ class ExternalDataSubmissionTask(D3RTask):
     """Downloads external user docking Submissions
     """
 
-    EXT_SUBMISSION_SUFFIX = '.extsubmission'
-
     def __init__(self, path, name, remotefile, args):
         super(ExternalDataSubmissionTask, self).__init__(path, args)
-        self.set_name(name + ExternalDataSubmissionTask.EXT_SUBMISSION_SUFFIX)
+        self.set_name(name + EvaluationTask.EXT_SUBMISSION_SUFFIX)
         self.set_stage(EvaluationTaskFactory.DOCKSTAGE)
         self.set_status(D3RTask.UNKNOWN_STATUS)
         self.set_remote_challenge_data_package(remotefile)

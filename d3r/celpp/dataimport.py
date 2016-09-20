@@ -24,6 +24,7 @@ class DataImportTask(D3RTask):
     new_release_structure_sequence.tsv, and
     new_release_crystallization_pH.tsv from the web
     """
+    PARTICIPANT_LIST_CSV = "participant_list.csv"
     NONPOLYMER_TSV = "new_release_structure_nonpolymer.tsv"
     SEQUENCE_TSV = "new_release_structure_sequence.tsv"
     CRYSTALPH_TSV = "new_release_crystallization_pH.tsv"
@@ -55,6 +56,44 @@ class DataImportTask(D3RTask):
         self._maxretries = 3
         self._retrysleep = 1
 
+    def get_uploadable_files(self):
+        """Returns list of files that can be uploaded to remote server
+
+           List will contain these files in addition to stderr/stdout files
+           if they are found on the filesystem
+
+           new_release_structure_nonpolymer.tsv
+           new_release_structure_sequence.tsv
+           new_release_crystallization_pH.tsv
+           Components-inchi.ich
+
+           :returns: list of files that can be uploaded.
+        """
+        # get the stderr/stdout files
+        file_list = super(DataImportTask, self).get_uploadable_files()
+
+        compinchi = self.get_components_inchi_file()
+
+        if os.path.isfile(compinchi):
+            file_list.append(compinchi)
+
+        crystal = self.get_crystalph_tsv()
+
+        if os.path.isfile(crystal):
+            file_list.append(crystal)
+
+        nonpoly = self.get_nonpolymer_tsv()
+
+        if os.path.isfile(nonpoly):
+            file_list.append(nonpoly)
+
+        seq = self.get_sequence_tsv()
+
+        if os.path.isfile(seq):
+            file_list.append(seq)
+
+        return file_list
+
     def get_nonpolymer_tsv(self):
         """Returns path to new_release_structure_nonpolymer.tsv file
         :return: full path to DataImportTask.NONPOLYMER_TSV file
@@ -68,6 +107,13 @@ class DataImportTask(D3RTask):
         """
         return os.path.join(self.get_dir(),
                             DataImportTask.SEQUENCE_TSV)
+
+    def get_participant_list_csv(self):
+        """Returns path to participant_list.csv file
+        :returns: full path to DataImportTask.PARTICIPANT_LIST_CSV file
+        """
+        return os.path.join(self.get_dir(),
+                            DataImportTask.PARTICIPANT_LIST_CSV)
 
     def get_crystalph_tsv(self):
         """Returns path to new_release_crystallization_pH.tsv file
@@ -341,6 +387,40 @@ class DataImportTask(D3RTask):
             self.end()
         return False
 
+    def _download_participant_list_csv(self):
+        """Downloads from ftp the DataImportTask.PARTICIPANT_LIST_CSV file
+           If there is an error. A message is appended to email log, but its
+           not considered a failure
+        """
+        localfile = self.get_participant_list_csv()
+
+        try:
+            ft = self.get_file_transfer()
+            ft.connect()
+            remotefile = os.path.join(ft.get_remote_dir(),
+                                      DataImportTask.PARTICIPANT_LIST_CSV)
+            logger.debug('Downloading ' + remotefile + ' to ' +
+                         localfile)
+            ft.download_file(remotefile,
+                             localfile)
+        except Exception as e:
+            logger.warning('Caught exception, but not considering this fatal')
+            self.append_to_email_log('\nWARNING: Unable to download ' +
+                                     DataImportTask.PARTICIPANT_LIST_CSV +
+                                     ' which means external users will NOT '
+                                     'get evaluation email : ' + str(e) + '\n')
+            return
+        finally:
+            try:
+                ft.disconnect()
+            except Exception as e:
+                logger.warning('Caught exception trying to disconnect')
+        if not os.path.isfile(localfile):
+            self.append_to_email_log('\nWARNING: ' +
+                                     DataImportTask.PARTICIPANT_LIST_CSV +
+                                     ' not downloaded which means external '
+                                     'users will NOT get evaluation email\n')
+
     def run(self):
         """Downloads Components-inchi.ich
 
@@ -379,6 +459,10 @@ class DataImportTask(D3RTask):
         # called end() and set_error()
         if self._download_files(url) is False:
             return
+
+        # download the participant_list.csv file
+        # if its missing no biggy
+        self._download_participant_list_csv()
 
         # Compare TSV files with pdb_seqres.txt file to see if there
         # are any duplicates issue #15
