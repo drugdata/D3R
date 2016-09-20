@@ -10,6 +10,7 @@ from d3r.celpp.dataimport import DataImportTask
 from d3r.celpp.participant import ParticipantDatabaseFromCSVFactory
 from d3r.celpp import util
 from d3r.celpp.task import SmtpEmailer
+from d3r.celpp.task import Attachment
 
 
 logger = logging.getLogger(__name__)
@@ -263,8 +264,11 @@ class EvaluationEmailer(object):
 
             reply_to = self._get_reply_to_address(from_addr)
 
+            rmsd = Attachment(etask.get_rmsd_txt(), 'rmsd.txt')
+
             emailer.send_email(from_addr, to_list, subject, msg,
-                               reply_to=reply_to)
+                               reply_to=reply_to,
+                               attachments=[rmsd])
             self._append_to_message_log('\nSent evaluation email to: ' +
                                         ", ".join(to_list) + '\n')
         except Exception as e:
