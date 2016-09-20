@@ -697,7 +697,7 @@ class SmtpEmailer(object):
         self._alt_smtp_server = server
 
     def send_email(self, from_address, to_list, subject, message,
-                   reply_to=None, attachments=None, htmlmessage=None):
+                   reply_to=None, attachments=None):
         """Sends email
         :param from_address: from email address
         :param to_list: list of email addresses as strings to send email to
@@ -767,22 +767,21 @@ class SmtpEmailer(object):
                 continue
             ctype, encoding = mimetypes.guess_type(fname)
             if ctype is None or encoding is not None:
-                # No guess could be made so use a binary type.
+                # go with binary type if we did not get a guess
                 ctype = 'application/octet-stream'
             maintype, subtype = ctype.split('/', 1)
             if maintype == 'text':
+                logger.debug('Attaching text file ' + fname)
                 fp = open(fname)
                 attach = MIMEText(fp.read(), _subtype=subtype)
                 fp.close()
             elif maintype == 'image':
+                logger.debug('Attaching image file ' + fname)
                 fp = open(fname, 'rb')
                 attach = MIMEImage(fp.read(), _subtype=subtype)
                 fp.close()
-            elif maintype == 'audio':
-                fp = open(fname, 'rb')
-                attach = MIMEAudio(fp.read(), _subtype=subtype)
-                fp.close()
             else:
+                logger.debug('Attaching unknown file ' + fname)
                 fp = open(fname, 'rb')
                 attach = MIMEBase(maintype, subtype)
                 attach.set_payload(fp.read())
@@ -818,8 +817,9 @@ class SmtpEmailer(object):
             msg_root.add_header('reply-to', reply_to)
 
         msg_root.attach(MIMEText(message, "plain"))
-        msg_root.attach(MIMEText('<pre>\n' + message + '\n</pre>\n', "html"))
-        msg_root.preamble = ('You need a MIME enabled mail reader to see this '
-                             'message')
+        updated_msg_root = self._append_attachments(msg_root, attachments)
+        updated_msg_root.attach(MIMEText('<pre>\n' + message + '\n</pre>\n', "html"))
+        updated_msg_root.preamble = ('You need a MIME enabled mail reader to see this '
+                                     'message')
 
-        return self._append_attachments(msg_root, attachments)
+        return updated_msg_root
