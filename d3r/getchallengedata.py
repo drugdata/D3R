@@ -19,7 +19,7 @@ def download_tarball(unpack_dir, config, sleep, max_retry = 50):
     f_f_t_obj.connect()
     retries = 0
     while 1:
-        f_f_t_obj.download_file('/celppweekly/challengedata/latest.txt','./latest.txt')
+        f_f_t_obj.download_file('/dav/celppweekly/challengedata/latest.txt','./latest.txt')
         if os.path.getsize('latest.txt') != 0:
             break
         logging.info('Retry # %i: latest.txt not yet available from challengedata directory' %(retries))
@@ -30,7 +30,7 @@ def download_tarball(unpack_dir, config, sleep, max_retry = 50):
             return False
         
     chal_tar_name = open('latest.txt').read().strip()
-    box_chal_tar_name = '/celppweekly/challengedata/' + chal_tar_name
+    box_chal_tar_name = '/dav/celppweekly/challengedata/' + chal_tar_name
     logging.info('Downloaded latest.txt. Challenge package name is %s' %(box_chal_tar_name))
     
     retries = 0
