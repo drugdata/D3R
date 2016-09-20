@@ -1,21 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-
-import unittest
-import tempfile
-import os.path
-
 """
 test_task
 ----------------------------------
 
 Tests for `task` module.
 """
-
+import unittest
+import tempfile
 import shutil
 import platform
 import os
+import gzip
+from email.mime.multipart import MIMEMultipart
 
 from mock import Mock
 
@@ -30,7 +28,6 @@ from d3r.celpp.task import SmtpEmailer
 from d3r.celpp.task import EmailSendError
 from d3r.celpp.task import Attachment
 from d3r.celpp.filetransfer import FtpFileTransfer
-
 
 
 class MockException(Exception):
@@ -613,6 +610,67 @@ class TestD3rTask(unittest.TestCase):
         a = Attachment('/foo', 'hi')
         self.assertEqual(a.get_desired_name(), 'hi')
         self.assertEqual(a.get_file_to_attach(), '/foo')
+
+    def test_append_attachments(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            emailer = SmtpEmailer()
+            # try no attachments
+            msg_root = MIMEMultipart("alternative")
+            res = emailer._append_attachments(msg_root, None)
+            self.assertEqual(msg_root, res)
+
+            # try 1 text attachment
+            txtfile = os.path.join(temp_dir,'my.txt')
+            f = open(txtfile, 'w')
+            f.write('hello')
+            f.flush()
+            f.close()
+            msg_root = MIMEMultipart("alternative")
+            a = Attachment(txtfile,'renamed.txt')
+            res = emailer._append_attachments(msg_root, [a])
+            res.as_string().index('Content-Type: text/plain; charset="us-ascii"')
+            res.as_string().index('Content-Disposition: attachment; filename="renamed.txt"')
+            res.as_string().index('hello')
+
+            # try 1 image attachment
+            img = os.path.join(temp_dir,'yo.ppm')
+            f = open(img, 'w')
+            f.write('P6\n1 1\n255\n')
+            f.write('%c' % 255)
+            f.flush()
+            f.close()
+            msg_root = MIMEMultipart("alternative")
+            b = Attachment(img, None)
+            res = emailer._append_attachments(msg_root, [b])
+            res.as_string().index('Content-Type: image/x-portable-pixmap')
+            res.as_string().index('Content-Disposition: attachment; filename="yo.ppm"')
+
+            # try 1 gzip attachment
+            mygz = os.path.join(temp_dir, 'foo.gz')
+            f = gzip.open(mygz, 'wb')
+            f.write('some compressed data')
+            f.flush()
+            f.close()
+            c = Attachment(mygz, 'well.gz')
+            res = emailer._append_attachments(msg_root, [c])
+            res.as_string().index('Content-Type: application/octet-stream')
+            res.as_string().index('Content-Disposition: attachment; filename="well.gz"')
+
+            # try 3 attachments above together
+            msg_root = MIMEMultipart("alternative")
+            res = emailer._append_attachments(msg_root, [a, b, c])
+            res.as_string().index('Content-Type: text/plain; charset="us-ascii"')
+            res.as_string().index('Content-Disposition: attachment; filename="renamed.txt"')
+            res.as_string().index('hello')
+
+            res.as_string().index('Content-Type: image/x-portable-pixmap')
+            res.as_string().index('Content-Disposition: attachment; filename="yo.ppm"')
+
+            res.as_string().index('Content-Type: application/octet-stream')
+            res.as_string().index('Content-Disposition: attachment; filename="well.gz"')
+        finally:
+            shutil.rmtree(temp_dir)
 
     def tearDown(self):
         pass
