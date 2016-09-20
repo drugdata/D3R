@@ -109,8 +109,8 @@ def main_pack_dock_results(dock_dir, pack_dir, ftp_config):
     f_f_t_obj = WebDavFileTransfer(abs_ftp_config)
     f_f_t_obj.connect()
     f_f_t_obj.upload_file_direct(abs_tar_name,
-                                 '/jwagtest',
-                                 #'/celppweekly/usersubmissions/12345/',
+                                 '/dav/jwagtest',
+                                 #'/dav/celppweekly/usersubmissions/12345/',
                                  tar_base_name)
     logging.info(f_f_t_obj.get_upload_summary())
     f_f_t_obj.disconnect()
