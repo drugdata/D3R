@@ -830,6 +830,11 @@ class TestEvaluation(unittest.TestCase):
             task = EvaluationTask(temp_dir,
                                   dtask.get_name(),
                                   dtask, params)
+            task.create_dir()
+            f = open(task.get_rmsd_txt(), 'w')
+            f.write('hi\n')
+            f.flush()
+            f.close()
             plist = [Participant('1name', '1d3rusername', '12345',
                                  'bob@bob.com')]
             # try single email address
