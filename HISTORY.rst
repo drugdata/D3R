@@ -3,6 +3,41 @@
 History
 -------
 
+1.6.0 (????)
+-------------------
+
+* Evaluation task now emails results of evaluation to external 
+  submitter. Issues #49,#81
+
+* Adjusted files uploaded to ftp server in EvaluationTask to 
+  reflect changes in output from genchallengedata.py script.
+  Issue #80
+
+* Added WebDavFileTransfer class to enable upload & download
+  of files via WebDa for celppade tools. Issue #76
+
+* Added tsv files and Components-inchi.ich files to list of 
+  files uploaded to ftp by DataImportTask. Issue #78
+
+* Updated challenge data package readme.txt to include documentation
+  for hiTanimoto. Issue #75
+
+* Added pdb_seqres.txt.gz to list of files uploaded to ftp by
+  MakeBlastDBTask. Issue #77.
+
+1.5.0 (2016-09-11)
+--------------------
+
+* Modified blastnfilter candidate txt file by adding hiTanimoto and 
+  adding more information to hiResHolo and SMCSS.
+
+* Genchallengedata.py modified to keep single chains for all holo
+  proteins (LMCSS, SMCSS, hiResHolo, hiTanimoto)
+
+* In blastnfilter, hiResHolo now only has top structure 
+  reported and only one chain. Where top structure is 
+  highest resolution hit.
+
 1.4.0 (2016-08-11)
 --------------------
 

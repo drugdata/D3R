@@ -21,7 +21,8 @@ requirements = [
     "biopython",
     "xlsxwriter",
     "ftpretty",
-    "python-dateutil"
+    "python-dateutil",
+    "easywebdav"
 ]
 
 test_requirements = [
@@ -32,12 +33,13 @@ test_requirements = [
     "xlsxwriter",
     "ftpretty",
     "python-dateutil",
-    "mock"
+    "mock",
+    "easywebdav"
 ]
 
 setup(
     name='d3r',
-    version='1.4.0',
+    version='1.6.0',
     description='Drug Design Data Resource CELPP Runner is an application to run the filtering, docking, and '
                 'evaluation of new sequences from wwpdb',
     long_description=readme + '\n\n' + history,
@@ -48,7 +50,8 @@ setup(
     author_email='drugdesigndata@gmail.com',
     url='https://github.com/drugdata/D3R',
     packages=[
-        'd3r', 'd3r.blast', 'd3r.filter', 'd3r.utilities', 'd3r.celpp'
+        'd3r', 'd3r.blast', 'd3r.filter', 'd3r.utilities', 'd3r.celpp', 
+        'd3r.celppade'
     ],
     package_dir={'d3r':
                  'd3r'},
@@ -71,7 +74,9 @@ setup(
                'd3r/postanalysis.py', 'd3r/proteinligprep.py',
                'd3r/glidedocking.py', 'd3r/evaluate.py',
                'd3r/celppreports.py', 'd3r/vinadocking.py',
-               'd3r/genchallengedata.py','d3r/chimera_proteinligprep.py'],
+               'd3r/genchallengedata.py','d3r/chimera_proteinligprep.py',
+               'd3r/getchallengedata.py','d3r/packdockingresults.py'
+               ],
     test_suite='tests',
     tests_require=test_requirements
 )

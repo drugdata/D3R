@@ -245,7 +245,7 @@ class TestExternalSubmission(unittest.TestCase):
             mockft = D3RParameters()
             mockft.connect = Mock()
             mockft.disconnect = Mock()
-            mockft.get_ftp_remote_submission_dir = Mock(return_value='/remote')
+            mockft.get_remote_submission_dir = Mock(return_value='/remote')
             mockft.list_dirs = Mock(return_value=['yo'])
             mockft.list_files = Mock(return_value=['hi',
                                                    'celpp_week13_2015' + dr +
@@ -272,10 +272,10 @@ class TestExternalSubmission(unittest.TestCase):
             mockft = D3RParameters()
             mockft.connect = Mock()
             mockft.disconnect = Mock()
-            mockft.get_ftp_remote_challenge_dir = Mock(return_value='/chall')
+            mockft.get_remote_challenge_dir = Mock(return_value='/chall')
             mockft.delete_file = Mock(return_value=False)
 
-            mockft.get_ftp_remote_submission_dir = Mock(return_value='/remote')
+            mockft.get_remote_submission_dir = Mock(return_value='/remote')
             mockft.list_dirs = Mock(return_value=['yo'])
             mockft.list_files = Mock(return_value=['hi',
                                                    'celpp_week13_2017' + dr +
@@ -307,8 +307,8 @@ class TestExternalSubmission(unittest.TestCase):
             mockft = D3RParameters()
             mockft.connect = Mock()
             mockft.delete_file = Mock(return_value=True)
-            mockft.get_ftp_remote_challenge_dir = Mock(return_value='/chall')
-            mockft.get_ftp_remote_submission_dir = Mock(return_value='/remote')
+            mockft.get_remote_challenge_dir = Mock(return_value='/chall')
+            mockft.get_remote_submission_dir = Mock(return_value='/remote')
             mockft.list_dirs = Mock(return_value=['yo', 'yuck'])
             mockft.list_files = Mock(return_value=['hi',
                                                    'celpp_week13_2017' + dr +
