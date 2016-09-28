@@ -31,8 +31,6 @@ class DataImportTask(D3RTask):
     CRYSTALPH_TSV = "new_release_crystallization_pH.tsv"
     COMPINCHI_ICH = "Components-inchi.ich"
 
-
-
     # standard to append to NON_POLYMER_TSV file
     NONPOLYMER_TSV_STANDARD = "1FCZ    156     InChI=1S/C24H26O3/c1-23(2)13-" \
                               "14-24(3,4)20-15-18(10-11-19(20)23)21(25)12-7-" \
@@ -241,15 +239,18 @@ class DataImportTask(D3RTask):
     def append_standard_to_files(self):
         """Appends standard 1FCZ to tsv files as mapped below
 
-           NONPOLYMER_TSV_STANDARD is appended to get_nonpolymer_tsv()
-           CRYSTALPH_TSV_STANDARD is appended to get_crystalph_tsv()
-           SEQUENCE_TSV_STANDARD is appended to get_sequence_tsv()
+           NONPOLYMER_TSV_STANDARD is appended to `get_nonpolymer_tsv()`
+           CRYSTALPH_TSV_STANDARD is appended to `get_crystalph_tsv()`
+           SEQUENCE_TSV_STANDARD is appended to `get_sequence_tsv()`
+           SEQUENCE_TSV_STANDARD is appended to `get_oldsequence_tsv()`
         """
         logger.debug('Appending 1FCZ standard to tsv files')
         try:
             util.append_string_to_file(self.get_nonpolymer_tsv(),
                                        DataImportTask.NONPOLYMER_TSV_STANDARD)
             util.append_string_to_file(self.get_sequence_tsv(),
+                                       DataImportTask.SEQUENCE_TSV_STANDARD)
+            util.append_string_to_file(self.get_oldsequence_tsv(),
                                        DataImportTask.SEQUENCE_TSV_STANDARD)
             util.append_string_to_file(self.get_crystalph_tsv(),
                                        DataImportTask.CRYSTALPH_TSV_STANDARD)
@@ -271,7 +272,8 @@ class DataImportTask(D3RTask):
 
             self.append_to_email_log(str(seq_count) + ' ' +
                                      DataImportTask.SEQUENCE_TSV + '\n')
-
+            self.append_to_email_log(str(seq_count) + ' ' +
+                                     DataImportTask.OLDSEQUENCE_TSV + '\n')
             self.append_to_email_log(str(crystal_count) + ' ' +
                                      DataImportTask.CRYSTALPH_TSV + '\n')
 
