@@ -26,9 +26,12 @@ class DataImportTask(D3RTask):
     """
     PARTICIPANT_LIST_CSV = "participant_list.csv"
     NONPOLYMER_TSV = "new_release_structure_nonpolymer.tsv"
-    SEQUENCE_TSV = "new_release_structure_sequence.tsv"
+    OLDSEQUENCE_TSV = "new_release_structure_sequence.tsv"
+    SEQUENCE_TSV = "new_release_structure_sequence_canonical.tsv"
     CRYSTALPH_TSV = "new_release_crystallization_pH.tsv"
     COMPINCHI_ICH = "Components-inchi.ich"
+
+
 
     # standard to append to NON_POLYMER_TSV file
     NONPOLYMER_TSV_STANDARD = "1FCZ    156     InChI=1S/C24H26O3/c1-23(2)13-" \
@@ -101,8 +104,15 @@ class DataImportTask(D3RTask):
         return os.path.join(self.get_dir(),
                             DataImportTask.NONPOLYMER_TSV)
 
-    def get_sequence_tsv(self):
+    def get_oldsequence_tsv(self):
         """Returns path to new_release_structure_sequence.tsv file
+        :return: full path to DataImportTask.SEQUENCE_TSV file
+        """
+        return os.path.join(self.get_dir(),
+                            DataImportTask.OLDSEQUENCE_TSV)
+
+    def get_sequence_tsv(self):
+        """Returns path to new_release_structure_sequence_canonical.tsv file
         :return: full path to DataImportTask.SEQUENCE_TSV file
         """
         return os.path.join(self.get_dir(),
@@ -357,6 +367,15 @@ class DataImportTask(D3RTask):
 
             download_path = self.get_sequence_tsv()
             util.download_url_to_file(sequence,
+                                      download_path,
+                                      self._maxretries,
+                                      self._retrysleep)
+
+            oldsequence = url + '/' + DataImportTask.OLDSEQUENCE_TSV
+            self._wait_for_url_to_be_updated(oldsequence)
+
+            download_path = self.get_oldsequence_tsv()
+            util.download_url_to_file(oldsequence,
                                       download_path,
                                       self._maxretries,
                                       self._retrysleep)

@@ -102,7 +102,7 @@ class TestDataImportTask(unittest.TestCase):
         task = DataImportTask('/foo', params)
         self.assertEqual(task.get_sequence_tsv(),
                          '/foo/' + task.get_dir_name() +
-                         '/new_release_structure_sequence.tsv')
+                         '/new_release_structure_sequence_canonical.tsv')
 
     def test_get_crystalph_tsv(self):
         params = D3RParameters()

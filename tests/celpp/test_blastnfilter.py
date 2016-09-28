@@ -274,21 +274,21 @@ class TestBlastNFilterTask(unittest.TestCase):
             echo_out = f.read().replace('\n', '')
             echo_out.index('--nonpolymertsv ' +
                            os.path.join(temp_dir, dataimport.get_dir_name(),
-                                        'new_release_structure_nonpolymer.tsv'
+                                        DataImportTask.NONPOLYMER_TSV
                                         ))
             echo_out.index(' --sequencetsv ' +
                            os.path.join(temp_dir, dataimport.get_dir_name(),
-                                        'new_release_structure_sequence.tsv'))
+                                        DataImportTask.SEQUENCE_TSV))
             echo_out.index(' --pdbblastdb ' +
                            os.path.join(temp_dir, makeblast.get_dir_name()))
             echo_out.index(' --compinchi ' +
                            os.path.join(temp_dir, dataimport.get_dir_name(),
-                                        'Components-inchi.ich'))
+                                        DataImportTask.COMPINCHI_ICH))
             echo_out.index(' --outdir ' +
                            os.path.join(temp_dir, blasttask.get_dir_name()))
             echo_out.index(' --crystalpH ' +
                            os.path.join(temp_dir, dataimport.get_dir_name(),
-                                        'new_release_crystallization_pH.tsv'))
+                                        DataImportTask.CRYSTALPH_TSV))
             echo_out.index(' --pdbdb /pdbdb ')
             f.close()
 
