@@ -7,7 +7,6 @@ import smtplib
 import platform
 import mimetypes
 from email import encoders
-from email.mime.audio import MIMEAudio
 from email.mime.base import MIMEBase
 from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
@@ -818,8 +817,9 @@ class SmtpEmailer(object):
 
         msg_root.attach(MIMEText(message, "plain"))
         updated_msg_root = self._append_attachments(msg_root, attachments)
-        updated_msg_root.attach(MIMEText('<pre>\n' + message + '\n</pre>\n', "html"))
-        updated_msg_root.preamble = ('You need a MIME enabled mail reader to see this '
-                                     'message')
+        updated_msg_root.attach(MIMEText('<pre>\n' + message + '\n</pre>\n',
+                                         "html"))
+        updated_msg_root.preamble = ('You need a MIME enabled mail reader '
+                                     'to see this message')
 
         return updated_msg_root
