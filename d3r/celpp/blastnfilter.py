@@ -333,6 +333,9 @@ class BlastNFilterTask(D3RTask):
         if not os.path.isfile(sequencetsv):
             logger.warning(sequencetsv + ' file not found. falling '
                                          'back to old file')
+            self.append_to_email_log('\n ' + sequencetsv + ' file not found ' +
+                                     'falling back to ' +
+                                     data_import.get_oldsequence_tsv() + '\n')
             sequencetsv = data_import.get_oldsequence_tsv()
 
         cmd_to_run = (self.get_args().blastnfilter + ' --nonpolymertsv ' +
