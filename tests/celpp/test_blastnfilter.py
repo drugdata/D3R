@@ -225,7 +225,7 @@ class TestBlastNFilterTask(unittest.TestCase):
         finally:
             shutil.rmtree(tempDir)
 
-    def test_run_with_blast_success_postanalysis_fail(self):
+    def test_run_with_blast_success_usenewsequencetsv(self):
         temp_dir = tempfile.mkdtemp()
 
         try:
@@ -250,6 +250,10 @@ class TestBlastNFilterTask(unittest.TestCase):
             f.flush()
             f.close()
             os.chmod(params.postanalysis, stat.S_IRWXU)
+
+            dtask = DataImportTask(temp_dir, params)
+            dtask.create_dir()
+            open(dtask.get_sequence_tsv(), 'a').close()
 
             blasttask.run()
             self.assertEqual(blasttask.get_status(), D3RTask.COMPLETE_STATUS)
@@ -306,6 +310,96 @@ class TestBlastNFilterTask(unittest.TestCase):
             res.index('Output from summary.txt')
             res.index('  sequences:  177')
             res.index('  complexes:  149')
+            self.assertEqual(res.find(dataimport.get_sequence_tsv() +
+                                      ' file not found falling back to ' +
+                                      dataimport.get_oldsequence_tsv()), -1)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_run_with_blast_success_useoldseq_and_postanalysis_fail(self):
+        temp_dir = tempfile.mkdtemp()
+
+        try:
+            params = D3RParameters()
+            params.blastnfilter = '/bin/echo'
+            params.postanalysis = os.path.join(temp_dir, 'foo.py')
+            params.pdbdb = '/pdbdb'
+            blasttask = BlastNFilterTask(temp_dir, params)
+            blasttask._can_run = True
+
+            txt_file = os.path.join(blasttask.get_dir(), 'summary.txt')
+
+            txt_contents = ('INPUT SUMMARY\\n' +
+                            '  sequences:  177\\n' +
+                            '  complexes:  149\\n')
+            # create fake blastnfilter script that makes csv files
+            f = open(params.postanalysis, 'w')
+            f.write('#! /usr/bin/env python\n\n')
+            f.write('f = open(\'' + txt_file + '\', \'w\')\n')
+            f.write('f.write(\'' + txt_contents + '\\n\')\n')
+            f.write('f.flush()\nf.close()\n')
+            f.flush()
+            f.close()
+            os.chmod(params.postanalysis, stat.S_IRWXU)
+
+            blasttask.run()
+            self.assertEqual(blasttask.get_status(), D3RTask.COMPLETE_STATUS)
+            self.assertEqual(blasttask.get_error(), None)
+            complete_file = os.path.join(blasttask.get_dir(),
+                                         D3RTask.COMPLETE_FILE)
+
+            self.assertEqual(os.path.isfile(complete_file), True)
+
+            std_err_file = os.path.join(blasttask.get_dir(),
+                                        'echo.stderr')
+
+            self.assertEqual(os.path.isfile(std_err_file), True)
+
+            std_out_file = os.path.join(blasttask.get_dir(),
+                                        'echo.stdout')
+
+            dataimport = DataImportTask(temp_dir, params)
+            makeblast = MakeBlastDBTask(temp_dir, params)
+
+            f = open(std_out_file, 'r')
+            echo_out = f.read().replace('\n', '')
+            echo_out.index('--nonpolymertsv ' +
+                           os.path.join(temp_dir, dataimport.get_dir_name(),
+                                        DataImportTask.NONPOLYMER_TSV
+                                        ))
+            echo_out.index(' --sequencetsv ' +
+                           os.path.join(temp_dir, dataimport.get_dir_name(),
+                                        DataImportTask.OLDSEQUENCE_TSV))
+            echo_out.index(' --pdbblastdb ' +
+                           os.path.join(temp_dir, makeblast.get_dir_name()))
+            echo_out.index(' --compinchi ' +
+                           os.path.join(temp_dir, dataimport.get_dir_name(),
+                                        DataImportTask.COMPINCHI_ICH))
+            echo_out.index(' --outdir ' +
+                           os.path.join(temp_dir, blasttask.get_dir_name()))
+            echo_out.index(' --crystalpH ' +
+                           os.path.join(temp_dir, dataimport.get_dir_name(),
+                                        DataImportTask.CRYSTALPH_TSV))
+            echo_out.index(' --pdbdb /pdbdb ')
+            f.close()
+
+            self.assertEqual(os.path.isfile(std_out_file), True)
+            self.assertEquals(blasttask.get_status(), D3RTask.COMPLETE_STATUS)
+            self.assertEquals(os.path.exists(os.path.join(blasttask.get_dir(),
+                                                          'foo.py.stderr')),
+                              True)
+            self.assertEquals(os.path.exists(os.path.join(blasttask.get_dir(),
+                                                          'foo.py.stdout')),
+                              True)
+            res = blasttask.get_email_log().rstrip('\n')
+            res.index('/bin/echo')
+            res.index('# txt files found: 0')
+            res.index('Output from summary.txt')
+            res.index('  sequences:  177')
+            res.index('  complexes:  149')
+            res.index(dataimport.get_sequence_tsv() +
+                      ' file not found falling back to ' +
+                      dataimport.get_oldsequence_tsv())
         finally:
             shutil.rmtree(temp_dir)
 
@@ -339,7 +433,8 @@ class TestBlastNFilterTask(unittest.TestCase):
             echo_out = f.read().replace('\n', '')
             echo_out.index('--compinchi ' +
                            os.path.join(temp_dir, dataimport.get_dir_name(),
-                                        'Components-inchi.ich'))
+                                        DataImportTask.COMPINCHI_ICH))
+
             echo_out.index(' ' + os.path.join(temp_dir,
                                               blasttask.get_dir_name()))
             f.close()
