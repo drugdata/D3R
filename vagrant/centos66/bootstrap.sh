@@ -33,6 +33,7 @@ wget http://mgltools.scripps.edu/downloads/downloads/tars/releases/REL1.5.6/mglt
 tar -zxf mgltools_x86_64Linux2_1.5.6.tar.gz
 pushd mgltools_x86_64Linux2_1.5.6
 ./install.sh -d /usr/local/mgltools
+echo "export MGL_ROOT=/usr/local/mgltools" >> /home/vagrant/.bash_profile
 popd
 popd
 
@@ -72,6 +73,8 @@ if [ -f "/vagrant/Schrodinger_Suites_2016-2_Linux-x86_64.tar" ] ; then
   tar -xf Schrodinger_Suites_2016-2_Linux-x86_64.tar
   pushd /vagrant/Schrodinger_Suites_2016-2_Linux-x86_64
   ./INSTALL -d `pwd` -b -s /vagrant/schrodinger -k /usr/tmp -t /vagrant/schrodinger/thirdparty mmshare*.gz glide*.gz maestro*gz
+  echo "export SCHRODINGER=/vagrant/schrodinger" >> /home/vagrant/.bash_profile
+  echo "export SCHROD_LICENSE_FILE=<PUT LICENSE HERE>" >>  /home/vagrant/.bash_profile
   popd
   popd
 else
@@ -80,5 +83,7 @@ else
   echo "Download Schrodinger_Suites_2016-2_Linux-x86_64.tar"
   echo "tar -xf Schrodinger_Suites_2016-2_Linux-x86_64.tar"
   echo "cd Schrodinger_Suites_2016-2_Linux-x86_64"
-  echo "./INSTALL"
+  echo "./INSTALL-d `pwd` -b -s /vagrant/schrodinger -k /usr/tmp -t /vagrant/schrodinger/thirdparty mmshare*.gz glide*.gz maestro*gz"
+  echo "export SCHRODINGER=/vagrant/schrodinger" >> /home/vagrant/.bash_profile
+  echo "export SCHROD_LICENSE_FILE=<PUT LICENSE HERE>" >>  /home/vagrant/.bash_profile
 fi
