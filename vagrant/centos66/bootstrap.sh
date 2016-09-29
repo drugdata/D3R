@@ -8,7 +8,31 @@ yum install -y python-biopython python-virtualenv python-tox
 yum install -y pylint python-coverage libXft mesa-* openbabel
 yum install -y perl-Archive-Tar perl-List-MoreUtils xauth pymol
 
+#
+# install rdkit
+#
+pushd /vagrant
+wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh
+chmod a+x Miniconda2-latest-Linux-x86_64.sh
+./Miniconda2-latest-Linux-x86_64.sh -b -p /opt/miniconda2
+export PATH="/opt/miniconda2/bin:$PATH"
+echo "export PATH=/opt/miniconda2/bin:$PATH" >> /home/vagrant/.bash_profile
+conda update --yes conda
+conda install -y -c rdkit rdkit=2016.03.3
+
+# switch to conda root setup
+source activate root
+
+# make sure vagrant user is always under conda environment
+echo "source activate root" >> /home/vagrant/.bash_profile
+
+
 echo "pip installing some packages"
+pip install pip --upgrade
+pip install argparse
+pip install lockfile --upgrade
+pip install psutil
+pip install biopython
 pip install xlsxwriter
 pip install ftpretty
 pip install wheel
@@ -36,16 +60,6 @@ pushd mgltools_x86_64Linux2_1.5.6
 echo "export MGL_ROOT=/usr/local/mgltools" >> /home/vagrant/.bash_profile
 popd
 popd
-
-#
-# install rdkit
-pushd /vagrant
-wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh
-chmod a+x Miniconda2-latest-Linux-x86_64.sh
-./Miniconda2-latest-Linux-x86_64.sh -b -p /opt/miniconda2
-export PATH="/opt/miniconda2/bin:$PATH"
-conda update --yes conda
-conda install -y -c rdkit rdkit=2016.03.3
 
 if [ -f "/vagrant/chimera-1.10.2-linux_x86_64.bin" ] ; then
   pushd /vagrant
