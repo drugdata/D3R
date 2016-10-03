@@ -23,6 +23,7 @@ class FileTransfer(object):
     USER = 'user'
     PASS = 'pass'
     PATH = 'path'
+    CONTESTANTID = 'contestantid'
     CHALLENGEPATH = 'challengepath'
     SUBMISSIONPATH = 'submissionpath'
 
@@ -41,6 +42,7 @@ class FileTransfer(object):
         self._ftp_pass = None
         self._remote_dir = None
         self._error_msg = None
+        self._contestant_id = None
         self._remote_challenge_dir = None
         self._remote_submission_dir = None
 
@@ -59,6 +61,7 @@ class FileTransfer(object):
            user <USERNAME>
            pass <PASSWORD>
            path <BASE PATH ON REMOTE SERVER ie /foo>
+           contestantid <CELPP CONTESTANT ID>
            challengepath <BASE PATH ON REMOTE SERVER ie /challenge>
            submissionpath <BASE PATH ON REMOTE SERVER ie /submission>
 
@@ -68,12 +71,13 @@ class FileTransfer(object):
            user bob@bob.com
            pass 12345
            path /upload
+           contestantid 24680
            challengepath /challenge
            submissionpath /usersubmissions
 
            The above format matches the standard used
-           by NCFTP with the exception of `path` which
-           is custom to this class
+           by NCFTP with the exception of `path` and `contestantid`
+           which are custom to this class
 
            :param ftp_config: Path to ftp config file
            :raises IOError: If there was an error opening the file
@@ -96,6 +100,8 @@ class FileTransfer(object):
                     self.set_password(split_line[1].rstrip())
                 elif split_line[0] == FileTransfer.PATH:
                     self.set_remote_dir(split_line[1].rstrip())
+                elif split_line[0] == FileTransfer.CONTESTANTID:
+                    self.set_remote_contestant_id(split_line[1].rstrip())
                 elif split_line[0] == FileTransfer.CHALLENGEPATH:
                     self.set_remote_challenge_dir(split_line[1].rstrip())
                 elif split_line[0] == FileTransfer.SUBMISSIONPATH:
@@ -115,10 +121,20 @@ class FileTransfer(object):
         """
         self._alt_ftp_con = ftp_con
 
+    def get_contestant_id(self):
+        """Gets the contestant id
+        """
+        return self._contestant_id
+
+    def set_contestant_id(self, contestant_id):
+        """Sets the contestant id
+        """
+        self._contestant_id = contestant_id
+
     def set_remote_challenge_dir(self, challenge_dir):
         """Sets the remote challenge directory for ftp upload
         """
-        self._remote_challenge_dir = challenge_dir
+        self._contestant_id = challenge_dir
 
     def get_remote_challenge_dir(self):
         """Gets the remote challenge directory for ftp upload
