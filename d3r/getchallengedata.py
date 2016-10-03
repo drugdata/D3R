@@ -56,7 +56,6 @@ def main_get_challenge_data(unpack_dir, ftp_config, local_data_file, sleep):
         abs_ftp_config = None
     else:
         abs_ftp_config = os.path.abspath(ftp_config)
-    abs_local_data_file = os.path.abspath(local_data_file)
     ## Download most recent tarball
     
     if local_data_file == '':
@@ -65,6 +64,7 @@ def main_get_challenge_data(unpack_dir, ftp_config, local_data_file, sleep):
             logging.info('Unable to download challenge package. Exiting.')
             return False
     else:
+        abs_local_data_file = os.path.abspath(local_data_file)
         if not(os.path.exists(abs_local_data_file)):
             logging.info('Specified local data package %s does not exist. Exiting.' %(local_data_file))
             return False
