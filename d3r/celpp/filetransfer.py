@@ -101,7 +101,7 @@ class FileTransfer(object):
                 elif split_line[0] == FileTransfer.PATH:
                     self.set_remote_dir(split_line[1].rstrip())
                 elif split_line[0] == FileTransfer.CONTESTANTID:
-                    self.set_remote_contestant_id(split_line[1].rstrip())
+                    self.set_contestant_id(split_line[1].rstrip())
                 elif split_line[0] == FileTransfer.CHALLENGEPATH:
                     self.set_remote_challenge_dir(split_line[1].rstrip())
                 elif split_line[0] == FileTransfer.SUBMISSIONPATH:
