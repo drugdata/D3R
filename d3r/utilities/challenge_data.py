@@ -46,7 +46,7 @@ class ChallengeData(object):
             return False
 
         # Ensure that the week has at least one target
-        if len(self.week_challenge_dict[self.week_challenge_data.keys()[0]]) == 0:
+        if len(self.week_challenge_dict[self.week_challenge_dict.keys()[0]]) == 0:
             return False
 
         return True
