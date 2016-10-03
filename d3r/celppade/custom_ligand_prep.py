@@ -65,6 +65,12 @@ class LigandPrep(object):
             os.mkdir(pot_target_id)
             target_dir_path = os.path.join(abs_week_path, pot_target_id)
 
+            # Copy in <targ id>.txt file
+            origin_txt_file = os.path.join(target_dir_path,pot_targ_id+'.txt')
+            dest_txt_file = os.path.join(pot_target_id,pot_targ_id+'.txt')
+            shutil.copyfile(origin_txt_file, dest_txt_file)
+                            
+
             # Pull in the ligand inchi/smiles
             
             lig_smiles_files = glob.glob('%s/lig_*.smi' %(target_dir_path))
@@ -75,6 +81,8 @@ class LigandPrep(object):
             local_smiles_file = os.path.basename(lig_smiles_file)
             dest_smiles_file = os.path.join(pot_target_id, local_smiles_file)
             shutil.copyfile(lig_smiles_file, dest_smiles_file)
+
+  
             
             valid_targets[pot_target_id] = local_smiles_file
 
