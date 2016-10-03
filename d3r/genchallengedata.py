@@ -6,100 +6,25 @@ import sys
 import glob
 import logging
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem import AllChem as allChem
 import commands
+from Bio import PDB
 
+def split_chain(pdb_filename, out_path, pdb_id, chain_letters):
+    parser = PDB.PDBParser()
+    writer = PDB.PDBIO()
+    chain_letters = [chain.upper() for chain in chain_letters]
+    struct = parser.get_structure (pdb_id, pdb_filename)
+    writer.set_structure(struct)
+    writer.save(out_path, select=SelectChains(chain_letters))
 
-pymol_align_text = '''
-import __main__
-__main__.pymol_argv = [ 'pymol', '-c'] #put -cq here to suppress pymol output
-import pymol
-pymol.finish_launching()
-import sys
+class SelectChains(PDB.Select):
+    """ Only accept the specified chains when saving. """
+    def __init__(self, chain_letters):
+        self.chain_letters = chain_letters
 
-caAlignment = True
-proxim_filter_dist = 20
-
-#molPrefixes = ['LMCSS_splitted_receptor1',
-#               'SMCSS_splitted_receptor1',
-#               'hiResApo_splitted_receptor1',
-#               'hiResHolo_splitted_receptor1',]
-
-reference_pdb = sys.argv[1]
-mobile_pdb = sys.argv[2]
-print 'reference_pdb is', reference_pdb
-print 'mobie_pdb is', mobile_pdb
-
-reference_pdb_obj_name = reference_pdb.split('/')[-1].split('.pdb')[0]
-mobile_pdb_obj_name = mobile_pdb.split('/')[-1].split('.pdb')[0]
-
-pymol.cmd.load(reference_pdb)
-pymol.cmd.load(mobile_pdb)
-
-
-### Geometric filter ###
-# >>> help(pymol.cmd.pseudoatom)
-#Help on function pseudoatom in module pymol.creating:
-#
-#pseudoatom(object='', selection='', name='PS1', resn='PSD', resi='1', chain='P', segi='PSDO', elem='PS', vdw=-1.0, hetatm=1, b=0.0, q=0.0, color='', label='', pos=None, state=0, mode='rms', quiet=1,)
-
-center = open('center.txt').read().split()
-center = [float(i.strip(',')) for i in center]
-print center
-pymol.cmd.pseudoatom('LMCSS_lig_center', pos=center)
-pymol.cmd.select('reference',"(/%s////CA) and (byres (LMCSS_lig_center around %i))" %(reference_pdb_obj_name,proxim_filter_dist) )
-
-
-print
-print
-print '=========================='
-print "PROCESSING", mobile_pdb_obj_name
-
-
-### Secondary structure filter ###  
-# Get resnums and their SS types
-pymol.stored.tuples = []
-resiSS = pymol.cmd.iterate(mobile_pdb_obj_name,'stored.tuples.append((resn,resv,ss))')
-
-# Filter to "H" and "S" with list comp
-print "FILTERING FOR SS"
-ss_near_bs = [i for i in pymol.stored.tuples if i[2] in ['H','S']]
-resv_sel_str = '+'.join([str(i[1]) for i in ss_near_bs])
-
-
-### 3D alignment ###
-
-
-##  API reference  ##
-## http://www.pymolwiki.org/index.php/Align
-#cmd.align( string mobile, string target, float cutoff=2.0,
-#           int cycles=5, float gap=-10.0, float extend=-0.5,
-#           int max_gap=50, string object=None, string matrix='BLOSUM62',
-#           int mobile_state=0, int target_state=0, int quiet=1,
-#           int max_skip=0, int transform=1, int reset=0 )
-
-
-if caAlignment:
-    alnOut = pymol.cmd.align('/%s////CA'%(mobile_pdb_obj_name),
-                             'reference'
-                             )
-else:
-    alnOut = pymol.cmd.align('/%s////'%(mobile_pdb_obj_name),
-                             'reference',
-                             )
-pymol.cmd.save('rot-%s.pdb' %(mobile_pdb_obj_name),
-               '/%s' %(mobile_pdb_obj_name)
-               )
-print alnOut
-pymol.cmd.save('alignment_reference.pdb' ,
-               'reference'
-               )
-
-#print sys.stdout.read()
-pymol.cmd.quit()
-'''
-
-                                                                                                                                                                                           
+    def accept_chain(self, chain):
+        return (chain.get_id() in self.chain_letters)
 
 def parse_txt (txt_filename):
     #parsing the result txt file and give back the
@@ -114,9 +39,15 @@ def parse_txt (txt_filename):
     for line in lines:
         info_title = line.split(",")[0]
         info_value_1 = line.split(",")[1]
+        info_value_3 = False
         if line.split(",")[0] == "inchi":
             info_title = line.split(", InChI=")[0]
             info_value_1 = line.split(", InChI=")[1].split("\n")[0]
+        elif line.split(",")[0] in ["LMCSS", "SMCSS", "hiResHolo", "hiTanimoto"]:
+            info_title = line.split(",")[0]
+            info_value_1 = line.split(",")[1].strip()
+            info_value_2 = line.split(",")[2].strip()
+            info_value_3 = line.split(",")[3].split(":")[1].strip()
         else:
             try:
                 info_value_2 = line.split(",")[2].split("\n")[0].strip()
@@ -131,31 +62,25 @@ def parse_txt (txt_filename):
             #just use the first item if there are multiple entries (use the highest resolution one)
             if info_title not in info_dic:                    
                 info_dic[info_title] = info_value_1           
-        else:                                                 
+        if info_value_3:                                                 
             if info_title not in info_dic:                    
-                info_dic[info_title] = (info_value_1,info_value_2)           
+                info_dic[info_title] = (info_value_1,info_value_2, info_value_3)           
+        else:
+            if info_title not in info_dic:
+                info_dic[info_title] = (info_value_1,info_value_2) 
     #check if the query protein id is identical with the filename
     if not info_dic["query"] == target_name_txt:
         logging.info("The query pdb ID:%s is different from the filename: %s, need to check"%(info_dic["query"], target_name_txt)) 
     return info_dic  
 
-def align_proteins (target_protein, pre_prepare_protein, post_prepare_protein):
-    #commands.getoutput("$SCHRODINGER/utilities/structalign %s %s"%(target_protein, pre_prepare_protein))
-    with open('pymolAlign.py','wb') as of:
-        of.write(pymol_align_text)
-    stdout_file = 'pymol_align_%s_out' %(pre_prepare_protein)
-    stderr_file = 'pymol_align_%s_err' %(pre_prepare_protein)
-    cmd = "python pymolAlign.py %s %s 2> %s 1> %s"%(target_protein, pre_prepare_protein, stderr_file, stdout_file)
-    logging.info('Running alignment command %s' %(cmd))
-    commands.getoutput(cmd)
 
+def align_proteins (target_protein, pre_prepare_protein, post_prepare_protein):
+    commands.getoutput("$SCHRODINGER/utilities/structalign %s %s"%(target_protein, pre_prepare_protein))
     rotated_protein = "rot-" + pre_prepare_protein
-    stderr_output = open(stderr_file).read().strip()
-    if os.path.isfile(rotated_protein) and stderr_output== '':
+    if os.path.isfile(rotated_protein):
         commands.getoutput("mv %s %s"%(rotated_protein, post_prepare_protein))
         return True
     else:
-        logging.info('Alignment failed. Command was %s. Stderr output was %r' %(cmd, stderr_output))
         return False
 
 def generate_ligand (inchi, ligand_title, ):
@@ -170,9 +95,9 @@ def generate_ligand (inchi, ligand_title, ):
     inchi_file.writelines(valid_inchi)
     mol_filename = "lig_" + ligand_title + ".mol"
     #rd_mol_H = Chem.AddHs(rd_mol)
-    #AllChem.EmbedMolecule(rd_mol_H)
-    #AllChem.UFFOptimizeMolecule(rd_mol_H)
-    AllChem.Compute2DCoords(rd_mol)
+    #allChem.EmbedMolecule(rd_mol_H)
+    #allChem.UFFOptimizeMolecule(rd_mol_H)
+    allChem.Compute2DCoords(rd_mol)
     Chem.MolToMolFile (rd_mol, mol_filename, includeStereo=True)
 
 def pull_ligand_out (proteinfile, ligname, ligandfile):
@@ -188,16 +113,13 @@ def pull_ligand_out (proteinfile, ligname, ligandfile):
             else:
                 atom_list.append(atom_name)
                 l_xyz_lines.append(p_xyz_line)
-    if not multi_ligand:
-        f = open(ligandfile, "w")
-        f.writelines(l_xyz_lines)
-        f.close()
-        return ligandfile
-    else:
-        logging.info("Fatal error: Found multiple ligand for this protein:%s"%proteinfile)
-        return False
-
-
+    if multi_ligand:
+        logging.info("Warning: Found multiple ligand for this protein:%s"%proteinfile)
+    #here change to save ligand even there are mutiple ligands
+    f = open(ligandfile, "w")
+    f.writelines(l_xyz_lines)
+    f.close()
+    return ligandfile
 
 def get_center(ligand_pdb):
     xyz_lines = open(ligand_pdb,"r").readlines()
@@ -226,11 +148,6 @@ def get_center(ligand_pdb):
     else:
         logging.debug("Fatal error: Found multiple ligands in file:%s"%ligand_pdb)
         return False
-
-
-
-
-
         
 def main_gendata (s3_result_path, path_2_ent, s4_result_path):
     os.chdir(s4_result_path)
@@ -260,7 +177,7 @@ def main_gendata (s3_result_path, path_2_ent, s4_result_path):
             logging.info("For this query protein: %s, there is no protein sharing the LMCSS ligand with. Not able to generate Docking grid, pass for this case..."%target_name)
             os.chdir (current_dir_layer_1)
             continue
-        elif len(info_dic["LMCSS"]) != 2:
+        elif len(info_dic["LMCSS"]) != 3:
             logging.info("For this query protein: %s, the LMCSS protein has wrong number of informations associate with this id..."%target_name)
             os.chdir(current_dir_layer_1)
             continue
@@ -285,12 +202,13 @@ def main_gendata (s3_result_path, path_2_ent, s4_result_path):
         query_pro = info_dic["query"]
         LMCSS_pro_id = info_dic["LMCSS"][0]
         LMCSS_pro_ligand = info_dic["LMCSS"][1]
+        LMCSS_mcss_chain = info_dic["LMCSS"][2]
         LMCSS_pdb_folder_name = LMCSS_pro_id[1:3]
         LMCSS_ent_file = "pdb" + LMCSS_pro_id  + ".ent"
         LMCSS_pdbloc = os.path.join(path_2_ent, LMCSS_pdb_folder_name, LMCSS_ent_file)
         if not os.path.isfile(LMCSS_pdbloc):            
             logging.info("Unable to find the ent file associate with the LMCSS pdb: %s at location %s"%(LMCSS_pro_id, LMCSS_pdbloc))
-            os.chdir(current_dir_layer_1)
+            os.chdir(current_dic_layer_1)
             continue
         else:
             #TC = target candidate                                
@@ -299,15 +217,13 @@ def main_gendata (s3_result_path, path_2_ent, s4_result_path):
             LMCSS_ligand_name = "LMCSS-%s-%s-lig.pdb"%(TC_id, LMCSS_pro_ligand)
             #try to extract the LMCSS ligand from the LMCSS protein
             commands.getoutput("cp %s %s"%(LMCSS_pdbloc,LMCSS_protein_name))
+            #extract chain where contain the LMCSS mcss
+            split_chain(LMCSS_protein_name, LMCSS_protein_name, LMCSS_pro_id, LMCSS_mcss_chain)
             if not pull_ligand_out (LMCSS_protein_name, LMCSS_pro_ligand, LMCSS_ligand_name):
-                logging.info('Unable to remove ligand from %s. Skipping!' %(LMCSS_protein_name))
                 os.chdir(current_dir_layer_1)
                 continue
                 
             logging.info("Succsessfully generate this protein:%s"%LMCSS_protein_name)
-
-            ## Get the center of mass for the "LMCSS" candidate ligand (all of the other candidates have been aligned to this one)                                                                                          
-            #LMCSS_ligand_filename = glob.glob('LMCSS-%s_%s-%s-lig.pdb'%(target_name,LMCSS_pro_id-LMCSS_pro_ligand))
             ligand_center = get_center (LMCSS_ligand_name)
             if not ligand_center:
                 logging.info("Unable to find the center of the ligand for the LMCSS candidate pdb: %s"%(pot_target_id))
@@ -316,16 +232,12 @@ def main_gendata (s3_result_path, path_2_ent, s4_result_path):
             else:
                 with open("center.txt" , "w") as center_file:
                     center_file.writelines(ligand_center)
-
-
-
-
-
-            for rest_protein in ("SMCSS", "hiResHolo", "hiResApo"):
+            for rest_protein in ("SMCSS", "hiResHolo", "hiResApo", "hiTanimoto"):
                 if rest_protein in info_dic:
-                    if len(info_dic[rest_protein]) == 2:
+                    if len(info_dic[rest_protein]) == 3:
                         rest_protein_id = info_dic[rest_protein][0] 
                         rest_ligand_id = info_dic[rest_protein][1]
+                        rest_ligand_chain = info_dic[rest_protein][2]
                     else:
                         rest_protein_id = info_dic[rest_protein]
                         rest_ligand_id = False
@@ -334,24 +246,25 @@ def main_gendata (s3_result_path, path_2_ent, s4_result_path):
                     rest_pdbloc = os.path.join(path_2_ent, rest_protein_folder_name, rest_ent_file)
                     if not os.path.isfile(rest_pdbloc):       
                         logging.info("Unable to find the ent file associate with the %s pdb with ID: %s at location %s"%(rest_protein, rest_protein_id, rest_pdbloc))
-                        os.chdir(current_dir_layer_1)
+                        os.chdir(current_dic_layer_1)
                         continue
                     else:
                         TC_id_rest = "%s_%s"%(query_pro, rest_protein_id)
                         if rest_ligand_id:
                             rest_protein_name = "%s-%s-%s.pdb"%(rest_protein, TC_id_rest, rest_ligand_id)
                             commands.getoutput("cp %s %s"%(rest_pdbloc, rest_protein_name))
+                            #extract ligand chain from proteins with ligand, original just do this in LMCSS, 0908 sliu 
+                            split_chain(rest_protein_name, rest_protein_name, rest_protein_id, rest_ligand_chain)
                         else:
                             rest_protein_name = "%s-%s.pdb"%(rest_protein, TC_id_rest)
                             commands.getoutput("cp %s %s"%(rest_pdbloc, rest_protein_name))
                         #align all rest proteins onto the LMCSS protein
                         
-                        #try:
-                        do_alignment = align_proteins (LMCSS_protein_name, rest_protein_name, rest_protein_name)
-                        if do_alignment == False:
-#except:
+                        try:
+                            do_alignment = align_proteins (LMCSS_protein_name, rest_protein_name, rest_protein_name)
+                        except:
                             logging.info("The alignment could not be done for this protein:%s"%(rest_protein_name))
-                            os.chdir(current_dir_layer_1)
+                            os.chdir(current_dic_layer_1)
                             continue
 
                             #remove the "rot-%s"%LMCSS_protein_name

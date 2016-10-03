@@ -38,6 +38,45 @@ class TestMakeBlastDBTask(unittest.TestCase):
         self.assertEqual(task.get_dir_name(), 'stage.1.makeblastdb')
         test_task.try_update_status_from_filesystem(self, task)
 
+    def test_get_uploadable_files(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = MakeBlastDBTask(temp_dir, params)
+            task.create_dir()
+
+            # test on empty dir
+            self.assertEqual(task.get_uploadable_files(), [])
+
+            # test with stderr/stdout files
+            stdout = os.path.join(task.get_dir(), 'makeblastdb.stdout')
+            open(stdout, 'a').close()
+            stderr = os.path.join(task.get_dir(), 'makeblastdb.stderr')
+            open(stderr, 'a').close()
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 2)
+            flist.index(stdout)
+            flist.index(stderr)
+
+            # test with pdb_seqres.txt.gz file
+            open(task.get_pdb_seqres_txt_gz(), 'a').close()
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 3)
+            flist.index(stdout)
+            flist.index(stderr)
+            flist.index(task.get_pdb_seqres_txt_gz())
+
+            os.unlink(task.get_pdb_seqres_txt_gz())
+
+            # test where pdb_seqres.txt is a dir unlikely but why not check
+            os.makedirs(task.get_pdb_seqres_txt_gz())
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 2)
+            flist.index(stdout)
+            flist.index(stderr)
+        finally:
+            shutil.rmtree(temp_dir)
+
     def test_get_pdbseqres_txt_gz(self):
         params = D3RParameters()
         task = MakeBlastDBTask('/foo', params)

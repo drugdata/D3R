@@ -240,18 +240,22 @@ def make_complex_pdb(receptor_pdb, ligand_mol, complex_pdb):
     return ligand_pdb, complex_pdb
  
 
-
-def layout_result (pickle_file, txt_file):
+def layout_result (pickle_file, out_file, outformat = "txt"):
     data = []
     p_file = open(pickle_file,"r")
     score_dic = pickle.load(p_file)
     p_file.close()
-    data = ["%-20s%-10s%-10s%-10s%-10s \n"%(" ", "LMCSS", "SMCSS", "hiResApo", "hiResHolo")]
-    all_pro_type = ["LMCSS", "SMCSS", "hiResApo", "hiResHolo"]
+    if outformat == "csv":
+        data = ["%-20s%-10s, %-10s, %-10s, %-10s, %-10s \n"%("Target_PDBID,", "LMCSS", "SMCSS", "hiResApo", "hiResHolo", "hiTanimoto")]
+    elif outformat =="txt":
+        data = ["%-20s%-10s%-10s%-10s%-10s%-10s \n"%("Target_PDBID", "LMCSS", "SMCSS", "hiResApo", "hiResHolo", "hiTanimoto")]
+    #add hiTanimoto 0909 sliu
+    all_pro_type = ["LMCSS", "SMCSS", "hiResApo", "hiResHolo", "hiTanimoto"]
     LMCSS_list =  []
     SMCSS_list = []
     hiResApo_list = []
     hiResHolo_list = []
+    hiTanimoto_list = []
     abnormal_dic = {}
     total_pdb = 0
     for pdbid in score_dic:
@@ -267,29 +271,79 @@ def layout_result (pickle_file, txt_file):
                     hiResApo_list.append(score_dic[pdbid][pro_type]) 
                 if pro_type == "hiResHolo":
                     hiResHolo_list.append(score_dic[pdbid][pro_type])
+                if pro_type == "hiTanimoto":
+                    hiTanimoto_list.append(score_dic[pdbid][pro_type])
         total_pdb += 1
+    if outformat == "csv":
+        data.append("%-20s%-10s, %-10s, %-10s, %-10s, %-10s, \n"%("Number_of_cases,", len(LMCSS_list), len(SMCSS_list), len(hiResApo_list), len(hiResHolo_list), len(hiTanimoto_list)))
+    elif outformat == "txt":
+        data.append("%-20s%-10s%-10s%-10s%-10s%-10s\n"%("Number_of_cases", len(LMCSS_list), len(SMCSS_list), len(hiResApo_list), len(hiResHolo_list), len(hiTanimoto_list)))
+    
+    whole_list = (LMCSS_list, SMCSS_list, hiResApo_list, hiResHolo_list, hiTanimoto_list)
+    if outformat == "csv":
+        average_line, max_line, min_line = ("%-20s"%"Average,", "%-20s"%"Maximum,", "%-20s"%"Minimum,")
+    elif outformat == "txt":
+        average_line, max_line, min_line = ("%-20s"%"Average", "%-20s"%"Maximum", "%-20s"%"Minimum")
+    for index, this_list in enumerate (whole_list):
+        if len(this_list) == 0:
+            if outformat == "csv":
+                average_line += "%-10s, "%(" ")
+                min_line += "%-10s, "%(" ")
+                max_line += "%-10s, "%(" ")
+            elif outformat == "txt":
+                average_line += "%-10s"%(" ")
+                min_line += "%-10s"%(" ")
+                max_line += "%-10s"%(" ")
+        else:
+            if outformat == "csv":
+                average_line += "%-10.3f, "%(numpy.average(this_list))
+                min_line += "%-10.3f, "%(min(this_list))
+                max_line += "%-10.3f, "%(max(this_list))
+            if outformat == "txt":
+                average_line += "%-10.3f"%(numpy.average(this_list))
+                min_line += "%-10.3f"%(min(this_list))
+                max_line += "%-10.3f"%(max(this_list))
+    average_line += "\n" 
+    max_line += "\n"
+    min_line += "\n"
+    data.append(average_line)
+    data.append(min_line)
+    data.append(max_line)
+       
+    #add main score lines 
     for pdbid in score_dic:
         new_line_score = ""
         valid_line = False
         for pro_type in all_pro_type:
             if pro_type in score_dic[pdbid]:
-                new_line_score += "%-10.3f"%score_dic[pdbid][pro_type] 
+                if outformat == "csv":
+                    new_line_score += "%-10.3f, "%score_dic[pdbid][pro_type] 
+                if outformat == "txt":
+                    new_line_score += "%-10.3f"%score_dic[pdbid][pro_type] 
                 valid_line = True
             else:
-                new_line_score += "%-10s"%(" ")
+                if outformat == "csv":
+                    new_line_score += "%-10s, "%(" ")
+                if outformat == "txt":
+                    new_line_score += "%-10s"%(" ")
         if valid_line:
-            new_line = "%-20s"%pdbid
+            if outformat == "csv":
+                pdbid_full = "%s,"%pdbid
+            if outformat == "txt":
+                pdbid_full = "%s"%pdbid
+            new_line = "%-20s"%(pdbid_full)
             new_line += new_line_score
             new_line += "\n" 
             data.append(new_line)
-    data.append("=====Total number of query protein: %s =====\n"%total_pdb)
+    #data.append("=====Total number of target protein: %s =====\n"%total_pdb)
     #append total number of valid pdb for each type 
-    data.append("%-20s%-10s%-10s%-10s%-10s\n"%("Valid cases", len(LMCSS_list), len(SMCSS_list), len(hiResApo_list), len(hiResHolo_list)))
-    data.append("%-20s%-10.3f%-10.3f%-10.3f%-10.3f\n"%("Average", numpy.average(LMCSS_list), numpy.average(SMCSS_list), numpy.average(hiResApo_list), numpy.average(hiResHolo_list)))
-    data.append("=====Abnormal RMSDs =====\n")
-    for abnormal_id in abnormal_dic:
-        data.append("%-20s%-10.3f\n"%(abnormal_id, abnormal_dic[abnormal_id]))
-    out_txt = open(txt_file, "w")
+    #data.append("%-20s%-10s, %-10s, %-10s, %-10s, %-10s, \n"%("Valid_cases,", len(LMCSS_list), len(SMCSS_list), len(hiResApo_list), len(hiResHolo_list), len(hiTanimoto_list)))
+    #data.append("%-20s%-10.3f, %-10.3f, %-10.3f, %-10.3f, %-10.3f, \n"%("Average,", numpy.average(LMCSS_list), numpy.average(SMCSS_list), numpy.average(hiResApo_list), numpy.average(hiResHolo_list), numpy.average(hiTanimoto_list)))
+    #data.append("=====Abnormal RMSDs (LMCSS cases where the RMSD > 8.0)=====\n")
+    #for abnormal_id in abnormal_dic:
+    #    abnormal_id_full = "\"%s\","%abnormal_id
+    #    data.append("%-20s%-10.3f, \n"%(abnormal_id_full, abnormal_dic[abnormal_id]))
+    out_txt = open(out_file, "w")
     out_txt.writelines(data)
     out_txt.close()  
      
@@ -525,7 +579,8 @@ if ("__main__") == (__name__):
     running_dir = os.getcwd()
     pickle_result = main_score(dockDir, pdbloc, evaluateDir, )
     pickle_loc = os.path.join(running_dir, "RMSD.pickle")
-    txt_result = layout_result(pickle_loc, "RMSD.txt")
+    txt_result = layout_result(pickle_loc, "RMSD.txt", outformat = "txt")
+    txt_result = layout_result(pickle_loc, "RMSD.csv", outformat = "csv")
     # move the final log file to the result dir
     log_file_path = os.path.join(running_dir, 'final.log')
     commands.getoutput("mv %s %s" % (log_file_path, evaluateDir))

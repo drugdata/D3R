@@ -1,21 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-
-import unittest
-import tempfile
-import os.path
-
 """
 test_task
 ----------------------------------
 
 Tests for `task` module.
 """
-
+import unittest
+import tempfile
 import shutil
 import platform
 import os
+import gzip
+from email.mime.multipart import MIMEMultipart
+
+from mock import Mock
 
 from d3r.celpp.task import D3RParameters
 from d3r.celpp.task import UnsetPathError
@@ -24,6 +24,9 @@ from d3r.celpp.task import UnsetNameError
 from d3r.celpp.task import UnsetCommandError
 from d3r.celpp.task import UnsetFileNameError
 from d3r.celpp.task import D3RTask
+from d3r.celpp.task import SmtpEmailer
+from d3r.celpp.task import EmailSendError
+from d3r.celpp.task import Attachment
 from d3r.celpp.filetransfer import FtpFileTransfer
 
 
@@ -552,6 +555,120 @@ class TestD3rTask(unittest.TestCase):
                                                           'hi.stderr')),
                               True)
 
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_smtp_emailer_generate_from_address_using_login_and_host(self):
+        emailer = SmtpEmailer()
+        val = emailer.generate_from_address_using_login_and_host()
+        self.assertEqual(val, os.getlogin() + '@' + platform.node())
+
+    def test_sending_real_email_but_to_invalid_port_and_host(self):
+        emailer = SmtpEmailer(port=1231231231232)
+        try:
+            emailer.send_email('bob@bob.com', ['joe@joe.com'], 'subby2',
+                               'hi\n')
+            self.fail('Expected EmailSendError')
+        except EmailSendError:
+            pass
+
+    def test_get_server_with_altserver_set(self):
+        emailer = SmtpEmailer()
+        fake = D3RParameters()
+        fake.hi = 'fake'
+        emailer.set_alternate_smtp_server(fake)
+        self.assertEqual(emailer._get_server().hi, fake.hi)
+
+    def test_send_valid_email_to_fake_server(self):
+        emailer = SmtpEmailer()
+        mockserver = D3RParameters()
+        mockserver.sendmail = Mock()
+        mockserver.quit = Mock()
+
+        emailer.set_alternate_smtp_server(mockserver)
+        emailer.send_email('bob@bob.com', ['joe@joe.com'], 'subby2',
+                           'hi\n', reply_to='rep@rep.com')
+        mockserver.quit.assert_any_call()
+        self.assertEqual(mockserver.sendmail.call_count, 1)
+
+    def test_send_invalid_email_to_fake_server_that_throws_exception(self):
+        emailer = SmtpEmailer()
+        mockserver = D3RParameters()
+        mockserver.sendmail = Mock(side_effect=IOError('some error'))
+        mockserver.quit = Mock()
+
+        emailer.set_alternate_smtp_server(mockserver)
+        try:
+            emailer.send_email('bob@bob.com', ['joe@joe.com'], 'subby2',
+                               'hi\n', reply_to='rep@rep.com')
+        except EmailSendError:
+            pass
+
+        mockserver.quit.assert_any_call()
+
+    def test_attachment_class(self):
+        a = Attachment('/foo', 'hi')
+        self.assertEqual(a.get_desired_name(), 'hi')
+        self.assertEqual(a.get_file_to_attach(), '/foo')
+
+    def test_append_attachments(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            emailer = SmtpEmailer()
+            # try no attachments
+            msg_root = MIMEMultipart("alternative")
+            res = emailer._append_attachments(msg_root, None)
+            self.assertEqual(msg_root, res)
+
+            # try 1 text attachment
+            txtfile = os.path.join(temp_dir,'my.txt')
+            f = open(txtfile, 'w')
+            f.write('hello')
+            f.flush()
+            f.close()
+            msg_root = MIMEMultipart("alternative")
+            a = Attachment(txtfile,'renamed.txt')
+            res = emailer._append_attachments(msg_root, [a])
+            res.as_string().index('Content-Type: text/plain; charset="us-ascii"')
+            res.as_string().index('Content-Disposition: attachment; filename="renamed.txt"')
+            res.as_string().index('hello')
+
+            # try 1 image attachment
+            img = os.path.join(temp_dir,'yo.ppm')
+            f = open(img, 'w')
+            f.write('P6\n1 1\n255\n')
+            f.write('%c' % 255)
+            f.flush()
+            f.close()
+            msg_root = MIMEMultipart("alternative")
+            b = Attachment(img, None)
+            res = emailer._append_attachments(msg_root, [b])
+            res.as_string().index('Content-Type: image/x-portable-pixmap')
+            res.as_string().index('Content-Disposition: attachment; filename="yo.ppm"')
+
+            # try 1 gzip attachment
+            mygz = os.path.join(temp_dir, 'foo.gz')
+            f = gzip.open(mygz, 'wb')
+            f.write('some compressed data')
+            f.flush()
+            f.close()
+            c = Attachment(mygz, 'well.gz')
+            res = emailer._append_attachments(msg_root, [c])
+            res.as_string().index('Content-Type: application/octet-stream')
+            res.as_string().index('Content-Disposition: attachment; filename="well.gz"')
+
+            # try 3 attachments above together
+            msg_root = MIMEMultipart("alternative")
+            res = emailer._append_attachments(msg_root, [a, b, c])
+            res.as_string().index('Content-Type: text/plain; charset="us-ascii"')
+            res.as_string().index('Content-Disposition: attachment; filename="renamed.txt"')
+            res.as_string().index('hello')
+
+            res.as_string().index('Content-Type: image/x-portable-pixmap')
+            res.as_string().index('Content-Disposition: attachment; filename="yo.ppm"')
+
+            res.as_string().index('Content-Type: application/octet-stream')
+            res.as_string().index('Content-Disposition: attachment; filename="well.gz"')
         finally:
             shutil.rmtree(temp_dir)
 

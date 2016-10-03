@@ -142,11 +142,13 @@ class WriteText(object):
         self.least_similar = []
         self.highest_res = []
         self.apo = []
+        self.highest_tanimoto = []
         self.reasons = {
             1: 'The BLAST hit is bound to the ligand with the largest maximum common substructure',
             2: 'The BLAST hit is bound to the ligand with the smallest maximum common substructure',
             3: 'The BLAST hit is the highest resolution holo structure',
             4: 'The BLAST hit is the highest resolution apo structure',
+            5: 'The BLAST hit is bound to the ligand with the highest tanimoto score in structural similarity',
         }
 
     def write_txt(self, query):
@@ -183,43 +185,62 @@ class WriteText(object):
             for lig in self.query.dock:
                 out.append('ligand, {res}'.format(res=lig.resname))
                 out.append('inchi, {inchi}'.format(inchi=lig.inchi))
+                #modified by sliu 08/08 
+                out.append('size, {size}'.format(size=lig.size))
+                out.append('rotatable_bond, {rot}'.format(rot=lig.rot))
+                #out.append('heavy size, {heavy_size}'.format(heavy_size=lig.heavy))
             for l in out: self.handle.write("%s\n" % l)
 
     def write_hits(self):
-        for hit in self.most_similar:
+        #here change to only write out the top 10 largest
+        for hit in self.most_similar[:10]:
             self.write_largest(hit)
         for hit in self.least_similar:
             self.write_smallest(hit)
-        for hit in self.highest_res:
+        for hit in self.highest_res[:2]:
             self.write_holo(hit)
         for hit in self.apo:
             self.write_apo(hit)
+        for hit in self.highest_tanimoto[:10]:
+            self.write_highest_tanimoto(hit)
 
     def write_largest(self, hit):
         out = []
-        for lig in hit.dock:
-            for mcss in lig.mcsss:
-                out.append("LMCSS, {pdb_id}, {lig}".format(pdb_id=hit.pdb_id, lig=mcss.test))
+        #only write out the dockable mcss in the first ordered chain
+        largest_lig = hit.dock[hit.largest_index[0]]
+        for mcss in largest_lig.mcsss:
+            out.append("LMCSS, {pdb_id}, {lig}, chain: {chain_id}, (size: {lig_size}, mcss_size: {mcss_size}, resolution: {resolution}) ".format(pdb_id=hit.pdb_id, lig=mcss.test, chain_id=hit.largest_mcss_chain[0], lig_size= largest_lig.size, mcss_size= mcss.size, resolution= "%4.4s"%hit.resolution ))
         for l in out: self.handle.write("%s\n" % l)
 
     def write_smallest(self, hit):
         out = []
-        for lig in hit.dock:
-            for mcss in lig.mcsss:
-                out.append("SMCSS, {pdb_id}, {lig}".format(pdb_id=hit.pdb_id, lig=mcss.test))
+        smallest_lig = hit.dock[hit.smallest_index[0]]
+        for mcss in hit.dock[hit.smallest_index[0]].mcsss:
+            #out.append("SMCSS, {pdb_id}, {lig} ".format(pdb_id=hit.pdb_id, lig=mcss.test ))
+            out.append("SMCSS, {pdb_id}, {lig}, chain: {chain_id}, (size: {lig_size}, mcss_size: {mcss_size}, resolution: {resolution}) ".format(pdb_id=hit.pdb_id, lig=mcss.test, chain_id=hit.smallest_mcss_chain[0], lig_size= smallest_lig.size, mcss_size= mcss.size, resolution= "%4.4s"%hit.resolution ))
         for l in out: self.handle.write("%s\n" % l)
 
     def write_holo(self, hit):
         out = []
-        for lig in hit.dock:
-            for mcss in lig.mcsss:
-                out.append("hiResHolo, {pdb_id}, {lig}".format(pdb_id=hit.pdb_id, lig=mcss.test))
+        largest_lig = hit.dock[hit.largest_index[0]] 
+        for mcss in largest_lig.mcsss:
+            out.append("hiResHolo, {pdb_id}, {lig}, chain: {chain_id}, (resolution: {resolution})".format(pdb_id=hit.pdb_id, lig=mcss.test, chain_id=hit.largest_mcss_chain[0], resolution= "%4.4s"%hit.resolution))
+#        for lig in hit.dock[:1]:
+#            for mcss in lig.mcsss:
+#                out.append("hiResHolo, {pdb_id}, {lig}".format(pdb_id=hit.pdb_id, lig=mcss.test))
         for l in out: self.handle.write("%s\n" % l)
 
     def write_apo(self, hit):
         out = []
         out.append("hiResApo, {pdb_id}".format(pdb_id=hit.pdb_id))
         for l in out: self.handle.write("%s\n" %l)
+    def write_highest_tanimoto(self, hit):
+        out = []
+        #only write out the dockable mcss in the first ordered chain
+        largest_lig = hit.dock[hit.highest_tanimoto_index[0]]
+        for mcss in largest_lig.mcsss:
+            out.append("hiTanimoto, {pdb_id}, {lig}, chain: {chain_id}, (tanimoto_similarity: {tanimoto}, resolution: {resolution})".format(pdb_id=hit.pdb_id, lig=mcss.test, chain_id=hit.highest_tanimoto_chain[0], tanimoto= "%4.4s"%(mcss.tanimoto), resolution= "%4.4s"%hit.resolution  ))
+        for l in out: self.handle.write("%s\n" % l)
 
     def reinitialize(self, query):
         self.most_similar = []
@@ -247,6 +268,15 @@ class WriteText(object):
                         self.highest_res.append(hit)
                     if reason == self.reasons[4] and hit.pdb_id:
                         self.apo.append(hit)
+                    #add tanimoto 09/01 sliu
+                    if reason == self.reasons[5] and hit.pdb_id:
+                        self.highest_tanimoto.append(hit)
+        #here rank the list by the resolution
+        self.most_similar.sort(key=lambda hit:(float(hit.resolution)))
+        self.least_similar.sort(key=lambda hit:(float(hit.resolution)))
+        self.highest_res.sort(key=lambda hit:(float(hit.resolution)))
+        self.apo.sort(key=lambda hit:(float(hit.resolution)))
+        self.highest_tanimoto.sort(key=lambda hit:(float(hit.resolution)))
 
 
 # class WriteTxt(Writer):
