@@ -49,7 +49,7 @@ class ProteinPrep(object):
     def run_scientific_protein_prep(self, challenge_data_path, pdb_protein_path, working_folder):
         abs_challenge_data_path = os.path.abspath(challenge_data_path)
         chal_data_obj = ChallengeData(abs_challenge_data_path)
-        if not(chal_data_obj.is_valid_for_celpp):
+        if not(chal_data_obj.is_valid_for_celpp()):
             logging.info('%s is not a valid CELPP challenge data directory. Unable to run protein prep.')
             return False
         week_chal_data_dict = chal_data_obj.get_targets()
