@@ -56,18 +56,18 @@ class LigandPrep(object):
         # Ensure that the directories are valid
         for pot_target_dir in pot_target_dirs:
             os.chdir(current_dir_layer_1)
-            pot_target_id = os.path.basename(pot_target_dir.strip('/'))
+            pot_targ_id = os.path.basename(pot_target_dir.strip('/'))
 
             # Does it look like a pdb id?
-            if len(pot_target_id) != 4:
-                logging.info('Filtering potential target directories: %s is not 4 characters long. Skipping' %(pot_target_id))
+            if len(pot_targ_id) != 4:
+                logging.info('Filtering potential target directories: %s is not 4 characters long. Skipping' %(pot_targ_id))
                 continue
-            os.mkdir(pot_target_id)
-            target_dir_path = os.path.join(abs_week_path, pot_target_id)
+            os.mkdir(pot_targ_id)
+            target_dir_path = os.path.join(abs_week_path, pot_targ_id)
 
             # Copy in <targ id>.txt file
             origin_txt_file = os.path.join(target_dir_path,pot_targ_id+'.txt')
-            dest_txt_file = os.path.join(pot_target_id,pot_targ_id+'.txt')
+            dest_txt_file = os.path.join(pot_targ_id,pot_targ_id+'.txt')
             shutil.copyfile(origin_txt_file, dest_txt_file)
                             
 
@@ -75,16 +75,16 @@ class LigandPrep(object):
             
             lig_smiles_files = glob.glob('%s/lig_*.smi' %(target_dir_path))
             if len(lig_smiles_files) != 1:
-                logging.info('Unable to find unambiguous ligand smiles for %s - glob returned %r' %(pot_target_id, lig_smiles_files))
+                logging.info('Unable to find unambiguous ligand smiles for %s - glob returned %r' %(pot_targ_id, lig_smiles_files))
                 continue
             lig_smiles_file = lig_smiles_files[0]
             local_smiles_file = os.path.basename(lig_smiles_file)
-            dest_smiles_file = os.path.join(pot_target_id, local_smiles_file)
+            dest_smiles_file = os.path.join(pot_targ_id, local_smiles_file)
             shutil.copyfile(lig_smiles_file, dest_smiles_file)
 
   
             
-            valid_targets[pot_target_id] = local_smiles_file
+            valid_targets[pot_targ_id] = local_smiles_file
 
 
             
