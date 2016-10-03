@@ -5,6 +5,12 @@ import time
 import logging
 import smtplib
 import platform
+import mimetypes
+from email import encoders
+from email.mime.audio import MIMEAudio
+from email.mime.base import MIMEBase
+from email.mime.image import MIMEImage
+from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 from d3r.celpp.filetransfer import FtpFileTransfer
@@ -66,6 +72,12 @@ class TaskUnableToStartError(TaskException):
 
 class TaskFailedError(TaskException):
     """Exception to denote when a task failed
+    """
+    pass
+
+
+class EmailSendError(TaskException):
+    """Exception to denote when SmtpEmailer was unable to send an email
     """
     pass
 
@@ -650,3 +662,164 @@ class D3RTask(object):
                                          "received. Standard out: " + out +
                                          " Standard error : " + err)
         return returncode
+
+
+class Attachment(object):
+    """Class to hold file to attach to email
+    """
+    def __init__(self, file_to_attach, desired_name):
+        self._file_to_attach = file_to_attach
+        self._desired_name = desired_name
+
+    def get_file_to_attach(self):
+        return self._file_to_attach
+
+    def get_desired_name(self):
+        return self._desired_name
+
+
+class SmtpEmailer(object):
+    """Simple Wrapper class to send email via smtplib
+    """
+
+    def __init__(self, smtp_host='localhost', port=25):
+        """Constructor
+        :param smtp_host: host of stmp server
+        :param port: port stmp server is on
+        """
+        self._smtp_host = smtp_host
+        self._port = port
+        self._alt_smtp_server = None
+
+    def set_alternate_smtp_server(self, server):
+        """Sets alternate smtp server to use
+        """
+        self._alt_smtp_server = server
+
+    def send_email(self, from_address, to_list, subject, message,
+                   reply_to=None, attachments=None):
+        """Sends email
+        :param from_address: from email address
+        :param to_list: list of email addresses as strings to send email to
+        :param subject: Subject of email
+        :param message: Body of email
+        :param reply_to: optional parameter to alter the reply to email
+        :param attachments: optional list parameter containing Attachment
+        objects
+        representing files to attach to email
+        :param htmlmessage: optional parameter containing html version of
+        email body
+        :raises EmailSendError: if there was an error creating or sending
+        the email
+        """
+        server = None
+        try:
+            mime_msg = self._build_mime_message(from_address, to_list,
+                                                subject, message, reply_to,
+                                                attachments)
+            server = self._get_server()
+            server.sendmail(from_address, to_list, mime_msg.as_string())
+        except smtplib.SMTPConnectError as e:
+            logger.exception('Caught exception')
+            raise EmailSendError('Unable to connect to smtp server ' + str(e))
+        except Exception as e:
+            logger.exception('Caught exception')
+            raise EmailSendError('Caught exception ' + str(e))
+        finally:
+            if server is not None:
+                server.quit()
+
+    def generate_from_address_using_login_and_host(self):
+        """Creates from email address from login and hostname
+        of machine running this script.
+        :returns: from email address as string
+        """
+        hostname = platform.node()
+        if hostname is '':
+            hostname = 'localhost'
+        return os.getlogin() + '@' + hostname
+
+    def _get_server(self):
+        """Gets Smtp server
+        :returns: smtplib.SMTP object unless set_alternate_smtp_server
+        was set in
+        which case that object is returned
+        """
+        if self._alt_smtp_server is not None:
+            return self._alt_smtp_server
+
+        return smtplib.SMTP(self._smtp_host,
+                            self._port)
+
+    def _append_attachments(self, msg_root, attachments):
+        """Attaches attachments to `msg_root`
+        :param msg_root: MIMEMultipart message to attach the files to
+        :param attachments: List of Attachment objects to attach to msg_root
+        :returns msg_root: with attachments added
+        """
+        if attachments is None:
+            return msg_root
+
+        for a in attachments:
+            fname = a.get_file_to_attach()
+            if not os.path.isfile(fname):
+                logger.error('File does not exist: ' + fname)
+                continue
+            ctype, encoding = mimetypes.guess_type(fname)
+            if ctype is None or encoding is not None:
+                # go with binary type if we did not get a guess
+                ctype = 'application/octet-stream'
+            maintype, subtype = ctype.split('/', 1)
+            if maintype == 'text':
+                logger.debug('Attaching text file ' + fname)
+                fp = open(fname)
+                attach = MIMEText(fp.read(), _subtype=subtype)
+                fp.close()
+            elif maintype == 'image':
+                logger.debug('Attaching image file ' + fname)
+                fp = open(fname, 'rb')
+                attach = MIMEImage(fp.read(), _subtype=subtype)
+                fp.close()
+            else:
+                logger.debug('Attaching unknown file ' + fname)
+                fp = open(fname, 'rb')
+                attach = MIMEBase(maintype, subtype)
+                attach.set_payload(fp.read())
+                fp.close()
+                # Encode the payload using Base64
+                encoders.encode_base64(attach)
+            # Set the filename parameter
+            if a.get_desired_name() is None:
+                filename = os.path.basename(fname)
+            else:
+                filename = a.get_desired_name()
+            attach.add_header('Content-Disposition', 'attachment',
+                              filename=filename)
+            msg_root.attach(attach)
+
+        return msg_root
+
+    def _build_mime_message(self, from_address, to_list,
+                            subject, message, reply_to, attachments):
+        """Creates MIMEText object and returns it
+        :param from_address: from email address
+        :param to_list: list of email addresses as strings to send email to
+        :param subject: Subject of email
+        :param message: Body of email
+        :returns MIMEText object upon success or None upon error
+        """
+        msg_root = MIMEMultipart("alternative")
+
+        msg_root['Subject'] = subject
+        msg_root['From'] = from_address
+        msg_root['To'] = ", ".join(to_list)
+        if reply_to is not None:
+            msg_root.add_header('reply-to', reply_to)
+
+        msg_root.attach(MIMEText(message, "plain"))
+        updated_msg_root = self._append_attachments(msg_root, attachments)
+        updated_msg_root.attach(MIMEText('<pre>\n' + message + '\n</pre>\n', "html"))
+        updated_msg_root.preamble = ('You need a MIME enabled mail reader to see this '
+                                     'message')
+
+        return updated_msg_root

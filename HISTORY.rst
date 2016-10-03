@@ -3,6 +3,28 @@
 History
 -------
 
+1.6.0 (????)
+-------------------
+
+* Evaluation task now emails results of evaluation to external 
+  submitter. Issues #49,#81
+
+* Adjusted files uploaded to ftp server in EvaluationTask to 
+  reflect changes in output from genchallengedata.py script.
+  Issue #80
+
+* Added WebDavFileTransfer class to enable upload & download
+  of files via WebDa for celppade tools. Issue #76
+
+* Added tsv files and Components-inchi.ich files to list of 
+  files uploaded to ftp by DataImportTask. Issue #78
+
+* Updated challenge data package readme.txt to include documentation
+  for hiTanimoto. Issue #75
+
+* Added pdb_seqres.txt.gz to list of files uploaded to ftp by
+  MakeBlastDBTask. Issue #77.
+
 1.5.0 (2016-09-11)
 --------------------
 

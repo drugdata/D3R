@@ -36,6 +36,26 @@ class MakeBlastDBTask(D3RTask):
         self._maxretries = 3
         self._retrysleep = 1
 
+    def get_uploadable_files(self):
+        """Returns list of files that can be uploaded to remote server
+
+           List will contain these files in addition to stderr/stdout files
+           if they are found on the filesystem
+
+           pdb_seqres.txt.gz
+
+           :returns: list of files that can be uploaded.
+        """
+        # get the stderr/stdout files
+        file_list = super(MakeBlastDBTask, self).get_uploadable_files()
+
+        pdbfile = self.get_pdb_seqres_txt_gz()
+
+        if os.path.isfile(pdbfile):
+            file_list.append(pdbfile)
+
+        return file_list
+
     def get_pdb_seqres_txt_gz(self):
         """Returns path to pdb_seqres.txt.gz file
         :return: full path to MakeBlastDBTask.PDB_SEQRES_TXT_GZ file
