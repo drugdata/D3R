@@ -13,7 +13,7 @@ class ChallengeData(object):
         self.get_challenge_data_dir = get_challenge_data_dir
         self.abs_get_challenge_data_dir = os.path.abspath(get_challenge_data_dir)
         
-        self.weekly_challenge_packages = glob.glob('%s/celpp_week*' %(self.abs_get_challenge_data_dir))
+        self.weekly_challenge_packages = glob.glob('%s/celpp_week*/' %(self.abs_get_challenge_data_dir))
         print 'self.weekly_challenge_packages',self.weekly_challenge_packages
 
         self.week_challenge_dict = {}
