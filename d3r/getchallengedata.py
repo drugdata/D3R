@@ -58,7 +58,7 @@ def main_get_challenge_data(unpack_dir, ftp_config, local_data_file, sleep):
         abs_ftp_config = os.path.abspath(ftp_config)
     ## Download most recent tarball
     
-    if local_data_file == '':
+    if local_data_data_file is None:
         chal_tar_name = download_tarball(abs_unpack_dir, abs_ftp_config, sleep)
         if chal_tar_name == False:
             logging.info('Unable to download challenge package. Exiting.')
