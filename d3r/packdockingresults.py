@@ -17,7 +17,6 @@ def find_uploadable_results(target_dir):
     valid_results = []
     abs_targ_dir = os.path.abspath(target_dir)
     potential_pdbs = glob.glob('%s/*-????_????_docked.pdb'%(abs_targ_dir))
-    #potential_mols = glob.glob('./*-????_????_docked.mol')
     
     for potential_pdb in potential_pdbs:
 
