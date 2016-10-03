@@ -6,6 +6,7 @@ import os
 import glob
 import tarfile
 from d3r.celpp.filetransfer import WebDavFileTransfer
+from d3r.utilities.challenge_data import ChallengeData
 
 __author__ = 'j5wagner'
     
@@ -74,21 +75,26 @@ def main_pack_dock_results(challenge_dir, dock_dir, pack_dir, ftp_config):
     ## Find all possible uploadable target dirs
     result_dic = make_result_dictionary(dock_dir)
     
+    submission_base_name = week_name + '_dockedresults_' + contestant_id 
 
     
     ## Copy them into this directory
     os.chdir(abs_pack_dir)
+    os.mkdir(submission_base_name)
+    os.chdir(submission_base_name)
     for targ_id in result_dic:
         os.mkdir(targ_id)
         for docked_pdb, docked_mol in result_dic[targ_id]:
             d_f_basename = os.path.basename(docked_pdb)
             destination = os.path.join(abs_pack_dir,
+                                       submission_base_name,
                                        targ_id,
                                        d_f_basename)
             shutil.copyfile(docked_pdb, destination)
             
             d_f_basename = os.path.basename(docked_mol)
             destination = os.path.join(abs_pack_dir,
+                                       submission_base_name,
                                        targ_id,
                                        d_f_basename)
             shutil.copyfile(docked_mol, destination)
@@ -100,16 +106,17 @@ def main_pack_dock_results(challenge_dir, dock_dir, pack_dir, ftp_config):
     ## up, and pack the tarball from there (thereby giving the content
     ## reasonable relative paths)
     os.chdir(abs_pack_dir)
-    os.chdir('..')
+    #os.chdir('..')
     
     #abs_tar_name = abs_pack_dir.rstrip('/') + '.tar.gz'
-    tar_base_name = week_name + '_dockedresults_' + contestant_id + '.tar.gz'
-    abs_tar_name = os.path.join(abs_pack_dir, tar_name)
+    tar_base_name = submission_base_name + '.tar.gz'
+    abs_tar_name = os.path.join(abs_pack_dir, tar_base_name)
     
     logging.info('Creating tarfile %s in directory %s' %(abs_tar_name, os.getcwd()))
     tarfile_obj = tarfile.open(abs_tar_name, 'w:gz')
     logging.info('Writing to tarfile')
-    tarfile_obj.add(os.path.basename(abs_pack_dir.rstrip('/')))
+    #tarfile_obj.add(os.path.basename(abs_pack_dir.rstrip('/')))
+    tarfile_obj.add(submission_base_name)
     tarfile_obj.close()
     logging.info('Tarfile closed')
 
@@ -125,7 +132,7 @@ def main_pack_dock_results(challenge_dir, dock_dir, pack_dir, ftp_config):
                                   #f_f_t_obj.get_remove_submission_dir, 
                                   contestant_id)
     f_f_t_obj.upload_file_direct(abs_tar_name,
-                                 submission_dir
+                                 submission_dir,
                                  #f_f_t_obj.get_remote_submission_dir(),
                                  #'/dav/celppweekly/usersubmissions/12345/',
                                  tar_base_name)
@@ -138,7 +145,7 @@ def main_pack_dock_results(challenge_dir, dock_dir, pack_dir, ftp_config):
 if ("__main__") == (__name__):
     from argparse import ArgumentParser
     parser = ArgumentParser()
-     parser.add_argument("-c", "--challengedata", metavar="PATH", help = "PATH to the unpacked challenge data package")
+    parser.add_argument("-c", "--challengedir", metavar="PATH", help = "PATH to the unpacked challenge data package")
     parser.add_argument("-d", "--dockdir", metavar = "PATH", help = "Dir where docking was performed")
     parser.add_argument("-p", "--packdir", metavar="PATH", help = "Dir where the packing and uploading will be performed. Note that, for competition entries, this expects this dir name to already have the proper formatting for this contestant's entry, and will be used as the base of the tar.gz file.")
     parser.add_argument("-f", "--ftpconfig", metavar="PATH", help = "File containing user ftp config information (see included example ftp config for specifics)")
