@@ -18,7 +18,7 @@ class ChallengeData(object):
         self.week_challenge_dict = {}
         for wcp in self.weekly_challenge_packages:
             wcp_folder_name = wcp.strip('/').split('/')[-1]
-            targets = glob.glob('%s/????/')
+            targets = glob.glob('%s/????/' %(wcp))
             self.week_challenge_dict[wcp_folder_name] = targets
             
         
