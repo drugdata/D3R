@@ -14,11 +14,15 @@ class ChallengeData(object):
         self.abs_get_challenge_data_dir = os.path.abspath(get_challenge_data_dir)
         
         self.weekly_challenge_packages = glob.glob('%s/celpp_week*' %(self.abs_get_challenge_data_dir))
-        
+        print 'self.weekly_challenge_packages',self.weekly_challenge_packages
+
         self.week_challenge_dict = {}
         for wcp in self.weekly_challenge_packages:
+            print 'wcp', wcp
             wcp_folder_name = wcp.strip('/').split('/')[-1]
+            print 'wcp_folder_name', wcp_folder_name
             targets = glob.glob('%s/????/' %(wcp))
+            print 'targets', targets
             self.week_challenge_dict[wcp_folder_name] = targets
             
         
