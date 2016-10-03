@@ -19,7 +19,7 @@ class ChallengeData(object):
         for wcp in self.weekly_challenge_packages:
             wcp_folder_name = wcp.strip('/').split('/')[-1]
             targets = glob.glob('%s/????/')
-            self.week_challenge_data[wcp_folder_name] = targets
+            self.week_challenge_dict[wcp_folder_name] = targets
             
         
 
@@ -42,11 +42,11 @@ class ChallengeData(object):
         """
         
         # Ensure that exactly one week is in here
-        if len(self.week_challenge_data.keys()) != 1:
+        if len(self.week_challenge_dict.keys()) != 1:
             return False
 
         # Ensure that the week has at least one target
-        if len(self.week_challenge_data[self.week_challenge_data.keys()[0]]) == 0:
+        if len(self.week_challenge_dict[self.week_challenge_data.keys()[0]]) == 0:
             return False
 
         return True
@@ -57,5 +57,5 @@ class ChallengeData(object):
         :return: dict
         """
         
-        return self.week_challenge_data
+        return self.week_challenge_dict
         
