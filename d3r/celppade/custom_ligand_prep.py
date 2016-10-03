@@ -41,7 +41,7 @@ class LigandPrep(object):
         abs_challenge_data_path = os.path.abspath(challenge_data_path)
         chal_data_obj = ChallengeData(abs_challenge_data_path)
         if not(chal_data_obj.is_valid_for_celpp()):
-            logging.info('%s is not a valid CELPP challenge data directory. Unable to run ligand prep.')
+            logging.info('%s is not a valid CELPP challenge data directory. Unable to run ligand prep.' %(abs_challenge_data_path))
             return False
         week_chal_data_dict = chal_data_obj.get_targets()
         week_name = week_chal_data_dict.keys()[0]
