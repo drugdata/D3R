@@ -25,6 +25,8 @@ History
 * Added pdb_seqres.txt.gz to list of files uploaded to ftp by
   MakeBlastDBTask. Issue #77.
 
+* Download canonical tsv file in data import stage. Issue #84
+
 1.5.0 (2016-09-11)
 --------------------
 
