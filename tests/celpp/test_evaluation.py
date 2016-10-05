@@ -848,8 +848,6 @@ class TestEvaluation(unittest.TestCase):
             emailer.set_alternate_smtp_emailer(smtpemailer)
             emailer.send_evaluation_email(task)
             mockserver.quit.assert_any_call()
-            from_addr = smtpemailer\
-                .generate_from_address_using_login_and_host()
             self.assertEqual(emailer.get_message_log(),
                              '\nSent evaluation email to: bob@bob.com\n')
             self.assertEqual(mockserver.sendmail.call_count, 1)

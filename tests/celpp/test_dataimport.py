@@ -102,7 +102,7 @@ class TestDataImportTask(unittest.TestCase):
         task = DataImportTask('/foo', params)
         self.assertEqual(task.get_sequence_tsv(),
                          '/foo/' + task.get_dir_name() +
-                         '/new_release_structure_sequence.tsv')
+                         '/new_release_structure_sequence_canonical.tsv')
 
     def test_get_crystalph_tsv(self):
         params = D3RParameters()
@@ -306,6 +306,8 @@ class TestDataImportTask(unittest.TestCase):
                               task.NONPOLYMER_TSV), 'a').close()
             open(os.path.join(temp_dir,
                               task.SEQUENCE_TSV), 'a').close()
+            open(os.path.join(temp_dir,
+                              task.OLDSEQUENCE_TSV), 'a').close()
             task.run()
             self.assertEquals(task.get_error(), 'Unable to download file ' +
                               'from ' + params.pdbfileurl + ' to ' +
@@ -332,6 +334,8 @@ class TestDataImportTask(unittest.TestCase):
                               task.NONPOLYMER_TSV), 'a').close()
             open(os.path.join(temp_dir,
                               task.SEQUENCE_TSV), 'a').close()
+            open(os.path.join(temp_dir,
+                              task.OLDSEQUENCE_TSV), 'a').close()
             open(os.path.join(temp_dir,
                               task.CRYSTALPH_TSV), 'a').close()
             task.run()
@@ -361,6 +365,8 @@ class TestDataImportTask(unittest.TestCase):
             open(os.path.join(temp_dir,
                               task.SEQUENCE_TSV), 'a').close()
             open(os.path.join(temp_dir,
+                              task.OLDSEQUENCE_TSV), 'a').close()
+            open(os.path.join(temp_dir,
                               task.CRYSTALPH_TSV), 'a').close()
             open(os.path.join(temp_dir,
                               task.COMPINCHI_ICH), 'a').close()
@@ -374,6 +380,8 @@ class TestDataImportTask(unittest.TestCase):
                 task.get_nonpolymer_tsv()), 1)
             self.assertEqual(util.get_file_line_count(
                 task.get_sequence_tsv()), 1)
+            self.assertEqual(util.get_file_line_count(
+                task.get_oldsequence_tsv()), 1)
             self.assertEqual(util.get_file_line_count(
                 task.get_crystalph_tsv()), 1)
 
@@ -409,6 +417,8 @@ class TestDataImportTask(unittest.TestCase):
             open(os.path.join(temp_dir,
                               task.SEQUENCE_TSV), 'a').close()
             open(os.path.join(temp_dir,
+                              task.OLDSEQUENCE_TSV), 'a').close()
+            open(os.path.join(temp_dir,
                               task.CRYSTALPH_TSV), 'a').close()
             open(os.path.join(temp_dir,
                               task.COMPINCHI_ICH), 'a').close()
@@ -422,6 +432,8 @@ class TestDataImportTask(unittest.TestCase):
                 task.get_nonpolymer_tsv()), 1)
             self.assertEqual(util.get_file_line_count(
                 task.get_sequence_tsv()), 1)
+            self.assertEqual(util.get_file_line_count(
+                task.get_oldsequence_tsv()), 1)
             self.assertEqual(util.get_file_line_count(
                 task.get_crystalph_tsv()), 1)
 
@@ -518,6 +530,14 @@ class TestDataImportTask(unittest.TestCase):
             f.close()
             os.utime(seq, (secs_since_epoch, secs_since_epoch))
 
+            oldseq = os.path.join(temp_dir,
+                                  DataImportTask.OLDSEQUENCE_TSV)
+            f = open(oldseq, 'w')
+            f.write('oldseq\n')
+            f.flush()
+            f.close()
+            os.utime(oldseq, (secs_since_epoch, secs_since_epoch))
+
             crystal = os.path.join(temp_dir,
                                    DataImportTask.CRYSTALPH_TSV)
             f = open(crystal, 'w')
@@ -561,6 +581,13 @@ class TestDataImportTask(unittest.TestCase):
                                DataImportTask.SEQUENCE_TSV)
             f = open(seq, 'w')
             f.write('seq\n')
+            f.flush()
+            f.close()
+
+            oldseq = os.path.join(temp_dir,
+                                  DataImportTask.OLDSEQUENCE_TSV)
+            f = open(oldseq, 'w')
+            f.write('oldseq\n')
             f.flush()
             f.close()
 

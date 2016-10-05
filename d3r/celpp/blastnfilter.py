@@ -327,10 +327,21 @@ class BlastNFilterTask(D3RTask):
             logger.debug('No log level set in arguments using WARNING')
             loglevel = 'WARNING'
 
+        # verify sequence.tsv file exists on filesystem.
+        # if not fall back to oldsequence.tsv file
+        sequencetsv = data_import.get_sequence_tsv()
+        if not os.path.isfile(sequencetsv):
+            logger.warning(sequencetsv + ' file not found. falling '
+                                         'back to old file')
+            self.append_to_email_log('\n ' + sequencetsv + ' file not found ' +
+                                     'falling back to ' +
+                                     data_import.get_oldsequence_tsv() + '\n')
+            sequencetsv = data_import.get_oldsequence_tsv()
+
         cmd_to_run = (self.get_args().blastnfilter + ' --nonpolymertsv ' +
                       data_import.get_nonpolymer_tsv() +
                       ' --sequencetsv ' +
-                      data_import.get_sequence_tsv() +
+                      sequencetsv +
                       ' --pdbblastdb ' +
                       make_blastdb.get_dir() +
                       ' --compinchi ' +
