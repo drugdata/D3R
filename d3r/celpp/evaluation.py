@@ -131,8 +131,12 @@ class EvaluationTaskFactory(object):
                         stask.set_evaluation_emailer(emailer)
                         scoring_tasks.append(stask)
                     else:
-                        logger.debug(stask.get_name() + ' cannot be' +
-                                     ' added : ' + stask.get_error())
+                        if stask.get_error() is None:
+                            logger.debug(stask.get_name() + ' cannot be' +
+                                         ' added, no error though')
+                        else:
+                            logger.debug(stask.get_name() + ' cannot be' +
+                                         ' added : ' + stask.get_error())
 
         return scoring_tasks
 
