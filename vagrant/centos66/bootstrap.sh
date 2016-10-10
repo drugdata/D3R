@@ -8,7 +8,31 @@ yum install -y python-biopython python-virtualenv python-tox
 yum install -y pylint python-coverage libXft mesa-* openbabel
 yum install -y perl-Archive-Tar perl-List-MoreUtils xauth pymol
 
+#
+# install rdkit
+#
+pushd /vagrant
+wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh
+chmod a+x Miniconda2-latest-Linux-x86_64.sh
+./Miniconda2-latest-Linux-x86_64.sh -b -p /opt/miniconda2
+export PATH="/opt/miniconda2/bin:$PATH"
+echo "export PATH=/opt/miniconda2/bin:$PATH" >> /home/vagrant/.bash_profile
+conda update --yes conda
+conda install -y -c rdkit rdkit=2016.03.3
+
+# switch to conda root setup
+source activate root
+
+# make sure vagrant user is always under conda environment
+echo "source activate root" >> /home/vagrant/.bash_profile
+
+
 echo "pip installing some packages"
+pip install pip --upgrade
+pip install argparse
+pip install lockfile --upgrade
+pip install psutil
+pip install biopython
 pip install xlsxwriter
 pip install ftpretty
 pip install wheel
@@ -33,18 +57,9 @@ wget http://mgltools.scripps.edu/downloads/downloads/tars/releases/REL1.5.6/mglt
 tar -zxf mgltools_x86_64Linux2_1.5.6.tar.gz
 pushd mgltools_x86_64Linux2_1.5.6
 ./install.sh -d /usr/local/mgltools
+echo "export MGL_ROOT=/usr/local/mgltools" >> /home/vagrant/.bash_profile
 popd
 popd
-
-#
-# install rdkit
-pushd /vagrant
-wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh
-chmod a+x Miniconda2-latest-Linux-x86_64.sh
-./Miniconda2-latest-Linux-x86_64.sh -b -p /opt/miniconda2
-export PATH="/opt/miniconda2/bin:$PATH"
-conda update --yes conda
-conda install -y -c rdkit rdkit=2016.03.3
 
 if [ -f "/vagrant/chimera-1.10.2-linux_x86_64.bin" ] ; then
   pushd /vagrant
@@ -72,6 +87,8 @@ if [ -f "/vagrant/Schrodinger_Suites_2016-2_Linux-x86_64.tar" ] ; then
   tar -xf Schrodinger_Suites_2016-2_Linux-x86_64.tar
   pushd /vagrant/Schrodinger_Suites_2016-2_Linux-x86_64
   ./INSTALL -d `pwd` -b -s /vagrant/schrodinger -k /usr/tmp -t /vagrant/schrodinger/thirdparty mmshare*.gz glide*.gz maestro*gz
+  echo "export SCHRODINGER=/vagrant/schrodinger" >> /home/vagrant/.bash_profile
+  echo "export SCHROD_LICENSE_FILE=<PUT LICENSE HERE>" >>  /home/vagrant/.bash_profile
   popd
   popd
 else
@@ -80,5 +97,7 @@ else
   echo "Download Schrodinger_Suites_2016-2_Linux-x86_64.tar"
   echo "tar -xf Schrodinger_Suites_2016-2_Linux-x86_64.tar"
   echo "cd Schrodinger_Suites_2016-2_Linux-x86_64"
-  echo "./INSTALL"
+  echo "./INSTALL-d `pwd` -b -s /vagrant/schrodinger -k /usr/tmp -t /vagrant/schrodinger/thirdparty mmshare*.gz glide*.gz maestro*gz"
+  echo "export SCHRODINGER=/vagrant/schrodinger" >> /home/vagrant/.bash_profile
+  echo "export SCHROD_LICENSE_FILE=<PUT LICENSE HERE>" >>  /home/vagrant/.bash_profile
 fi

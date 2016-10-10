@@ -6,7 +6,6 @@ import unittest
 import tempfile
 import shutil
 import os.path
-from mock import Mock
 
 from d3r.celpp.filetransfer import FileTransfer
 from d3r.celpp.filetransfer import InvalidFtpConfigException

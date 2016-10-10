@@ -202,6 +202,31 @@ class TestEvaluation(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
+    def test_get_evaluation_tasks_on_with_valid_completed_algo_dir(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+
+            glidetask = GlideTask(temp_dir, params)
+            glidetask.create_dir()
+
+            open(os.path.join(glidetask.get_dir(),
+                              D3RTask.COMPLETE_FILE), 'a').close()
+
+            etask = EvaluationTask(temp_dir,
+                                   glidetask.get_name() + '.' +
+                                   EvaluationTaskFactory.SCORING_SUFFIX,
+                                   glidetask,
+                                   params)
+            etask.create_dir()
+            open(os.path.join(etask.get_dir(),
+                              D3RTask.COMPLETE_FILE), 'a').close()
+            stf = EvaluationTaskFactory(temp_dir, params)
+            task_list = stf.get_evaluation_tasks()
+            self.assertEquals(len(task_list), 0)
+        finally:
+            shutil.rmtree(temp_dir)
+
     def test_get_evaluation_tasks_on_with_valid_algo_dir(self):
         temp_dir = tempfile.mkdtemp()
         try:
@@ -848,8 +873,6 @@ class TestEvaluation(unittest.TestCase):
             emailer.set_alternate_smtp_emailer(smtpemailer)
             emailer.send_evaluation_email(task)
             mockserver.quit.assert_any_call()
-            from_addr = smtpemailer\
-                .generate_from_address_using_login_and_host()
             self.assertEqual(emailer.get_message_log(),
                              '\nSent evaluation email to: bob@bob.com\n')
             self.assertEqual(mockserver.sendmail.call_count, 1)

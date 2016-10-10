@@ -621,20 +621,22 @@ class TestD3rTask(unittest.TestCase):
             self.assertEqual(msg_root, res)
 
             # try 1 text attachment
-            txtfile = os.path.join(temp_dir,'my.txt')
+            txtfile = os.path.join(temp_dir, 'my.txt')
             f = open(txtfile, 'w')
             f.write('hello')
             f.flush()
             f.close()
             msg_root = MIMEMultipart("alternative")
-            a = Attachment(txtfile,'renamed.txt')
+            a = Attachment(txtfile, 'renamed.txt')
             res = emailer._append_attachments(msg_root, [a])
-            res.as_string().index('Content-Type: text/plain; charset="us-ascii"')
-            res.as_string().index('Content-Disposition: attachment; filename="renamed.txt"')
+            res.as_string().index('Content-Type: text/plain; '
+                                  'charset="us-ascii"')
+            res.as_string().index('Content-Disposition: attachment; '
+                                  'filename="renamed.txt"')
             res.as_string().index('hello')
 
             # try 1 image attachment
-            img = os.path.join(temp_dir,'yo.ppm')
+            img = os.path.join(temp_dir, 'yo.ppm')
             f = open(img, 'w')
             f.write('P6\n1 1\n255\n')
             f.write('%c' % 255)
@@ -644,7 +646,8 @@ class TestD3rTask(unittest.TestCase):
             b = Attachment(img, None)
             res = emailer._append_attachments(msg_root, [b])
             res.as_string().index('Content-Type: image/x-portable-pixmap')
-            res.as_string().index('Content-Disposition: attachment; filename="yo.ppm"')
+            res.as_string().index('Content-Disposition: attachment; '
+                                  'filename="yo.ppm"')
 
             # try 1 gzip attachment
             mygz = os.path.join(temp_dir, 'foo.gz')
@@ -655,20 +658,25 @@ class TestD3rTask(unittest.TestCase):
             c = Attachment(mygz, 'well.gz')
             res = emailer._append_attachments(msg_root, [c])
             res.as_string().index('Content-Type: application/octet-stream')
-            res.as_string().index('Content-Disposition: attachment; filename="well.gz"')
+            res.as_string().index('Content-Disposition: attachment; '
+                                  'filename="well.gz"')
 
             # try 3 attachments above together
             msg_root = MIMEMultipart("alternative")
             res = emailer._append_attachments(msg_root, [a, b, c])
-            res.as_string().index('Content-Type: text/plain; charset="us-ascii"')
-            res.as_string().index('Content-Disposition: attachment; filename="renamed.txt"')
+            res.as_string().index('Content-Type: text/plain; '
+                                  'charset="us-ascii"')
+            res.as_string().index('Content-Disposition: attachment; '
+                                  'filename="renamed.txt"')
             res.as_string().index('hello')
 
             res.as_string().index('Content-Type: image/x-portable-pixmap')
-            res.as_string().index('Content-Disposition: attachment; filename="yo.ppm"')
+            res.as_string().index('Content-Disposition: attachment; '
+                                  'filename="yo.ppm"')
 
             res.as_string().index('Content-Type: application/octet-stream')
-            res.as_string().index('Content-Disposition: attachment; filename="well.gz"')
+            res.as_string().index('Content-Disposition: attachment; '
+                                  'filename="well.gz"')
         finally:
             shutil.rmtree(temp_dir)
 

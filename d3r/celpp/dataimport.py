@@ -26,7 +26,8 @@ class DataImportTask(D3RTask):
     """
     PARTICIPANT_LIST_CSV = "participant_list.csv"
     NONPOLYMER_TSV = "new_release_structure_nonpolymer.tsv"
-    SEQUENCE_TSV = "new_release_structure_sequence.tsv"
+    OLDSEQUENCE_TSV = "new_release_structure_sequence.tsv"
+    SEQUENCE_TSV = "new_release_structure_sequence_canonical.tsv"
     CRYSTALPH_TSV = "new_release_crystallization_pH.tsv"
     COMPINCHI_ICH = "Components-inchi.ich"
 
@@ -101,8 +102,15 @@ class DataImportTask(D3RTask):
         return os.path.join(self.get_dir(),
                             DataImportTask.NONPOLYMER_TSV)
 
-    def get_sequence_tsv(self):
+    def get_oldsequence_tsv(self):
         """Returns path to new_release_structure_sequence.tsv file
+        :return: full path to DataImportTask.SEQUENCE_TSV file
+        """
+        return os.path.join(self.get_dir(),
+                            DataImportTask.OLDSEQUENCE_TSV)
+
+    def get_sequence_tsv(self):
+        """Returns path to new_release_structure_sequence_canonical.tsv file
         :return: full path to DataImportTask.SEQUENCE_TSV file
         """
         return os.path.join(self.get_dir(),
@@ -231,15 +239,18 @@ class DataImportTask(D3RTask):
     def append_standard_to_files(self):
         """Appends standard 1FCZ to tsv files as mapped below
 
-           NONPOLYMER_TSV_STANDARD is appended to get_nonpolymer_tsv()
-           CRYSTALPH_TSV_STANDARD is appended to get_crystalph_tsv()
-           SEQUENCE_TSV_STANDARD is appended to get_sequence_tsv()
+           NONPOLYMER_TSV_STANDARD is appended to `get_nonpolymer_tsv()`
+           CRYSTALPH_TSV_STANDARD is appended to `get_crystalph_tsv()`
+           SEQUENCE_TSV_STANDARD is appended to `get_sequence_tsv()`
+           SEQUENCE_TSV_STANDARD is appended to `get_oldsequence_tsv()`
         """
         logger.debug('Appending 1FCZ standard to tsv files')
         try:
             util.append_string_to_file(self.get_nonpolymer_tsv(),
                                        DataImportTask.NONPOLYMER_TSV_STANDARD)
             util.append_string_to_file(self.get_sequence_tsv(),
+                                       DataImportTask.SEQUENCE_TSV_STANDARD)
+            util.append_string_to_file(self.get_oldsequence_tsv(),
                                        DataImportTask.SEQUENCE_TSV_STANDARD)
             util.append_string_to_file(self.get_crystalph_tsv(),
                                        DataImportTask.CRYSTALPH_TSV_STANDARD)
@@ -261,7 +272,8 @@ class DataImportTask(D3RTask):
 
             self.append_to_email_log(str(seq_count) + ' ' +
                                      DataImportTask.SEQUENCE_TSV + '\n')
-
+            self.append_to_email_log(str(seq_count) + ' ' +
+                                     DataImportTask.OLDSEQUENCE_TSV + '\n')
             self.append_to_email_log(str(crystal_count) + ' ' +
                                      DataImportTask.CRYSTALPH_TSV + '\n')
 
@@ -357,6 +369,15 @@ class DataImportTask(D3RTask):
 
             download_path = self.get_sequence_tsv()
             util.download_url_to_file(sequence,
+                                      download_path,
+                                      self._maxretries,
+                                      self._retrysleep)
+
+            oldsequence = url + '/' + DataImportTask.OLDSEQUENCE_TSV
+            self._wait_for_url_to_be_updated(oldsequence)
+
+            download_path = self.get_oldsequence_tsv()
+            util.download_url_to_file(oldsequence,
                                       download_path,
                                       self._maxretries,
                                       self._retrysleep)

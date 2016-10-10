@@ -43,7 +43,8 @@ class TestFtpFileTransfer(unittest.TestCase):
         try:
             # test passing non existant config file
             try:
-                foo = WebDavFileTransfer(os.path.join(temp_dir, 'doesnotexist'))
+                foo = WebDavFileTransfer(os.path.join(temp_dir,
+                                                      'doesnotexist'))
                 self.fail('Expected IOError')
             except IOError:
                 pass
@@ -182,7 +183,7 @@ class TestFtpFileTransfer(unittest.TestCase):
             foo = WebDavFileTransfer(None)
             foo.set_connection(mockftp)
             foo.connect()
-            fakefile = os.path.join(temp_dir,'foo')
+            fakefile = os.path.join(temp_dir, 'foo')
             f = open(fakefile, 'w')
             f.write('123')
             f.flush()
@@ -216,7 +217,8 @@ class TestFtpFileTransfer(unittest.TestCase):
         self.assertFalse(foo.download_file('/remote/bye', '/local/hi'))
         self.assertEqual(foo.get_error_msg(), "Unable to download /remote/bye "
                                               "to /local/hi : 'NoneType' "
-                                              "object has no attribute 'download'")
+                                              "object has no attribute "
+                                              "'download'")
 
     def test_download_file_success(self):
         mockftp = MockFtp()
