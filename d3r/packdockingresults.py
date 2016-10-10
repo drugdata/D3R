@@ -99,6 +99,14 @@ def main_pack_dock_results(challenge_dir, dock_dir, pack_dir, ftp_config):
                                        d_f_basename)
             shutil.copyfile(docked_mol, destination)
             
+            ### TEMPORARY HACK UNTIL EVALUATE GETS FIXED ###
+            hack_folder_name = destination.replace('_docked.mol','')
+            os.mkdir(hack_folder_name)
+            destination = os.path.join(hack_folder_name, d_f_basename)
+            shutil.copyfile(docked_mol, destination)
+            destination = destination.replace('.mol','.pdb')
+            shutil.copyfile(docked_pdb, destination)
+
     
     
     ## Tar up the pack directory. To keep this tarball from containing
@@ -145,14 +153,14 @@ def main_pack_dock_results(challenge_dir, dock_dir, pack_dir, ftp_config):
 if ("__main__") == (__name__):
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument("-c", "--challengedir", metavar="PATH", help = "PATH to the unpacked challenge data package")
+    parser.add_argument("-c", "--challengedata", metavar="PATH", help = "PATH to the unpacked challenge data package")
     parser.add_argument("-d", "--dockdir", metavar = "PATH", help = "Dir where docking was performed")
     parser.add_argument("-p", "--packdir", metavar="PATH", help = "Dir where the packing and uploading will be performed. Note that, for competition entries, this expects this dir name to already have the proper formatting for this contestant's entry, and will be used as the base of the tar.gz file.")
     parser.add_argument("-f", "--ftpconfig", metavar="PATH", help = "File containing user ftp config information (see included example ftp config for specifics)")
     logger = logging.getLogger()
     logging.basicConfig( format  = '%(asctime)s: %(message)s', datefmt = '%m/%d/%y %I:%M:%S', filename = 'final.log', filemode = 'w', level = logging.INFO )
     args = parser.parse_args()
-    challenge_dir = args.challengedir
+    challenge_dir = args.challengedata
     dock_dir = args.dockdir
     pack_dir = args.packdir
     ftp_config = args.ftpconfig

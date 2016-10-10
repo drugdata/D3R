@@ -10,6 +10,7 @@ import time
 import re 
 import shutil
 from d3r.utilities.challenge_data import ChallengeData
+from d3r.utilities.readers import ReadText
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +29,10 @@ class LigandPrep(object):
 
 
     
-    def ligand_scientific_prep(self, lig_smi_file, out_lig_file, info_dic={}):
+    def ligand_scientific_prep(self, 
+                               lig_smi_file, 
+                               out_lig_file, 
+                               targ_info_dic={}):
        """Does not do any scientific preparation - Passes ligand smiles file forward without any processing 
        """
        
@@ -53,7 +57,7 @@ class LigandPrep(object):
         ## Get all potential target directories and candidates within
         valid_targets = {}
 
-        # Ensure that the directories are valid
+        # Ensure that the challengedata targets are valid and copy in files
         for pot_target_dir in pot_target_dirs:
             os.chdir(current_dir_layer_1)
             pot_targ_id = os.path.basename(pot_target_dir.strip('/'))
@@ -66,13 +70,13 @@ class LigandPrep(object):
             target_dir_path = os.path.join(abs_week_path, pot_targ_id)
 
             # Copy in <targ id>.txt file
-            origin_txt_file = os.path.join(target_dir_path,pot_targ_id+'.txt')
-            dest_txt_file = os.path.join(pot_targ_id,pot_targ_id+'.txt')
+            targ_info_basename = pot_targ_id + '.txt'
+            origin_txt_file = os.path.join(target_dir_path, targ_info_basename)
+            dest_txt_file = os.path.join(pot_targ_id, targ_info_basename)
             shutil.copyfile(origin_txt_file, dest_txt_file)
-                            
+
 
             # Pull in the ligand inchi/smiles
-            
             lig_smiles_files = glob.glob('%s/lig_*.smi' %(target_dir_path))
             if len(lig_smiles_files) != 1:
                 logging.info('Unable to find unambiguous ligand smiles for %s - glob returned %r' %(pot_targ_id, lig_smiles_files))
@@ -90,13 +94,20 @@ class LigandPrep(object):
             
         for target_id in valid_targets.keys():
             os.chdir(target_id)
-
             smiles_filename = valid_targets[target_id]
+
+
+            # Parse the <targ id>.txt file
+            ReadText_obj = ReadText()
+            targ_info_dict = ReadText_obj.parse_txt(target_id + '.txt')
+
 
             # Prepare the ligand
             lig_prefix = smiles_filename.replace('.smi','')
             prepared_lig_file = '%s_prepared%s' %(lig_prefix, LigandPrep.OUTPUT_LIG_SUFFIX)
-            lig_prep_result = self.ligand_scientific_prep(smiles_filename, prepared_lig_file)
+            lig_prep_result = self.ligand_scientific_prep(smiles_filename, 
+                                                          prepared_lig_file,
+                                                          targ_info_dict=targ_info_dict)
             if lig_prep_result == False:
                 logging.info("Unable to prepare the ligand for this target protein: %s. Skipping" %(target_id))
                 continue 

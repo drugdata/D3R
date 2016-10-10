@@ -7,6 +7,7 @@ import shutil
 import re
 import glob
 import logging
+from d3r.utilities.readers import ReadText
 
 logger = logging.getLogger(__name__)
 
@@ -26,43 +27,70 @@ class Dock(object):
     SCI_PREPPED_LIG_SUFFIX = '_prepared.sdf'
     SCI_PREPPED_PROT_SUFFIX = '_prepared.pdb'
 
-    def lig_technical_prep(self, sci_prepped_lig):
-        """Technical preparation" is the step immediate preceding
-        docking. During this step, you should perform any file
+    def lig_technical_prep(self, 
+                           sci_prepped_lig, 
+                           targ_info_dict={}):
+        """
+        'Technical preparation' is the step immediate preceding
+        docking. During this step, you may perform any file
         conversions or processing that are specific to your docking
-        program.
+        program. Implementation of this function is optional.
         :param sci_prepped_lig: Scientifically prepared ligand file
-        :returns: This implementation merely returns the value of
-        `sci_prepped_lig` in a list
+        :param targ_info_dict: A dictionary of information about this target and the candidates chosen for docking.
+        :returns: A list of result files to be copied into the
+        subsequent docking folder. The base implementation merely
+        returns the input string in a list (ie. [sci_prepped_lig]) 
         """
         return [sci_prepped_lig]
-
-    def receptor_technical_prep(self, sci_prepped_receptor, pocket_center):
-        """Technical preparation" is the step immediately preceding
-        docking. During this step, you should perform any file
-        conversions or processing that are specific to your docking
-        program.
-        :param sci_prepped_receptor: String containing file name of scientifically prepared receptor from previous step, according to requested suffix.
-        :param pocket_center: String containing predicted pocket center.
-        :returns: This implementation merely returns the value of 'sci_prepped_receptor" in a list
+    
+    def receptor_technical_prep(self, 
+                                sci_prepped_receptor, 
+                                pocket_center, 
+                                targ_info_dict={}):
         """
-
-        # Finally, we return the filenames that will be needed in the
-        # docking step. This list is passed to the dock() function as the
-        # tech_prepped_receptor_list argument. Here we pass the docking
-        # box file (for the docking) and the original scientifically
-        # prepped ligand pdb, as that's the easiest way to return the
-        # final receptor conformation.
+        'Technical preparation' is the step immediately preceding
+        docking. During this step, you may perform any file
+        conversions or processing that are specific to your docking
+        program. Implementation of this function is optional.
+        :param sci_prepped_receptor: Scientifically prepared receptor file
+        :param targ_info_dict: A dictionary of information about this target and the candidates chosen for docking.
+        :returns: A list of result files to be copied into the
+        subsequent docking folder. This implementation merely
+        returns the input string in a list (ie [sci_prepped_receptor])
+        """
         return [sci_prepped_receptor]
 
-    def dock(self, tech_prepped_lig_list, tech_prepped_receptor_list, output_receptor_pdb, output_lig_mol):
-        """# The dock step needs to run the actual docking algorithm. Its first two
-        # arguments are the return values from the technical preparation
-        # functions for the ligand and receptor. The outputs from this
-        # step must be two files - a pdb with the filename specified in
-        # the output_receptor_pdb argument, and a mol with the filename
-        # specified in the output_ligand_mol argument.
-        :returns: Always returns False
+    def dock(self, 
+             tech_prepped_lig_list, 
+             tech_prepped_receptor_list, 
+             output_receptor_pdb, 
+             output_lig_mol,
+             targ_info_dict={}):
+        """
+        This function is the only one which the contestant MUST
+        implement.  The dock() step runs the actual docking
+        algorithm. Its first two arguments are the return values from
+        the technical preparation functions for the ligand and
+        receptor. These arguments are lists of file names (strings),
+        which can be assumed to be in the current directory. 
+        If prepare_ligand() and ligand_technical_prep() are not
+        implemented by the contestant, tech_prepped_lig_list will
+        contain a single string which names a SMILES file in the
+        current directory.
+        If prepare_protein() and receptor_technical_prep() are not
+        implemented by the contestant, tech_prepped_receptor_list will
+        contain a single string which names a PDB file in the current
+        directory.
+        The outputs from this step must be two files - a pdb with the
+        filename specified in the output_receptor_pdb argument, and a
+        mol with the filename specified in the output_ligand_mol
+        argument.
+        :param tech_prepped_lig_list: The list of file names resturned by ligand_technical_prep. These have been copied into the current directory.
+        :param tech_prepped_receptor_list: The list of file names resturned by receptor_technical_prep. These have been copied into the current directory.
+        :param output_receptor_pdb: The final receptor (after docking) must be converted to pdb format and have exactly this file name.
+        :param output_lig mol: The final ligand (after docking) must be converted to mol format and have exactly this file name.
+        :param targ_info_dict: A dictionary of information about this target and the candidates chosen for docking.
+        :returns: True if docking is successful, False otherwise. Unless overwritten, this implementation always returns False
         """
         return False
 
@@ -159,13 +187,14 @@ class Dock(object):
             for potential_cand_protein in potential_cand_proteins:
                 potential_cand_basename = os.path.basename(potential_cand_protein)
                 category, targ_id, cand_id = self.parse_cand_name(potential_cand_basename)
-            
+                targ_txt_file = os.path.join(targ_lig_prep_dir,targ_id + '.txt')
                 # If this is the first valid cand for this target, make a new dictionary key and mark the target as valid
                 if not('valid_cands' in targ_dic[targ_name].keys()):
                     targ_dic[targ_name]['valid_targ'] = True
                     targ_dic[targ_name]['prot_prep_dir'] = targ_prot_prep_dir
                     targ_dic[targ_name]['lig_prep_dir'] = targ_lig_prep_dir
                     targ_dic[targ_name]['pocket_center'] = pocket_center
+                    targ_dic[targ_name]['targ_txt_file'] = targ_txt_file
                     targ_dic[targ_name]['lig_file'] = sci_prepped_lig_file
                     targ_dic[targ_name]['lig_prefix'] = lig_prefix
                     targ_dic[targ_name]['valid_cands'] = []
@@ -197,6 +226,15 @@ class Dock(object):
             os.chdir(targ_name)
             abs_targ_dock_dir = os.getcwd()
 
+
+            # Copy the targ.txt file in 
+            copy_dest = '%s/%s' %(abs_targ_dock_dir, os.path.basename(targ_dic[targ_name]['targ_txt_file']))
+            shutil.copyfile(targ_dic[targ_name]['targ_txt_file'], copy_dest)
+            # Parse the targ.txt file
+            ReadText_obj = ReadText()
+            targ_info_dict = ReadText_obj.parse_txt(copy_dest)
+
+
             #### Run CELPPade technical prep
 
             ### Ligand technical prep
@@ -204,6 +242,8 @@ class Dock(object):
             ## Ligand technical prep setup
             lig_tech_prep_dir = 'lig_%s_tech_prep' %(targ_dic[targ_name]['lig_prefix'])
             os.mkdir(lig_tech_prep_dir)
+
+
 
             # Copy the sci prepped ligand in
             copy_dest = '%s/%s' %(lig_tech_prep_dir, os.path.basename(targ_dic[targ_name]['lig_file']))
@@ -213,7 +253,7 @@ class Dock(object):
             os.chdir(lig_tech_prep_dir)
         
             ## Call user-defined ligand technical prep
-            tech_prepped_lig_file_list = self.lig_technical_prep(lig_base_filename)
+            tech_prepped_lig_file_list = self.lig_technical_prep(lig_base_filename, targ_info_dict=targ_info_dict)
 
         
             ## Ensure that ligand technical prep was successful
@@ -253,7 +293,7 @@ class Dock(object):
                 os.chdir(cand_tech_prep_dir)
             
                 ## Call user-defined protein technical prep
-                tech_prepped_prot_file_list = self.receptor_technical_prep(prot_base_filename, pocket_center)
+                tech_prepped_prot_file_list = self.receptor_technical_prep(prot_base_filename, pocket_center, targ_info_dict=targ_info_dict)
 
                 ## Ensure that receptor technical prep was successful
                 # Check for function-reported failure
@@ -303,9 +343,10 @@ class Dock(object):
                 
                 ## Do the actual docking
                 dock_results = self.dock(tech_prepped_lig_file_list,
-                                    tech_prepped_prot_file_list,
-                                    output_receptor_pdb,
-                                    output_lig_mol)
+                                         tech_prepped_prot_file_list,
+                                         output_receptor_pdb,
+                                         output_lig_mol,
+                                         targ_info_dict=targ_info_dict)
         
                 ## Check for success
                 # Check for self-reported failure

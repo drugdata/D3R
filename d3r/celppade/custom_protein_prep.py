@@ -10,6 +10,8 @@ import time
 import re 
 import shutil 
 from d3r.utilities.challenge_data import ChallengeData
+from d3r.utilities.readers import ReadText
+
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +27,7 @@ class ProteinPrep(object):
     # This prep script will be required to output files with the appropriate suffixes
     OUTPUT_PROTEIN_SUFFIX = '.pdb'
 
-    def prepare_protein(self, protein_file, prepared_protein_file, info_dic={}):
+    def prepare_protein(self, protein_file, prepared_protein_file, targ_info_dic={}):
         """Does not do any scientific preparation - Passes protein forward without any processing 
         """
         
@@ -63,7 +65,7 @@ class ProteinPrep(object):
         valid_candidates = {}
 
 
-        # Ensure that the directories are valid
+        # Ensure that the chalengedata targets are valid and copy in files
         for pot_target_dir in pot_target_dirs:
             os.chdir(current_dir_layer_1)
             pot_target_id = os.path.basename(pot_target_dir.strip('/'))
@@ -77,10 +79,16 @@ class ProteinPrep(object):
             valid_candidates[pot_target_id] = []
             target_dir_path = os.path.join(abs_week_path, pot_target_id)
 
-
+            # Copy in <targ id>.txt file
+            targ_info_basename = pot_target_id+'.txt'
+            targ_info_file = os.path.join(target_dir_path, targ_info_basename)
+            targ_info_dest = os.path.join(pot_target_id, targ_info_basename)
+            shutil.copyfile(targ_info_file, targ_info_dest)
+            
+            # Copy in center.txt file
             center_file = os.path.join(target_dir_path,'center.txt')
-            center_file_basename = os.path.basename(center_file)
-            center_file_dest = os.path.join(pot_target_id, center_file_basename)
+            #center_file_basename = os.path.basename(center_file)
+            center_file_dest = os.path.join(pot_target_id, 'center.txt')
             shutil.copyfile(center_file, center_file_dest)
 
 
@@ -93,12 +101,15 @@ class ProteinPrep(object):
                 candidate_file_basename = os.path.basename(candidate_file)
                 candidate_file_dest = os.path.join(pot_target_id,candidate_file_basename)
                 shutil.copyfile(candidate_file, candidate_file_dest)
-                #commands.getoutput('cp %s %s' %(candidate_file, pot_target_id))
                 candidate_local_file = os.path.basename(candidate_file)
                 valid_candidates[pot_target_id].append(candidate_local_file)
 
         for target_id in valid_candidates.keys():
             os.chdir(target_id)
+            
+            ReadText_obj = ReadText()
+            targ_info_dict = ReadText_obj.parse_txt(target_id + '.txt')
+            
 
             for candidate_filename in valid_candidates[target_id]:
                 ## Parse the candidate name 
@@ -121,12 +132,16 @@ class ProteinPrep(object):
 
                 prepared_protein_file = "%s_prepared%s" %(candidate_prefix, ProteinPrep.OUTPUT_PROTEIN_SUFFIX)
 
-                preparation_result = self.prepare_protein(candidate_filename, prepared_protein_file)
+                
+
+                preparation_result = self.prepare_protein(candidate_filename, 
+                                                          prepared_protein_file,
+                                                          targ_info_dict=targ_info_dict)
                 if preparation_result == False:
                     logging.info("Unable to prepare this protein:%s"%(candidate_filename))
                     continue
                 if not(os.path.exists(prepared_protein_file)):
-                    logging.info('Expected output file %s does not exist. Assuming that protein prep failed. Skipping candidate %s' %(prepared_protein_file, candidate_prefix))
+                    logging.info('Expected output file %s does not exist after protein preparation. Assuming that protein prep failed. Skipping candidate %s' %(prepared_protein_file, candidate_prefix))
                     continue
                 if os.path.getsize(prepared_protein_file)==0:
                     logging.info('Expected output file %s has size 0. Assuming that protein prep failed. Skipping candidate %s' %(prepared_protein_file, candidate_prefix))
