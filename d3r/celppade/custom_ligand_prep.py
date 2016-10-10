@@ -57,7 +57,11 @@ class LigandPrep(object):
         ## Get all potential target directories and candidates within
         valid_targets = {}
 
+<<<<<<< HEAD
         # Ensure that the challengedata targets are valid and copy in files
+=======
+        # Ensure that the directories are valid
+>>>>>>> 82c2b190d801b8d1dfd9f9b870a7f399b3cbbd34
         for pot_target_dir in pot_target_dirs:
             os.chdir(current_dir_layer_1)
             pot_targ_id = os.path.basename(pot_target_dir.strip('/'))
@@ -95,6 +99,7 @@ class LigandPrep(object):
         for target_id in valid_targets.keys():
             os.chdir(target_id)
             smiles_filename = valid_targets[target_id]
+
 
 
             # Parse the <targ id>.txt file
