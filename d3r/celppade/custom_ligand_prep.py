@@ -15,20 +15,15 @@ from d3r.utilities.readers import ReadText
 logger = logging.getLogger(__name__)
 
 
-
 class LigandPrep(object):
     """Abstract class defining methods for a custom protein and ligand preparation solution
     for CELPP
     """
 
-
-
     # This prep script will be required to output files with the appropriate suffixes
     OUTPUT_LIG_SUFFIX = '.smi'
     
 
-
-    
     def ligand_scientific_prep(self, 
                                lig_smi_file, 
                                out_lig_file, 
@@ -39,7 +34,6 @@ class LigandPrep(object):
        shutil.copyfile(lig_smi_file, out_lig_file)
        return True
     
-
 
     def run_scientific_ligand_prep(self, challenge_data_path, pdb_protein_path, working_folder):
         abs_challenge_data_path = os.path.abspath(challenge_data_path)
@@ -57,11 +51,7 @@ class LigandPrep(object):
         ## Get all potential target directories and candidates within
         valid_targets = {}
 
-<<<<<<< HEAD
         # Ensure that the challengedata targets are valid and copy in files
-=======
-        # Ensure that the directories are valid
->>>>>>> 82c2b190d801b8d1dfd9f9b870a7f399b3cbbd34
         for pot_target_dir in pot_target_dirs:
             os.chdir(current_dir_layer_1)
             pot_targ_id = os.path.basename(pot_target_dir.strip('/'))
@@ -90,22 +80,15 @@ class LigandPrep(object):
             dest_smiles_file = os.path.join(pot_targ_id, local_smiles_file)
             shutil.copyfile(lig_smiles_file, dest_smiles_file)
 
-  
-            
             valid_targets[pot_targ_id] = local_smiles_file
 
-
-            
         for target_id in valid_targets.keys():
             os.chdir(target_id)
             smiles_filename = valid_targets[target_id]
 
-
-
             # Parse the <targ id>.txt file
             ReadText_obj = ReadText()
             targ_info_dict = ReadText_obj.parse_txt(target_id + '.txt')
-
 
             # Prepare the ligand
             lig_prefix = smiles_filename.replace('.smi','')
@@ -126,6 +109,4 @@ class LigandPrep(object):
 
             logging.info("Successfully prepared ligand %s for target %s"%(lig_prefix, target_id))
 
-
             os.chdir(current_dir_layer_1)
-
