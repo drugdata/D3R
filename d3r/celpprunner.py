@@ -319,6 +319,10 @@ def _parse_arguments(desc, args):
                              '(default '
                              'ftp://ftp.rcsb.org/pub/pdb/derived_data/'
                              'pdb_seqres.txt.gz')
+    parser.add_argument("--rdkitpython",
+                        default='',
+                        help='Path to directory containing python with '
+                             'new rdkit installed')
     parser.add_argument("--log", dest="loglevel", choices=['DEBUG',
                         'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
                         help="Set the logging level (default WARNING)",

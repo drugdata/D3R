@@ -124,6 +124,7 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEqual(result.skipimportwait, False)
         self.assertEqual(result.importretry, 60)
         self.assertEqual(result.importsleep, 600)
+        self.assertEqual(result.rdkitpython, '')
         theargs = ['foo', '--stage', 'dock,glide', '--email', 'b@b.com,h@h',
                    '--log', 'ERROR',
                    '--blastnfilter', '/bin/blastnfilter.py',
@@ -138,7 +139,8 @@ class TestCelppRunner(unittest.TestCase):
                    '--chimeraprep', '/bin/chimeraprep.py',
                    '--skipimportwait',
                    '--importretry', '10',
-                   '--importsleep', '30']
+                   '--importsleep', '30',
+                   '--rdkitpython', '/usr/bin']
         result = celpprunner._parse_arguments('hi', theargs)
         self.assertEqual(result.stage, 'dock,glide')
         self.assertEqual(result.celppdir, 'foo')
@@ -157,6 +159,7 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEqual(result.skipimportwait, True)
         self.assertEqual(result.importretry, 10)
         self.assertEqual(result.importsleep, 30)
+        self.assertEqual(result.rdkitpython, '/usr/bin')
 
     def test_run_tasks_passing_none_and_empty_list(self):
         self.assertEquals(celpprunner.run_tasks(None), 3)
