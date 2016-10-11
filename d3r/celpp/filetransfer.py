@@ -134,7 +134,7 @@ class FileTransfer(object):
     def set_remote_challenge_dir(self, challenge_dir):
         """Sets the remote challenge directory for ftp upload
         """
-        self._contestant_id = challenge_dir
+        self._remote_challenge_dir = challenge_dir
 
     def get_remote_challenge_dir(self):
         """Gets the remote challenge directory for ftp upload
