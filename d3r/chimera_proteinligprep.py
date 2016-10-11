@@ -15,6 +15,9 @@ logging.basicConfig( format  = '%(asctime)s: %(message)s', datefmt = '%m/%d/%y %
 #full_copy_location = ""
 #target_copy_location = ""
 
+# Name for python binary
+PYTHON_BINARY_NAME = 'python'
+
 rdkit_smiles_to_3d_sdf_text = '''
 import rdkit.Chem
 import rdkit.Chem.AllChem
@@ -91,11 +94,13 @@ def ligand_prepare(ligand_smile, out_lig_file, rdkit_python):
     if os.path.isfile(out_lig_file):
         logging.info('Ligand file %s is already prepared. Skipping.' %(out_lig_file))
         return True
+
     # Prepare a 3D version of the ligand using babel
     unprep_lig_file_1 = ligand_smile.replace('.smi','_unprep_step1.sdf')
     with open('rdkit_smiles_to_3d_sdf.py','wb') as of:
         of.write(rdkit_smiles_to_3d_sdf_text)
-    rdkitpythonpath = os.path.join(rdkit_python, 'bin', 'python')
+
+    rdkitpythonpath = os.path.join(rdkit_python, PYTHON_BINARY_NAME)
     commands.getoutput(rdkitpythonpath + ' rdkit_smiles_to_3d_sdf.py ' +
                        ligand_smile + ' ' + unprep_lig_file_1 +
                        ' > rdkit_smiles_to_3d_sdf_out 2>&1')
@@ -133,126 +138,7 @@ def prepare_protein (protein_file, prepared_protein, sleep_time = 300):
 def main_proteinprep (challenge_data_path, pdb_protein_path, working_folder, rdkit_python ):
     os.chdir(working_folder)
     current_dir_layer_1 = os.getcwd()
-#     all_stage_2_out = glob.glob("%s/*.txt"%challenge_data_path)
-#     summary_file = "%s/summary.txt"%challenge_data_path
-#     if summary_file in all_stage_2_out:
-#         all_stage_2_out.remove(summary_file)
-#     for single_stage_2_out in all_stage_2_out: 
-#         target_id = os.path.basename(single_stage_2_out).split(".txt")[0]
-#         valid_candidates[target_id] = []
-#         if not os.path.isdir(target_id):
-#             os.mkdir(target_id)
-#         os.chdir(target_id)
-#     #+++++++++++++++++++++
-#     #get the infromation from stage 2 output
-#         commands.getoutput("cp %s ." %(single_stage_2_out))
-#         query_dic = extract_info_from_s2(target_id + ".txt")
-# 
-#     ######################
-#     #step 1, check if there is a protein start with LMCSS if not then don't need to continue
-#     ######################
-#         if not "LMCSS" in query_dic:
-#             logging.info("For this target protein: %s, there is no protein sharing the LMCSS ligand witt. Not able to generate Docking grid, pass for this case..."%target_id)
-#             os.chdir(current_dir_layer_1)     
-#             continue
-#         elif len(query_dic["LMCSS"]) != 2:
-#             logging.info("For this target protein: %s, the laregest protein has wrong number of informations associate with this id..."%target_id)
-#             os.chdir(current_dir_layer_1)
-#             continue
-#         elif not "inchi" in query_dic:
-#             logging.info("For this target protein: %s, there is no inchi info for the ligand..."%target_id)
-#             os.chdir(current_dir_layer_1)
-#             continue
-#         else:
-#             logging.info("============Start to work in this target protein: %s============"%target_id)
-#             #raw_input()
-#         ######################
-#         #step 2, if there is a LMCSS protein then copy this portein to this folder and generate the center of the ligand
-#         ######################
-#             LMCSS_candidate_id = query_dic["LMCSS"][0]
-#             LMCSS_candidate_filename = "LMCSS-%s_%s.pdb" %(target_id, LMCSS_candidate_id)
-#             LMCSS_pdb_folder_name = LMCSS_candidate_id[1:3]
-#             LMCSS_ent_file = "pdb" + LMCSS_candidate_id  + ".ent"
-#             LMCSS_pdbloc = os.path.join(pdb_protein_path, LMCSS_pdb_folder_name, LMCSS_ent_file)
-#             if not os.path.isfile(LMCSS_pdbloc):
-#                 logging.info("Unable to find the ent file associate with the LMCSS candidate pdb: %s at location %s"%(LMCSS_candidate_id, LMCSS_pdbloc)) 
-#                 os.chdir(current_dir_layer_1)
-#                 continue
-#             else:
-#                 commands.getoutput("cp %s %s"%(LMCSS_pdbloc, LMCSS_candidate_filename))
-#                 valid_candidates[target_id].append(LMCSS_candidate_filename)
-# 
-#         ######################
-#         #step 3, get the center of the ligand in the LMCSS pdb
-#         ######################
-#         try:
-#             LMCSS_ligand = query_dic["LMCSS"][1] 
-#         except:
-#             logging.info("There is no ligand information for this LMCSS candidate protein: %s"%(LMCSS_candidate_id))
-#             os.chdir(current_dir_layer_1)
-#             continue
-#         ligand_center = get_center (LMCSS_candidate_filename, LMCSS_ligand) 
-#         if not ligand_center:
-#             logging.info("Unable to find the center of the ligand for the LMCSS candidate pdb: %s"%(LMCSS_candidate_id))
-#             os.chdir(current_dir_layer_1)
-#             continue
-#         else:
-#             center_file = open("center.txt", "w")
-#             center_file.writelines(ligand_center)
-#             center_file.close()
-#         ######################
-#         #step 4, prepare the ligand 
-#         ######################
-#         #a. generate the smile string from inchi 
-#         ligand_inchi = "InChI=" + query_dic["inchi"]
-#         inchi_f = open("tmp.inchi", "w")
-#         inchi_f.writelines(ligand_inchi)
-#         inchi_f.close()
-#         inchi_filename = "tmp.inchi"
-#         smile_filename = "tmp.smi"
-#         #print "babel -iinchi %s  -osmi ---errorlevel 1"%inchi_filename
-#         commands.getoutput("babel -iinchi %s  -osmi %s ---errorlevel 1"%(inchi_filename, smile_filename))
-#         #raw_input()
-#         if os.path.isfile(smile_filename):
-#             smile_file = open(smile_filename, "r")
-#             ligand_smile = smile_file.readlines()
-#             smile_file.close()
-#         else:
-#             logging.info( "Convert from inchi:%s to SMILES failed"%(ligand_inchi))
-#         #finish generating the smiles, then try to prepared the ligand 
-#         ##############ligand prep step starts here##############
-#         #if not ligand_prepare(ligand_smile, "ligand.mae"):
-#         if not ligand_prepare(smile_filename, "ligand.mae"):
-#             logging.info("Unable to prepare the ligand for this query protein:%s"%target_id)
-#             os.chdir(current_dir_layer_1)
-#             continue 
-#         else:
-#         ########################################################
-#         #step 5, align all proteins
-#             for method_type in ("SMCSS", "hiResHolo", "hiResApo"):
-#                 if method_type in query_dic:
-#                     #copy to here
-#                     if len(query_dic[method_type]) == 2:
-#                         #have both id and ligand info
-#                         method_type_id = query_dic[method_type][0]
-#                     else:
-#                         #have only id info 
-#                         method_type_id = query_dic[method_type]
-#                     ## The pdb database is sorted by the middle two characters of the pdb code
-#                     method_type_folder_name = method_type_id[1:3]
-#                     method_ent_file = "pdb" + method_type_id  + ".ent"
-#                     method_pdbloc = os.path.join(pdb_protein_path, method_type_folder_name, method_ent_file)
-#                     if not os.path.isfile(method_pdbloc):
-#                         logging.info("Unable to find the ent file associate with the %s pdb with ID: %s at location %s"%(method_type, method_type_id, LMCSS_pdbloc))
-#                         os.chdir(current_dir_layer_1)
-#                         continue
-#                     else:
-#                         method_type_filename = "%s-%s_%s.pdb" %(method_type, target_id, method_type_id)
-#                         commands.getoutput("cp %s %s"%(method_pdbloc, method_type_filename))
-#                         valid_candidates[target_id].append(method_type_filename)
-#                     align_proteins (LMCSS_candidate_filename, method_type_filename, method_type_filename)
 
- 
     ## Get all potential target directories and candidates within
     valid_candidates = {}
     #target_ligands = {}
@@ -337,11 +223,7 @@ def main_proteinprep (challenge_data_path, pdb_protein_path, working_folder, rdk
                 logging.info("Unable to split this protein:%s"%(candidate_filename))
                 #os.chdir(current_dir_layer_1)
                 continue
-            
 
-            
-            
-            
             logging.info("Successfully split this protein:%s, go to preparation step"%(candidate_filename))
             prepared_protein_mol2 = candidate_prefix + "_prepared.mol2"
             #pass the wizard sleep time here
@@ -364,7 +246,10 @@ if ("__main__") == (__name__):
     parser.add_argument("-p", "--pdbdb", metavar = "PATH", help = "PDB DATABANK which we will dock into")
     parser.add_argument("-c", "--candidatedir", metavar="PATH", help = "PATH where we could find the stage 2 output")
     parser.add_argument("-o", "--outdir", metavar = "PATH", help = "PATH where we run stage 3")
-    parser.add_argument("-r", "--rdkitpython", metavar = "PATH", help = "Path for python build with new version of rdkit.", default="/data/celpp/miniconda2/")
+    parser.add_argument("-r", "--rdkitpython", metavar="PATH",
+                        help="Path for python build with new "
+                             "version of rdkit.",
+                        default="")
     #parser.add_option("-s", "--sleep", metavar = "VALUE", help = "Sleep time for protein prep")
     #parser.add_option("-u", "--update", default = False, action = "store_true", help = "update the protein generation and docking step")
     logger = logging.getLogger()

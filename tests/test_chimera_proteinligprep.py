@@ -68,7 +68,7 @@ class TestChimera_ProteinLigPrep(unittest.TestCase):
             os.chmod(fakepython, stat.S_IRWXU)
 
             val = chimera_proteinligprep.ligand_prepare(lig_smile,
-                                                        ligfile, temp_dir)
+                                                        ligfile, temp_bin_dir)
             self.assertFalse(val)
             f = open(lig_smile, 'r')
             line = f.readline()
