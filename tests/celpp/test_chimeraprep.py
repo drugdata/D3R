@@ -221,7 +221,44 @@ class TestChimeraProteinLigPrepTask(unittest.TestCase):
             self.assertEqual(task.get_error(),
                              'Caught Exception trying to run ' +
                              '/bin/doesnotexist --candidatedir ' +
-                             challdir + ' --pdbdb ' +
+                             challdir +
+                             ' --rdkitpython \'\' ' +
+                             '--pdbdb ' +
+                             '/foo --outdir ' +
+                             task.get_dir() +
+                             ' : [Errno 2] No such file or directory')
+
+            # test files get created
+            errfile = os.path.join(task.get_dir(),
+                                   D3RTask.ERROR_FILE)
+            self.assertEqual(os.path.isfile(errfile), True)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_run_fails_cause_chimeraprep_is_not_found_rdkitpython_set(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            params.chimeraprep = '/bin/doesnotexist'
+            params.pdbdb = '/foo'
+            params.rdkitpython = '/data/miniconda2/bin'
+            chall = ChallengeDataTask(temp_dir, params)
+            chall.create_dir()
+
+            challdir = os.path.join(chall.get_dir(),
+                                    chall.get_celpp_challenge_data_dir_name())
+
+            open(os.path.join(chall.get_dir(), D3RTask.COMPLETE_FILE),
+                 'a').close()
+            task = ChimeraProteinLigPrepTask(temp_dir, params)
+
+            task.run()
+            self.assertEqual(task.get_error(),
+                             'Caught Exception trying to run ' +
+                             '/bin/doesnotexist --candidatedir ' +
+                             challdir +
+                             ' --rdkitpython \'/data/miniconda2/bin\' ' +
+                             '--pdbdb ' +
                              '/foo --outdir ' +
                              task.get_dir() +
                              ' : [Errno 2] No such file or directory')

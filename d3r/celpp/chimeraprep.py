@@ -123,6 +123,14 @@ class ChimeraProteinLigPrepTask(D3RTask):
             self.end()
             return
 
+        rdkitpython = ''
+        try:
+            logger.debug('rdkitpython set to  ' +
+                         self.get_args().rdkitpython)
+            rdkitpython = self.get_args().rdkitpython
+        except AttributeError:
+            logger.debug
+
         chall = ChallengeDataTask(self._path, self._args)
 
         #
@@ -134,6 +142,7 @@ class ChimeraProteinLigPrepTask(D3RTask):
 
         cmd_to_run = (self.get_args().chimeraprep + ' --candidatedir ' +
                       challdir +
+                      ' --rdkitpython \'' +rdkitpython + '\'' +
                       ' --pdbdb ' + self.get_args().pdbdb +
                       ' --outdir ' + self.get_dir())
 
