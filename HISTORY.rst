@@ -27,6 +27,9 @@ History
 
 * Download canonical tsv file in data import stage. Issue #84
 
+* Added --rdkitpython flag to celpprunner.py and modified
+  code to pass it to chimera_proteinligprep.py. Issue #88
+
 1.5.0 (2016-09-11)
 --------------------
 
