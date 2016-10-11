@@ -56,6 +56,7 @@ class TestFtpFileTransfer(unittest.TestCase):
             self.assertEqual(foo.get_user(), None)
             self.assertEqual(foo.get_remote_dir(), '')
             self.assertEqual(foo.get_remote_challenge_dir(), None)
+            self.assertEqual(foo.get_contestant_id(), None)
 
             # test getters and setters
             foo.set_connect_timeout(10)
@@ -65,6 +66,7 @@ class TestFtpFileTransfer(unittest.TestCase):
             foo.set_remote_dir('/remote')
             foo.set_user('user')
             foo.set_remote_challenge_dir('/chall')
+            foo.set_contestant_id(12345)
 
             self.assertEqual(foo.get_connect_timeout(), 10)
             self.assertEqual(foo.get_host(), 'host')
@@ -72,6 +74,11 @@ class TestFtpFileTransfer(unittest.TestCase):
             self.assertEqual(foo.get_remote_dir(), '/remote')
             self.assertEqual(foo.get_user(), 'user')
             self.assertEqual(foo.get_remote_challenge_dir(), '/chall')
+            self.assertEqual(foo.get_contestant_id(), '12345')
+
+            foo.set_contestant_id(None)
+            self.assertEqual(foo.get_contestant_id(), None)
+
         finally:
             shutil.rmtree(temp_dir)
 

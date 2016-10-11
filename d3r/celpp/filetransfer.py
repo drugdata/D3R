@@ -128,8 +128,14 @@ class FileTransfer(object):
 
     def set_contestant_id(self, contestant_id):
         """Sets the contestant id
+        :param contestant_id: Id of contestant any value passed in other
+        then None will be converted to a string
         """
-        self._contestant_id = contestant_id
+        if contestant_id is None:
+            self._contestant_id = None
+            return
+
+        self._contestant_id = str(contestant_id)
 
     def set_remote_challenge_dir(self, challenge_dir):
         """Sets the remote challenge directory for ftp upload
