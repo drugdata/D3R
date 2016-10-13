@@ -3,7 +3,7 @@
 History
 -------
 
-1.6.0 (????)
+1.6.0 (2016-10-13)
 -------------------
 
 * Evaluation task now emails results of evaluation to external 
@@ -11,7 +11,7 @@ History
 
 * Adjusted files uploaded to ftp server in EvaluationTask to 
   reflect changes in output from genchallengedata.py script.
-  Issue #80
+  Issues #79,#80
 
 * Added WebDavFileTransfer class to enable upload & download
   of files via WebDa for celppade tools. Issue #76
@@ -29,6 +29,11 @@ History
 
 * Added --rdkitpython flag to celpprunner.py and modified
   code to pass it to chimera_proteinligprep.py. Issue #88
+
+* Fixed bug where celpprunner would fail if evaluation 
+  stage is rerun with completed evaluation tasks. Issue #87
+
+* Improved documentation in RMSD.txt. Issues #82,#83
 
 1.5.0 (2016-09-11)
 --------------------
