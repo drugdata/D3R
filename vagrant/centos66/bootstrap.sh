@@ -8,6 +8,12 @@ yum install -y python-biopython python-virtualenv python-tox
 yum install -y pylint python-coverage libXft mesa-* openbabel
 yum install -y perl-Archive-Tar perl-List-MoreUtils xauth pymol
 
+# install old rdkit so system matches nif1
+pushd /etc/yum.repos.d
+wget https://copr.fedorainfracloud.org/coprs/giallu/rdkit/repo/epel-6/giallu-rdkit-epel-6.repo
+yum install -y python-rdkit
+popd
+
 #
 # install rdkit
 #
@@ -16,21 +22,20 @@ wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh
 chmod a+x Miniconda2-latest-Linux-x86_64.sh
 ./Miniconda2-latest-Linux-x86_64.sh -b -p /opt/miniconda2
 export PATH="/opt/miniconda2/bin:$PATH"
-echo "export PATH=/opt/miniconda2/bin:$PATH" >> /home/vagrant/.bash_profile
+#echo "export PATH=/opt/miniconda2/bin:$PATH" >> /home/vagrant/.bash_profile
 conda update --yes conda
 conda install -y -c rdkit rdkit=2016.03.3
 
 # switch to conda root setup
-source activate root
+#source activate root
 
 # make sure vagrant user is always under conda environment
-echo "source activate root" >> /home/vagrant/.bash_profile
+#echo "source activate root" >> /home/vagrant/.bash_profile
 
 
 echo "pip installing some packages"
 pip install pip --upgrade
 pip install argparse
-pip install lockfile --upgrade
 pip install psutil
 pip install biopython
 pip install xlsxwriter
@@ -65,6 +70,7 @@ if [ -f "/vagrant/chimera-1.10.2-linux_x86_64.bin" ] ; then
   pushd /vagrant
   chmod a+x chimera-1.10.2-linux_x86_64.bin -o /opt/chimera -y
   echo "/opt/chimera" | ./chimera-1.10.2-linux_x86_64.bin 
+  echo "export PATH=/opt/chimera/bin:$PATH" >> /home/vagrant/.bash_profile  
   popd
 else 
   echo "MANUAL TASK -- Install UCSF chimera since it wasn't found in /vagrant"
