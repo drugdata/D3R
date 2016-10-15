@@ -31,6 +31,7 @@ DEFAULT_LOG_LEVEL = 'WARNING'
 CREATE_CHALLENGE = 'createchallenge'
 CHIMERA_PREP = 'chimeraprep'
 
+
 def _get_lock(theargs, stage):
     """Create lock file to prevent this process from running on same data.
 
@@ -269,10 +270,12 @@ def _parse_arguments(desc, args):
                              "looking for latest weekdir.  NOTE: " +
                              "--createweekdir " +
                              "will create a dataset.week.# dir under celppdir")
-    parser.add_argument("--stage", required=True, help='Comma delimited list' +
+    parser.add_argument("--stage", required=True,
+                        help='Comma delimited list' +
                         ' of stages to run.  Valid STAGES = ' +
                         '{makedb, import, blast, challengedata,'
-                        + CHIMERA_PREP + ', proteinligprep, extsubmission, glide, '
+                        + CHIMERA_PREP +
+                        ', proteinligprep, extsubmission, glide, '
                         'vina, evaluation, ' + CREATE_CHALLENGE + '} ')
     parser.add_argument("--blastnfilter", default='blastnfilter.py',
                         help='Path to BlastnFilter script '

@@ -142,7 +142,7 @@ class ChimeraProteinLigPrepTask(D3RTask):
 
         cmd_to_run = (self.get_args().chimeraprep + ' --candidatedir ' +
                       challdir +
-                      ' --rdkitpython \'' +rdkitpython + '\'' +
+                      ' --rdkitpython \'' + rdkitpython + '\'' +
                       ' --pdbdb ' + self.get_args().pdbdb +
                       ' --outdir ' + self.get_dir())
 

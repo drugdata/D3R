@@ -185,7 +185,7 @@ class TestD3rTask(unittest.TestCase):
         params = D3RParameters()
         task = D3RTask(None, params)
         self.assertEqual(task._get_program_version(), '')
-        params.version='0.1.1'
+        params.version = '0.1.1'
         task = D3RTask(None, params)
         self.assertEqual(task._get_program_version(), '0.1.1')
 
@@ -386,7 +386,7 @@ class TestD3rTask(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
-            params.version='1.6.0'
+            params.version = '1.6.0'
             task = D3RTask(temp_dir, params)
             task.set_stage(1)
             task.set_name('foo')

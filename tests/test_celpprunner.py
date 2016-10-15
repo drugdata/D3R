@@ -312,8 +312,8 @@ class TestCelppRunner(unittest.TestCase):
         try:
             params = D3RParameters()
             params.latest_weekly = temp_dir
-            task_list = celpprunner.get_task_list_for_stage\
-                (params, celpprunner.CREATE_CHALLENGE)
+            task_list = celpprunner.get_task_list_for_stage(
+                params, celpprunner.CREATE_CHALLENGE)
             self.assertEqual(len(task_list), 4)
             self.assertEqual(task_list[0].get_name(),
                              TestCelppRunner.MAKEDB_NAME)
