@@ -58,17 +58,21 @@ class DummyTask(D3RTask):
 
 
 class TestCelppRunner(unittest.TestCase):
-
+    """Tests celpprunner command line script
+    """
     param = D3RParameters()
 
     blast = BlastNFilterTask('/foo', param)
     BLAST_DIR_NAME = blast.get_dir_name()
+    BLAST_NAME = blast.get_name()
 
     data = DataImportTask('/foo', param)
     IMPORT_DIR_NAME = data.get_dir_name()
+    IMPORT_NAME = data.get_name()
 
     makedb = MakeBlastDBTask('/foo', param)
     MAKEDB_DIR_NAME = makedb.get_dir_name()
+    MAKEDB_NAME = makedb.get_name()
 
     glide = GlideTask('/foo', param)
     GLIDE_DIR_NAME = glide.get_dir_name()
@@ -81,6 +85,7 @@ class TestCelppRunner(unittest.TestCase):
 
     chall = ChallengeDataTask('/foo', param)
     CHALL_DIR_NAME = chall.get_dir_name()
+    CHALL_NAME = chall.get_name()
 
     chimeraprep = ChimeraProteinLigPrepTask('/foo', param)
     CHIMERAPREP_DIR_NAME = chimeraprep.get_dir_name()
@@ -301,6 +306,26 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEquals(task_list[0].get_dir(),
                           os.path.join('foo',
                                        TestCelppRunner.CHIMERAPREP_DIR_NAME))
+
+    def test_get_task_list_for_stage_createchallenge(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            params.latest_weekly = temp_dir
+            task_list = celpprunner.get_task_list_for_stage\
+                (params, celpprunner.CREATE_CHALLENGE)
+            self.assertEqual(len(task_list), 4)
+            self.assertEqual(task_list[0].get_name(),
+                             TestCelppRunner.MAKEDB_NAME)
+            self.assertEqual(task_list[1].get_name(),
+                             TestCelppRunner.IMPORT_NAME)
+            self.assertEqual(task_list[2].get_name(),
+                             TestCelppRunner.BLAST_NAME)
+            self.assertEqual(task_list[3].get_name(),
+                             TestCelppRunner.CHALL_NAME)
+
+        finally:
+            shutil.rmtree(temp_dir)
 
     def test_get_task_list_for_stage_for_scoring_stage_with_nonefound(self):
         temp_dir = tempfile.mkdtemp()

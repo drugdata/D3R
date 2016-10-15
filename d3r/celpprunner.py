@@ -27,6 +27,9 @@ from lockfile.pidlockfile import PIDLockFile
 # create logger
 logger = logging.getLogger('d3r.celpprunner')
 
+DEFAULT_LOG_LEVEL = 'WARNING'
+CREATE_CHALLENGE = 'createchallenge'
+CHIMERA_PREP = 'chimeraprep'
 
 def _get_lock(theargs, stage):
     """Create lock file to prevent this process from running on same data.
@@ -197,6 +200,12 @@ def get_task_list_for_stage(theargs, stage_name):
 
     logger.debug('Getting task list for ' + stage_name)
 
+    if stage_name == CREATE_CHALLENGE:
+        task_list.append(MakeBlastDBTask(theargs.latest_weekly, theargs))
+        task_list.append(DataImportTask(theargs.latest_weekly, theargs))
+        task_list.append(BlastNFilterTask(theargs.latest_weekly, theargs))
+        task_list.append(ChallengeDataTask(theargs.latest_weekly, theargs))
+
     if stage_name == 'makedb':
         task_list.append(MakeBlastDBTask(theargs.latest_weekly, theargs))
 
@@ -218,7 +227,7 @@ def get_task_list_for_stage(theargs, stage_name):
     if stage_name == 'vina':
         task_list.append(AutoDockVinaTask(theargs.latest_weekly, theargs))
 
-    if stage_name == 'chimeraprep':
+    if stage_name == CHIMERA_PREP:
         task_list.append(ChimeraProteinLigPrepTask(theargs.latest_weekly,
                                                    theargs))
     if stage_name == 'extsubmission':
@@ -263,8 +272,8 @@ def _parse_arguments(desc, args):
     parser.add_argument("--stage", required=True, help='Comma delimited list' +
                         ' of stages to run.  Valid STAGES = ' +
                         '{makedb, import, blast, challengedata,'
-                        'chimeraprep, proteinligprep, extsubmission, glide, '
-                        'vina, evaluation} ')
+                        + CHIMERA_PREP + ', proteinligprep, extsubmission, glide, '
+                        'vina, evaluation, ' + CREATE_CHALLENGE + '} ')
     parser.add_argument("--blastnfilter", default='blastnfilter.py',
                         help='Path to BlastnFilter script '
                              '(default blastnfilter.py)')
@@ -324,9 +333,10 @@ def _parse_arguments(desc, args):
                         help='Path to directory containing python with '
                              'new rdkit installed')
     parser.add_argument("--log", dest="loglevel", choices=['DEBUG',
-                        'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
-                        help="Set the logging level (default WARNING)",
-                        default='WARNING')
+                        'INFO', DEFAULT_LOG_LEVEL, 'ERROR', 'CRITICAL'],
+                        help="Set the logging level (default " +
+                             DEFAULT_LOG_LEVEL + ")",
+                        default=DEFAULT_LOG_LEVEL)
     parser.add_argument('--smtp', dest='smtp', help='Sets smtpserver to use '
                                                     '(default localhost)',
                         default='localhost')
@@ -368,6 +378,8 @@ def _parse_arguments(desc, args):
 
 def main():
     p = D3RParameters()
+    p.loglevel = DEFAULT_LOG_LEVEL
+    util.setup_logging(p)
     blasttask = BlastNFilterTask('', p)
     dataimport = DataImportTask('', p)
     challenge = ChallengeDataTask('', p)
@@ -376,12 +388,11 @@ def main():
     prot = ProteinLigPrepTask('', p)
     vina = AutoDockVinaTask('', p)
     chimeraprep = ChimeraProteinLigPrepTask('', p)
-
     desc = """
               Version {version}
 
               Runs the 9 stages (makedb, import, blast, challengedata,
-              proteinligprep, chimeraprep, extsubmission, glide, vina, &
+              proteinligprep, {chimeraprep}, extsubmission, glide, vina, &
               evaluation) of CELPP processing pipeline
               (http://www.drugdesigndata.org)
 
@@ -456,6 +467,13 @@ def main():
               Breakdown of behavior of program is defined by
               value passed with --stage flag:
 
+              If --stage '{createchallenge}'
+
+              This is NOT a stage, but has the same effect as
+              calling --stage makedb,import,blast,challengedata
+              The four stages that need to run to generate the challenge
+              data package.
+
               If --stage 'makedb'
 
               In this stage the file {pdb_seqres} is downloaded from
@@ -528,7 +546,7 @@ def main():
               {submissionpath} /submissions
 
 
-              If --stage 'chimeraprep'
+              If --stage '{chimeraprep}'
 
               Verifies {challenge_dirname} exists and has '{complete}'
               file.  If complete, this stage runs which invokes program
@@ -589,6 +607,7 @@ def main():
                          dataimport_dirname=dataimport.get_dir_name(),
                          blast_dirname=blasttask.get_dir_name(),
                          challenge_dirname=challenge.get_dir_name(),
+                         createchallenge=CREATE_CHALLENGE,
                          proteinligprep_dirname=prot.get_dir_name(),
                          glide_dirname=glide.get_dir_name(),
                          vina_dirname=vina.get_dir_name(),
@@ -596,6 +615,7 @@ def main():
                          evalstage=str(glide.get_stage() + 1),
                          complete=blasttask.COMPLETE_FILE,
                          chimeraprep_dirname=chimeraprep.get_dir_name(),
+                         chimeraprep=CHIMERA_PREP,
                          compinchi_ich=DataImportTask.COMPINCHI_ICH,
                          pdb_seqres=MakeBlastDBTask.PDB_SEQRES_TXT_GZ,
                          nonpolymer_tsv=DataImportTask.NONPOLYMER_TSV,
