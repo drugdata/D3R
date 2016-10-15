@@ -255,14 +255,24 @@ class D3RTask(object):
         :return: Name of program that invoked this
         """
         program_name = __file__
-        version = ''
         try:
             program_name = self.get_args().program
-            version = self.get_args().version
         except:
-            logger.debug('args.program or args.version was not set.  '
+            logger.debug('args.program  was not set.  '
                          'using __file__')
-        return program_name + ' ' + version
+        return program_name + ' ' + self._get_program_version()
+
+    def _get_program_version(self):
+        """Gets version of program running
+        This is done by looking at _args.version
+        :return: Version of program or empty string if unset
+        """
+        try:
+            version = self.get_args().version
+        except AttributeError:
+            version = ''
+            logger.debug('args.version was not set')
+        return str(version)
 
     def _get_time(self):
         """ Gets the current time as a string using ctime()
@@ -393,8 +403,11 @@ class D3RTask(object):
             self.end()
             return
 
-        open(os.path.join(self.get_dir(),
-                          D3RTask.START_FILE), 'a').close()
+        sfile = open(os.path.join(self.get_dir(),
+                                  D3RTask.START_FILE), 'w')
+        sfile.write(self._get_program_version())
+        sfile.flush()
+        sfile.close()
 
     def end(self):
         """Denotes task has completed

@@ -181,6 +181,14 @@ class TestD3rTask(unittest.TestCase):
         task = D3RTask(None, params)
         self.assertEqual(task._get_program_name(), 'proggy versy')
 
+    def test_get_program_version(self):
+        params = D3RParameters()
+        task = D3RTask(None, params)
+        self.assertEqual(task._get_program_version(), '')
+        params.version='0.1.1'
+        task = D3RTask(None, params)
+        self.assertEqual(task._get_program_version(), '0.1.1')
+
     def test_get_uploadable_files(self):
         task = D3RTask(None, D3RParameters())
         self.assertEqual(task.get_uploadable_files(), [])
@@ -352,7 +360,7 @@ class TestD3rTask(unittest.TestCase):
 
         try_update_status_from_filesystem(self, task)
 
-    def test_start(self):
+    def test_start_no_version(self):
         temp_dir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
@@ -362,6 +370,33 @@ class TestD3rTask(unittest.TestCase):
             task.start()
             self.assertEqual(os.path.isfile(os.path.join(task.get_dir(),
                                             D3RTask.START_FILE)), True)
+            self.assertEqual(task.get_error(), None)
+            self.assertEqual(task.get_status(), D3RTask.START_STATUS)
+            task.start()
+            self.assertNotEqual(task.get_error(), None)
+            self.assertEqual(task.get_status(), D3RTask.ERROR_STATUS)
+            self.assertEqual(os.path.isfile(os.path.join(task.get_dir(),
+                                                         D3RTask
+                                                         .ERROR_FILE)), True)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_start_with_version(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            params.version='1.6.0'
+            task = D3RTask(temp_dir, params)
+            task.set_stage(1)
+            task.set_name('foo')
+            task.start()
+            sfile = os.path.join(task.get_dir(),
+                                 D3RTask.START_FILE)
+
+            self.assertEqual(os.path.isfile(sfile), True)
+            f = open(sfile, 'r')
+            self.assertEqual(f.read(), '1.6.0')
             self.assertEqual(task.get_error(), None)
             self.assertEqual(task.get_status(), D3RTask.START_STATUS)
             task.start()
