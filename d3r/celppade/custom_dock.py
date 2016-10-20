@@ -27,9 +27,9 @@ class Dock(object):
     SCI_PREPPED_LIG_SUFFIX = '_prepared.sdf'
     SCI_PREPPED_PROT_SUFFIX = '_prepared.pdb'
 
-    def lig_technical_prep(self, 
-                           sci_prepped_lig, 
-                           targ_info_dict={}):
+    def ligand_technical_prep(self, 
+                              sci_prepped_lig, 
+                              targ_info_dict={}):
         """
         'Technical preparation' is the step immediate preceding
         docking. During this step, you may perform any file
@@ -253,7 +253,7 @@ class Dock(object):
             os.chdir(lig_tech_prep_dir)
         
             ## Call user-defined ligand technical prep
-            tech_prepped_lig_file_list = self.lig_technical_prep(lig_base_filename, targ_info_dict=targ_info_dict)
+            tech_prepped_lig_file_list = self.ligand_technical_prep(lig_base_filename, targ_info_dict=targ_info_dict)
 
         
             ## Ensure that ligand technical prep was successful
