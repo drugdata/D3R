@@ -27,7 +27,7 @@ class ProteinPrep(object):
     # This prep script will be required to output files with the appropriate suffixes
     OUTPUT_PROTEIN_SUFFIX = '.pdb'
 
-    def receptor_scientific_prep(self, protein_file, prepared_protein_file, targ_info_dic={}):
+    def receptor_scientific_prep(self, protein_file, prepared_protein_file, targ_info_dict={}):
         """Does not do any scientific preparation - Passes protein forward without any processing 
         """
         
