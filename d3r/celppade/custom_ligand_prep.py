@@ -27,7 +27,7 @@ class LigandPrep(object):
     def ligand_scientific_prep(self, 
                                lig_smi_file, 
                                out_lig_file, 
-                               targ_info_dic={}):
+                               targ_info_dict={}):
        """Does not do any scientific preparation - Passes ligand smiles file forward without any processing 
        """
        
