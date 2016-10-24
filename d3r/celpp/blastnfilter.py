@@ -143,10 +143,11 @@ class BlastNFilterTask(D3RTask):
     SUMMARY_TXT = "summary.txt"
     DOCKABLE_XSLX = "dockable.xlsx"
     BLASTNFILTER_LOG = "blastnfilter.log"
+    TASK_NAME = 'blastnfilter'
 
     def __init__(self, path, args):
         super(BlastNFilterTask, self).__init__(path, args)
-        self.set_name('blastnfilter')
+        self.set_name(BlastNFilterTask.TASK_NAME)
 
         # set the stage to be 1 higher then Data Import Stage
         dataimport = DataImportTask(path, args)
