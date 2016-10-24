@@ -119,8 +119,10 @@ class ParticipantDatabaseFromCSVFactory(object):
                                    ' elements expecting 4')
                     counter = + 1
                     continue
-                plist.append(Participant(splitline[0].strip(), splitline[1].strip(),
-                                         splitline[2].strip(), splitline[3].strip()))
+                plist.append(Participant(splitline[0].strip(),
+                                         splitline[1].strip(),
+                                         splitline[2].strip(),
+                                         splitline[3].strip()))
                 counter = + 1
             f.close()
             return ParticipantDatabase(plist)
