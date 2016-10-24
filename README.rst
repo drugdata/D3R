@@ -73,7 +73,9 @@ Please report them `here <https://github.com/drugdata/D3R/issues>`_
 Acknowledgements
 ----------------
 
-This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
+* This work is funded in part by NIH grant 1U01GM111528 from the National Institute of General Medical Sciences
+
+* This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
 
 .. _LICENSE.txt: https://github.com/drugdata/D3R/blob/master/LICENSE.txt 
 .. _Cookiecutter: https://github.com/audreyr/cookiecutter
