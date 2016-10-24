@@ -3,7 +3,7 @@
 History
 -------
 
-1.6.1 (???)
+1.6.1 (2016-10-24)
 -------------------
 
 * Added createchallenge stage which is NOT a stage, but a fake stage
