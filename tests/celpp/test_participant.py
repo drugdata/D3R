@@ -145,6 +145,24 @@ class TestParticipant(unittest.TestCase):
             p = pdb.get_participant_by_guid('456')
             self.assertEqual(p.get_email(), 'p@p.com')
 
+            # parse file with carriage returns
+            f = open(csvfile, 'w')
+            f.write('name,d3rusername,guid,email\r')
+            f.write('joe bob , jb,12345,j@j.com\r')
+            f.write('J W,ha@ha.com,33567 , ha@ha.com')
+            f.flush()
+            f.close()
+            pdb = pfac.get_participant_database()
+            self.assertEqual(len(pdb.get_participants()), 2)
+            p = pdb.get_participant_by_guid('12345')
+            self.assertEqual(p.get_email(), 'j@j.com')
+            self.assertEqual(p.get_name(), 'joe bob')
+            self.assertEqual(p.get_d3rusername(), 'jb')
+            p = pdb.get_participant_by_guid('33567')
+            self.assertEqual(p.get_email(), 'ha@ha.com')
+            self.assertEqual(p.get_name(), 'J W')
+            self.assertEqual(p.get_d3rusername(), 'ha@ha.com')
+
         finally:
             shutil.rmtree(temp_dir)
 

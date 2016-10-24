@@ -102,7 +102,7 @@ class ParticipantDatabaseFromCSVFactory(object):
             logger.warning('No csv file set')
             return None
         try:
-            f = open(self._csvfile, 'r')
+            f = open(self._csvfile, 'rU')
             counter = 0
             plist = []
             for line in f:
@@ -119,8 +119,8 @@ class ParticipantDatabaseFromCSVFactory(object):
                                    ' elements expecting 4')
                     counter = + 1
                     continue
-                plist.append(Participant(splitline[0], splitline[1],
-                                         splitline[2], splitline[3]))
+                plist.append(Participant(splitline[0].strip(), splitline[1].strip(),
+                                         splitline[2].strip(), splitline[3].strip()))
                 counter = + 1
             f.close()
             return ParticipantDatabase(plist)
