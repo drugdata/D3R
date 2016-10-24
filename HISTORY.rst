@@ -3,6 +3,18 @@
 History
 -------
 
+1.6.1 (???)
+-------------------
+
+* Added createchallenge stage which is NOT a stage, but a fake stage
+  that runs the following stages: makedb,import,blast,challengedata. Issue #92
+
+* Moved logic to setup logging handlers to start of celpprunner.py to remove
+  no handlers found error for d3r.celpp.util. Issue #91
+
+* Fixed bug where participant_list.csv could not be parsed if file was 
+  written with carriage return delimiters instead of newlines. Issue #93
+
 1.6.0 (2016-10-13)
 -------------------
 
