@@ -18,10 +18,11 @@ class ProteinLigPrepTask(D3RTask):
                  'hiResApo.maegz', 'hiResHolo.maegz']
 
     FINAL_LOG = 'final.log'
+    TASK_NAME = 'proteinligprep'
 
     def __init__(self, path, args):
         super(ProteinLigPrepTask, self).__init__(path, args)
-        self.set_name('proteinligprep')
+        self.set_name(ProteinLigPrepTask.TASK_NAME)
 
         # Make stage number one higher then BlastNFilter Stage
         chall = ChallengeDataTask(path, args)
