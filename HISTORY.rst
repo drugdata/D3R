@@ -14,6 +14,8 @@ History
 
 * Fixed bug where participant_list.csv could not be parsed if file was 
   written with carriage return delimiters instead of newlines. Issue #93
+  
+* Cleaned up CELPPade by updating documentation and simplifying variable names.
 
 1.6.0 (2016-10-13)
 -------------------
