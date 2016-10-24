@@ -35,7 +35,7 @@ Dependencies
  * `biopython <https://pypi.python.org/pypi/biopython>`_
  * `xlsxwriter <https://pypi.python.org/pypi/xlsxwriter>`_
  * `ftpretty <https://pypi.python.org/pypi/ftpretty>`_
- * NCBI Blast (https://blast.ncbi.nlm.nih.gov/Blast.cgi?PAGE_TYPE=BlastDocs&DOC_TYPE=Download) (needed by blastnfilter.py)
+ * `NCBI Blast <https://blast.ncbi.nlm.nih.gov/Blast.cgi?PAGE_TYPE=BlastDocs&DOC_TYPE=Download>`_ (needed by blastnfilter.py)
  * `rdkit <http://www.rdkit.org/>`_ (needed by blastnfilter.py and proteinligprep.py)
  * `schrodinger <https://www.schrodinger.com/>`_ (needed by proteinligprep.py, glidedocking.py, chimera_proteinligprep.py & vinadocking.py)
  * `babel <http://openbabel.org/wiki/Main_Page>`_ (needed by chimera_proteinligprep.py)
@@ -84,3 +84,5 @@ Credits
 This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
 
 .. _LICENSE.txt: https://github.com/drugdata/D3R/blob/master/LICENSE.txt 
+.. _Cookiecutter: https://github.com/audreyr/cookiecutter
+.. _`audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypackage
