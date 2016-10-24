@@ -70,8 +70,8 @@ Bugs
 Please report them `here <https://github.com/drugdata/D3R/issues>`_
 
 
-Credits
----------
+Acknowledgements
+----------------
 
 This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
 
