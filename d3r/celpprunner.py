@@ -10,6 +10,16 @@ from datetime import date
 import d3r
 from d3r.celpp import util
 from d3r.celpp.task import D3RParameters
+
+
+# create logger
+logger = logging.getLogger('d3r.celpprunner')
+DEFAULT_LOG_LEVEL = 'ERROR'
+p = D3RParameters()
+p.loglevel = DEFAULT_LOG_LEVEL
+util.setup_logging(p)
+
+
 from d3r.celpp.blastnfilter import BlastNFilterTask
 from d3r.celpp.proteinligprep import ProteinLigPrepTask
 from d3r.celpp.dataimport import DataImportTask
@@ -17,6 +27,7 @@ from d3r.celpp.glide import GlideTask
 from d3r.celpp.evaluation import EvaluationTaskFactory
 from d3r.celpp.makeblastdb import MakeBlastDBTask
 from d3r.celpp.vina import AutoDockVinaTask
+
 from d3r.celpp.challengedata import ChallengeDataTask
 from d3r.celpp.chimeraprep import ChimeraProteinLigPrepTask
 from d3r.celpp.filetransfer import FtpFileTransfer
@@ -24,13 +35,9 @@ from d3r.celpp.extsubmission import ExternalDataSubmissionFactory
 
 from lockfile.pidlockfile import PIDLockFile
 
-# create logger
-logger = logging.getLogger('d3r.celpprunner')
 
-DEFAULT_LOG_LEVEL = 'WARNING'
 CREATE_CHALLENGE = 'createchallenge'
 CHIMERA_PREP = 'chimeraprep'
-
 
 def _get_lock(theargs, stage):
     """Create lock file to prevent this process from running on same data.
@@ -380,9 +387,6 @@ def _parse_arguments(desc, args):
 
 
 def main():
-    p = D3RParameters()
-    p.loglevel = DEFAULT_LOG_LEVEL
-    util.setup_logging(p)
     blasttask = BlastNFilterTask('', p)
     dataimport = DataImportTask('', p)
     challenge = ChallengeDataTask('', p)
