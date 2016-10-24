@@ -15,26 +15,32 @@ Drug Design Data Resource CELPP Runner
 Drug Design Data Resource is a suite of software to enable 
 filtering, docking, and scoring of new sequences from wwpdb.
 
+For more information please visit our wiki page:
 
-Features
---------
+https://github.com/drugdata/d3r/wiki
+
+
+Compatibility
+-------------
 
  * Works with Python 2.6, 2.7
 
-Requires
---------
 
- * argparse
- * lockfile
- * psutil
- * biopython
- * xlsxwriter
- * ftpretty
+Dependencies
+------------
+
+ * `argparse <https://pypi.python.org/pypi/argparse>`_
+ * `lockfile <https://pypi.python.org/pypi/lockfile>`_
+ * `psutil <https://pypi.python.org/pypi/psutil>`_
+ * `biopython <https://pypi.python.org/pypi/biopython>`_
+ * `xlsxwriter <https://pypi.python.org/pypi/xlsxwriter>`_
+ * `ftpretty <https://pypi.python.org/pypi/ftpretty>`_
  * NCBI Blast (https://blast.ncbi.nlm.nih.gov/Blast.cgi?PAGE_TYPE=BlastDocs&DOC_TYPE=Download) (needed by blastnfilter.py)
- * rdkit (needed by blastnfilter.py and proteinligprep.py)
- * schrodinger (needed by proteinligprep.py, glidedocking.py, chimera_proteinligprep.py & vinadocking.py)
- * babel (needed by chimera_proteinligprep.py)
- * Autodock Vina & MGL Tools (needed by vinadocking.py)
+ * `rdkit <http://www.rdkit.org/>`_ (needed by blastnfilter.py and proteinligprep.py)
+ * `schrodinger <https://www.schrodinger.com/>`_ (needed by proteinligprep.py, glidedocking.py, chimera_proteinligprep.py & vinadocking.py)
+ * `babel <http://openbabel.org/wiki/Main_Page>`_ (needed by chimera_proteinligprep.py)
+ * `Autodock Vina <http://vina.scripps.edu/>`_ & `MGL Tools <http://mgltools.scripps.edu/downloads>`_ (needed by vinadocking.py)
+
 
 Installation
 ------------
@@ -50,6 +56,7 @@ Pip install is coming, but in the meantime:
   make dist
   pip install dist/d3r*whl
 
+
 Usage
 -----
 
@@ -58,3 +65,22 @@ Run
 .. code:: bash
   
   celpprunner.py --help
+
+
+License
+-------
+
+See LICENSE.txt_
+
+Bugs
+-----
+
+Please report them `here <https://github.com/drugdata/D3R/issues>`_
+
+
+Credits
+---------
+
+This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
+
+.. _LICENSE.txt: https://github.com/drugdata/D3R/blob/master/LICENSE.txt 
