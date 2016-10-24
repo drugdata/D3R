@@ -45,17 +45,9 @@ Dependencies
 Installation
 ------------
 
-Pip install is coming, but in the meantime:
-
 .. code:: bash
 
-  git clone https://github.com/drugdata/D3R
-  cd D3R
-  make install
-  # or 
-  make dist
-  pip install dist/d3r*whl
-
+  pip install d3r
 
 Usage
 -----
