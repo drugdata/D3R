@@ -48,9 +48,11 @@ class DataImportTask(D3RTask):
                             "EPLLEALRLYARRRRPSQPYMFPRMLMKITDLRGISTKGAERAITLK" \
                             "MEIPGPMPPLIREMLE\n"
 
+    TASK_NAME = 'dataimport'
+
     def __init__(self, path, args):
         super(DataImportTask, self).__init__(path, args)
-        self.set_name('dataimport')
+        self.set_name(DataImportTask.TASK_NAME)
         makeblast = MakeBlastDBTask('', args)
         self.set_stage(makeblast.get_stage() + 1)
         self.set_status(D3RTask.UNKNOWN_STATUS)
