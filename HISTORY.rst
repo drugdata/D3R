@@ -14,6 +14,8 @@ History
 
 * Fixed bug where participant_list.csv could not be parsed if file was 
   written with carriage return delimiters instead of newlines. Issue #93
+  
+* Cleaned up CELPPade by updating documentation and simplifying variable names.
 
 * Version of d3r is now written to 'start' file in each stage/task. Issue #94
 
