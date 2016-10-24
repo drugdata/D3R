@@ -24,13 +24,15 @@ class MakeBlastDBTask(D3RTask):
     # PDBID codes are currently 4 characters so plus 1 is 5
     LENGTH_OF_PDBID_PLUS_ONE = 5
 
+    TASK_NAME = 'makeblastdb'
+
     def __init__(self, path, args):
         """Constructor
 
            Constructor sets name to makeblastdb and stage is set to 1
         """
         super(MakeBlastDBTask, self).__init__(path, args)
-        self.set_name('makeblastdb')
+        self.set_name(MakeBlastDBTask.TASK_NAME)
         self.set_stage(1)
         self.set_status(D3RTask.UNKNOWN_STATUS)
         self._maxretries = 3
