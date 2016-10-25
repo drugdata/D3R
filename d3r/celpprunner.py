@@ -39,6 +39,7 @@ from lockfile.pidlockfile import PIDLockFile
 CREATE_CHALLENGE = 'createchallenge'
 CHIMERA_PREP = 'chimeraprep'
 
+
 def _get_lock(theargs, stage):
     """Create lock file to prevent this process from running on same data.
 
