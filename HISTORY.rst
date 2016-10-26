@@ -3,6 +3,13 @@
 History
 -------
 
+1.6.2 (2016-10-26)
+-------------------
+
+* Fixed bug where large amounts of output to standard out/err caused
+  celpprunner.py to exit due to an exception from smtplib due to 
+  very large email. Issue #95
+
 1.6.1 (2016-10-24)
 -------------------
 
