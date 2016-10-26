@@ -106,6 +106,8 @@ class D3RTask(object):
     ERROR_STATUS = "error"
     STDERR_SUFFIX = ".stderr"
     STDOUT_SUFFIX = ".stdout"
+    MAX_CHARS_FOR_EMAIL_STR = 250000
+    TEXT_TRUNCATED_STR = 'TEXT TRUNCATED\n'
 
     def __init__(self, path, args):
         """Constructor
@@ -323,7 +325,11 @@ class D3RTask(object):
         msg['Subject'] = (D3RTask.SUBJECT_LINE_PREFIX + self._get_time() +
                           self.get_dir_name() +
                           ' has finished with status ' + self.get_status())
-        self._send_email(msg)
+        try:
+            self._send_email(msg)
+        except Exception:
+            logger.exception('Caught exception trying to send end email, '
+                             'skipping email notification')
 
     def _send_email(self, mime_msg):
         """Sends email with message passed in
@@ -667,13 +673,50 @@ class D3RTask(object):
                                " received. Standard out: " + out +
                                " Standard error: " + err)
             else:
+                max_chars = D3RTask.MAX_CHARS_FOR_EMAIL_STR
+                trunc_out = self._get_email_truncated_string(out,
+                                                             max_chars)
+                trunc_err = self._get_email_truncated_string(err,
+                                                             max_chars)
+
                 self.append_to_email_log("Although considered non fatal " +
                                          "for processing of stage a " +
                                          "non zero exit code: " +
                                          str(returncode) +
-                                         "received. Standard out: " + out +
-                                         " Standard error : " + err)
+                                         "received. Standard out: " +
+                                         trunc_out +
+                                         " Standard error : " + trunc_err)
         return returncode
+
+    def _get_email_truncated_string(self, val, max_chars):
+        """Truncates string so it fits within a certain number of characters
+        This method will remove characters from the start of the string so
+        it fits within the `max_chars` limit and prefixed with value of
+        `D3RTask.TEXT_TRUNCATED_STR` to the start.
+        NOTE: the prefix string is not counted toward the max chars
+        :param val: String to truncate
+        :params max_chars: Maximum length of string
+        :return: Truncated `val` string with `D3RTask.TEXT_TRUNCATED_STR`
+                 prefixed
+        """
+        if val is None:
+            logger.warning('String passed in was None so returning None')
+            return None
+
+        if max_chars is None or max_chars < 0:
+            logger.debug('max_chars is set to None or is negative, '
+                         'just returning string')
+            return val
+
+        str_len = len(val)
+        logger.debug('String length is: ' + str(str_len))
+        if str_len <= max_chars:
+            return val
+
+        trunc_start = str_len - max_chars
+        logger.debug('Truncating string at index: ' + str(trunc_start))
+        return (D3RTask.TEXT_TRUNCATED_STR +
+               val[trunc_start:])
 
 
 class Attachment(object):

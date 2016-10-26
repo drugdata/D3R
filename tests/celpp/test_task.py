@@ -445,6 +445,70 @@ class TestD3rTask(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
+    def test_send_email_where_email_is_none(self):
+        params = D3RParameters()
+        params.email = None
+        task = D3RTask('/foo', params)
+        task.set_stage(1)
+        task.set_name('foo')
+        task._send_end_email()
+
+    def test_send_email_throws_exception(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            params.smtp = 'doesnotexistxxx.x.x'
+            params.smtpport = 12345
+            params.email = 'foo@foo.com'
+            task = D3RTask(temp_dir, params)
+            task.set_stage(1)
+            task.set_name('foo')
+            try:
+                task._send_email(None)
+                self.fail('Expected exception')
+            except Exception as e:
+                pass
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_send_end_email_throws_exception(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            params.smtp = 'doesnotexistxxx.x.x'
+            params.smtpport = 12345
+            params.email = 'foo@foo.com'
+            task = D3RTask(temp_dir, params)
+            task.set_stage(1)
+            task.set_name('foo')
+            task._send_end_email()
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_mail_truncated_string_val_is_none(self):
+        params = D3RParameters()
+        task = D3RTask('/foo', params)
+        self.assertEqual(task._get_email_truncated_string(None,
+                                                          100), None)
+
+    def test_get_mail_truncated_string_maxchars_none_or_negative(self):
+        params = D3RParameters()
+        task = D3RTask('/foo', params)
+        self.assertEqual(task._get_email_truncated_string('foo',
+                                                          None), 'foo')
+
+        self.assertEqual(task._get_email_truncated_string('foo',
+                                                          -1), 'foo')
+
+    def test_get_mail_truncated_string_truncated(self):
+        params = D3RParameters()
+        task = D3RTask('/foo', params)
+        val = '123456789 abcdefghijklmnop'
+        res = task._get_email_truncated_string(val, 15)
+        self.assertEqual(res, D3RTask.TEXT_TRUNCATED_STR +
+                         'bcdefghijklmnop')
+
     def test_get_smtp_server(self):
         params = D3RParameters()
         params.smtp = ''
