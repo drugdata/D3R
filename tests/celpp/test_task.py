@@ -466,7 +466,7 @@ class TestD3rTask(unittest.TestCase):
             try:
                 task._send_email(None)
                 self.fail('Expected exception')
-            except Exception as e:
+            except Exception:
                 pass
         finally:
             shutil.rmtree(temp_dir)

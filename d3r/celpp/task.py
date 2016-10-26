@@ -716,7 +716,7 @@ class D3RTask(object):
         trunc_start = str_len - max_chars
         logger.debug('Truncating string at index: ' + str(trunc_start))
         return (D3RTask.TEXT_TRUNCATED_STR +
-               val[trunc_start:])
+                val[trunc_start:])
 
 
 class Attachment(object):
