@@ -302,8 +302,8 @@ class Dock(object):
                 try:
                     tech_prepped_prot_file_list = self.receptor_technical_prep(prot_base_filename, pocket_center, targ_info_dict=targ_info_dict)
                 except:
-                logging.info(sys.exc_info())
-                logging.info('try/except statement caught error in function receptor_technical_prep.  Skipping candidate %s for target %s.' %(os.path.abspath(prot_base_filename), cand_id, targ_name))
+                    logging.info(sys.exc_info())
+                    logging.info('try/except statement caught error in function receptor_technical_prep.  Skipping candidate %s for target %s.' %(os.path.abspath(prot_base_filename), cand_id, targ_name))
                     continue
 
                 ## Ensure that receptor technical prep was successful
