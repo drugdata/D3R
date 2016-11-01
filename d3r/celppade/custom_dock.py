@@ -3,6 +3,7 @@
 __author__ = 'j5wagner'
 
 import os
+import sys
 import shutil
 import re
 import glob
@@ -253,8 +254,13 @@ class Dock(object):
             os.chdir(lig_tech_prep_dir)
         
             ## Call user-defined ligand technical prep
-            tech_prepped_lig_file_list = self.ligand_technical_prep(lig_base_filename, targ_info_dict=targ_info_dict)
+            try:
+                tech_prepped_lig_file_list = self.ligand_technical_prep(lig_base_filename, targ_info_dict=targ_info_dict)
+            except:
+                logging.info(sys.exc_info())
+                logging.info('try/except statement caught error in function lig_technical_prep. Skipping target %s.' %(os.path.abspath(lig_base_filename), targ_name))
 
+                continue
         
             ## Ensure that ligand technical prep was successful
             # Check for function-reported failure
@@ -293,7 +299,12 @@ class Dock(object):
                 os.chdir(cand_tech_prep_dir)
             
                 ## Call user-defined protein technical prep
-                tech_prepped_prot_file_list = self.receptor_technical_prep(prot_base_filename, pocket_center, targ_info_dict=targ_info_dict)
+                try:
+                    tech_prepped_prot_file_list = self.receptor_technical_prep(prot_base_filename, pocket_center, targ_info_dict=targ_info_dict)
+                except:
+                logging.info(sys.exc_info())
+                logging.info('try/except statement caught error in function receptor_technical_prep.  Skipping candidate %s for target %s.' %(os.path.abspath(prot_base_filename), cand_id, targ_name))
+                    continue
 
                 ## Ensure that receptor technical prep was successful
                 # Check for function-reported failure
@@ -303,7 +314,7 @@ class Dock(object):
 
                 # Ensure that receptor technical prep returns a list of filenames
                 if not(type(tech_prepped_prot_file_list) is list):
-                    logging.info('Technical protein preparation for %s did not return a list of filenames. Skipping candidate %s for target %s.' %(os.path.abspath(lig_base_filename), cand_id, targ_name))
+                    logging.info('Technical protein preparation for %s did not return a list of filenames. Skipping candidate %s for target %s.' %(os.path.abspath(prot_base_filename), cand_id, targ_name))
                     continue
 
                 # Ensure that all files in list really exist
@@ -342,12 +353,23 @@ class Dock(object):
                     shutil.copyfile(filename,file_base_name)
                 
                 ## Do the actual docking
-                dock_results = self.dock(tech_prepped_lig_file_list,
-                                         tech_prepped_prot_file_list,
-                                         output_receptor_pdb,
-                                         output_lig_mol,
-                                         targ_info_dict=targ_info_dict)
-        
+                try:
+                    dock_results = self.dock(tech_prepped_lig_file_list,
+                                             tech_prepped_prot_file_list,
+                                             output_receptor_pdb,
+                                             output_lig_mol,
+                                             targ_info_dict=targ_info_dict)
+                except:
+                    logging.info(sys.exc_info())
+                    logging.info('try/except statement caught error in dock() function. Docking was given '
+                                 'inputs tech_prepped_lig_file_list=%r tech_prepped_prot_file_list=%r '
+                                 'output_receptor_pdb=%r output_lig_mol=%r. Skipping docking to this '
+                                 'candidate.'
+                                 %(tech_prepped_lig_file_list,
+                                   tech_prepped_prot_file_list,
+                                   output_receptor_pdb, output_lig_mol))
+                    continue
+
                 ## Check for success
                 # Check for self-reported failure
                 if dock_results == False:

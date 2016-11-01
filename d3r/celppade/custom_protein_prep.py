@@ -3,6 +3,7 @@
 __author__ = 'j5wagner'
 
 import commands
+import sys
 import os
 import glob
 import logging
@@ -105,16 +106,18 @@ class ProteinPrep(object):
                 valid_candidates[pot_target_id].append(candidate_local_file)
 
         for target_id in valid_candidates.keys():
+            os.chdir(current_dir_layer_1)
             os.chdir(target_id)
-            
+            current_dir_layer_2 = os.getcwd()          
             ReadText_obj = ReadText()
             targ_info_dict = ReadText_obj.parse_txt(target_id + '.txt')
             
 
             for candidate_filename in valid_candidates[target_id]:
+                os.chdir(current_dir_layer_2)
                 ## Parse the candidate name 
                 ## Get the method type, target, and candidate info from the filename
-                # for example, this will parse 'hiResApo-5hib_2eb2_docked.mol' into [('hiResApo', '5hib', '2eb2')]
+                # for example, this will parse 'hiResApo-5hib_2eb2.pdb' into [('hiResApo', '5hib', '2eb2')]
 
                 parsed_name = re.findall('([a-zA-Z0-9]+)-([a-zA-Z0-9]+)_([a-zA-Z0-9]+)-?([a-zA-Z0-9]*).pdb', candidate_filename)
                 if len(parsed_name) != 1:
@@ -125,18 +128,35 @@ class ProteinPrep(object):
                 candidate_structure_candidate = parsed_name[0][2]
                 candidate_structure_ligand = parsed_name[0][2]
 
-                # Split the complex 
+                
                 candidate_prefix = '%s-%s_%s' %(candidate_structure_type,
                                                 candidate_structure_target,
-                                                candidate_structure_candidate)
+                                                candidate_structure_candidate)          
+                # Make candidate prep directory
+                os.mkdir(candidate_prefix)
+                # Copy in raw candidate file
+                candidate_copy_origin = candidate_filename
+                candidate_copy_dest = os.path.join(candidate_prefix, candidate_filename)
+                shutil.copyfile(candidate_copy_origin, candidate_copy_dest)
+                # Copy in center file
+                center_copy_origin = 'center.txt'
+                center_copy_dest = os.path.join(candidate_prefix, 'center.txt')
+                shutil.copyfile(center_copy_origin, center_copy_dest)
+                # Move into candidate prep directory
+                os.chdir(candidate_prefix)
 
+                # Run prep
                 prepared_protein_file = "%s_prepared%s" %(candidate_prefix, ProteinPrep.OUTPUT_PROTEIN_SUFFIX)
 
-                
+                try:
+                    preparation_result = self.receptor_scientific_prep(candidate_filename, 
+                                                                       prepared_protein_file,
+                                                                       targ_info_dict=targ_info_dict)
+                except:
+                    logging.info(sys.exc_info())
+                    logging.info('try/except statement caught error in scientific protein prep. Skipping candidate %s' %(candidate_prefix))
+                    continue
 
-                preparation_result = self.receptor_scientific_prep(candidate_filename, 
-                                                                   prepared_protein_file,
-                                                                   targ_info_dict=targ_info_dict)
                 if preparation_result == False:
                     logging.info("Unable to prepare this protein:%s"%(candidate_filename))
                     continue
@@ -147,8 +167,10 @@ class ProteinPrep(object):
                     logging.info('Expected output file %s has size 0. Assuming that protein prep failed. Skipping candidate %s' %(prepared_protein_file, candidate_prefix))
                     continue
 
-                                 
-                #convert into pdb format
+                prepared_receptor_origin = prepared_protein_file
+                prepared_receptor_dest = os.path.join(current_dir_layer_2, prepared_protein_file)
+                shutil.copyfile(prepared_receptor_origin, prepared_receptor_dest)          
+                
                 logging.info("Successfully prepared this protein:%s"%(prepared_protein_file))
 
 

@@ -3,6 +3,7 @@
 __author__ = 'j5wagner'
 
 import commands
+import sys
 import os
 import glob
 import logging
@@ -83,6 +84,7 @@ class LigandPrep(object):
             valid_targets[pot_targ_id] = local_smiles_file
 
         for target_id in valid_targets.keys():
+            os.chdir(current_dir_layer_1)
             os.chdir(target_id)
             smiles_filename = valid_targets[target_id]
 
@@ -93,9 +95,14 @@ class LigandPrep(object):
             # Prepare the ligand
             lig_prefix = smiles_filename.replace('.smi','')
             prepared_lig_file = '%s_prepared%s' %(lig_prefix, LigandPrep.OUTPUT_LIG_SUFFIX)
-            lig_prep_result = self.ligand_scientific_prep(smiles_filename, 
-                                                          prepared_lig_file,
-                                                          targ_info_dict=targ_info_dict)
+            try:
+                lig_prep_result = self.ligand_scientific_prep(smiles_filename, 
+                                                              prepared_lig_file,
+                                                              targ_info_dict=targ_info_dict)
+            except:
+                logging.info(sys.exc_info())
+                logging.info("try/except caught error in ligand_scientific_prep function.  Skipping target %s" %(target_id))
+                continue
             if lig_prep_result == False:
                 logging.info("Unable to prepare the ligand for this target protein: %s. Skipping" %(target_id))
                 continue 
@@ -109,4 +116,3 @@ class LigandPrep(object):
 
             logging.info("Successfully prepared ligand %s for target %s"%(lig_prefix, target_id))
 
-            os.chdir(current_dir_layer_1)
