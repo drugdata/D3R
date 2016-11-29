@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import pwd
 import time
 import logging
 import smtplib
@@ -247,7 +248,7 @@ class D3RTask(object):
         hostname = platform.node()
         if hostname is '':
             hostname = 'localhost'
-        return (os.getlogin() + '@' + hostname)
+        return (pwd.getpwuid(os.getuid())[0] + '@' + hostname)
 
     def _get_program_name(self):
         """Gets name of program running
@@ -792,7 +793,7 @@ class SmtpEmailer(object):
         hostname = platform.node()
         if hostname is '':
             hostname = 'localhost'
-        return os.getlogin() + '@' + hostname
+        return pwd.getpwuid(os.getuid())[0] + '@' + hostname
 
     def _get_server(self):
         """Gets Smtp server

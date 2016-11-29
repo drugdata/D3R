@@ -12,6 +12,7 @@ import tempfile
 import shutil
 import platform
 import os
+import pwd
 import gzip
 from email.mime.multipart import MIMEMultipart
 
@@ -519,7 +520,7 @@ class TestD3rTask(unittest.TestCase):
     def test_build_from_address(self):
         params = D3RParameters()
         task = D3RTask(None, params)
-        exp_from_addr = os.getlogin() + '@' + platform.node()
+        exp_from_addr = pwd.getpwuid(os.getuid())[0] + '@' + platform.node()
         self.assertEqual(task._build_from_address(), exp_from_addr)
 
     def test_run_external_command_all_params_None(self):
@@ -660,7 +661,8 @@ class TestD3rTask(unittest.TestCase):
     def test_smtp_emailer_generate_from_address_using_login_and_host(self):
         emailer = SmtpEmailer()
         val = emailer.generate_from_address_using_login_and_host()
-        self.assertEqual(val, os.getlogin() + '@' + platform.node())
+        self.assertEqual(val, pwd.getpwuid(os.getuid())[0] + '@' +
+                         platform.node())
 
     def test_sending_real_email_but_to_invalid_port_and_host(self):
         emailer = SmtpEmailer(port=1231231231232)
