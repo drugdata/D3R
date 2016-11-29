@@ -39,9 +39,13 @@ a summary of the Blastnfilter run which generated these candidates.
 Tsv files downloaded from
 =========================
 
-http://www.wwpdb.org/files/new_release_structure_sequence.tsv
+http://www.wwpdb.org/files/new_release_structure_sequence_canonical.tsv
 http://www.wwpdb.org/files/new_release_structure_nonpolymer.tsv
 http://www.wwpdb.org/files/new_release_crystallization_pH.tsv
+
+(If new_release_structure_sequence_canonical.tsv is NOT available then
+ http://www.wwpdb.org/files/new_release_structure_sequence.tsv will be
+ downloaded instead)
 
 Structure of data overview
 ==========================
@@ -77,10 +81,12 @@ Below is a definition of the files and directories within this tar file:
 
  [new_release_crystallization_pH.tsv]
  [new_release_structure_nonpolymer.tsv]
- [new_release_structure_sequence.tsv]
+ [new_release_structure_sequence_canonical.tsv]
 
      -- Tsv files downloaded from: http://www.wwpdb.org/files
-
+        (If new_release_structure_sequence_canonical.tsv is NOT available
+         new_release_structure_sequence.tsv will be used instead)
+         
  [<target id>]/
                [<target id>.txt]
 
