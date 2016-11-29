@@ -821,6 +821,14 @@ class TestEvaluation(unittest.TestCase):
         self.assertEqual(emailer.get_message_log(),
                          '\nTask passed in is None\n')
 
+    def test_send_evaluation_email_clears_its_logs(self):
+        emailer = EvaluationEmailer(None, None)
+        emailer.send_evaluation_email(None)
+        emailer.send_evaluation_email(None)
+
+        self.assertEqual(emailer.get_message_log(),
+                         '\nTask passed in is None\n')
+
     def test_send_evaluation_email_not_external_task(self):
         emailer = EvaluationEmailer(None, None)
         task = EvaluationTask('/foo', 'blah' +

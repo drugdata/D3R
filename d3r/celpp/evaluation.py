@@ -235,8 +235,11 @@ class EvaluationEmailer(object):
         return subject, msg
 
     def send_evaluation_email(self, etask):
-        """Sends evaluation email
+        """Sends evaluation email appending issues to message log
         """
+
+        # clear message log fix for issue #99
+        self._msg_log = None
         if etask is None:
             logger.error('Task passed in is None')
             self._append_to_message_log('\nTask passed in is None\n')
