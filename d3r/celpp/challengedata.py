@@ -86,7 +86,7 @@ Below is a definition of the files and directories within this tar file:
      -- Tsv files downloaded from: http://www.wwpdb.org/files
         (If new_release_structure_sequence_canonical.tsv is NOT available
          new_release_structure_sequence.tsv will be used instead)
-         
+
  [<target id>]/
                [<target id>.txt]
 

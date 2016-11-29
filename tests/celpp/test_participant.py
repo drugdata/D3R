@@ -92,7 +92,6 @@ class TestParticipant(unittest.TestCase):
         p = pdb.get_participant_by_guid('12345_2_b')
         self.assertEqual(p, None)
 
-
     def test_participant_database_from_csv_factory(self):
         temp_dir = tempfile.mkdtemp()
         try:
