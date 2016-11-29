@@ -3,7 +3,7 @@
 __author__ = 'churas'
 
 import logging
-
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -51,9 +51,15 @@ class ParticipantDatabase(object):
         """
         self._participants = participants
 
-    def get_participant_by_guid(self, guid):
+    def get_participant_by_guid(self, guid,
+                                exact_match=False):
         """Searches database for `Participant` with matching `guid`
         :param guid: guid or unique id for `Participant`
+        :param exact_match: if set to True only guid matching
+                            exactly with a `Participant` will be returned.
+                            If False then the method will try for an exact
+                            match, but if that fails the first `Participant`
+                            that matches guid if _# is tripped of is used.
         :returns `Participant` with matching `guid` or None if not found
         """
         if guid is None:
@@ -67,6 +73,19 @@ class ParticipantDatabase(object):
         for p in self._participants:
             if p.get_guid() == guid:
                 return p
+
+        if exact_match is True:
+            logger.debug('No match found and exact_match is set '
+                         'to True. returning None for guid: ' + guid)
+            return None
+
+        stripped_guid = re.sub('_[0-9]+$', '', guid)
+        if stripped_guid != guid:
+            logger.debug('Stripped guid is different: ' + stripped_guid +
+                         'performing search again')
+            for p in self._participants:
+                if p.get_guid() == stripped_guid:
+                    return p
 
         return None
 

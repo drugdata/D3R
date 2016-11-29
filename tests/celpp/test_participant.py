@@ -48,6 +48,8 @@ class TestParticipant(unittest.TestCase):
         pdb = ParticipantDatabase([])
         self.assertEqual(len(pdb.get_participants()), 0)
         self.assertEqual(pdb.get_participant_by_guid('bob'), None)
+        self.assertEqual(pdb.get_participant_by_guid('bob',
+                                                     exact_match=True), None)
         self.assertEqual(pdb.get_participant_by_guid('guidx'), None)
         self.assertEqual(pdb.get_participant_by_guid('xguid'), None)
         self.assertEqual(pdb.get_participant_by_guid('GUID'), None)
@@ -74,6 +76,22 @@ class TestParticipant(unittest.TestCase):
 
         p = pdb.get_participant_by_guid('12345')
         self.assertEqual(p.get_name(), '3name')
+
+        p = pdb.get_participant_by_guid('12345', exact_match=True)
+        self.assertEqual(p.get_name(), '3name')
+
+        p = pdb.get_participant_by_guid('12345_2')
+        self.assertEqual(p.get_name(), '3name')
+
+        p = pdb.get_participant_by_guid('12345_2', exact_match=False)
+        self.assertEqual(p.get_name(), '3name')
+
+        p = pdb.get_participant_by_guid('12345_2', exact_match=True)
+        self.assertEqual(p, None)
+
+        p = pdb.get_participant_by_guid('12345_2_b')
+        self.assertEqual(p, None)
+
 
     def test_participant_database_from_csv_factory(self):
         temp_dir = tempfile.mkdtemp()
