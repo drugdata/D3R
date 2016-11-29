@@ -3,6 +3,23 @@
 History
 -------
 
+1.6.3 (???)
+-------------------
+
+* Modified ParticipantDatabase to optionally strip off _# from guid
+  when doing search for Participant. This is to handle case where
+  single participant has multiple submissions to CELPP. Issue #98
+
+* Switched os.getlogin() calls to  pwd.getpwuid(os.getuid())[0] 
+  cause os.getlogin() was raising OSError on Travis. Issue #102
+
+* Fixed bug where evaluation task completed email had log messages
+  from other evaluation task emails in them. Issue #99
+
+* Updated readme.txt file in challenge data package to reflect
+  use of new_release_structure_sequence_canonical.tsv instead of
+  new_release_structure_sequence.tsv file. Issue #97
+
 1.6.2 (2016-10-26)
 -------------------
 
