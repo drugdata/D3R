@@ -13,7 +13,8 @@ Drug Design Data Resource CELPP Runner
 
 
 Drug Design Data Resource is a suite of software to enable 
-filtering, docking, and scoring of new sequences from wwpdb.
+filtering, docking, and scoring of new sequences from 
+`wwpdb <http://www.wwpdb.org/>`_.
 
 For more information please visit our wiki page:
 

@@ -3,7 +3,7 @@
 History
 -------
 
-1.6.3 (???)
+1.6.3 (2016-12-01)
 -------------------
 
 * Modified ParticipantDatabase to optionally strip off _# from guid
