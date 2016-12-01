@@ -106,6 +106,23 @@ class TestFileTransfer(unittest.TestCase):
             self.assertEqual(foo.get_remote_challenge_dir(), '/chall')
             self.assertEqual(foo.get_remote_submission_dir(), '/submit')
 
+            # test passing valid config file with challengepath,
+            # submissionpath, and contestantid
+            f = open(os.path.join(temp_dir, 'valid'), 'a')
+            f.write('host ftp.box.com\nuser bob@bob.com\npass 222\npath /foo\n'
+                    'challengepath /chall\nsubmissionpath /submit\n'
+                    'contestantid 5678\n')
+            f.flush()
+            f.close()
+            foo = FileTransfer(os.path.join(temp_dir, 'valid'))
+            self.assertEqual(foo.get_host(), 'ftp.box.com')
+            self.assertEqual(foo.get_password(), '222')
+            self.assertEqual(foo.get_user(), 'bob@bob.com')
+            self.assertEqual(foo.get_remote_dir(), '/foo')
+            self.assertEqual(foo.get_remote_challenge_dir(), '/chall')
+            self.assertEqual(foo.get_remote_submission_dir(), '/submit')
+            self.assertEqual(foo.get_contestant_id(), '5678')
+
         finally:
             shutil.rmtree(temp_dir)
 
