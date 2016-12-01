@@ -122,7 +122,12 @@ def _parse_arguments(desc, args):
     return parser.parse_args(args, namespace=parsed_arguments)
 
 
-def main():
+def main(args):
+    """Main entry into script
+    :param args: Should be set to sys.argv which contains list of arguments
+                 passed on commandline to script with the script name
+                 being the first argument
+    """
     desc = """
               Generates reports on CELPP processing pipeline.
 
@@ -155,17 +160,18 @@ def main():
 
               """
 
-    theargs = _parse_arguments(desc, sys.argv[1:])
-    theargs.program = sys.argv[0]
+    theargs = _parse_arguments(desc, args[1:])
+    theargs.program = args[0]
     theargs.version = d3r.__version__
 
     _setup_logging(theargs)
 
     try:
         generate_reports(theargs)
+        return 0
     except Exception:
         logger.exception("Error caught exception")
-        sys.exit(2)
+        return 2
 
-if __name__ == '__main__':
-    main()
+if __name__ == '__main__': # pragma: no cover
+    sys.exit(main(sys.argv))

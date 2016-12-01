@@ -199,6 +199,25 @@ class TestCelppReports(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
+    def test_main_where_generate_reports_raises_error(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            theargs = ['prog', temp_dir]
+            self.assertEqual(celppreports.main(theargs), 2)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_main_success(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            theargs = ['prog', '--outdir', os.path.join(temp_dir,'foo'),
+                       temp_dir]
+            self.assertEqual(celppreports.main(theargs), 0)
+        finally:
+            shutil.rmtree(temp_dir)
+
+
+
     def tearDown(self):
         pass
 
