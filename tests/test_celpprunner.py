@@ -646,6 +646,45 @@ class TestCelppRunner(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
+
+    def test_main_success(self):
+        temp_dir = tempfile.mkdtemp()
+
+        try:
+            theargs = ['celpprunner.py', '--stage',
+                       'blast', '--pdbdb', '/pdbdb',
+                       '--blastnfilter', 'echo',
+                       '--postanalysis', 'true',
+                       temp_dir]
+
+
+            makedb_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
+                                      TestCelppRunner.MAKEDB_DIR_NAME)
+            os.makedirs(makedb_dir)
+            open(os.path.join(makedb_dir, 'complete'), 'a').close()
+
+            d_import_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
+                                        TestCelppRunner.IMPORT_DIR_NAME)
+            os.makedirs(d_import_dir)
+            open(os.path.join(d_import_dir, 'complete'), 'a').close()
+
+            self.assertEqual(celpprunner.main(theargs), 0)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_main_where_run_stages_raises_error(self):
+        temp_dir = tempfile.mkdtemp()
+
+        try:
+            theargs = ['celpprunner.py', '--stage',
+                       'foo', os.path.join(temp_dir, 'notexistdir')]
+
+            self.assertEqual(celpprunner.main(theargs), 2)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
     def tearDown(self):
         pass
 

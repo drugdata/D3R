@@ -387,7 +387,11 @@ def _parse_arguments(desc, args):
     return parser.parse_args(args, namespace=parsed_arguments)
 
 
-def main():
+def main(args):
+    """Main entry into celpprunner
+    :param args: should be set to sys.argv which is a list of arguments
+                 starting with script name as the first argument
+    """
     blasttask = BlastNFilterTask('', p)
     dataimport = DataImportTask('', p)
     challenge = ChallengeDataTask('', p)
@@ -639,18 +643,18 @@ def main():
                          submissionpath=FtpFileTransfer.SUBMISSIONPATH,
                          version=d3r.__version__)
 
-    theargs = _parse_arguments(desc, sys.argv[1:])
-    theargs.program = sys.argv[0]
+    theargs = _parse_arguments(desc, args[1:])
+    theargs.program = args[0]
     theargs.version = d3r.__version__
 
     util.setup_logging(theargs)
 
     try:
-        run_stages(theargs)
+        return run_stages(theargs)
     except Exception:
         logger.exception("Error caught exception")
-        sys.exit(2)
+        return 2
 
 
-if __name__ == '__main__':
-    main()
+if __name__ == '__main__': # pragma: no cover
+    sys.exit(main(sys.argv))
