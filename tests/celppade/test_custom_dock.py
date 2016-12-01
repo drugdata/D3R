@@ -15,6 +15,7 @@ import os
 
 from d3r.celppade.custom_dock import Dock
 
+
 class TestDock(unittest.TestCase):
 
     def setUp(self):
@@ -70,6 +71,6 @@ class TestDock(unittest.TestCase):
     def tearDown(self):
         pass
 
+
 if __name__ == '__main__':
     unittest.main()
-

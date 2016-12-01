@@ -210,16 +210,15 @@ class TestCelppReports(unittest.TestCase):
     def test_main_success(self):
         temp_dir = tempfile.mkdtemp()
         try:
-            theargs = ['prog', '--outdir', os.path.join(temp_dir,'foo'),
+            theargs = ['prog', '--outdir', os.path.join(temp_dir, 'foo'),
                        temp_dir]
             self.assertEqual(celppreports.main(theargs), 0)
         finally:
             shutil.rmtree(temp_dir)
 
-
-
     def tearDown(self):
         pass
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -646,7 +646,6 @@ class TestCelppRunner(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
-
     def test_main_success(self):
         temp_dir = tempfile.mkdtemp()
 
@@ -656,7 +655,6 @@ class TestCelppRunner(unittest.TestCase):
                        '--blastnfilter', 'echo',
                        '--postanalysis', 'true',
                        temp_dir]
-
 
             makedb_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
                                       TestCelppRunner.MAKEDB_DIR_NAME)
@@ -679,7 +677,6 @@ class TestCelppRunner(unittest.TestCase):
         try:
             theargs = ['celpprunner.py', '--stage',
                        'foo', os.path.join(temp_dir, 'notexistdir')]
-
             self.assertEqual(celpprunner.main(theargs), 2)
 
         finally:
@@ -687,6 +684,7 @@ class TestCelppRunner(unittest.TestCase):
 
     def tearDown(self):
         pass
+
 
 if __name__ == '__main__':
     unittest.main()
