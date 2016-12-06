@@ -497,11 +497,14 @@ class TestExternalSubmission(unittest.TestCase):
                                                 'hello')
             c = task._untar_challenge_data_package('hello.tar.gz')
             self.assertEqual(c, 'hello')
-            self.assertEqual(task.get_email_log(), 'Skipping, found .. in '
-                                                   'path: hello/5juw/apo-'
-                                                   '5juw_2eb2_..docked.mol\n'
-                                                   'Ignoring non dir/file '
-                                                   'entry in tar 5juw/hello\n')
+            self.assertTrue('Skipping, found .. in '
+                            'path: hello/5juw/apo-'
+                            '5juw_2eb2_..docked.mol\n' in task.get_email_log())
+
+            self.assertTrue('Ignoring non dir/file '
+                            'entry in tar 5juw/'
+                            'hello\n' in task.get_email_log())
+
             candidate = os.path.join(task.get_dir(), 'hello', '5juw')
             self.assertTrue(os.path.isdir(candidate))
             mypdb = os.path.join(candidate,
