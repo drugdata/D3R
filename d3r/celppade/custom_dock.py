@@ -104,12 +104,20 @@ class Dock(object):
             logging.info("Unable to find the center file for this case %s" %(target_prep_dir))
             return False
         pocket_center = pocket_center.split(',')
-        pocket_center = [float(i.strip()) for i in pocket_center]
+        if not len(pocket_center) == 3:
+            logging.info("Pocket center does not parse into 3 coordinates for case %s. Pocket center is %r" %(target_prep_dir, pocket_center))
+            return False
+
+        try:
+            pocket_center = [float(i.strip()) for i in pocket_center]
+        except:
+            logging.info('Error converting pocket center coordinates to float for case %s. Pocket center is %r.' %(target_prep_dir, pocket_center))
+            return False
         return pocket_center
 
     def get_sci_prepped_lig(self, target_prep_dir, sci_prepped_lig_suffix):
         sci_prepped_lig_files = glob.glob('%s/lig_*%s' %(target_prep_dir, sci_prepped_lig_suffix))
-            # Ensure that there is one unambiguous ligand for docking
+        # Ensure that there is one unambiguous ligand for docking
         if len(sci_prepped_lig_files) == 0:
             logging.info('No ligand files found for target prep dir %s.' %(target_prep_dir))
             return False
@@ -120,9 +128,13 @@ class Dock(object):
         return sci_prepped_lig_file
 
     def parse_lig_filename(self, sci_prepped_lig_file):
-        sci_prepped_lig_basename = os.path.basename(sci_prepped_lig_file)
-        lig_re_pattern = 'lig_([a-zA-Z0-9]{3})%s' %(Dock.SCI_PREPPED_LIG_SUFFIX)
-        lig_re_results = re.findall(lig_re_pattern, sci_prepped_lig_basename)
+        try:
+            sci_prepped_lig_basename = os.path.basename(sci_prepped_lig_file)
+            lig_re_pattern = 'lig_([a-zA-Z0-9]{3})%s' %(self.SCI_PREPPED_LIG_SUFFIX)
+            lig_re_results = re.findall(lig_re_pattern, sci_prepped_lig_basename)
+        except:
+            logging.info('Error parsing ligand filename %s. Skipping.' %(sci_prepped_lig_file))
+            return False
         if len(lig_re_results) != 1:
             logging.info('Unable to parse prepared ligand %s. Regular expression matching yielded %r' %(sci_prepped_lig_file, lig_re_results))
             return False
@@ -130,11 +142,16 @@ class Dock(object):
         return lig_prefix
 
     def parse_cand_name(self, cand_name):
-        cand_re_pattern = '([a-zA-Z0-9]+)-([a-zA-Z0-9]{4})_([a-zA-Z0-9]{4})%s' %(Dock.SCI_PREPPED_PROT_SUFFIX)
-        cand_re_results = re.findall(cand_re_pattern, cand_name)
+        try:
+            cand_re_pattern = '([a-zA-Z0-9]+)-([a-zA-Z0-9]{4})_([a-zA-Z0-9]{4})%s' %(self.SCI_PREPPED_PROT_SUFFIX)
+            cand_re_results = re.findall(cand_re_pattern, cand_name)
+        except:
+            logging.info('Error parsing prepared protein %s. Skipping' %(cand_name))
+            return False
         if len(cand_re_results) != 1:
-            logging.info('Unable to parse prepared protein %s. Regular expression matching yielded %r' %(cand_name, cand_re_results))
-            raise Exception('Unable to parse prepared protein %s. Regular expression matching yielded %r' %(cand_name, cand_re_results))
+            logging.info('Unable to parse prepared protein %s. Regular expression matching did not yield one match (yielded %r)' %(cand_name, cand_re_results))
+            return False
+                #raise Exception('Unable to parse prepared protein %s. Regular expression matching yielded %r' %(cand_name, cand_re_results))
         category, target, cand = cand_re_results[0]
         return category, target, cand
 
@@ -180,6 +197,7 @@ class Dock(object):
             lig_prefix = self.parse_lig_filename(sci_prepped_lig_file)
             if lig_prefix == False:
                 logging.info('Unable to parse ligand filename %s. Skipping target %s.' %(sci_prepped_lig_file, targ_name))
+                continue
 
             # Get the cand protein names in this directory
             potential_cand_proteins = glob.glob('%s/*-????_????%s' %(targ_prot_prep_dir, Dock.SCI_PREPPED_PROT_SUFFIX))
@@ -376,9 +394,9 @@ class Dock(object):
                     logging.info('Docking returned False given inputs: tech_prepped_lig_file_list=%r   '
                                  'tech_prepped_prot_file_list=%r    output_receptor_pdb=%r     output_lig_mol=%r. '
                                  'Skipping docking to this candidate.' %(tech_prepped_lig_file_list,
-                                                                                                                                                                                                                          tech_prepped_prot_file_list,
-                                                                                                                                                                                                                          output_receptor_pdb,
-                                                                                                                                                                                                                          output_lig_mol))
+                                                                        tech_prepped_prot_file_list,
+                                                                        output_receptor_pdb,
+                                                                        output_lig_mol))
                     continue
                 # Ensure that correct output files exist
                 if not(os.path.exists(output_receptor_pdb)) or (os.path.getsize(output_receptor_pdb)==0):
