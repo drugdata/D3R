@@ -65,10 +65,10 @@ class TestChainPermuter(unittest.TestCase):
       try:
          temp_dir = tempfile.mkdtemp()
          for method in method_list:
-            print "Evaluating", method
+            #print "Evaluating", method
             params = D3RParameters()
             params.evaluation = 'evaluate.py'
-            params.pdbdb = os.path.abspath('eval_test_data/%s_test_data/mini_pdb/' %(test_scale))
+            params.pdbdb = os.path.abspath('tests/celpp/eval_test_data/%s_test_data/mini_pdb/' %(test_scale))
             docktask = D3RTask(temp_dir, params)
             docktask.set_name(method)
             docktask.set_stage(EvaluationTaskFactory.DOCKSTAGE)
@@ -76,7 +76,7 @@ class TestChainPermuter(unittest.TestCase):
             open(os.path.join(docktask.get_dir(), D3RTask.COMPLETE_FILE),
                  'a').close()
 
-            source_dir = 'eval_test_data/%s_test_data/stage.6.%s/' %(test_scale, method)
+            source_dir = os.path.abspath('tests/celpp/eval_test_data/%s_test_data/stage.6.%s/' %(test_scale, method))
             os.system('cp -r %s/* %s' %(source_dir, docktask.get_dir()))
             task = EvaluationTask(temp_dir, 
                                   '%s.evaluation' %(method), 
