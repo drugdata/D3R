@@ -384,7 +384,7 @@ def main_score (dock_dir, pdb_protein_path, evaluate_dir, update= True):
         ##################
         #Do the scoring here
         #1, get all the docked structures and crystal structure
-        potential_mols = glob.glob('*/*docked.mol' )
+        potential_mols = glob.glob('*docked.mol' )
         ## Go copy in all the submitted poses
         for potential_mol in potential_mols:
             
@@ -458,7 +458,7 @@ def main_score (dock_dir, pdb_protein_path, evaluate_dir, update= True):
         ## Split the xtal ligands from the xtal stucture
         commands.getoutput("$SCHRODINGER/run split_structure.py -many_files -m ligand crystal.pdb crystal.pdb")
         if not os.path.isfile("crystal_ligand1.pdb"):
-            logging.info("Crystal structure is not splittable...")
+            logging.info("Crystal structure is not splittable. Skipping")
             os.chdir(current_dir_layer_2)
             os.chdir(current_dir)
             continue    
@@ -468,7 +468,7 @@ def main_score (dock_dir, pdb_protein_path, evaluate_dir, update= True):
         
         ## Remember that all_docked_structures is a list of tuples: (potential_mol, potential_receptor, complex_pdb))
         for docked_lig_mol, docked_receptor in all_docked_structures:
-            
+
             ## Get the method type, target, and candidate info from the filename
             # for example, this will parse 'hiResApo-5hib_2eb2_docked.mol' into [('hiResApo', '5hib', '2eb2')]
             parsed_name = re.findall('([a-zA-Z0-9]+)-([a-zA-Z0-9]+)_([a-zA-Z0-9]+)_docked.mol',docked_lig_mol)
@@ -478,74 +478,44 @@ def main_score (dock_dir, pdb_protein_path, evaluate_dir, update= True):
             docked_structure_type = parsed_name[0][0]
             docked_structure_target = parsed_name[0][1]
             docked_structure_candidate = parsed_name[0][2]
-            
-            
+
+
             ## Align the submission to the crystal structure
             file_prefix = "%s-%s_%s_docked" %(docked_structure_type,
                                               docked_structure_target,
                                               docked_structure_candidate)             
             aln_complex_pdb = '%s_complex.pdb' %(file_prefix)
-            
-            aln_recep, aln_lig = structure_align(file_prefix, 'crystal_receptor1.pdb', docked_receptor, docked_lig_mol)
-            aln_lig_pdb, aln_complex_pdb = make_complex_pdb(aln_recep, aln_lig, aln_complex_pdb)
-            #docked_lig_pdb = docked_lig_mol.replace('.mol','.pdb')
-            
-            
-            ## Now compare the RMSDs of every ligand to those in the crystal
-            ## We need the ligand as a pdb
-            try:
-                rmsd_list = []
-                for crystal_ligand in crystal_ligand_list:
-                    rmsd = main_rmsd(crystal_ligand, aln_lig_pdb)
-                    logging.info( "RMSD for the first ligand: %s comparing with crystal ligand :%s, is : %s"%(aln_lig_pdb, crystal_ligand, rmsd))
-                    rmsd_list.append(rmsd)
-                if docked_structure_type not in score_dic[target_name]:
-                    score_dic[target_name][docked_structure_type] = min(rmsd_list)
-            except:
-                logging.info("RMSD cannot be calculated for the ligand: %s"%(aln_lig_pdb))
-            #structure_type = all_docked_structure.split("_")[0]
-            
-            #first split, then combine together, then do the aligned
-            #all_docked_structure_title = all_docked_structure.split(".")[0]
-            #all_docked_structure_pdb = all_docked_structure_title + ".pdb"
-            #commands.getoutput("$SCHRODINGER/run split_structure.py -many_files -m ligand %s %s"%(all_docked_structure, all_docked_structure_pdb))
-            
-            # should get LMCSS_dock_pv_receptor1.pdb and LMCSS_dock_pv_ligand1.pdb, may get LMCSS_dock_pv_ligand2.pdb
-            # now combine receptor and ligand
-            #all_docked_structure_receptor = all_docked_structure_title + "_receptor1.pdb"
-            
-            #here, just focus on the first ligand now, probably will come back to get all other ligands sliu 2/12/2016
-            #all_docked_structure_ligand = all_docked_structure_title + "_ligand1.pdb"
-            #all_docked_structure_complex = all_docked_structure_title + "_complex1.pdb"
-            
-            #here once split, there may not have the ligand structure, because the ligand is big and schrodinger regard this ligand as a receptor, so no ligand detected... need to come back this this issue later sliu 2/25/2016, tmp fix, add an exception 
-            #try:
-            #    merge_two_pdb(all_docked_structure_receptor, all_docked_structure_ligand, all_docked_structure_complex)
-            #except:
-            #    logging.info("Could not merge %s and %s together, need to check"%(all_docked_structure_ligand, all_docked_structure_complex))
-            #if not os.path.isfile(all_docked_structure_complex):
-            #    logging.info("Could not get combined complex file:%s"%all_docked_structure_complex)
-            #    continue
-            #aligned_sturture = structure_align("crystal.pdb", all_docked_structure_complex)
-            #if aligned_sturture:
-            #    commands.getoutput("$SCHRODINGER/run split_structure.py -many_files -m ligand %s %s"%(aligned_sturture,aligned_sturture))
-            #    aligned_title = aligned_sturture.split(".")[0]
-            #    #get the splitted ligand and protein
-            #    ligand_list = glob.glob("%s_ligand*.pdb"%aligned_title)
-            #    #just use the first ligand here
-            #    top_ligand_pdb = "%s_ligand1.pdb"%aligned_title
-            #    try:
-            #        #change to the rmsd list style, becaue the crystal structure may have multiple ligand
-            #            #choose the lowest rmsd to store.
-            #        rmsd_list = []
-            #        for crystal_ligand in crystal_ligand_list:
-            #            rmsd = main_rmsd("%s"%crystal_ligand, "%s"%top_ligand_pdb)        
-            #            rmsd_list.append(rmsd)
-            #            logging.info( "RMSD for the first ligand: %s comparing with crystal ligand :%s, is : %s"%(top_ligand_pdb, crystal_ligand, rmsd))
-            #        if structure_type not in score_dic[scoreable_path_local]:
-            #            score_dic[scoreable_path_local][structure_type] = min(rmsd_list)
-            #    except:
-            #        logging.info("RMSD cannot be calculate for the ligand: %s"%top_ligand_pdb)
+                
+            ## Loop over permutations of crystal and docked chains
+            commands.getoutput("$SCHRODINGER/run split_structure.py -many_files -m chain crystal_receptor1.pdb crystal_chains.pdb")
+            crystal_chain_list = glob.glob('crystal_chains_chain?.pdb')
+            commands.getoutput("$SCHRODINGER/run split_structure.py -many_files -m molecule %s docked_molecules.pdb" %(docked_receptor))
+            docked_chain_list = glob.glob('docked_molecules_mol*.pdb')
+
+            for crystal_chain_pdb in crystal_chain_list:
+                for docked_chain in docked_chain_list:
+                    aln_recep, aln_lig = structure_align(file_prefix, crystal_chain_pdb, docked_chain, docked_lig_mol)
+                    aln_lig_pdb, aln_complex_pdb = make_complex_pdb(aln_recep, aln_lig, aln_complex_pdb)
+                    #docked_lig_pdb = docked_lig_mol.replace('.mol','.pdb')
+
+
+                    ## Now compare the RMSDs of every ligand to those in the crystal
+                    ## We need the ligand as a pdb
+                    try:
+                        rmsd_list = []
+                        for crystal_ligand in crystal_ligand_list:
+                            rmsd = main_rmsd(crystal_ligand, aln_lig_pdb)
+                            logging.info( "RMSD for the first ligand: %s comparing with crystal ligand :%s, is : %s"%(aln_lig_pdb, crystal_ligand, rmsd))
+                            rmsd_list.append(rmsd)
+                        if docked_structure_type not in score_dic[target_name]:
+                            score_dic[target_name][docked_structure_type] = []
+                        score_dic[target_name][docked_structure_type] += rmsd_list
+                    except:
+                        logging.info("RMSD cannot be calculated for the ligand: %s"%(aln_lig_pdb))
+            score_dic[target_name][docked_structure_type] = min(score_dic[target_name][docked_structure_type])
+
+
+
         #Finish scoring, come back to the folder with pdbid
         os.chdir(current_dir_layer_2)
         # Finish scoring for this pdbid, come back to the main folder
