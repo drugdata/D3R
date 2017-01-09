@@ -86,7 +86,7 @@ class TestChainPermuter(unittest.TestCase):
             task.run()
             val = task.get_evaluation_summary()
             self.assertEqual(val, '\nEvaluation of docking\n=====================\nTarget_PDBID        LMCSS     SMCSS     hiResApo  hiResHolo hiTanimoto \nNumber_of_cases     0         0         1         0         0         \nAverage                                 6.452                         \nMinimum                                 6.452                         \nMaximum                                 6.452                         \n5t6d                                    6.452                         \n\n')
-              self.assertEqual(task.get_error(),None)
+            self.assertEqual(task.get_error(),None)
       finally:
          shutil.rmtree(temp_dir)
          #print temp_dir
