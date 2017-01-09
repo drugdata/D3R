@@ -159,6 +159,8 @@ def main_glide (stage_3_result, stage_4_working, update= True, usexp=False):
             top_ligand_mol = intermediate_prefix+'_ligand1.mol'
             output_ligand_mol = '%s_docked.mol' %(candidate_prefix)
             commands.getoutput('cp %s %s' %(top_ligand_mol, output_ligand_mol))
+            commands.getoutput('cp %s ../' %(output_ligand_mol))
+            commands.getoutput('cp %s ../' %(outputReceptorPdb))
       
             ##################
             os.chdir(current_dir_layer_2)

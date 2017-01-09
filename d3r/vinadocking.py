@@ -136,6 +136,8 @@ def main_vina (stage_3_result, stage_4_working, update= True):
                 top_intermediate_mol = intermediates_prefix+'_ligand1.mol'
                 final_ligand_mol = output_prefix+'.mol'
                 commands.getoutput('cp %s %s' %( top_intermediate_mol, final_ligand_mol))
+                commands.getoutput('cp %s ../' %(final_ligand_mol))
+                commands.getoutput('cp %s ../' %(outputReceptorPdb))
                     
                 ##################
             os.chdir(current_dir_layer_2)
