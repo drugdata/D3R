@@ -3,6 +3,19 @@
 History
 -------
 
+1.6.4 (2017-01-10)
+------------------
+
+* Remove intermediate files with pymol prefix from challenge data
+  package. Issue #73
+
+* Place docked files in top-level target directory in submissions.
+  Issue #86
+
+* Fixed sporadically failing unit test. Issue #104
+
+* Add evaluation chain permuter implementation and tests. Issue #107
+
 1.6.3 (2016-12-01)
 -------------------
 
