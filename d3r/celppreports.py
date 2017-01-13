@@ -40,6 +40,7 @@ def _setup_logging(theargs):
     :param: theargs should have .loglevel set to one of the
     following strings: DEBUG, INFO, WARNING, ERROR, CRITICAL
     """
+    # TODO This method should be moved into util
     theargs.logformat = LOG_FORMAT
     theargs.numericloglevel = logging.NOTSET
     if theargs.loglevel == 'DEBUG':
