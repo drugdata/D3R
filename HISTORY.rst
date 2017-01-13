@@ -68,31 +68,31 @@ History
 -------------------
 
 * Evaluation task now emails results of evaluation to external 
-  submitter. Issues `#49<https://github.com/drugdata/D3R/issues/49>`_ , `#81 <https://github.com/drugdata/D3R/issues/81>`_
+  submitter. Issues `#49 <https://github.com/drugdata/D3R/issues/49>`_ , `#81 <https://github.com/drugdata/D3R/issues/81>`_
 
 * Adjusted files uploaded to ftp server in EvaluationTask to 
   reflect changes in output from genchallengedata.py script.
   Issues `#79 <https://github.com/drugdata/D3R/issues/79>`_ , `#80 <https://github.com/drugdata/D3R/issues/80>`_
 
 * Added WebDavFileTransfer class to enable upload & download
-  of files via WebDa for celppade tools. Issue `#76 <https://github.com/drugdata/D3R/issues/76>`_ 
+  of files via WebDa for celppade tools. `Issue #76 <https://github.com/drugdata/D3R/issues/76>`_ 
 
 * Added tsv files and Components-inchi.ich files to list of 
-  files uploaded to ftp by DataImportTask. Issue `#78 <https://github.com/drugdata/D3R/issues/78>`_
+  files uploaded to ftp by DataImportTask. `Issue #78 <https://github.com/drugdata/D3R/issues/78>`_
 
 * Updated challenge data package readme.txt to include documentation
-  for hiTanimoto. Issue `#75 <https://github.com/drugdata/D3R/issues/75>`_
+  for hiTanimoto. `Issue #75 <https://github.com/drugdata/D3R/issues/75>`_
 
 * Added pdb_seqres.txt.gz to list of files uploaded to ftp by
-  MakeBlastDBTask. Issue `#77 <https://github.com/drugdata/D3R/issues/77>`_
+  MakeBlastDBTask. `Issue #77 <https://github.com/drugdata/D3R/issues/77>`_
 
-* Download canonical tsv file in data import stage. Issue `#84 <https://github.com/drugdata/D3R/issues/84>`_
+* Download canonical tsv file in data import stage. `Issue #84 <https://github.com/drugdata/D3R/issues/84>`_
 
 * Added --rdkitpython flag to celpprunner.py and modified
-  code to pass it to chimera_proteinligprep.py. Issue `#88 <https://github.com/drugdata/D3R/issues/88>`_
+  code to pass it to chimera_proteinligprep.py. `Issue #88 <https://github.com/drugdata/D3R/issues/88>`_
 
 * Fixed bug where celpprunner would fail if evaluation 
-  stage is rerun with completed evaluation tasks. Issue `#87 <https://github.com/drugdata/D3R/issues/87>`_
+  stage is rerun with completed evaluation tasks. `Issue #87 <https://github.com/drugdata/D3R/issues/87>`_
 
 * Improved documentation in RMSD.txt. Issues `#82 <https://github.com/drugdata/D3R/issues/82>`_ , `#83 <https://github.com/drugdata/D3R/issues/83>`_
 
