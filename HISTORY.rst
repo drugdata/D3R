@@ -9,7 +9,7 @@ History
 * Fix the bug to skip invalid holo hit instead of terminating the whole blastnfilter process. 
   `Issue #89 <https://github.com/drugdata/D3R/issues/89>`_
 
-* Fix the bug in the set sequence fuction where it original complains about the lower cased chain ID.
+* Fix the bug in the set sequence fuction where it original complains about the lower cased chain ID
 
 1.6.4 (2017-01-10)
 ------------------
@@ -60,7 +60,7 @@ History
 * Fixed bug where participant_list.csv could not be parsed if file was 
   written with carriage return delimiters instead of newlines. `Issue #93 <https://github.com/drugdata/D3R/issues/93>`_
   
-* Cleaned up CELPPade by updating documentation and simplifying variable names.
+* Cleaned up CELPPade by updating documentation and simplifying variable names
 
 * Version of d3r is now written to 'start' file in each stage/task. `Issue #94 <https://github.com/drugdata/D3R/issues/94>`_
 
@@ -141,33 +141,33 @@ History
 ---------------------
 
 * In proteinligprep.py ligprep command modified. -s 1 -g flags 
-  removed and -ns flag added to preserve stereo information.
+  removed and -ns flag added to preserve stereo information
 
 1.3.0 (2016-06-29)
 ---------------------
 
 * Fixed bug #45 where autodock vina task was being incorrectly
-  fed proteinligprep as input. Code now feeds it chimeraprep.
+  fed proteinligprep as input. Code now feeds it chimeraprep
 
 * #28 Data import stage waits for TSV files to be updated before
-  downloading.  
+  downloading
 
 * #8 celpprunner will now kill blastnfilter if it runs beyond
-  time set via --blastnfiltertimeout flag.
+  time set via --blastnfiltertimeout flag
 
 * #37 Added external docking submission task which downloads
   external docked results so they can be evaluated the same
-  way as the internal docking programs.
+  way as the internal docking programs
 
 * #44 Added utility function to call external processes. To
-  reduce redundancy in the code base.
+  reduce redundancy in the code base
 
 
 1.2.0 (2016-06-03)
 ---------------------
 
 * proteinligprep.py and chimera_proteinligprep.py
-  has been updated to work with genchallenge stage output.
+  has been updated to work with genchallenge stage output
 
 * vinadocking.py and glidedocking.py now output receptor as pdb
   and ligand as mol.
@@ -185,7 +185,7 @@ History
 * ChallengeDataTask now uploads challenge data package 
   (celpp_week##_##.tar.gz) to 'challengedata' directory on
   ftp if ftpconfig is set properly.  This is in addition, to
-  the default upload directory for that challenge data package.
+  the default upload directory for that challenge data package
 
 * Added a header line in readme.txt of challenge data package
   to denote start of Blastnfilter summary output.
@@ -219,5 +219,5 @@ History
 0.1.0 (2015-06-30)
 ---------------------
 
-* First release on PyPI.
+* First release on PyPI
 
