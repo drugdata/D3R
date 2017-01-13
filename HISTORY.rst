@@ -2,6 +2,12 @@
 
 History
 -------
+1.6.5 (2017-01-13)
+------------------
+
+* Fix the bug to skip invalid holo hit instead of terminating the whole blastnfilter process. Issue #89
+
+* Fix the bug in the set sequence fuction where it original complains about the lower cased chain ID.
 
 1.6.4 (2017-01-10)
 ------------------
