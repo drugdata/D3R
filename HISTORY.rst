@@ -2,10 +2,12 @@
 
 History
 -------
+
 1.6.5 (2017-01-13)
 ------------------
 
-* Fix the bug to skip invalid holo hit instead of terminating the whole blastnfilter process. Issue #89
+* Fix the bug to skip invalid holo hit instead of terminating the whole blastnfilter process. 
+  `Issue #89 <https://github.com/drugdata/D3R/issues/89>`_
 
 * Fix the bug in the set sequence fuction where it original complains about the lower cased chain ID.
 
@@ -13,86 +15,86 @@ History
 ------------------
 
 * Remove intermediate files with pymol prefix from challenge data
-  package. Issue #73
+  package. `Issue #73 <https://github.com/drugdata/D3R/issues/73>`_
 
 * Place docked files in top-level target directory in submissions.
-  Issue #86
+  `Issue #86 <https://github.com/drugdata/D3R/issues/86>`_
 
-* Fixed sporadically failing unit test. Issue #104
+* Fixed sporadically failing unit test. `Issue #104 <https://github.com/drugdata/D3R/issues/104>`_
 
-* Add evaluation chain permuter implementation and tests. Issue #107
+* Add evaluation chain permuter implementation and tests. `Issue #107 <https://github.com/drugdata/D3R/issues/107>`_
 
 1.6.3 (2016-12-01)
 -------------------
 
 * Modified ParticipantDatabase to optionally strip off _# from guid
   when doing search for Participant. This is to handle case where
-  single participant has multiple submissions to CELPP. Issue #98
+  single participant has multiple submissions to CELPP. `Issue #98 <https://github.com/drugdata/D3R/issues/98>`_
 
 * Switched os.getlogin() calls to  pwd.getpwuid(os.getuid())[0] 
-  cause os.getlogin() was raising OSError on Travis. Issue #102
+  cause os.getlogin() was raising OSError on Travis. `Issue #102 <https://github.com/drugdata/D3R/issues/102>`_
 
 * Fixed bug where evaluation task completed email had log messages
-  from other evaluation task emails in them. Issue #99
+  from other evaluation task emails in them. `Issue #99 <https://github.com/drugdata/D3R/issues/99>`_
 
 * Updated readme.txt file in challenge data package to reflect
   use of new_release_structure_sequence_canonical.tsv instead of
-  new_release_structure_sequence.tsv file. Issue #97
+  new_release_structure_sequence.tsv file. `Issue #97 <https://github.com/drugdata/D3R/issues/97>`_
 
 1.6.2 (2016-10-26)
 -------------------
 
 * Fixed bug where large amounts of output to standard out/err caused
   celpprunner.py to exit due to an exception from smtplib due to 
-  very large email. Issue #95
+  very large email. `Issue #95 <https://github.com/drugdata/D3R/issues/95>`_
 
 1.6.1 (2016-10-24)
 -------------------
 
 * Added createchallenge stage which is NOT a stage, but a fake stage
-  that runs the following stages: makedb,import,blast,challengedata. Issue #92
+  that runs the following stages: makedb,import,blast,challengedata. `Issue #92 <https://github.com/drugdata/D3R/issues/92>`_
 
 * Moved logic to setup logging handlers to start of celpprunner.py to remove
-  no handlers found error for d3r.celpp.util. Issue #91
+  no handlers found error for d3r.celpp.util. `Issue #91 <https://github.com/drugdata/D3R/issues/91>`_
 
 * Fixed bug where participant_list.csv could not be parsed if file was 
-  written with carriage return delimiters instead of newlines. Issue #93
+  written with carriage return delimiters instead of newlines. `Issue #93 <https://github.com/drugdata/D3R/issues/93>`_
   
 * Cleaned up CELPPade by updating documentation and simplifying variable names.
 
-* Version of d3r is now written to 'start' file in each stage/task. Issue #94
+* Version of d3r is now written to 'start' file in each stage/task. `Issue #94 <https://github.com/drugdata/D3R/issues/94>`_
 
 1.6.0 (2016-10-13)
 -------------------
 
 * Evaluation task now emails results of evaluation to external 
-  submitter. Issues #49,#81
+  submitter. Issues `#49<https://github.com/drugdata/D3R/issues/49>`_ , `#81 <https://github.com/drugdata/D3R/issues/81>`_
 
 * Adjusted files uploaded to ftp server in EvaluationTask to 
   reflect changes in output from genchallengedata.py script.
-  Issues #79,#80
+  Issues `#79 <https://github.com/drugdata/D3R/issues/79>`_ , `#80 <https://github.com/drugdata/D3R/issues/80>`_
 
 * Added WebDavFileTransfer class to enable upload & download
-  of files via WebDa for celppade tools. Issue #76
+  of files via WebDa for celppade tools. Issue `#76 <https://github.com/drugdata/D3R/issues/76>`_ 
 
 * Added tsv files and Components-inchi.ich files to list of 
-  files uploaded to ftp by DataImportTask. Issue #78
+  files uploaded to ftp by DataImportTask. Issue `#78 <https://github.com/drugdata/D3R/issues/78>`_
 
 * Updated challenge data package readme.txt to include documentation
-  for hiTanimoto. Issue #75
+  for hiTanimoto. Issue `#75 <https://github.com/drugdata/D3R/issues/75>`_
 
 * Added pdb_seqres.txt.gz to list of files uploaded to ftp by
-  MakeBlastDBTask. Issue #77.
+  MakeBlastDBTask. Issue `#77 <https://github.com/drugdata/D3R/issues/77>`_
 
-* Download canonical tsv file in data import stage. Issue #84
+* Download canonical tsv file in data import stage. Issue `#84 <https://github.com/drugdata/D3R/issues/84>`_
 
 * Added --rdkitpython flag to celpprunner.py and modified
-  code to pass it to chimera_proteinligprep.py. Issue #88
+  code to pass it to chimera_proteinligprep.py. Issue `#88 <https://github.com/drugdata/D3R/issues/88>`_
 
 * Fixed bug where celpprunner would fail if evaluation 
-  stage is rerun with completed evaluation tasks. Issue #87
+  stage is rerun with completed evaluation tasks. Issue `#87 <https://github.com/drugdata/D3R/issues/87>`_
 
-* Improved documentation in RMSD.txt. Issues #82,#83
+* Improved documentation in RMSD.txt. Issues `#82 <https://github.com/drugdata/D3R/issues/82>`_ , `#83 <https://github.com/drugdata/D3R/issues/83>`_
 
 1.5.0 (2016-09-11)
 --------------------
