@@ -228,6 +228,13 @@ class Hit(Base):
         """
 
         id = '{pdb_id}_{chain_id}'.format(pdb_id = pdb_id.lower(), chain_id = chain_id.upper())
+        #sliu2 on 01/09/2017 fix the bug where the sequence chain is lower case in sequence file
+        if id not in Hit.pdb_dict:
+            #if the upper chain id is not found then try to lower chain id
+            id = '{pdb_id}_{chain_id}'.format(pdb_id = pdb_id.lower(), chain_id = chain_id.lower())
+            if id not in Hit.pdb_dict:
+                # if the lower chain id is still not avaiable, in this case, cannot set the sequence
+                return False
         logger.debug('Looking for ' + id + ' in pdb_seqres.txt')
         if id in self.sequence_membership.keys():
             self.sequences[self.sequence_membership[id]].set_query_alignment(record, alignment)
@@ -248,6 +255,7 @@ class Hit(Base):
             self.sequences.append(hs)
             self.sequence_membership[id] = len(self.sequences) - 1
             self.chain_count += 1
+            return True
 
     def fill_sequence(self):
         """
