@@ -197,7 +197,8 @@ class WriteText(object):
             self.write_largest(hit)
         for hit in self.least_similar:
             self.write_smallest(hit)
-        for hit in self.highest_res[:2]:
+        #sliu 01092017 change to top ten in holo structures
+        for hit in self.highest_res[:10]:
             self.write_holo(hit)
         for hit in self.apo:
             self.write_apo(hit)

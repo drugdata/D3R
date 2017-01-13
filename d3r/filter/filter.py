@@ -266,7 +266,8 @@ class CandidateFilter(BaseFilter):
 
     def filter_holo(self):
         logger.debug('In filter_holo()')
-        hits = [hit for hit in self.query.hits if hit.resolution and not hit.triage and hit.dock_count > 0]
+        #sliu 01102017 fix the bug to skip the hit which don't have the mcss with query ligand
+        hits = [hit for hit in self.query.hits if hit.resolution and not hit.triage and hit.dock_count > 0 and hit.largest_index]
         if hits:
             hits.sort(key=lambda hit: hit.resolution)
             lowest = hits[0].resolution

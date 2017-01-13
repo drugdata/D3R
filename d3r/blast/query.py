@@ -296,12 +296,13 @@ class Query(Base):
                         continue
                     hit.set_resolution()
                     hit.set_expt_method()
-                    hit.set_sequence(pdb_id, chain_id, record, alignment)
-                    hit.set_ligands(chain_id)
+                    #sliu 01092017 fix the bug to skip the case where set sequence is not finished
+                    if hit.set_sequence(pdb_id, chain_id, record, alignment):
+                        hit.set_ligands(chain_id)
                     #print "Inside query set hits> set ligands check after set ligands"
                     #raw_input()
-                    self.hits.append(hit)
-                    self.hit_membership[pdb_id] = len(self.hits) - 1
+                        self.hits.append(hit)
+                        self.hit_membership[pdb_id] = len(self.hits) - 1
 
     def fill_sequences(self):
         """

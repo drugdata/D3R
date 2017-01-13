@@ -12,6 +12,7 @@ from d3r.filter.filter import CandidateFilter
 import out_put
 
 logger = logging.getLogger(__name__)
+logging.basicConfig( format  = '%(asctime)s: %(message)s', datefmt = '%m/%d/%y %I:%M:%S', filename = 'final.log', filemode = 'w', level   = logging.DEBUG )
 
 
 def split_input(options):
@@ -145,6 +146,8 @@ def run(options):
         query_filter(query)
         if not query.triage:
             logger.debug('Blasting query:  ' + query.pdb_id)
+            print "Blasting query:  %s "%query.pdb_id
+            logging.info("Blasting query:  %s "%query.pdb_id)
             query = blast_the_query(query, pdb_db, pdb_path, fasta, out_dir, compinchi)
             logger.debug('calculate mcss')
             calculate_mcss(query)
