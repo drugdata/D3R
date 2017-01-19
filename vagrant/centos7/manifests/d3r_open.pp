@@ -20,8 +20,8 @@ class d3r_open
 
   exec { 'install_pymol':
     command => '/bin/cd ~; /bin/wget https://heanet.dl.sourceforge.net/project/pymol/pymol/1.8/pymol-v1.8.4.0.tar.bz2;
-                /bin/tar -xvfj  pymol-v1.8.4.0.tar.bz2;
-                cd pymol-v1.8.4.0; 
+                /bin/tar -jxvf  pymol-v1.8.4.0.tar.bz2;
+                cd pymol; 
                 python2.7 setup.py build install --home=/opt/pymol --install-scripts=/opt/pymol --install-lib=/opt/pymol/modules;
                 /bin/ln -s /opt/pymol/pymol /usr/bin/pymol',
 
