@@ -700,7 +700,8 @@ class TestExternalSubmission(unittest.TestCase):
             mockft.download_file = Mock(return_value=True)
             mockft.disconnect = Mock(return_value=None)
             task.set_file_transfer(mockft)
-            val = task._download_remote_challenge_data_package('celpp2_3.tar.gz')
+            val = task._download_remote_challenge_data_package('celpp2_3.'
+                                                               'tar.gz')
             self.assertTrue(val)
             localfile = os.path.join(task.get_dir(), 'celpp2_3.tar.gz')
             mockft.download_file.assert_called_with(pkg, localfile)

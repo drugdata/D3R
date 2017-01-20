@@ -297,7 +297,7 @@ class ExternalDataSubmissionTask(D3RTask):
                          chall_name)
             try:
                 res = self._download_remote_challenge_data_package(chall_name)
-                if res == True:
+                if res is True:
                     logger.debug('Successfully downloaded')
                     return chall_name
                 logger.debug('Download failed, sleeping ' +
