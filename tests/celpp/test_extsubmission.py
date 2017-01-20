@@ -12,6 +12,7 @@ from mock import Mock
 
 from d3r.celpp.extsubmission import ExternalDataSubmissionFactory
 from d3r.celpp.extsubmission import ExternalDataSubmissionTask
+from d3r.celpp.extsubmission import ChallengePackageDownloadError
 from d3r.celpp.task import D3RParameters
 from d3r.celpp import util
 from d3r.celpp.task import D3RTask
@@ -598,14 +599,92 @@ class TestExternalSubmission(unittest.TestCase):
                                           'hi', params)
         self.assertEqual(task._get_summary_of_docked_results(), '')
 
+    def test_download_remote_challenge_data_package_with_retry_retry_neg(self):
+        params = D3RParameters()
+        task = ExternalDataSubmissionTask('/foo', 'yo',
+                                          'hi', params)
+        task.set_download_max_retry_count(-1)
+        task.set_download_retry_sleep(0)
+        try:
+            task._download_remote_challenge_data_package_with_retry()
+            self.fail('Expected ChallengePackageDownloadError')
+        except ChallengePackageDownloadError as e:
+            self.assertEqual(str(e), 'Unable to download hi')
+
+    def test_download_remote_challenge_data_package_with_retry_fails(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            pkg = '/remote/celpp1_2017_dockedresults_yo.tar.gz'
+            task = ExternalDataSubmissionTask(temp_dir, 'yo',
+                                              pkg, params)
+            task.set_download_retry_sleep(0)
+            task.set_download_max_retry_count(1)
+            mockft = D3RParameters()
+            mockft.connect = Mock(side_effect=IOError('error'))
+            mockft.download_file = Mock(return_value=True)
+            mockft.disconnect = Mock(return_value=None)
+            task.set_file_transfer(mockft)
+            try:
+                task._download_remote_challenge_data_package_with_retry()
+            except ChallengePackageDownloadError as e:
+                self.assertEqual(str(e), 'Unable to download ' +
+                                 'celpp1_2017_dockedresults_yo.tar.gz')
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_download_remote_challenge_data_package_with_retry_false(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            pkg = '/remote/celpp1_2017_dockedresults_yo.tar.gz'
+            task = ExternalDataSubmissionTask(temp_dir, 'yo',
+                                              pkg, params)
+            task.set_download_retry_sleep(0)
+            task.set_download_max_retry_count(1)
+            mockft = D3RParameters()
+            mockft.connect = Mock()
+            mockft.download_file = Mock(return_value=False)
+            mockft.disconnect = Mock(return_value=None)
+            task.set_file_transfer(mockft)
+            try:
+                task._download_remote_challenge_data_package_with_retry()
+            except ChallengePackageDownloadError as e:
+                self.assertEqual(str(e), 'Unable to download ' +
+                                 'celpp1_2017_dockedresults_yo.tar.gz')
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_download_remote_challenge_data_package_with_1st_retry_false(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            pkg = '/remote/celpp1_2017_dockedresults_yo.tar.gz'
+            task = ExternalDataSubmissionTask(temp_dir, 'yo',
+                                              pkg, params)
+            task.set_download_retry_sleep(0)
+            task.set_download_max_retry_count(3)
+            mockft = D3RParameters()
+            mockft.connect = Mock()
+            mockft.download_file = Mock()
+            mockft.download_file.side_effect = [False, True]
+            mockft.disconnect = Mock(return_value=None)
+            task.set_file_transfer(mockft)
+            c = task._download_remote_challenge_data_package_with_retry()
+            self.assertEqual(c, 'celpp1_2017_dockedresults_yo.tar.gz')
+        finally:
+            shutil.rmtree(temp_dir)
+
     def test__download_remote_challenge_data_package_raise_exception(self):
         params = D3RParameters()
         task = ExternalDataSubmissionTask('/foo', 'yo',
                                           'hi', params)
         try:
-            task._download_remote_challenge_data_package()
-            self.fail('Expected attribute error')
+            task._download_remote_challenge_data_package('foo')
+            self.fail('Expected attribute error cause file transfer'
+                      'object is not set')
         except AttributeError:
+
             pass
 
     def test__download_remote_challenge_data_package_success(self):
@@ -621,8 +700,8 @@ class TestExternalSubmission(unittest.TestCase):
             mockft.download_file = Mock(return_value=True)
             mockft.disconnect = Mock(return_value=None)
             task.set_file_transfer(mockft)
-            val = task._download_remote_challenge_data_package()
-            self.assertEqual(val, 'celpp2_3.tar.gz')
+            val = task._download_remote_challenge_data_package('celpp2_3.tar.gz')
+            self.assertTrue(val)
             localfile = os.path.join(task.get_dir(), 'celpp2_3.tar.gz')
             mockft.download_file.assert_called_with(pkg, localfile)
             mockft.connect.assert_called_with()
@@ -680,7 +759,9 @@ class TestExternalSubmission(unittest.TestCase):
             mockft.disconnect = Mock(return_value=None)
             task.set_file_transfer(mockft)
             task.run()
-            self.assertEqual(task.get_error(), 'Caught exception error')
+            self.assertEqual(task.get_error(), 'Caught exception Unable to '
+                                               'download celpp1_2017_docked'
+                                               'results_yo.tar.gz')
             self.assertEqual(task.get_email_log(), None)
 
         finally:
