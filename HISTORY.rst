@@ -3,6 +3,12 @@
 History
 -------
 
+1.6.6 (2017-01-23)
+------------------
+
+* Add retry to external submission downloads. 
+  `Issue #112 <<https://github.com/drugdata/D3R/issues/112>`_
+
 1.6.5 (2017-01-13)
 ------------------
 
