@@ -295,6 +295,11 @@ class ExternalDataSubmissionTask(D3RTask):
             logger.debug('Try # ' + str(count) + ' of ' +
                          str(self._maxretries) + ' to download ' +
                          chall_name)
+            if count > 0:
+                self.append_to_email_log('Try # ' + str(count) + ' of ' +
+                                         str(self._maxretries) +
+                                         ' to download ' + chall_name + '\n')
+
             try:
                 res = self._download_remote_challenge_data_package(chall_name)
                 if res is True:

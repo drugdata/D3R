@@ -763,7 +763,14 @@ class TestExternalSubmission(unittest.TestCase):
             self.assertEqual(task.get_error(), 'Caught exception Unable to '
                                                'download celpp1_2017_docked'
                                                'results_yo.tar.gz')
-            self.assertEqual(task.get_email_log(), None)
+            self.assertEqual(task.get_email_log(), 'Try # 1 of 3 to download '
+                                                   'celpp1_2017_dockedresults'
+                                                   '_yo.tar.gz\nTry # 2 of 3 '
+                                                   'to download celpp1_2017_d'
+                                                   'ockedresults_yo.tar.gz\n'
+                                                   'Try # 3 of 3 to download '
+                                                   'celpp1_2017_dockedresults'
+                                                   '_yo.tar.gz\n')
 
         finally:
             shutil.rmtree(temp_dir)
