@@ -33,7 +33,11 @@ def extract_ave (pickle_file, candidate_type = "LMCSS"):
     return number_of_bins, average
 
 def generate_overall_csv (evaluation_path, challenge_dir, candidates_type = "LMCSS"):
-    all_pickle_files = glob.glob("%s/stage.7.*/RMSD.pickle"%evaluation_path)
+    #evaluation_path =["stage.7.glide.evaluation", "stage.7.autodockvina.evaluation" ... ]
+    all_pickle_files = []
+    for all_stage_7 in evaluation_path:
+            all_pickle_files.append("%s/RMSD.pickle"%all_stage_7)
+    #all_pickle_files = glob.glob("%s/stage.7.*/RMSD.pickle"%evaluation_path)
     overall_csv = open("Overall_RMSD_%s.csv"%candidates_type, "w")
     candidates_report = os.path.join(challenge_dir, "final.log")
     total_candidates = check_case_number(candidates_report, "Succsessfully generate this protein:%s"%candidates_type)
@@ -48,14 +52,14 @@ def generate_overall_csv (evaluation_path, challenge_dir, candidates_type = "LMC
 if ("__main__") == (__name__):
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument("-e", "--evaluationdir", metavar="PATH",
+    parser.add_argument("-e", "--evaluationdir", metavar="PATH", action='append',
                       help="PATH where we could find the evaluation stage output")
 
     parser.add_argument("-o", "--outdir", metavar="PATH",
                       help="PATH where we will run the evaluate stage")
 
     parser.add_argument("-c", "--chanllengedir", metavar="PATH",
-                      help="PATH where we could found the chanllenge result ")       
+                      help="PATH to celpp week directory under challenge task ")       
     logger = logging.getLogger()                              
     logging.basicConfig(format='%(asctime)s: %(message)s',
                         datefmt='%m/%d/%y %I:%M:%S', filename='final.log',  
