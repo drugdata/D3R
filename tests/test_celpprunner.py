@@ -119,6 +119,7 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEqual(result.stage, 'blast')
         self.assertEqual(result.celppdir, 'foo')
         self.assertEqual(result.email, None)
+        self.assertEqual(result.summaryemail, None)
         self.assertEqual(result.loglevel, celpprunner.DEFAULT_LOG_LEVEL)
         self.assertEqual(result.blastnfilter, 'blastnfilter.py')
         self.assertEqual(result.proteinligprep, 'proteinligprep.py')
@@ -145,11 +146,13 @@ class TestCelppRunner(unittest.TestCase):
                    '--skipimportwait',
                    '--importretry', '10',
                    '--importsleep', '30',
-                   '--rdkitpython', '/usr/bin']
+                   '--rdkitpython', '/usr/bin',
+                   '--summaryemail', 'j@j,g@g']
         result = celpprunner._parse_arguments('hi', theargs)
         self.assertEqual(result.stage, 'dock,glide')
         self.assertEqual(result.celppdir, 'foo')
         self.assertEqual(result.email, 'b@b.com,h@h')
+        self.assertEqual(result.summaryemail, 'j@j,g@g')
         self.assertEqual(result.loglevel, 'ERROR')
         self.assertEqual(result.blastnfilter, '/bin/blastnfilter.py')
         self.assertEqual(result.proteinligprep, '/bin/proteinligprep.py')
