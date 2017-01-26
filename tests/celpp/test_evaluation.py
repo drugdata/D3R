@@ -628,9 +628,6 @@ class TestEvaluation(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
-
-
-
     def test_generate_external_submission_email_body(self):
         temp_dir = tempfile.mkdtemp()
         try:

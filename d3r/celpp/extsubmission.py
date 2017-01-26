@@ -5,6 +5,7 @@ import logging
 import os
 import tarfile
 import shutil
+import time
 
 from d3r.celpp.task import D3RTask
 from d3r.celpp.challengedata import ChallengeDataTask
@@ -13,6 +14,13 @@ from d3r.celpp.evaluation import EvaluationTask
 from d3r.celpp.filetransfer import FtpFileTransfer
 
 logger = logging.getLogger(__name__)
+
+
+class ChallengePackageDownloadError(Exception):
+    """Raised when there was an error downloading
+       Challenge data package
+    """
+    pass
 
 
 class ExternalDataSubmissionFactory(object):
@@ -161,6 +169,21 @@ class ExternalDataSubmissionTask(D3RTask):
         self.set_stage(EvaluationTaskFactory.DOCKSTAGE)
         self.set_status(D3RTask.UNKNOWN_STATUS)
         self.set_remote_challenge_data_package(remotefile)
+        self._maxretries = 3
+        self._retrysleep = 30
+
+    def set_download_max_retry_count(self, numretries):
+        """Sets number of retries to perform before giving up on
+           download
+           :param numretries: int representing number of retries
+        """
+        self._maxretries = int(numretries)
+
+    def set_download_retry_sleep(self, retrysleep):
+        """Sets number of seconds to wait before retrying download
+           :param retrysleep: int containing number of seconds
+        """
+        self._retrysleep = int(retrysleep)
 
     def set_remote_challenge_data_package(self, remotefile):
         self._remote_challenge_file = remotefile
@@ -260,12 +283,43 @@ class ExternalDataSubmissionTask(D3RTask):
         """
         return ''
 
-    def _download_remote_challenge_data_package(self):
+    def _download_remote_challenge_data_package_with_retry(self):
+        """With retries attempts to download remote challenge data
+           package
+           :returns: string containing path to remote challenge data
+                     package file or None upon failure.
+        """
+        chall_name = os.path.basename(self.get_remote_challenge_data_package())
+        count = 0
+        while count <= self._maxretries:
+            logger.debug('Try # ' + str(count) + ' of ' +
+                         str(self._maxretries) + ' to download ' +
+                         chall_name)
+            if count > 0:
+                self.append_to_email_log('Try # ' + str(count) + ' of ' +
+                                         str(self._maxretries) +
+                                         ' to download ' + chall_name + '\n')
+
+            try:
+                res = self._download_remote_challenge_data_package(chall_name)
+                if res is True:
+                    logger.debug('Successfully downloaded')
+                    return chall_name
+                logger.debug('Download failed, sleeping ' +
+                             str(self._retrysleep) + ' seconds')
+                time.sleep(self._retrysleep)
+            except Exception:
+                logger.exception('Caught exception, retrying download')
+            finally:
+                count += 1
+
+        raise ChallengePackageDownloadError('Unable to download ' + chall_name)
+
+    def _download_remote_challenge_data_package(self, chall_name):
         """Downloads external submissions
            pseudo code:
            ft.download_file(self.get_remote_challenge_data_package())
         """
-        chall_name = os.path.basename(self.get_remote_challenge_data_package())
         try:
 
             ft = self.get_file_transfer()
@@ -274,19 +328,18 @@ class ExternalDataSubmissionTask(D3RTask):
             logger.debug('Downloading ' +
                          self.get_remote_challenge_data_package() + ' to ' +
                          localfile)
-            ft.download_file(self.get_remote_challenge_data_package(),
-                             localfile)
+            return ft.download_file(self.get_remote_challenge_data_package(),
+                                    localfile)
         finally:
             try:
                 ft.disconnect()
             except Exception:
                 logger.exception('Caught exception trying to disconnect')
-        return chall_name
 
     def _runtask(self):
         """Performs the download and untar of challenge data package
         """
-        chall_file = self._download_remote_challenge_data_package()
+        chall_file = self._download_remote_challenge_data_package_with_retry()
         chall_name = self._untar_challenge_data_package(chall_file)
         self._move_challenge_data_package_into_task_dir(chall_name)
         summary = self._get_summary_of_docked_results()
