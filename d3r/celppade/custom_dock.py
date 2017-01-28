@@ -276,7 +276,7 @@ class Dock(object):
                 tech_prepped_lig_file_list = self.ligand_technical_prep(lig_base_filename, targ_info_dict=targ_info_dict)
             except:
                 logging.info(sys.exc_info())
-                logging.info('try/except statement caught error in function lig_technical_prep. Skipping target %s.' %(os.path.abspath(lig_base_filename), targ_name))
+                logging.info('try/except statement caught error in function lig_technical_prep. Skipping target %s.' %(targ_name))
 
                 continue
         
