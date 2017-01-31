@@ -86,6 +86,16 @@ class TestParticipant(unittest.TestCase):
         p = pdb.get_participant_by_guid('12345_2', exact_match=False)
         self.assertEqual(p.get_name(), '3name')
 
+        p = pdb.get_participant_by_guid('12345_mydock', exact_match=False)
+        self.assertEqual(p.get_name(), '3name')
+
+        p = pdb.get_participant_by_guid('12345_my-dock', exact_match=False)
+        self.assertEqual(p.get_name(), '3name')
+
+        # Suffixes can't contain underscores
+        p = pdb.get_participant_by_guid('12345_my_dock', exact_match=False)
+        self.assertEqual(p, None)
+
         p = pdb.get_participant_by_guid('12345_2', exact_match=True)
         self.assertEqual(p, None)
 

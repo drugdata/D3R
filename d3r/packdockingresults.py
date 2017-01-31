@@ -100,12 +100,12 @@ def main_pack_dock_results(challenge_dir, dock_dir, pack_dir, ftp_config):
             shutil.copyfile(docked_mol, destination)
             
             ### TEMPORARY HACK UNTIL EVALUATE GETS FIXED ###
-            hack_folder_name = destination.replace('_docked.mol','')
-            os.mkdir(hack_folder_name)
-            destination = os.path.join(hack_folder_name, d_f_basename)
-            shutil.copyfile(docked_mol, destination)
-            destination = destination.replace('.mol','.pdb')
-            shutil.copyfile(docked_pdb, destination)
+            #hack_folder_name = destination.replace('_docked.mol','')
+            #os.mkdir(hack_folder_name)
+            #destination = os.path.join(hack_folder_name, d_f_basename)
+            #shutil.copyfile(docked_mol, destination)
+            #destination = destination.replace('.mol','.pdb')
+            #shutil.copyfile(docked_pdb, destination)
 
     
     
