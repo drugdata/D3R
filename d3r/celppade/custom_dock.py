@@ -252,7 +252,7 @@ class Dock(object):
             # Parse the targ.txt file
             ReadText_obj = ReadText()
             targ_info_dict = ReadText_obj.parse_txt(copy_dest)
-
+            targ_info_dict['pocket_center'] = pocket_center
 
             #### Run CELPPade technical prep
 

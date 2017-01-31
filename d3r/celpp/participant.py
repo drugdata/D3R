@@ -79,7 +79,17 @@ class ParticipantDatabase(object):
                          'to True. returning None for guid: ' + guid)
             return None
 
-        stripped_guid = re.sub('_[0-9]+$', '', guid)
+        #stripped_guid = re.sub('_[0-9A-Za-z-]+$', '', guid)
+        possible_guids = re.findall('([0-9]{5})_[0-9A-Za-z-]+$', guid)
+        if len(possible_guids) > 1:
+            logger.debug('Stripped guid is not unique. Stripping ' + guid +
+                         ' yielded ' + possible_guids)
+            return None
+        if len(possible_guids) == 0:
+            logger.debug('guid stripping did not yield a match. Original'
+                         ' guid was ' + guid)
+            return None
+        stripped_guid = possible_guids[0]
         if stripped_guid != guid:
             logger.debug('Stripped guid is different: ' + stripped_guid +
                          'performing search again')
