@@ -3,6 +3,15 @@
 History
 -------
 
+1.6.7 (2017-02-07)
+------------------
+
+* Increased retry time for challengedata download to 1 hour
+
+* Updates to evaluation suffix structure (Allows for more complex suffixes after guids)
+
+* Fixed bugs in CELPPade error messages
+
 1.6.6 (2017-01-23)
 ------------------
 
