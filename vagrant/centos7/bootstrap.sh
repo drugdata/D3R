@@ -4,7 +4,7 @@
 echo "Installing git and cloning puppet-d3r"
 yum install -y git
 
-git clone -b chrisdev https://github.com/drugdata/puppet-d3r.git
+git clone https://github.com/drugdata/puppet-d3r.git
 
 # append execution command cause I cannot for the life of
 # me get puppet to use the catalog 
