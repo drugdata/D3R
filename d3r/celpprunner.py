@@ -43,19 +43,19 @@ CHIMERA_PREP = 'chimeraprep'
 def _get_lock(theargs, stage):
     """Create lock file to prevent this process from running on same data.
 
-       This uses ``PIDLockFile`` to create a pid lock file in celppdir
+       This uses ``PIDLockFile`` to create a pid lock file in latest_weekly
        directory named celprunner.<stage>.lockpid
        If pid exists it is assumed the lock is held otherwise lock
        is broken and recreated
 
        :param theargs: return value from argparse and should contain
-                       theargs.celppdir should be set to path
+                       theargs.latest_weekly should be set to path
        :param stage: set to stage that is being run
        :return: ``PIDLockFile`` upon success
        :raises: LockException: If there was a problem locking
        :raises: Exception: If valid pid lock file already exists
        """
-    mylockfile = os.path.join(theargs.celppdir, "celpprunner." +
+    mylockfile = os.path.join(theargs.latest_weekly, "celpprunner." +
                               stage + ".lockpid")
     logger.debug("Looking for lock file: " + mylockfile)
     lock = PIDLockFile(mylockfile, timeout=10)
@@ -271,7 +271,7 @@ def _parse_arguments(desc, args):
     parser.add_argument("--summaryemail", dest="summaryemail",
                         help='Comma delimited list of email addresses to'
                              'receive an email summarizing docking '
-                             'evaluations')
+                             'evaluations DOES NOT DO ANYTHING YET')
     parser.add_argument("--createweekdir",
                         help='Create new celpp week directory before ' +
                              'running stages',

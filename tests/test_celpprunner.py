@@ -97,7 +97,7 @@ class TestCelppRunner(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             theargs = D3RParameters()
-            theargs.celppdir = temp_dir
+            theargs.latest_weekly = temp_dir
 
             # get the lock file which should work
             lock = celpprunner._get_lock(theargs, 'blast')
