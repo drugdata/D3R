@@ -3,6 +3,12 @@
 History
 -------
 
+1.6.8 (2017-03-07)
+------------------
+
+* Celpprunner puts lock file within specific week directory. 
+  `Issue #122 <https://github.com/drugdata/D3R/issues/122>`_
+
 1.6.7 (2017-02-07)
 ------------------
 
