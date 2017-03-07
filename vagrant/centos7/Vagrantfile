@@ -7,7 +7,8 @@
 # you're doing.
 Vagrant.configure(2) do |config|
   config.vm.box = "puppetlabs/centos-7.2-64-puppet"
-  config.vm.provision "shell", inline: "/opt/puppetlabs/bin/puppet apply --modulepath /vagrant/manifests /vagrant/manifests/d3r_open.pp"
+  # config.vm.provision "shell", inline: "/opt/puppetlabs/bin/puppet apply --modulepath /vagrant/manifests /vagrant/manifests/d3r_open.pp"
+  config.vm.provision :shell, path: "bootstrap.sh"
   #config.vm.provision "puppet" do |puppet|
   #  puppet.manifests_path = "manifests"
   #  puppet.manifest_file = "d3r_open.pp"
