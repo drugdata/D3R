@@ -82,6 +82,53 @@ class EvaluationTaskFactory(object):
             logger.debug('replytoaddress not set in get_args()')
             return None
 
+    def _update_priorities_of_tasks(self, etasks,
+                                    participant_db):
+        """Updates priorities for EvaluationTask objects in
+           list of etask objects from values obtained in
+           participant_db ParticipantDatabase
+           :param etasks: list of EvaluationTask objects, it is assumed to
+                          never be None
+           :param participant_db: ParticipantDatabase object, assumed never
+                                  to be none
+           :returns: same list of EvaluationTask objects with priority set
+        """
+        for task in etasks:
+            guid = task.get_guid_for_task()
+            if guid is not None:
+                logger.debug('Looking for participant with guid: ' + guid)
+                p = participant_db.get_participant_by_guid(guid)
+                if p is not None:
+                    task.set_priority(p.get_priority())
+                    logger.debug('Setting priority for ' + guid +
+                                 ' to ' + str(task.get_priority()))
+                else:
+                    logger.debug('No participant found to match guid: ' + guid)
+        return etasks
+
+    def _sort_tasks_by_participant_priority(self, etasks,
+                                            participant_db):
+        """Sorts `EvaluationTask` objects in `etasks` by priority
+           set for participants in `participant_db` The sorting
+           goes as follows. Participants with highest get_priority()
+           value go first, identical priority ordering is arbitrary
+           and any EvaluationTasks without priority are put at end
+           of list in arbitrary order
+        :returns: list of sorted EvaluationTask objects
+        """
+        if etasks is None:
+            logger.debug('No EvaluationTasks to sort')
+            return etasks
+
+        if participant_db is None:
+            logger.warning('Participant Database is None, cannot sort')
+            return etasks
+
+        # update priorities of etasks
+        updatedtasks = self._update_priorities_of_tasks(etasks, participant_db)
+        updatedtasks.sort(reverse=True, key=lambda task: task.get_priority())
+        return updatedtasks
+
     def get_evaluation_tasks(self):
         """Generate EvaluationTasks
 
@@ -138,7 +185,8 @@ class EvaluationTaskFactory(object):
                             logger.debug(stask.get_name() + ' cannot be' +
                                          ' added : ' + stask.get_error())
 
-        return scoring_tasks
+        return self._sort_tasks_by_participant_priority(scoring_tasks,
+                                                        participant_db)
 
 
 class EvaluationEmailer(object):
@@ -305,6 +353,20 @@ class EvaluationTask(D3RTask):
         self.set_status(D3RTask.UNKNOWN_STATUS)
         self._docktask = docktask
         self._emailer = None
+        self._priority = 0
+
+    def set_priority(self, priority):
+        """Sets priority of when evaluation task should be run
+        :param priority: int denoting priority, higher values mean
+                         higher priority and 0 is usually default
+        """
+        self._priority = priority
+
+    def get_priority(self):
+        """Gets priority of this EvaluationTask
+        :returns: int denoting priority
+        """
+        return self._priority
 
     def set_evaluation_emailer(self, emailer):
         self._emailer = emailer
