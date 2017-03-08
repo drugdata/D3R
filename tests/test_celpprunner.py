@@ -113,6 +113,29 @@ class TestCelppRunner(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
+    def test_get_lock_where_lockfile_exists_and_process_is_running(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            theargs = D3RParameters()
+            theargs.latest_weekly = temp_dir
+
+            lockfile = os.path.join(temp_dir,
+                                    'celpprunner.blast.lockpid')
+            f = open(lockfile, 'w')
+            pid = str(os.getppid())
+            f.write(pid)
+            f.flush()
+            f.close()
+            # get the lock file which should work
+            try:
+                celpprunner._get_lock(theargs, 'blast')
+                self.fail('Expected Exception')
+            except Exception as e:
+                self.assertEqual(str(e), 'celpprunner with pid ' +
+                                 pid + ' is running')
+        finally:
+            shutil.rmtree(temp_dir)
+
     def test_parse_arguments(self):
         theargs = ['--stage', 'blast', 'foo']
         result = celpprunner._parse_arguments('hi', theargs)
