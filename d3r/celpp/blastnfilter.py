@@ -328,6 +328,13 @@ class BlastNFilterTask(D3RTask):
             logger.debug('No log level set in arguments using WARNING')
             loglevel = 'WARNING'
 
+        try:
+            blastnfiltertimeout = self.get_args().blastnfiltertimeout
+            logger.debug('blastnfilter timeout set to ' +
+                         str(blastnfiltertimeout))
+        except AttributeError:
+            blastnfiltertimeout = None
+
         # verify sequence.tsv file exists on filesystem.
         # if not fall back to oldsequence.tsv file
         sequencetsv = data_import.get_sequence_tsv()
@@ -358,7 +365,8 @@ class BlastNFilterTask(D3RTask):
         blastnfilter_name = os.path.basename(self.get_args().blastnfilter)
 
         self.run_external_command(blastnfilter_name,
-                                  cmd_to_run, False,)
+                                  cmd_to_run, False,
+                                  timeout=blastnfiltertimeout)
 
         self.set_status(D3RTask.COMPLETE_STATUS)
 
@@ -369,7 +377,8 @@ class BlastNFilterTask(D3RTask):
         postanalysis_name = os.path.basename(self.get_args().postanalysis)
 
         self.run_external_command(postanalysis_name,
-                                  cmd_to_run, False)
+                                  cmd_to_run, False,
+                                  timeout=blastnfiltertimeout)
 
         try:
             # examine output to get candidate hit count DR-12

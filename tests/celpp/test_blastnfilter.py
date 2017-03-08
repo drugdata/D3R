@@ -516,6 +516,134 @@ class TestBlastNFilterTask(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
+    def test_run_success_with_txt_file_and_timeout_set(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            foo_script = os.path.join(temp_dir, 'foo.py')
+            params.blastnfilter = foo_script
+            params.postanalysis = '/bin/echo'
+            params.pdbdb = '/pdbdb'
+            params.blastnfiltertimeout = 50
+            blasttask = BlastNFilterTask(temp_dir, params)
+            blasttask._can_run = True
+
+            txt_file = os.path.join(blasttask.get_dir(), '4za4.txt')
+
+            txt_contents = ('query, 4za4\\n' +
+                            'ph, 7.4\\n' +
+                            'ligand, 4LU\\n\\n' +
+                            'inchi, InChI=1S/C22H29N4O9P/c1-10-7-12-16-' +
+                            '15(11(10)2)22(3,4)5-6-25(16)17-19(23-21(31)' +
+                            '24-20(17)30)26(12)8-13(27)18(29)14(28)9-35-' +
+                            '36(32,33)34/h6-7,13-14,18,27-29H,5,8-9H2,1-' +
+                            '4H3,(H3-,23,24,30,31,32,33,34)/p+1/t13-,14+' +
+                            ',18-/m0/s1\\n'
+                            'largest, 4zz3, 4PP\\n' +
+                            'smallest, 3ax3, 4LP\\n' +
+                            'holo, 2ax1, XDN\\n' +
+                            'apo, 2ll3, GSS\\n')
+
+            # create fake blastnfilter script that makes csv files
+            f = open(foo_script, 'w')
+            f.write('#! /usr/bin/env python\n\n')
+            f.write('f = open(\'' + txt_file + '\', \'w\')\n')
+            f.write('f.write(\'' + txt_contents + '\\n\')\n')
+            f.write('f.flush()\nf.close()\n')
+            f.flush()
+            f.close()
+            os.chmod(foo_script, stat.S_IRWXU)
+
+            blasttask.run()
+            self.assertEqual(blasttask.get_error(), None)
+            self.assertEqual(blasttask.get_status(), D3RTask.COMPLETE_STATUS)
+            complete_file = os.path.join(blasttask.get_dir(),
+                                         D3RTask.COMPLETE_FILE)
+
+            self.assertEqual(os.path.isfile(complete_file), True)
+
+            std_err_file = os.path.join(blasttask.get_dir(),
+                                        'foo.py.stderr')
+
+            self.assertEqual(os.path.isfile(std_err_file), True)
+
+            std_out_file = os.path.join(blasttask.get_dir(),
+                                        'foo.py.stdout')
+
+            self.assertEqual(os.path.isfile(std_out_file), True)
+
+            res = blasttask.get_email_log().rstrip('\n')
+            res.index('/foo.py')
+            res.index('# txt files found: 1')
+            res.index('Output from summary.txt')
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_run_fail_due_to_time_but_with_txt_file(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            foo_script = os.path.join(temp_dir, 'foo.py')
+            params.blastnfilter = foo_script
+            params.postanalysis = '/bin/echo'
+            params.pdbdb = '/pdbdb'
+            params.blastnfiltertimeout = 1
+            blasttask = BlastNFilterTask(temp_dir, params)
+            blasttask._can_run = True
+
+            txt_file = os.path.join(blasttask.get_dir(), '4za4.txt')
+
+            txt_contents = ('query, 4za4\\n' +
+                            'ph, 7.4\\n' +
+                            'ligand, 4LU\\n\\n' +
+                            'inchi, InChI=1S/C22H29N4O9P/c1-10-7-12-16-' +
+                            '15(11(10)2)22(3,4)5-6-25(16)17-19(23-21(31)' +
+                            '24-20(17)30)26(12)8-13(27)18(29)14(28)9-35-' +
+                            '36(32,33)34/h6-7,13-14,18,27-29H,5,8-9H2,1-' +
+                            '4H3,(H3-,23,24,30,31,32,33,34)/p+1/t13-,14+' +
+                            ',18-/m0/s1\\n'
+                            'largest, 4zz3, 4PP\\n' +
+                            'smallest, 3ax3, 4LP\\n' +
+                            'holo, 2ax1, XDN\\n' +
+                            'apo, 2ll3, GSS\\n')
+
+            # create fake blastnfilter script that makes csv files
+            f = open(foo_script, 'w')
+            f.write('#! /usr/bin/env python\n\n')
+            f.write('import time\n')
+            f.write('f = open(\'' + txt_file + '\', \'w\')\n')
+            f.write('f.write(\'' + txt_contents + '\\n\')\n')
+            f.write('f.flush()\nf.close()\n')
+            f.write('time.sleep(360)\n')
+            f.flush()
+            f.close()
+            os.chmod(foo_script, stat.S_IRWXU)
+
+            blasttask.run()
+            self.assertEqual(blasttask.get_error(), None)
+            self.assertEqual(blasttask.get_status(), D3RTask.COMPLETE_STATUS)
+            complete_file = os.path.join(blasttask.get_dir(),
+                                         D3RTask.COMPLETE_FILE)
+
+            self.assertEqual(os.path.isfile(complete_file), True)
+
+            std_err_file = os.path.join(blasttask.get_dir(),
+                                        'foo.py.stderr')
+
+            self.assertEqual(os.path.isfile(std_err_file), True)
+
+            std_out_file = os.path.join(blasttask.get_dir(),
+                                        'foo.py.stdout')
+
+            self.assertEqual(os.path.isfile(std_out_file), True)
+
+            res = blasttask.get_email_log().rstrip('\n')
+            res.index('/foo.py')
+            res.index('# txt files found: 1')
+            res.index('Output from summary.txt')
+        finally:
+            shutil.rmtree(temp_dir)
+
     def test_run_with_error(self):
         temp_dir = tempfile.mkdtemp()
 
