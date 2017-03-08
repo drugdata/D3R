@@ -460,12 +460,11 @@ class TestD3rTask(unittest.TestCase):
             params = D3RParameters()
             params.smtp = 'doesnotexistxxx.x.x'
             params.smtpport = 12345
-            params.email = 'foo@foo.com'
             task = D3RTask(temp_dir, params)
             task.set_stage(1)
             task.set_name('foo')
             try:
-                task._send_email(None)
+                task._send_email(None, 'bob@bob.com')
                 self.fail('Expected exception')
             except Exception:
                 pass

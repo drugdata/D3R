@@ -303,7 +303,10 @@ class D3RTask(object):
         msg['Subject'] = (D3RTask.SUBJECT_LINE_PREFIX + self._get_time() +
                           self.get_dir_name() +
                           ' has started running')
-        self._send_email(msg)
+        try:
+            self._send_email(msg, self.get_args().email)
+        except AttributeError as e:
+            logger.debug(str(e) + ' email not set. skipping')
 
     def _send_end_email(self):
         """Creates end email message that can be passed to sendmail
@@ -330,12 +333,23 @@ class D3RTask(object):
                           self.get_dir_name() +
                           ' has finished with status ' + self.get_status())
         try:
-            self._send_email(msg)
+            try:
+                self._send_email(msg, self.get_args().email)
+            except AttributeError as e:
+                logger.debug(str(e) + ' email not set. skipping')
+
+            if self.get_error() is not None:
+                logger.debug("Sending summary email cause task failed")
+                try:
+                    self._send_email(msg, self.get_args().summaryemail)
+                except AttributeError as e:
+                    logger.debug(str(e) + ' email not set. skipping')
+
         except Exception:
             logger.exception('Caught exception trying to send end email, '
                              'skipping email notification')
 
-    def _send_email(self, mime_msg):
+    def _send_email(self, mime_msg, email_csv):
         """Sends email with message passed in
 
 
@@ -344,28 +358,31 @@ class D3RTask(object):
            an email with `message` passed in as content.
         """
         try:
-            if self.get_args().email is not None:
-                email_list = self.get_args().email.split(',')
-                logger.debug('Sending email to: ' + ", ".join(email_list))
+            if email_csv is not None:
+
+                split_email_list = email_csv.split(',')
+
+                logger.debug('Sending email to: ' +
+                             ", ".join(split_email_list))
                 server = self._get_smtp_server()
 
                 from_addr = self._build_from_address()
 
                 mime_msg['From'] = from_addr
-                mime_msg['To'] = ", ".join(email_list)
+                mime_msg['To'] = ", ".join(split_email_list)
 
                 if self.get_args().loglevel == 'DEBUG':
                     server.set_debuglevel(1)
 
                 server.sendmail(from_addr,
-                                email_list, mime_msg.as_string())
+                                email_csv, mime_msg.as_string())
                 server.quit()
                 return
             else:
                 logger.debug('Email was set to None, skipping email ' +
                              'notification')
         except AttributeError as e:
-            logger.debug('No email set, skipping email notification ' +
+            logger.debug('No email passed in, skipping email notification ' +
                          str(e))
 
     def _upload_task(self):
