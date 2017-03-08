@@ -321,9 +321,9 @@ def _parse_arguments(desc, args):
                              '(default vinadocking.py)')
     parser.add_argument("--evaluation", default='evaluate.py',
                         help='Path to evaluation script (default evaluate.py)')
-    parser.add_argument("--postevaluation", default='post_evaluate.py',
+    parser.add_argument("--postevaluation", default='post_evaluation.py',
                         help='Path to post evaluation script '
-                             '(default post_evaluate.py)')
+                             '(default post_evaluation.py)')
     parser.add_argument("--pdbdb", default='/data/pdb',
                         help='Path to PDB database files (default /data/pdb)')
     parser.add_argument("--compinchi",
