@@ -3,6 +3,7 @@ __author__ = 'churas'
 import unittest
 import tempfile
 import os.path
+import stat
 
 """
 test_evaluation
@@ -542,6 +543,89 @@ class TestEvaluation(unittest.TestCase):
             self.assertEqual(os.path.isfile(stderr), True)
             stdout = os.path.join(evaluation.get_dir(),
                                   'true.stdout')
+            self.assertEqual(os.path.isfile(stdout), True)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_run_succeeds_no_emailer_withtimeout(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            params.evaluation = 'true'
+            params.evaluationtimeout = 100
+            params.evaluationtimeoutkilldelay = 10
+            params.pdbdb = '/data/pdb'
+            docktask = D3RTask(temp_dir, params)
+            docktask.set_name('foo')
+            docktask.set_stage(EvaluationTaskFactory.DOCKSTAGE)
+            docktask.create_dir()
+            open(os.path.join(docktask.get_dir(), D3RTask.COMPLETE_FILE),
+                 'a').close()
+            evaluation = EvaluationTask(temp_dir, 'foo.evaluation',
+                                        docktask, params)
+            evaluation.run()
+            self.assertEqual(evaluation.get_error(), None)
+            # test files get created
+            errfile = os.path.join(evaluation.get_dir(),
+                                   D3RTask.ERROR_FILE)
+            self.assertEqual(os.path.isfile(errfile), False)
+
+            compfile = os.path.join(evaluation.get_dir(),
+                                    D3RTask.COMPLETE_FILE)
+            self.assertEqual(os.path.isfile(compfile), True)
+            stderr = os.path.join(evaluation.get_dir(),
+                                  'true.stderr')
+            self.assertEqual(os.path.isfile(stderr), True)
+            stdout = os.path.join(evaluation.get_dir(),
+                                  'true.stdout')
+            self.assertEqual(os.path.isfile(stdout), True)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_run_fails_due_to_timeout_no_emailer(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            foo_script = os.path.join(temp_dir, 'foo.py')
+            params.evaluation = foo_script
+            params.evaluationtimeout = 1
+            params.evaluationtimeoutkilldelay = 2
+            params.pdbdb = '/data/pdb'
+
+            # create fake blastnfilter script that makes csv files
+            f = open(foo_script, 'w')
+            f.write('#! /usr/bin/env python\n\n')
+            f.write('import time\n')
+            f.write('time.sleep(360)\n')
+            f.flush()
+            f.close()
+            os.chmod(foo_script, stat.S_IRWXU)
+
+            docktask = D3RTask(temp_dir, params)
+            docktask.set_name('foo')
+            docktask.set_stage(EvaluationTaskFactory.DOCKSTAGE)
+            docktask.create_dir()
+            open(os.path.join(docktask.get_dir(), D3RTask.COMPLETE_FILE),
+                 'a').close()
+            evaluation = EvaluationTask(temp_dir, 'foo.evaluation',
+                                        docktask, params)
+            evaluation.run()
+            self.assertEqual(evaluation.get_error(),
+                             'Non zero exit code: -15 received. '
+                             'Standard out:  Standard error: ')
+            # test files get created
+            errfile = os.path.join(evaluation.get_dir(),
+                                   D3RTask.ERROR_FILE)
+            self.assertEqual(os.path.isfile(errfile), True)
+
+            compfile = os.path.join(evaluation.get_dir(),
+                                    D3RTask.COMPLETE_FILE)
+            self.assertEqual(os.path.isfile(compfile), False)
+            stderr = os.path.join(evaluation.get_dir(),
+                                  'foo.py.stderr')
+            self.assertEqual(os.path.isfile(stderr), True)
+            stdout = os.path.join(evaluation.get_dir(),
+                                  'foo.py.stdout')
             self.assertEqual(os.path.isfile(stdout), True)
         finally:
             shutil.rmtree(temp_dir)

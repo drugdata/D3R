@@ -496,6 +496,20 @@ class EvaluationTask(D3RTask):
             self.end()
             return
 
+        try:
+            evaltimeout = self.get_args().evaluationtimeout
+            logger.debug('Setting evaluation timeout to ' +
+                         str(evaltimeout))
+        except AttributeError:
+            evaltimeout = None
+
+        try:
+            killdelay = self.get_args().evaluationtimeoutkilldelay
+            logger.debug('Setting evaluation kill delay to ' +
+                         str(killdelay))
+        except AttributeError:
+            killdelay = 60
+
         #
         # --pdbdb <path to pdb.extracted> --dockdir <stage.4.glide> \
         # --outdir <path to stage.5.glide.evaluation>
@@ -508,7 +522,9 @@ class EvaluationTask(D3RTask):
         eval_name = os.path.basename(self.get_args().evaluation)
 
         self.run_external_command(eval_name, cmd_to_run,
-                                  True)
+                                  True,
+                                  timeout=evaltimeout,
+                                  kill_delay=killdelay)
 
         # attempt to send evaluation email
         try:
