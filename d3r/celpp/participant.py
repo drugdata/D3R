@@ -79,7 +79,7 @@ class ParticipantDatabase(object):
                          'to True. returning None for guid: ' + guid)
             return None
 
-        #stripped_guid = re.sub('_[0-9A-Za-z-]+$', '', guid)
+        # stripped_guid = re.sub('_[0-9A-Za-z-]+$', '', guid)
         possible_guids = re.findall('([0-9]{5})_[0-9A-Za-z-]+$', guid)
         if len(possible_guids) > 1:
             logger.debug('Stripped guid is not unique. Stripping ' + guid +
