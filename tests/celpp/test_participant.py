@@ -38,6 +38,15 @@ class TestParticipant(unittest.TestCase):
         self.assertEqual(p.get_email(), 'email@email.com')
         self.assertEqual(p.get_guid(), 'guid')
         self.assertEqual(p.get_name(), 'name')
+        self.assertEqual(p.get_priority(), 0)
+
+        p = Participant('2name', '2d3rusername', '2guid', '2email@email.com',
+                        priority=234)
+        self.assertEqual(p.get_d3rusername(), '2d3rusername')
+        self.assertEqual(p.get_email(), '2email@email.com')
+        self.assertEqual(p.get_guid(), '2guid')
+        self.assertEqual(p.get_name(), '2name')
+        self.assertEqual(p.get_priority(), 234)
 
     def test_participant_database(self):
 
@@ -59,7 +68,9 @@ class TestParticipant(unittest.TestCase):
                  Participant('2name', '2d3rusername', 'guidy',
                              '2email@email.com'),
                  Participant('3name', '3d3rusername', '12345',
-                             '3email@email.com')]
+                             '3email@email.com'),
+                 Participant('4name', '4d3rusername', '567890_foo',
+                             '4email@email.com')]
 
         pdb = ParticipantDatabase(plist)
         self.assertEqual(pdb.get_participant_by_guid(None), None)
@@ -100,6 +111,13 @@ class TestParticipant(unittest.TestCase):
         self.assertEqual(p, None)
 
         p = pdb.get_participant_by_guid('12345_2_b')
+        self.assertEqual(p, None)
+
+        # test a longer guid works
+        p = pdb.get_participant_by_guid('567890_foo')
+        self.assertEqual(p.get_name(), '4name')
+
+        p = pdb.get_participant_by_guid('4567890_foo')
         self.assertEqual(p, None)
 
     def test_participant_database_from_csv_factory(self):
@@ -159,7 +177,7 @@ class TestParticipant(unittest.TestCase):
             f = open(csvfile, 'w')
             f.write('name,d3rusername,guid,email\n')
             f.write('joe,jj,123,j@j.com\n')
-            f.write('uhoh,2,many,commas,uhoh@email.com\n')
+            f.write('uhoh,2,many,commas,uhoh@email.com,foo\n')
             f.write('phil,pp,456,p@p.com\n')
 
             f.flush()
@@ -171,6 +189,29 @@ class TestParticipant(unittest.TestCase):
             self.assertEqual(p.get_email(), 'j@j.com')
             p = pdb.get_participant_by_guid('456')
             self.assertEqual(p.get_email(), 'p@p.com')
+
+            # parse file with header and 2 valid entries both with
+            # priorities and 1 valid entry except invalid priority
+            f = open(csvfile, 'w')
+            f.write('name,d3rusername,guid,email,priority\n')
+            f.write('joe,jj,123,j@j.com,4\n')
+            f.write('xx,xxx,1234,j@j.com,foo\n')
+            f.write('phil,pp,456,p@p.com,6\n')
+
+            f.flush()
+            f.close()
+            pfac = ParticipantDatabaseFromCSVFactory(csvfile)
+            pdb = pfac.get_participant_database()
+            self.assertEqual(len(pdb.get_participants()), 3)
+            p = pdb.get_participant_by_guid('123')
+            self.assertEqual(p.get_email(), 'j@j.com')
+            self.assertEqual(p.get_priority(), 4)
+            p = pdb.get_participant_by_guid('456')
+            self.assertEqual(p.get_email(), 'p@p.com')
+            self.assertEqual(p.get_priority(), 6)
+            p = pdb.get_participant_by_guid('1234')
+            self.assertEqual(p.get_email(), 'j@j.com')
+            self.assertEqual(p.get_priority(), 0)
 
             # parse file with carriage returns
             f = open(csvfile, 'w')
