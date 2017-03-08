@@ -24,6 +24,7 @@ Tests for `task` module.
 """
 
 import shutil
+import signal
 from datetime import date
 from d3r.celpp import util
 from d3r.celpp.util import DownloadError
@@ -753,6 +754,142 @@ class TestUtil(unittest.TestCase):
                          .getEffectiveLevel(),
                          logging.CRITICAL)
         self.assertEqual(theargs.numericloglevel, logging.CRITICAL)
+
+    def test_run_external_command_where_command_is_none(self):
+        ecode, out, err = util.run_external_command_with_timeout(None, None)
+        self.assertEqual(ecode, 256)
+        self.assertEqual(out, '')
+        self.assertEqual(err, 'Command must be set')
+
+    def test_run_external_command_where_tmpdir_is_none_or_not_a_dir(self):
+        ecode, out, err = util.run_external_command_with_timeout('foo', None)
+        self.assertEqual(ecode, 255)
+        self.assertEqual(out, '')
+        self.assertEqual(err, 'Tmpdir must be set')
+
+        temp_dir = tempfile.mkdtemp()
+        try:
+            notdir = os.path.join(temp_dir, 'blah')
+            ecode, out, err = util.run_external_command_with_timeout('foo',
+                                                                     notdir)
+            self.assertEqual(ecode, 254)
+            self.assertEqual(out, '')
+            self.assertEqual(err, 'Tmpdir must be a directory')
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_run_external_command_success(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            fakecmd = os.path.join(temp_dir, 'fake.py')
+            f = open(fakecmd, 'w')
+            f.write('#!/usr/bin/env python\n\n')
+            f.write('import sys\n')
+            f.write('sys.stdout.write("somestdout")\n')
+            f.write('sys.stderr.write("somestderr")\n')
+            f.write('sys.exit(0)\n')
+            f.flush()
+            f.close()
+            os.chmod(fakecmd, stat.S_IRWXU)
+
+            ecode, out, err = util.\
+                run_external_command_with_timeout(fakecmd, temp_dir,
+                                                  polling_sleep_time=0.1)
+            self.assertEqual(ecode, 0)
+            self.assertEqual(out, 'somestdout')
+            self.assertEqual(err, 'somestderr')
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_run_external_command_timeout_exceeded(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            fakecmd = os.path.join(temp_dir, 'fake.py')
+            f = open(fakecmd, 'w')
+            f.write('#!/usr/bin/env python\n\n')
+            f.write('import sys\n')
+            f.write('import time\n')
+            f.write('sys.stdout.write("somestdout")\n')
+            f.write('sys.stderr.write("somestderr")\n')
+            f.write('sys.stdout.flush()\n')
+            f.write('sys.stderr.flush()\n')
+            f.write('time.sleep(120)\n')
+            f.write('sys.exit(0)\n')
+            f.flush()
+            f.close()
+            os.chmod(fakecmd, stat.S_IRWXU)
+
+            ecode, out, err = util.\
+                run_external_command_with_timeout(fakecmd, temp_dir,
+                                                  timeout=2,
+                                                  kill_delay=2,
+                                                  polling_sleep_time=0.1)
+            self.assertEqual(ecode, -signal.SIGTERM)
+            self.assertEqual(out, 'somestdout')
+            self.assertEqual(err, 'somestderr')
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_run_external_command_timeout_exceeded_ignore_sigterm(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            fakecmd = os.path.join(temp_dir, 'fake.py')
+            f = open(fakecmd, 'w')
+            f.write('#!/usr/bin/env python\n\n')
+            f.write('import sys\n')
+            f.write('import time\n')
+            f.write('import signal\n\n')
+            f.write('def handler(signum, frame):\n')
+            f.write('    sys.stdout.write("caught signal " + str(signum))\n\n')
+            f.write('signal.signal(signal.SIGTERM, handler)\n')
+            f.write('signal.signal(signal.SIGINT, handler)\n')
+            f.write('sys.stdout.write("somestdout")\n')
+            f.write('sys.stderr.write("somestderr")\n')
+            f.write('sys.stdout.flush()\n')
+            f.write('sys.stderr.flush()\n')
+            f.write('time.sleep(120)\n')
+            f.write('time.sleep(120)\n')
+            f.write('sys.exit(0)\n')
+            f.flush()
+            f.close()
+            os.chmod(fakecmd, stat.S_IRWXU)
+
+            ecode, out, err = util.\
+                run_external_command_with_timeout(fakecmd, temp_dir,
+                                                  timeout=1,
+                                                  kill_delay=1,
+                                                  polling_sleep_time=0.1)
+
+            self.assertEqual(ecode, -signal.SIGKILL)
+            self.assertTrue('somestdout' in out)
+            self.assertEqual(err, 'somestderr')
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_run_external_command_fail_no_output(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            fakecmd = os.path.join(temp_dir, 'fake.py')
+            f = open(fakecmd, 'w')
+            f.write('#!/usr/bin/env python\n\n')
+            f.write('import sys\n')
+            f.write('sys.exit(1)\n')
+            f.flush()
+            f.close()
+            os.chmod(fakecmd, stat.S_IRWXU)
+
+            ecode, out, err = util.\
+                run_external_command_with_timeout(fakecmd, temp_dir,
+                                                  polling_sleep_time=0.1)
+            self.assertEqual(ecode, 1)
+            self.assertEqual(out, '')
+            self.assertEqual(err, '')
+
+        finally:
+            shutil.rmtree(temp_dir)
 
     def tearDown(self):
         pass
