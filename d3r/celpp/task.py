@@ -7,6 +7,8 @@ import logging
 import smtplib
 import platform
 import mimetypes
+import shutil
+import uuid
 from email import encoders
 from email.mime.base import MIMEBase
 from email.mime.image import MIMEImage
@@ -107,6 +109,7 @@ class D3RTask(object):
     ERROR_STATUS = "error"
     STDERR_SUFFIX = ".stderr"
     STDOUT_SUFFIX = ".stdout"
+    TMP_DIR_SUFFIX = '.tmpdir'
     MAX_CHARS_FOR_EMAIL_STR = 250000
     TEXT_TRUNCATED_STR = 'TEXT TRUNCATED\n'
 
@@ -619,7 +622,10 @@ class D3RTask(object):
         return D3RTask.UNKNOWN_STATUS
 
     def run_external_command(self, command_name, cmd_to_run,
-                             command_failure_is_fatal):
+                             command_failure_is_fatal,
+                             timeout=None,
+                             kill_delay=10,
+                             polling_sleep_time=1):
         """Runs external command line process
 
         Method runs external process logging the command
@@ -653,9 +659,23 @@ class D3RTask(object):
         logger.info("Running command " + cmd_to_run)
 
         self.append_to_email_log('Running command: ' + cmd_to_run + '\n')
-
+        cmd_tmp_dir = None
         try:
-            returncode, out, err = util.run_external_command(cmd_to_run)
+            if timeout is not None:
+                cmd_tmp_dir = os.path.join(self.get_dir(),
+                                           command_name + str(uuid.uuid1()) +
+                                           D3RTask.TMP_DIR_SUFFIX)
+                os.makedirs(cmd_tmp_dir, mode=0o0775)
+                pst = polling_sleep_time  # trying to make flake8 happy
+
+                returncode, out, err = util.\
+                    run_external_command_with_timeout(cmd_to_run,
+                                                      cmd_tmp_dir,
+                                                      timeout=timeout,
+                                                      kill_delay=kill_delay,
+                                                      polling_sleep_time=pst)
+            else:
+                returncode, out, err = util.run_external_command(cmd_to_run)
         except Exception as e:
             logger.exception("Error caught exception")
             self.set_status(D3RTask.ERROR_STATUS)
@@ -663,6 +683,9 @@ class D3RTask(object):
                            cmd_to_run + " : " + str(e))
             self.end()
             return 1
+        finally:
+            if cmd_tmp_dir is not None:
+                shutil.rmtree(cmd_tmp_dir)
 
         self.write_to_file(err, command_name + D3RTask.STDERR_SUFFIX)
         self.write_to_file(out, command_name + D3RTask.STDOUT_SUFFIX)

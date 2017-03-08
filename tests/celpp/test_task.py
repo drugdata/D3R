@@ -658,6 +658,32 @@ class TestD3rTask(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
+    def test_run_external_command_withtimeout_cmd_succeeds(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = D3RTask(None, params)
+            task.set_name('foo')
+            task.set_stage(1)
+            task.set_path(temp_dir)
+            task.create_dir()
+            task.set_path(temp_dir)
+            self.assertEquals(0, task.run_external_command('hi',
+                                                           'echo hi',
+                                                           False,
+                                                           timeout=30))
+            self.assertEquals(task.get_error(), None)
+            self.assertEquals(task.get_status(), D3RTask.UNKNOWN_STATUS)
+            self.assertEquals(os.path.exists(os.path.join(task.get_dir(),
+                                                          'hi.stdout')),
+                              True)
+            self.assertEquals(os.path.exists(os.path.join(task.get_dir(),
+                                                          'hi.stderr')),
+                              True)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
     def test_smtp_emailer_generate_from_address_using_login_and_host(self):
         emailer = SmtpEmailer()
         val = emailer.generate_from_address_using_login_and_host()
