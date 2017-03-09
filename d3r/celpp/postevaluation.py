@@ -65,6 +65,13 @@ class PostEvaluationTask(D3RTask):
             task_list.append(task)
         return task_list
 
+    def _get_evaluationdir_args(self):
+        """Generates a string containing all the evaluation
+           tasks to pass to post_evaluation.py script
+        :returns: string of format --evaluationdir <path1> --evaluationdir <path2>
+        """
+        return ''
+
     def get_all_csv_files_in_dir(self):
         """Gets all the files ending with CSV_SUFFIX
            in task directory
@@ -94,8 +101,9 @@ class PostEvaluationTask(D3RTask):
             if os.path.isfile(final_log):
                 file_list.append(final_log)
 
-            file_list.extend(self.get_all_csv_files_in_dir())
-
+            csv_files = self.get_all_csv_files_in_dir()
+            logger.debug('Appending ' + str(len(csv_files)) + ' csv files')
+            file_list.extend(csv_files)
         except OSError:
             logger.exception('Caught exception looking for csv files')
         return file_list
