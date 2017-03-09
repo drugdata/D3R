@@ -7,16 +7,27 @@ import commands
 import glob
 import os
 import sys
-#pass 1, where contains stage 7 folders, 2, contain the stage 8 result, 4 contain genchallenge data final files
+# pass 1, where contains stage 7 folders, 2,
+# contain the stage 8 result, 4 contain genchallenge data final files
 
-def check_case_number (log_file, phase):
-    log_f = open(log_file, "r")
-    log_lines = log_f.readlines()
-    total_number = 0
-    for log_line in log_lines:
-        if phase in log_line:
-            total_number += 1
+
+def check_case_number(log_file, phase):
+    total_number = -1
+    log_f = None
+    try:
+        log_f = open(log_file, "r")
+        total_number = 0
+        for log_line in log_f:
+            if phase in log_line:
+                total_number += 1
+    except IOError:
+        logger.exception('Caught exception attempting to load file: ' + log_file)
+    finally:
+        if log_f is not None:
+            log_f.close()
     return total_number
+
+
 def extract_ave (pickle_file, candidate_type = "LMCSS"):
     p_f = open(pickle_file, "r")
     p_d = pickle.load(p_f)
