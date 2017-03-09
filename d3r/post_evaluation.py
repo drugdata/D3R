@@ -54,7 +54,6 @@ def generate_overall_csv (evaluation_path, challenge_dir, post_evaluation_path, 
         else:
             logging.info("The pickle file :%s/RMSD.pickle is not exist"%all_stage_7)
             non_pickle_case += 1
-    #all_pickle_files = glob.glob("%s/stage.7.*/RMSD.pickle"%evaluation_path)
     overall_csv = open("%s/Overall_RMSD_%s.csv"%(post_evaluation_path, candidates_type), "w")
     candidates_report = os.path.join(challenge_dir, "final.log")
     total_candidates = check_case_number(candidates_report, "Succsessfully generate this protein:%s"%candidates_type)
