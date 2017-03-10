@@ -3,12 +3,13 @@ __author__ = 'churas'
 import os
 import logging
 
+from d3r.celpp.task import SmtpEmailer
+from d3r.celpp.task import Attachment
+from d3r.celpp import util
 from d3r.celpp.task import D3RTask
-from d3r.celpp.task import D3RParameters
 from d3r.celpp.evaluation import EvaluationTask
 from d3r.celpp.evaluation import EvaluationTaskFactory
-from d3r.celpp import util
-
+from d3r.celpp.challengedata import ChallengeDataTask
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +18,113 @@ class PathNotDirectoryError(Exception):
     """Path is not a directory Error
     """
     pass
+
+
+class PostEvaluationEmailer(object):
+    """Sends evaluation email
+    """
+    def __init__(self, to_list, reply_to_address,
+                 smtp='localhost', smtpport=25):
+        self._alt_smtp_emailer = None
+        self._msg_log = None
+        self._to_list = to_list
+        self._reply_to_address = reply_to_address
+        self._smtp = smtp
+        self._smtpport = smtpport
+
+    def set_alternate_smtp_emailer(self, emailer):
+        """Sets alternate smtp emailer
+        """
+        self._alt_smtp_emailer = emailer
+
+    def _get_smtp_emailer(self):
+        """Gets `SmtpEmailer` object or alternate
+        """
+        if self._alt_smtp_emailer is not None:
+            return self._alt_smtp_emailer
+        return SmtpEmailer(smtp_host=self._smtp,
+                           port=self._smtpport)
+
+    def _append_to_message_log(self, msg):
+        if self._msg_log is None:
+            self._msg_log = str(msg)
+            return
+        self._msg_log += str(msg)
+
+    def get_message_log(self):
+        """Gets the error log for this object
+        :returns: Error log as string
+        """
+        return self._msg_log
+
+    def _get_reply_to_address(self, from_address):
+        """Gets reply to address
+        :returns: reply to email address
+        """
+        if self._reply_to_address is None:
+            return from_address
+        return self._reply_to_address
+
+    def _generate_post_evaluation_email_body(self, petask):
+        """Creates body of email and subject
+        :returns subject,body: as strings
+        """
+        weekno = util.get_celpp_week_number_from_path(petask.get_path())
+        year = util.get_celpp_year_from_path(petask.get_path())
+
+        msg = ('Dear CELPP Admin,\n\nHere is the post evaluation  ' +
+               'summary reports for CELPP week ' + str(weekno) + '\n\n')
+
+        msg += petask.get_postevaluation_summary()
+
+        msg += '\n\nSincerely,\n\nCELPP Automation'
+
+        subject = (D3RTask.SUBJECT_LINE_PREFIX + str(year) + ' ' +
+                   'Week ' + str(weekno) + ' post evaluation summary report')
+        return subject, msg
+
+    def send_postevaluation_email(self, petask):
+        """Sends evaluation email appending issues to message log
+        """
+
+        # clear message log fix for issue #99
+        self._msg_log = None
+        if petask is None:
+            logger.error('Task passed in is None')
+            self._append_to_message_log('\nTask passed in is None\n')
+            return
+
+        try:
+            emailer = self._get_smtp_emailer()
+
+            if self._to_list is None:
+                logger.debug('No emails address in to list')
+                return
+
+            subject, msg = self._generate_post_evaluation_email_body(petask)
+
+            from_addr = emailer.generate_from_address_using_login_and_host()
+
+            reply_to = self._get_reply_to_address(from_addr)
+
+            attach_list = None
+            for csv_file in petask.get_all_csv_files_in_dir():
+                if attach_list is None:
+                    attach_list = []
+                attach_list.append(Attachment(csv_file,
+                                              os.path.basename(csv_file)))
+
+            emailer.send_email(from_addr, self._to_list, subject, msg,
+                               reply_to=reply_to,
+                               attachments=attach_list)
+
+            self._append_to_message_log('\nSent post evaluation email to: ' +
+                                        ", ".join(self._to_list) + '\n')
+        except Exception as e:
+            logger.exception('Caught exception')
+            self._append_to_message_log('\nCaught exception trying to email '
+                                        ' : ' +
+                                        ', '.join(self._to_list) + '\n')
 
 
 class PostEvaluationTask(D3RTask):
@@ -40,8 +148,8 @@ class PostEvaluationTask(D3RTask):
     def set_evaluation_emailer(self, emailer):
         self._emailer = emailer
 
-    def get_all_completed_evaluation_tasks(self):
-        """Look for all completed evaluation tasks
+    def get_all_evaluation_tasks(self):
+        """Look for all  evaluation tasks
         """
         task_list = []
         prefix_len = len(self._eval_task_prefix_str)
@@ -58,10 +166,8 @@ class PostEvaluationTask(D3RTask):
                                   self.get_args())
             task.update_status_from_filesystem()
             if task.get_status() != D3RTask.COMPLETE_STATUS:
-                logger.info('Skipping ' + task.get_name() + ' task ' +
-                            'because ' + task.get_name() + ' task' +
+                logger.info('fyi ' + task.get_name() + ' task ' +
                             ' has a status of ' + task.get_status())
-                continue
             task_list.append(task)
         return task_list
 
@@ -70,7 +176,12 @@ class PostEvaluationTask(D3RTask):
            tasks to pass to post_evaluation.py script
         :returns: string of format --evaluationdir <path1> --evaluationdir <path2>
         """
-        return ''
+        eval_args = ''
+        for task in self.get_all_completed_evaluation_tasks():
+            logger.debug('Adding ' + task.get_name() + ' to arglist')
+            eval_args += (' ' + PostEvaluationTask.EVALUATIONDIR_ARG + ' ' +
+                          task.get_dir())
+        return eval_args
 
     def get_all_csv_files_in_dir(self):
         """Gets all the files ending with CSV_SUFFIX
@@ -82,6 +193,12 @@ class PostEvaluationTask(D3RTask):
             if entry.endswith(PostEvaluationTask.CSV_SUFFIX):
                 csv_list.append(os.path.join(out_dir, entry))
         return csv_list
+
+    def get_postevaluation_summary(self):
+        """Summarizes post evaluation results into a string
+
+        """
+        return 'put some sort of summary here...\n'
 
     def get_uploadable_files(self):
         """Returns list of files that can be uploaded to remote server
@@ -167,24 +284,34 @@ class PostEvaluationTask(D3RTask):
         # --challengedir <path to challenge dir>
         # --outdir <path to stage.5.glide.evaluation>
         #
-        cmd_to_run = (self.get_args().postevaluation + ' ' +
-                      self._get_evaluationdir_args() +
-                      ' --outdir ' + self.get_dir())
+        chall = ChallengeDataTask(self.get_path(), self.get_args())
+        chall_dname = chall.get_celpp_challenge_data_dir_name()
 
-        peval_name = os.path.basename(self.get_args().postevaluation)
+        evaldir_args = self._get_evaluationdir_args()
+        if evaldir_args is not '':
+            cmd_to_run = (self.get_args().postevaluation + ' ' +
+                          self.get_dir() + ' ' +
+                          evaldir_args +
+                          ' --challengedir ' +
+                          os.path.join(chall.get_dir(),
+                                       chall_dname) +
+                          ' --stageprefix ' + self._eval_task_prefix_str)
+            peval_name = os.path.basename(self.get_args().postevaluation)
 
-        self.run_external_command(peval_name, cmd_to_run,
-                                  True)
+            self.run_external_command(peval_name, cmd_to_run,
+                                      True)
+        else:
+            self.set_error('Did not find any Evaluation tasks to summarize')
 
         # attempt to send postevaluation email
-        # try:
-        #    # self._emailer.send_evaluation_email(self)
-        #    # self.append_to_email_log(self._emailer.get_message_log())
-        # except Exception as e:
-        #    logger.exception('Caught exception trying to send evaluation '
-        #                     'email')
-        #    self.append_to_email_log('Caught exception trying to send '
-        #                             'evaluation email ' + str(e) + '\n')
+        try:
+            self._emailer.send_postevaluation_email(self)
+            self.append_to_email_log(self._emailer.get_message_log())
+        except Exception as e:
+            logger.exception('Caught exception trying to send '
+                             'postevaluation email')
+            self.append_to_email_log('Caught exception trying to send '
+                                     'evaluation email ' + str(e) + '\n')
 
         # assess the result
         self.end()
