@@ -79,7 +79,8 @@ def generate_overall_csv(evaluation_path, challenge_dir, post_evaluation_path,
     total_candidates = check_case_number(candidates_report,
                                          "Succsessfully generate "
                                          "this protein:" + candidates_type)
-
+    # TODO Add generation of .txt file that we can put
+    # TODO into summary email that is sent out
     data_line_format = '%-30s,%-10s,%-12s,%-22s\n'
     full_data_lines = [data_line_format % ("Submission ID",
                                                       "# Docked",
