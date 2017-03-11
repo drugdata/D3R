@@ -307,7 +307,7 @@ class CandidateFilter(BaseFilter):
         # the most similar will be at the front of the list, the least similar will be at the end of the list.
         hits = [hit for hit in self.query.hits if not hit.triage and hit.highest_tanimoto]
         if hits:
-            hits.sort(key=lambda hit: (int(hit.highest_tanimoto.tanimoto), float(hit.resolution)), reverse=True)
+            hits.sort(key=lambda hit: (float(hit.highest_tanimoto.tanimoto), float(hit.resolution)), reverse=True)
             # hits[0].set_retain_reason(1)    # picks off the largest mcss with the highest resolution crystal structure
             lowest = hits[0].resolution     # lowest resolution
             highest = hits[0].highest_tanimoto.tanimoto  # highest tanimoto 
