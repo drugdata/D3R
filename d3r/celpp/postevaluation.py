@@ -135,6 +135,7 @@ class PostEvaluationTask(D3RTask):
     TASK_NAME = 'postevaluation'
     FINAL_LOG = 'final.log'
     CSV_SUFFIX = '.csv'
+    SUMMARY_TXT = 'summary.txt'
 
     def __init__(self, path, args):
         super(PostEvaluationTask, self).__init__(path, args)
@@ -194,11 +195,29 @@ class PostEvaluationTask(D3RTask):
                 csv_list.append(os.path.join(out_dir, entry))
         return csv_list
 
+    def get_summary_txt(self):
+        """Gets summary.txt file path
+        """
+        return os.path.join(self.get_dir(), PostEvaluationTask.SUMMARY_TXT)
+
     def get_postevaluation_summary(self):
         """Summarizes post evaluation results into a string
 
         """
-        return 'put some sort of summary here...\n'
+        summary_file = self.get_summary_txt()
+        start_line = '\n\n'
+        if not os.path.isfile(summary_file):
+            return start_line + 'No ' + summary_file + ' file found\n'
+
+        try:
+            f = open(summary_file, 'r')
+            summary = f.read()
+            f.close()
+            return start_line + summary + '\n'
+        except Exception as e:
+            logger.exception('Caught exception')
+            return (start_line + 'Unable to generate postevaluation '
+                                 'summary (' + str(e) + ')\n')
 
     def get_uploadable_files(self):
         """Returns list of files that can be uploaded to remote server
