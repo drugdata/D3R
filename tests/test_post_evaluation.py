@@ -63,61 +63,237 @@ class TestPostEvaluation(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
-    def test_get_numdocked_and_average(self):
+    def test_get_dock_scores_as_list(self):
         temp_dir = tempfile.mkdtemp()
         try:
             # test None for Pickle file
-            num, avg = post_evaluation.get_numdocked_and_average(None,
-                                                                 ctype=None)
-            self.assertEqual(num, -1)
-            self.assertEqual(avg, -1)
+            res = post_evaluation.get_dock_scores_as_list(None,
+                                                          ctype=None)
+            self.assertEqual(res, [])
 
+            smcss = post_evaluation.SMCSS
+            hi_tanimoto = post_evaluation.HI_TANIMOTO
+            hi_resapo = post_evaluation.HI_RESAPO
+            hi_resholo = post_evaluation.HI_RESHOLO
             apickle = os.path.join(temp_dir, 'apickle.pickle')
-            data = {'5ka3': {'SMCSS': 1.0, 'hiResHolo': 2.0, 'hiTanimoto': 'foo',
+            data = {'5ka3': {smcss: 1.0, hi_resholo: 2.0, hi_tanimoto: 'foo',
                              post_evaluation.LMCSS: 4.0},
-                    '5uud': {'hiResHolo': 5.0, 'SMCSS': 6.0, 'hiResApo': 7.0,
-                             'hiTanimoto': 8.0, post_evaluation.LMCSS: 9.0}}
+                    '5uud': {hi_resholo: 5.0, smcss: 6.0, hi_resapo: 7.0,
+                             hi_tanimoto: 8.0, post_evaluation.LMCSS: 9.0}}
             f = open(apickle, 'w')
             pickle.dump(data, f)
             f.flush()
             f.close()
 
             # test None for ctype
-            num, avg = post_evaluation.get_numdocked_and_average(apickle,
-                                                                 ctype=None)
-            self.assertEqual(num, -1)
-            self.assertEqual(avg, -1)
+            res = post_evaluation.get_dock_scores_as_list(apickle,
+                                                               ctype=None)
+            self.assertEqual(res, [])
 
             # test where no matches found
-            num, avg = post_evaluation.get_numdocked_and_average(apickle,
-                                                                 ctype='foo')
-            self.assertEqual(num, 0)
-            self.assertEqual(avg, -1)
+            res = post_evaluation.get_dock_scores_as_list(apickle,
+                                                          ctype='foo')
+            self.assertEqual(res, [])
 
             # test where 1 dock is found
-            num, avg = post_evaluation.\
-                get_numdocked_and_average(apickle,
-                                          ctype='hiResApo')
-            self.assertEqual(num, 1)
-            self.assertEqual(avg, 7.0)
+            res = post_evaluation.get_dock_scores_as_list(apickle,
+                                                          ctype=hi_resapo)
+            self.assertEqual(res, [7.0])
 
             # test where 2 docked is found
-            num, avg = post_evaluation.get_numdocked_and_average(apickle,
-                                                                 ctype='SMCSS')
-            self.assertEqual(num, 2)
-            self.assertEqual(avg, 3.5)
+            res = post_evaluation.get_dock_scores_as_list(apickle,
+                                                          ctype=smcss)
+            self.assertTrue(6.0 in res)
+            self.assertTrue(1.0 in res)
+            self.assertEqual(len(res), 2)
 
             # test default candidate type
-            num, avg = post_evaluation.get_numdocked_and_average(apickle)
-            self.assertEqual(num, 2)
-            self.assertEqual(avg, 6.5)
+            res = post_evaluation.get_dock_scores_as_list(apickle)
+            self.assertTrue(4.0 in res)
+            self.assertTrue(9.0 in res)
+            self.assertEqual(len(res), 2)
 
             # test where score is not a number
-            num, avg = post_evaluation.\
-                get_numdocked_and_average(apickle,
-                                          ctype='hiTanimoto')
-            self.assertEqual(num, -1)
-            self.assertEqual(avg, -1)
+            res = post_evaluation.get_dock_scores_as_list(apickle,
+                                                          ctype=hi_tanimoto)
+            self.assertTrue('foo' in res)
+            self.assertTrue(8.0 in res)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_list_of_stats(self):
+        res = post_evaluation.get_list_of_stats(None)
+        self.assertEqual(res, (-1, -1, -1, -1))
+
+        res = post_evaluation.get_list_of_stats([1.0])
+        self.assertEqual(res, (1, 1.0, 1.0, 1.0))
+
+        res = post_evaluation.get_list_of_stats([3.0, 1.0])
+        self.assertEqual(res, (2, 1.0, 3.0, 2.0))
+
+        res = post_evaluation.get_list_of_stats([1.0, 'foo'])
+        self.assertEqual(res, (-1, -1, -1, -1))
+
+        res = post_evaluation.get_list_of_stats([3.0, 1.0, 2.0, 14.0])
+        self.assertEqual(res, (4, 1.0, 14.0, 5.0))
+
+    def test_get_pickle_paths(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            # none passed in
+            p_list, count = post_evaluation._get_pickle_paths(None)
+            self.assertEqual(p_list, [])
+            self.assertEqual(count, 0)
+
+            # emptylist
+            p_list, count = post_evaluation._get_pickle_paths([])
+            self.assertEqual(p_list, [])
+            self.assertEqual(count, 0)
+
+            # one path no pickle
+            p_list, count = post_evaluation._get_pickle_paths([temp_dir])
+            self.assertEqual(p_list, [])
+            self.assertEqual(count, 1)
+
+            # one path with pickle
+            pfile = os.path.join(temp_dir, post_evaluation.RMSD_PICKLE)
+            open(pfile, 'a').close()
+            p_list, count = post_evaluation._get_pickle_paths([temp_dir])
+            self.assertEqual(len(p_list), 1)
+            self.assertTrue(pfile in p_list)
+            self.assertEqual(count, 0)
+
+            # two paths and only one with pickle
+            subdir = os.path.join(temp_dir, 'foo')
+            os.makedirs(subdir, mode=0o775)
+            p_list, count = post_evaluation._get_pickle_paths([temp_dir,
+                                                               subdir])
+            self.assertEqual(len(p_list), 1)
+            self.assertTrue(pfile in p_list)
+            self.assertEqual(count, 1)
+
+            # two paths with pickles
+            p2file = os.path.join(subdir, post_evaluation.RMSD_PICKLE)
+            open(p2file, 'a').close()
+
+            p_list, count = post_evaluation._get_pickle_paths([subdir,
+                                                               temp_dir])
+            self.assertEqual(len(p_list), 2)
+            self.assertTrue(pfile in p_list)
+            self.assertTrue(p2file in p_list)
+            self.assertEqual(count, 0)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_submission_name_from_pickle_path(self):
+
+        somepath = os.path.join('data', 'celpp', '2017', 'dataset.week.10',
+                                'stage.7.foo_dock.extsubmission.evaluation',
+                                post_evaluation.RMSD_PICKLE)
+        prefix = 'stage.7.'
+        suffix = '.extsubmission.evaluation$|.evaluation$'
+        name = post_evaluation._get_submission_name_from_pickle_path(somepath,
+                                                                     prefix,
+                                                                     suffix)
+        self.assertEqual(name, 'foo_dock')
+
+        # non external submission
+        somepath = os.path.join('data', 'celpp', '2017', 'dataset.week.10',
+                                'stage.7.foo_dock.evaluation',
+                                post_evaluation.RMSD_PICKLE)
+
+        self.assertEqual(name, 'foo_dock')
+
+    def test_generate_overall_csv_valid_single_evaldataset(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            result_dir = os.path.join(temp_dir, 'result')
+            os.makedirs(result_dir, mode=0o755)
+
+            chall_dir = os.path.join(temp_dir, 'challdir')
+            os.makedirs(chall_dir, mode=0o755)
+
+            # write out the final.log file
+            finalfile = os.path.join(chall_dir, post_evaluation.CHALL_FINAL_LOG)
+            f = open(finalfile, 'w')
+            f.write("""03/04/17 03:32:54: ============Start to work in this query protein: 5uub============
+03/04/17 03:32:55: Warning: Found multiple ligand for this protein:LMCSS-5uub_5un3-XYP.pdb
+03/04/17 03:32:55: Succsessfully generate this protein:LMCSS-5uub_5un3-XYP.pdb
+03/04/17 03:32:55: Ligand center for this case:LMCSS-5uub_5un3-XYP-lig.pdb is   38.448,   73.584,   58.680
+03/04/17 03:33:00: Succsessfully generate this protein:SMCSS-5uub_5fsj-OXY.pdb
+03/04/17 03:33:12: ============Start to work in this query protein: 5ur3============
+03/04/17 03:33:12: Succsessfully generate this protein:LMCSS-5ur3_3njq-NJQ.pdb
+03/04/17 03:33:12: Ligand center for this case:LMCSS-5ur3_3njq-NJQ-lig.pdb is  -27.326,  -19.578,  -43.347
+03/04/17 03:33:19: Succsessfully generate this protein:hiResHolo-5ur3_4p3h-25G.pdb
+03/04/17 03:33:25: Succsessfully generate this protein:LMCSS-5uud_1qf2-TI3.pdb
+03/04/17 03:33:25: Ligand center for this case:LMCSS-5uud_1qf2-TI3-lig.pdb is   38.308,   38.885,   -3.382
+03/04/17 03:33:40: Succsessfully generate this protein:hiTanimoto-5uud_1gxw-VAL.pdb""")
+            f.flush()
+            f.close()
+
+            task_dir = os.path.join(temp_dir,
+                                    'stage.7.foo_dock.extsubmission.evaluation')
+            os.makedirs(task_dir, mode=0o755)
+
+            # write out the pickle dir
+            smcss = post_evaluation.SMCSS
+            hi_tanimoto = post_evaluation.HI_TANIMOTO
+            hi_resapo = post_evaluation.HI_RESAPO
+            hi_resholo = post_evaluation.HI_RESHOLO
+            apickle = os.path.join(task_dir, post_evaluation.RMSD_PICKLE)
+            data = {'5ka3': {smcss: 1.0, hi_resholo: 2.0, hi_tanimoto: 'foo',
+                             post_evaluation.LMCSS: 4.0},
+                    '5uud': {hi_resholo: 5.0, smcss: 6.0, hi_resapo: 7.0,
+                             hi_tanimoto: 8.0, post_evaluation.LMCSS: 9.0}}
+            f = open(apickle, 'w')
+            pickle.dump(data, f)
+            f.flush()
+            f.close()
+            post_evaluation.generate_overall_csv([task_dir], chall_dir,
+                                                 result_dir,
+                                                 post_evaluation.LMCSS)
+
+            summary_file = os.path.join(result_dir,
+                                        post_evaluation.SUMMARY_TXT)
+            self.assertTrue(os.path.isfile(summary_file))
+            f = open(summary_file, 'r')
+            data = f.read()
+            f.close()
+
+            self.assertTrue(post_evaluation.LMCSS + ' (3 dockable)' in data)
+            self.assertTrue(('stage.7.foo_dock.' +
+                            'extsubmission.evaluation') in data)
+            self.assertTrue('2 ( 67%)    4.000       9.000' in data)
+
+            csv_file = os.path.join(result_dir,
+                                    post_evaluation.OVERALL_RMSD_PREFIX +
+                                    post_evaluation.LMCSS +
+                                    post_evaluation.CSV_SUFFIX)
+            self.assertTrue(os.path.isfile(csv_file))
+            f = open(csv_file, 'r')
+            data = f.read()
+            f.close()
+            self.assertTrue('SubmissionID for LMCSS,# Docked,' in data)
+            self.assertTrue('stage.7.foo_dock.extsubmission' in data)
+            self.assertTrue('submission.evaluation,2,3,4.000,9.000,6.500' in data)
+
+            # test prefix suffix removal
+            os.remove(summary_file)
+            post_evaluation.generate_overall_csv([task_dir], chall_dir,
+                                                 result_dir,
+                                                 post_evaluation.LMCSS,
+                                                 eval_stage_prefix='stage.7.',
+                                                 eval_suffix='.extsubmission.'
+                                                             'evaluation')
+
+            f = open(summary_file, 'r')
+            data = f.read()
+            f.close()
+            self.assertTrue('foo_dock ' in data)
+            f = open(csv_file, 'r')
+            data = f.read()
+            f.close()
+            self.assertTrue('foo_dock,2,3,4.000,9.000,6.500' in data)
         finally:
             shutil.rmtree(temp_dir)
 
@@ -129,6 +305,83 @@ class TestPostEvaluation(unittest.TestCase):
 
             self.assertEqual(post_evaluation.main(theargs), 0)
 
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_main_with_eval_task(self):
+        temp_dir = tempfile.mkdtemp()
+
+        try:
+            result_dir = os.path.join(temp_dir, 'result')
+            os.makedirs(result_dir, mode=0o755)
+
+            chall_dir = os.path.join(temp_dir, 'challdir')
+            os.makedirs(chall_dir, mode=0o755)
+
+            # write out the final.log file
+            finalfile = os.path.join(chall_dir, post_evaluation.CHALL_FINAL_LOG)
+            f = open(finalfile, 'w')
+            f.write("""03/04/17 03:32:54: ============Start to work in this query protein: 5uub============
+            03/04/17 03:32:55: Warning: Found multiple ligand for this protein:LMCSS-5uub_5un3-XYP.pdb
+            03/04/17 03:32:55: Succsessfully generate this protein:LMCSS-5uub_5un3-XYP.pdb
+            03/04/17 03:32:55: Ligand center for this case:LMCSS-5uub_5un3-XYP-lig.pdb is   38.448,   73.584,   58.680
+            03/04/17 03:33:00: Succsessfully generate this protein:SMCSS-5uub_5fsj-OXY.pdb
+            03/04/17 03:33:12: ============Start to work in this query protein: 5ur3============
+            03/04/17 03:33:12: Succsessfully generate this protein:LMCSS-5ur3_3njq-NJQ.pdb
+            03/04/17 03:33:12: Ligand center for this case:LMCSS-5ur3_3njq-NJQ-lig.pdb is  -27.326,  -19.578,  -43.347
+            03/04/17 03:33:19: Succsessfully generate this protein:hiResHolo-5ur3_4p3h-25G.pdb
+            03/04/17 03:33:25: Ligand center for this case:LMCSS-5uud_1qf2-TI3-lig.pdb is   38.308,   38.885,   -3.382
+            03/04/17 03:33:40: Succsessfully generate this protein:hiTanimoto-5uud_1gxw-VAL.pdb""")
+            f.flush()
+            f.close()
+
+            task_dir = os.path.join(temp_dir,
+                                    'stage.7.foo_dock.extsubmission.evaluation')
+            os.makedirs(task_dir, mode=0o755)
+
+            # write out the pickle dir
+            smcss = post_evaluation.SMCSS
+            hi_tanimoto = post_evaluation.HI_TANIMOTO
+            hi_resapo = post_evaluation.HI_RESAPO
+            hi_resholo = post_evaluation.HI_RESHOLO
+            apickle = os.path.join(task_dir, post_evaluation.RMSD_PICKLE)
+            data = {'5ka3': {smcss: 1.0, hi_resholo: 2.0, hi_tanimoto: 'foo',
+                             post_evaluation.LMCSS: 4.0},
+                    '5uud': {hi_resholo: 5.0, smcss: 6.0, hi_resapo: 7.0,
+                             hi_tanimoto: 8.0, post_evaluation.LMCSS: 9.0}}
+            f = open(apickle, 'w')
+            pickle.dump(data, f)
+            f.flush()
+            f.close()
+            theargs = ['post_evaluation.py', result_dir,
+                       '--evaluationdir', task_dir,
+                       '--challengedir', chall_dir]
+
+            self.assertEqual(post_evaluation.main(theargs), 0)
+
+            summary_file = os.path.join(result_dir,
+                                        post_evaluation.SUMMARY_TXT)
+            self.assertTrue(os.path.isfile(summary_file))
+            f = open(summary_file, 'r')
+            data = f.read()
+            f.close()
+
+            self.assertTrue(post_evaluation.LMCSS + ' (2 dockable)' in data)
+            self.assertTrue('foo_dock ' in data)
+            self.assertTrue(' 2 (100%)    4.000       9.000' in data)
+
+            csv_file = os.path.join(result_dir,
+                                    post_evaluation.OVERALL_RMSD_PREFIX +
+                                    post_evaluation.LMCSS +
+                                    post_evaluation.CSV_SUFFIX)
+            self.assertTrue(os.path.isfile(csv_file))
+            f = open(csv_file, 'r')
+            data = f.read()
+            f.close()
+            self.assertTrue('SubmissionID for LMCSS,# Docked,' in data)
+            self.assertTrue('foo_dock,2,2,4.000,9.000,6.500' in data)
+
+            # TODO check contents of other CSV files
         finally:
             shutil.rmtree(temp_dir)
 
