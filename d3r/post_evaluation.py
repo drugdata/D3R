@@ -229,7 +229,9 @@ def generate_overall_csv(evaluation_path, challenge_dir, post_evaluation_path,
                                                '%.3f' % minrmsd,
                                                '%.3f' % maxrmsd,
                                                '%.3f' % avgrmsd))
-        except:
+        except IOError:
+            logging.exception('Error writing entry')
+        except (ValueError, TypeError):
             full_data_lines.append(data_line_format % (sub_name,
                                                        "N/A",
                                                        total_candidates,
@@ -245,6 +247,7 @@ def generate_overall_csv(evaluation_path, challenge_dir, post_evaluation_path,
                               "candidates type  %s" % (p_file,
                                                        candidates_type))
             not_valid_pickle += 1
+
     logging.info("We got : %s cases without pickle files and %s cases have "
                  "invalid pickle files for "
                  "candidates type %s" % (non_pickle_case,
