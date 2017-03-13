@@ -66,6 +66,10 @@ class TestPostEvaluation(unittest.TestCase):
     def test_get_dock_scores_as_list(self):
         temp_dir = tempfile.mkdtemp()
         try:
+            # test passing dir as pickle file
+            res = post_evaluation.get_dock_scores_as_list(temp_dir)
+            self.assertEqual(res, [])
+
             # test None for Pickle file
             res = post_evaluation.get_dock_scores_as_list(None,
                                                           ctype=None)
