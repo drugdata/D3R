@@ -172,6 +172,9 @@ class PostEvaluationTask(D3RTask):
             if not os.path.isdir(full_path):
                 logger.info('Suffix matched, but is not directory: ' +
                             full_path)
+                self.append_to_email_log('Just a note, found a task ' +
+                                         'with valid name, but it is not '
+                                         'a directory ' + full_path)
                 continue
             task = EvaluationTask(base_dir, entry[prefix_len:], None,
                                   self.get_args())

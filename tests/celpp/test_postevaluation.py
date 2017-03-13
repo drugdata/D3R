@@ -218,12 +218,14 @@ class TestPostEvaluation(unittest.TestCase):
             self.assertEqual(len(res), 0)
 
             # one task, but is file (weird case)
-            weirdtaskfile = os.path.join(temp_dir, 'stage.7.hi' +
+            weirdtaskfile = os.path.join(temp_dir, 'stage.7.hi.' +
                                          EvaluationTaskFactory.SCORING_SUFFIX)
             open(weirdtaskfile, 'a').close()
             res = task.get_all_evaluation_tasks()
             self.assertEqual(len(res), 0)
-
+            self.assertEqual(task.get_email_log(),
+                             'Just a note, found a task with valid name, but '
+                             'it is not a directory ' + weirdtaskfile)
             # one task
             etask = EvaluationTask(temp_dir, 'foo.evaluation',
                                    None, params)
