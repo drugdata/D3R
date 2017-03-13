@@ -267,11 +267,13 @@ def _parse_arguments(desc, args):
                                      formatter_class=help_formatter)
     parser.add_argument("celppdir", help='Base celpp directory')
     parser.add_argument("--email", dest="email",
-                        help='Comma delimited list of email addresses')
+                        help='Comma delimited list of email addresses '
+                             'to receive an email when each task starts'
+                             'and ends')
     parser.add_argument("--summaryemail", dest="summaryemail",
                         help='Comma delimited list of email addresses to'
                              'receive an email summarizing docking '
-                             'evaluations DOES NOT DO ANYTHING YET')
+                             'evaluations and when a task fails')
     parser.add_argument("--createweekdir",
                         help='Create new celpp week directory before ' +
                              'running stages',
