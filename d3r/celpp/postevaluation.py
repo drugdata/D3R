@@ -80,14 +80,14 @@ class PostEvaluationEmailer(object):
         msg += '\n\nSincerely,\n\nCELPP Automation'
 
         subject = (D3RTask.SUBJECT_LINE_PREFIX + str(year) + ' ' +
-                   'Week ' + str(weekno) + ' post evaluation summary report')
+                   'week ' + str(weekno) + ' post evaluation summary report')
         return subject, msg
 
     def send_postevaluation_email(self, petask):
         """Sends evaluation email appending issues to message log
         """
 
-        # clear message log fix for issue #99
+        # clear message log
         self._msg_log = None
         if petask is None:
             logger.error('Task passed in is None')
@@ -98,7 +98,8 @@ class PostEvaluationEmailer(object):
             emailer = self._get_smtp_emailer()
 
             if self._to_list is None:
-                logger.debug('No emails address in to list')
+                logger.debug('No email addresses in to list')
+                self._append_to_message_log('\nNo email addresses in to list\n')
                 return
 
             subject, msg = self._generate_post_evaluation_email_body(petask)
@@ -123,8 +124,9 @@ class PostEvaluationEmailer(object):
         except Exception as e:
             logger.exception('Caught exception')
             self._append_to_message_log('\nCaught exception trying to email '
-                                        ' : ' +
-                                        ', '.join(self._to_list) + '\n')
+                                        ': ' +
+                                        ', '.join(self._to_list) + ' : ' +
+                                        str(e) + '\n')
 
 
 class PostEvaluationTask(D3RTask):
@@ -136,12 +138,20 @@ class PostEvaluationTask(D3RTask):
     FINAL_LOG = 'final.log'
     CSV_SUFFIX = '.csv'
     SUMMARY_TXT = 'summary.txt'
+    EVALUATIONDIR_ARG = '--evaluationdir'
 
     def __init__(self, path, args):
         super(PostEvaluationTask, self).__init__(path, args)
         self.set_name(PostEvaluationTask.TASK_NAME)
         et = EvaluationTask('/foo', '', None, None)
         self._eval_task_prefix_str = et.get_dir_name()
+        self._eval_task_suffix_str = ('' +
+                                      EvaluationTask.EXT_SUBMISSION_SUFFIX +
+                                      '.' +
+                                      EvaluationTaskFactory.SCORING_SUFFIX +
+                                      '$|.' +
+                                      EvaluationTaskFactory.SCORING_SUFFIX +
+                                      '$')
         self.set_stage(et.get_stage() + 1)
         self._emailer = None
         self.set_status(D3RTask.UNKNOWN_STATUS)
@@ -156,7 +166,7 @@ class PostEvaluationTask(D3RTask):
         prefix_len = len(self._eval_task_prefix_str)
         base_dir = self.get_path()
         for entry in os.listdir(base_dir):
-            if not entry.endswith(EvaluationTaskFactory.SCORING_SUFFIX):
+            if not entry.endswith('.' + EvaluationTaskFactory.SCORING_SUFFIX):
                 continue
             full_path = os.path.join(base_dir, entry)
             if not os.path.isdir(full_path):
@@ -178,7 +188,7 @@ class PostEvaluationTask(D3RTask):
         :returns: string of format --evaluationdir <path1> --evaluationdir <path2>
         """
         eval_args = ''
-        for task in self.get_all_completed_evaluation_tasks():
+        for task in self.get_all_evaluation_tasks():
             logger.debug('Adding ' + task.get_name() + ' to arglist')
             eval_args += (' ' + PostEvaluationTask.EVALUATIONDIR_ARG + ' ' +
                           task.get_dir())
@@ -192,7 +202,11 @@ class PostEvaluationTask(D3RTask):
         out_dir = self.get_dir()
         for entry in os.listdir(out_dir):
             if entry.endswith(PostEvaluationTask.CSV_SUFFIX):
-                csv_list.append(os.path.join(out_dir, entry))
+                full_path = os.path.join(out_dir, entry)
+                if os.path.isfile(full_path):
+                    csv_list.append(full_path)
+                else:
+                    logger.warning(full_path + ' is a directory which is weird')
         return csv_list
 
     def get_summary_txt(self):
@@ -236,6 +250,9 @@ class PostEvaluationTask(D3RTask):
             final_log = os.path.join(out_dir, PostEvaluationTask.FINAL_LOG)
             if os.path.isfile(final_log):
                 file_list.append(final_log)
+
+            if os.path.isfile(self.get_summary_txt()):
+                file_list.append(self.get_summary_txt())
 
             csv_files = self.get_all_csv_files_in_dir()
             logger.debug('Appending ' + str(len(csv_files)) + ' csv files')
@@ -300,8 +317,8 @@ class PostEvaluationTask(D3RTask):
         #
         # --evaluationdir <path to stage.X.evaluation>
         # --evaluationdir <path to another etc...>
-        # --challengedir <path to challenge dir>
-        # --outdir <path to stage.5.glide.evaluation>
+        # --challengedir <path to challenge dir ie
+        #                 stage.4.challengedata/celpp_week10_2017>
         #
         chall = ChallengeDataTask(self.get_path(), self.get_args())
         chall_dname = chall.get_celpp_challenge_data_dir_name()
@@ -314,7 +331,8 @@ class PostEvaluationTask(D3RTask):
                           ' --challengedir ' +
                           os.path.join(chall.get_dir(),
                                        chall_dname) +
-                          ' --stageprefix ' + self._eval_task_prefix_str)
+                          ' --stageprefix ' + self._eval_task_prefix_str +
+                          ' --evaluationsuffix ' + self._eval_task_suffix_str)
             peval_name = os.path.basename(self.get_args().postevaluation)
 
             self.run_external_command(peval_name, cmd_to_run,
