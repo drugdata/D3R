@@ -586,6 +586,8 @@ def setup_logging(theargs):
         .setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.celpp.participant')\
         .setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.postevaluation')\
+        .setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.blast.ligand').setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.blast.hit').setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.blast.hit_sequence')\

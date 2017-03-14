@@ -27,7 +27,8 @@ from d3r.celpp.glide import GlideTask
 from d3r.celpp.evaluation import EvaluationTaskFactory
 from d3r.celpp.makeblastdb import MakeBlastDBTask
 from d3r.celpp.vina import AutoDockVinaTask
-
+from d3r.celpp.postevaluation import PostEvaluationEmailer
+from d3r.celpp.postevaluation import PostEvaluationTask
 from d3r.celpp.challengedata import ChallengeDataTask
 from d3r.celpp.chimeraprep import ChimeraProteinLigPrepTask
 from d3r.celpp.filetransfer import FtpFileTransfer
@@ -38,6 +39,8 @@ from lockfile.pidlockfile import PIDLockFile
 
 CREATE_CHALLENGE = 'createchallenge'
 CHIMERA_PREP = 'chimeraprep'
+POST_EVAL = 'postevaluation'
+STAGE_FLAG = '--stage'
 
 
 def _get_lock(theargs, stage):
@@ -192,6 +195,36 @@ def run_tasks(task_list):
     return returnval
 
 
+def _get_set_of_email_address_from_email_flags(theargs):
+    """Given theargs which contains values parsed by `argparse`
+       on the command line create a unique list of email
+       addresses from summaryemail and email flags. If
+       neither are set return None
+    :param theargs: object returned by `ArgParse`
+    :returns: list of unique email addresses or None
+    """
+    address_list = None
+    try:
+        if theargs.email is not None:
+            address_list = []
+            address_list.extend(set(theargs.email.split(',')))
+    except AttributeError:
+        logger.debug('Got attribute error examining email attribute'
+                     'no biggy')
+
+    try:
+        if theargs.summaryemail is not None:
+            if address_list is None:
+                address_list = []
+            address_list.extend(set(theargs.summaryemail.split(',')))
+    except AttributeError:
+        logger.debug('Got attribute error examining summaryemail attribute'
+                     'no biggy')
+
+    if address_list is not None:
+        return list(set(address_list))
+
+
 def get_task_list_for_stage(theargs, stage_name):
     """Factory method that generates a list of tasks for given stage
 
@@ -250,6 +283,15 @@ def get_task_list_for_stage(theargs, stage_name):
                                                   theargs)
         task_list.extend(eval_task_factory.get_evaluation_tasks())
 
+    if stage_name == POST_EVAL:
+        # create PostEvaluationEmailer object
+        ptask = PostEvaluationTask(theargs.latest_weekly, theargs)
+        a_list = _get_set_of_email_address_from_email_flags(theargs)
+        pmailer = PostEvaluationEmailer(a_list,
+                                        None)
+        ptask.set_evaluation_emailer(pmailer)
+        task_list.append(ptask)
+
     if len(task_list) is 0:
         raise NotImplementedError(
             'uh oh no tasks for ' + stage_name + ' stage')
@@ -284,13 +326,14 @@ def _parse_arguments(desc, args):
                              "looking for latest weekdir.  NOTE: " +
                              "--createweekdir " +
                              "will create a dataset.week.# dir under celppdir")
-    parser.add_argument("--stage", required=True,
+    parser.add_argument(STAGE_FLAG, required=True,
                         help='Comma delimited list' +
                         ' of stages to run.  Valid STAGES = ' +
                         '{makedb, import, blast, challengedata,'
                         + CHIMERA_PREP +
                         ', proteinligprep, extsubmission, glide, '
-                        'vina, evaluation, ' + CREATE_CHALLENGE + '} ')
+                        'vina, evaluation, ' + CREATE_CHALLENGE + ', ' +
+                        POST_EVAL + ',} ')
     parser.add_argument("--blastnfilter", default='blastnfilter.py',
                         help='Path to BlastnFilter script '
                              '(default blastnfilter.py)')
@@ -414,12 +457,13 @@ def main(args):
     prot = ProteinLigPrepTask('', p)
     vina = AutoDockVinaTask('', p)
     chimeraprep = ChimeraProteinLigPrepTask('', p)
+    postevalstage = PostEvaluationTask('', p)
     desc = """
               Version {version}
 
-              Runs the 9 stages (makedb, import, blast, challengedata,
-              proteinligprep, {chimeraprep}, extsubmission, glide, vina, &
-              evaluation) of CELPP processing pipeline
+              Runs the 11 stages (makedb, import, blast, challengedata,
+              proteinligprep, {chimeraprep}, extsubmission, glide, vina,
+              evaluation, & {postevaluation}) of CELPP processing pipeline
               (http://www.drugdesigndata.org)
 
               CELPP processing pipeline relies on a set of directories
@@ -432,10 +476,10 @@ def main(args):
 
               stage.<stage number>.<task name>
 
-              The stage(s) run are defined via the required --stage flag.
+              The stage(s) run are defined via the required {stageflag} flag.
 
               To run multiple stages serially just pass a comma delimited
-              list to the --stage flag. Example: --stage import,blast
+              list to the {stageflag} flag. Example: {stageflag} import,blast
 
               NOTE:  When running multiple stages serially the program will
                      not run subsequent stages if a task in a stage fails.
@@ -491,16 +535,16 @@ def main(args):
                     wonky.
 
               Breakdown of behavior of program is defined by
-              value passed with --stage flag:
+              value passed with {stageflag} flag:
 
-              If --stage '{createchallenge}'
+              If {stageflag} '{createchallenge}'
 
               This is NOT a stage, but has the same effect as
-              calling --stage makedb,import,blast,challengedata
+              calling {stageflag} makedb,import,blast,challengedata
               The four stages that need to run to generate the challenge
               data package.
 
-              If --stage 'makedb'
+              If {stageflag} 'makedb'
 
               In this stage the file {pdb_seqres} is downloaded from
               an ftp site set by --pdbsequrl.
@@ -508,7 +552,7 @@ def main(args):
               (set by --makeblastdb) is run on it to create a blast
               database.  The files are stored in {makeblastdb_dirname}
 
-              If --stage 'import'
+              If {stageflag} 'import'
 
               In this stage 4 files are downloaded from urls specified
               by --compinchi and --pdbfileurl flags on the commandline
@@ -534,7 +578,7 @@ def main(args):
               tsv files and --importretry sets number of times to retry
               before giving up.
 
-              If --stage 'blast'
+              If {stageflag} 'blast'
 
               Verifies {dataimport_dirname} exists and has '{complete}'
               file.  Also verifies {makeblastdb_dirname} exists and has
@@ -549,7 +593,7 @@ def main(args):
               --blastnfiltertimeout flag.
 
 
-              If --stage 'challengedata'
+              If {stageflag} 'challengedata'
 
               Verifies {blast_dirname} exists and has '{complete}'
               file.  If complete, this stage runs which invokes program
@@ -572,7 +616,7 @@ def main(args):
               {submissionpath} /submissions
 
 
-              If --stage '{chimeraprep}'
+              If {stageflag} '{chimeraprep}'
 
               Verifies {challenge_dirname} exists and has '{complete}'
               file.  If complete, this stage runs which invokes program
@@ -580,7 +624,7 @@ def main(args):
               storing output in {chimeraprep_dirname}.  --pdbdb flag
               must also be set when calling this stage.
 
-              If --stage 'proteinligprep'
+              If {stageflag} 'proteinligprep'
 
               Verifies {challenge_dirname} exists and has '{complete}'
               file.  If complete, this stage runs which invokes program
@@ -588,7 +632,7 @@ def main(args):
               storing output in {proteinligprep_dirname}.  --pdbdb flag
               must also be set when calling this stage.
 
-              If --stage 'extsubmission'
+              If {stageflag} 'extsubmission'
 
               Connects to server specified by --ftpconfig and downloads
               external docking submissions from {submissionpath} on remote
@@ -606,21 +650,21 @@ def main(args):
               stored in that directory.  If data does not conform properly
               'error' file will be placed in directory denoting failure
 
-              If --stage 'glide'
+              If {stageflag} 'glide'
 
               Verifies {proteinligprep_dirname} exists and has a '{complete}'
               file within it.  If complete, this stage runs which invokes
               program set in --glide flag to perform docking via glide
               storing output in {glide_dirname}
 
-              If --stage 'vina'
+              If {stageflag} 'vina'
 
               Verifies {proteinligprep_dirname} exists and has a '{complete}'
               file within it.  If complete, this stage runs which invokes
               program set in --vina flag to perform docking via AutoDock Vina
               storing output in {vina_dirname}
 
-              If --stage 'evaluation'
+              If {stageflag} 'evaluation'
 
               Finds all stage.{dockstage}.<algo> directories with '{complete}'
               files in them which do not end in name '{webdata}' and runs
@@ -628,6 +672,15 @@ def main(args):
               the script into stage.{evalstage}.<algo>.evaluation. --pdbdb flag
               must also be set when calling this stage.
 
+              If {stageflag} '{postevaluation}'
+
+              Finds all stage.{evalstage}.<algo>.evaluation directories and runs
+              script set via --postevaluation parameter storing a
+              summary of found docking evaluations into
+              {postevalstage} into a file named summary.txt and a set
+              of files with name Overall_RMSD_<candidate_type>.csv.
+              In addition, results will be emailed to people in
+              --summaryemail and --email lists.
 
               """.format(makeblastdb_dirname=makedb.get_dir_name(),
                          dataimport_dirname=dataimport.get_dir_name(),
@@ -655,7 +708,10 @@ def main(args):
                          path=FtpFileTransfer.PATH,
                          challengepath=FtpFileTransfer.CHALLENGEPATH,
                          submissionpath=FtpFileTransfer.SUBMISSIONPATH,
-                         version=d3r.__version__)
+                         version=d3r.__version__,
+                         stageflag=STAGE_FLAG,
+                         postevaluation=POST_EVAL,
+                         postevalstage=postevalstage.get_dir_name())
 
     theargs = _parse_arguments(desc, args[1:])
     theargs.program = args[0]
