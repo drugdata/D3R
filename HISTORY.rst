@@ -3,6 +3,34 @@
 History
 -------
 
+1.7.0 (Not released)
+--------------------
+
+* Added Post Evaluation Stage which summarizes evaluations
+  of all docking submissions sending email to addresses set
+  by --summaryemail flag
+  `Issue #111 <https://github.com/drugdata/D3R/issues/111>`_
+  `Issue #110 <https://github.com/drugdata/D3R/issues/110>`_
+  `Issue #100 <https://github.com/drugdata/D3R/issues/100>`_
+
+* If any task/stage fails report that via email to addresses
+  set by --summaryemail flag
+  `Issue #125 <https://github.com/drugdata/D3R/issues/125>`_ 
+
+* Order of evaluation of external dock submissions can now be 
+  dictated by a new column in participant_list.csv
+  `Issue #124 <https://github.com/drugdata/D3R/issues/124>`_
+
+* A timeout has now been added for blastnfilter stage to prevent
+  the task/stage from running too long. Default is 24 hours, but
+  can be changed with --blastnfiltertimeout flag.
+  `Issue #8 <https://github.com/drugdata/D3R/issues/8>`_
+
+* A timeout has now been added for evaluation stage to prevent
+  the task/stage from running too long. Default is 24 hours, but
+  can be changed with --evaluationtimeout flag.
+  `Issue #123 <https://github.com/drugdata/D3R/issues/123>`_ 
+
 1.6.8 (2017-03-07)
 ------------------
 
