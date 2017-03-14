@@ -337,12 +337,12 @@ def _parse_arguments(desc, args):
     parser.add_argument("--blastnfilter", default='blastnfilter.py',
                         help='Path to BlastnFilter script '
                              '(default blastnfilter.py)')
-    parser.add_argument("--blastnfiltertimeout", default=86400, type=int,
+    parser.add_argument("--blastnfiltertimeout", default=43200, type=int,
                         help='Time in seconds script is allowed to run before'
-                             'being killed (default 86400)')
-    parser.add_argument("--evaluationtimeout", default=86400, type=int,
+                             'being killed (default 43200)')
+    parser.add_argument("--evaluationtimeout", default=43200, type=int,
                         help='Time in seconds script is allowed to run before'
-                             'SIGTERM is sent (default 86400)')
+                             'SIGTERM is sent (default 43200)')
     parser.add_argument("--evaluationtimeoutkilldelay", default=120, type=int,
                         help='Time in seconds script after SIGTERM is sent'
                              'when SIGKILL is sent(default 120)')
