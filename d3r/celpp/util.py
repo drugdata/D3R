@@ -424,6 +424,90 @@ def run_external_command(cmd_to_run):
     return p.returncode, out, err
 
 
+def run_external_command_with_timeout(cmd_to_run, tmp_dir,
+                                      timeout=None,
+                                      kill_delay=10,
+                                      polling_sleep_time=1):
+    """Runs command passed in
+    :param cmd_to_run: command with arguments to run set as a string
+    :param tmp_dir: temporary directory where stdout.txt and stderr.txt
+                    files can be temporarily written
+    :param timeout: time in seconds to allow process to run before killing
+    :param polling_sleep_time: time in seconds to sleep between checks for
+                               command completion.
+    :returns: tuple containing (exit code, stdout, stderr)
+    """
+    if cmd_to_run is None:
+        return 256, '', 'Command must be set'
+
+    if tmp_dir is None:
+        return 255, '', 'Tmpdir must be set'
+
+    if not os.path.isdir(tmp_dir):
+        return 254, '', 'Tmpdir must be a directory'
+
+    logger.info("Running command " + cmd_to_run)
+    tmp_stdout = os.path.join(tmp_dir, 'stdout.txt')
+    logger.debug('stdout file: ' + tmp_stdout)
+
+    stdout_f = open(tmp_stdout, 'w')
+    tmp_stderr = os.path.join(tmp_dir, 'stderr.txt')
+    logger.debug('stderr file: ' + tmp_stderr)
+
+    stderr_f = open(tmp_stderr, 'w')
+    p = subprocess.Popen(shlex.split(cmd_to_run),
+                         stdout=stdout_f,
+                         stderr=stderr_f)
+
+    logger.debug('Waiting for process to complete')
+    p.poll()
+    logger.debug('Polling returned None, looping until'
+                 ' p.returncode is not None')
+
+    if timeout is not None:
+        start_time = time.time()
+    else:
+        start_time = 0
+
+    terminate_invoked = False
+
+    while p.returncode is None:
+        if timeout is not None and int(time.time() - start_time) > timeout:
+            if terminate_invoked is False:
+                logger.info('Timeout of ' + str(timeout) +
+                            'exceeded invoking terminate')
+                p.terminate()
+
+                # pushing start time into future
+                # to give child process a chance to
+                # exit when SIGTERM is called
+                start_time += kill_delay
+
+                terminate_invoked = True
+            else:
+                logger.info('Timeout of ' + str(timeout + kill_delay) +
+                            'exceeded invoking kill')
+                p.kill()
+        time.sleep(polling_sleep_time)
+        p.poll()
+
+    logger.debug('Got a return code that is not None: ' +
+                 str(p.returncode))
+    stdout_f.flush()
+    stdout_f.close()
+    stderr_f.flush()
+    stderr_f.close()
+    logger.debug('Writing stderr and stdout to ' + tmp_dir)
+    fo = open(tmp_stdout, 'r')
+    out = fo.read()
+    fo.close()
+    fe = open(tmp_stderr, 'r')
+    err = fe.read()
+    fe.close()
+
+    return p.returncode, out, err
+
+
 def setup_logging(theargs):
     """Sets up the logging for application
 
@@ -501,6 +585,8 @@ def setup_logging(theargs):
     logging.getLogger('d3r.celpp.chimeraprep')\
         .setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.celpp.participant')\
+        .setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.postevaluation')\
         .setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.blast.ligand').setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.blast.hit').setLevel(theargs.numericloglevel)

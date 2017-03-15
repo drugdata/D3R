@@ -460,12 +460,11 @@ class TestD3rTask(unittest.TestCase):
             params = D3RParameters()
             params.smtp = 'doesnotexistxxx.x.x'
             params.smtpport = 12345
-            params.email = 'foo@foo.com'
             task = D3RTask(temp_dir, params)
             task.set_stage(1)
             task.set_name('foo')
             try:
-                task._send_email(None)
+                task._send_email(None, 'bob@bob.com')
                 self.fail('Expected exception')
             except Exception:
                 pass
@@ -646,6 +645,32 @@ class TestD3rTask(unittest.TestCase):
             self.assertEquals(0, task.run_external_command('hi',
                                                            'echo hi',
                                                            False))
+            self.assertEquals(task.get_error(), None)
+            self.assertEquals(task.get_status(), D3RTask.UNKNOWN_STATUS)
+            self.assertEquals(os.path.exists(os.path.join(task.get_dir(),
+                                                          'hi.stdout')),
+                              True)
+            self.assertEquals(os.path.exists(os.path.join(task.get_dir(),
+                                                          'hi.stderr')),
+                              True)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_run_external_command_withtimeout_cmd_succeeds(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = D3RTask(None, params)
+            task.set_name('foo')
+            task.set_stage(1)
+            task.set_path(temp_dir)
+            task.create_dir()
+            task.set_path(temp_dir)
+            self.assertEquals(0, task.run_external_command('hi',
+                                                           'echo hi',
+                                                           False,
+                                                           timeout=30))
             self.assertEquals(task.get_error(), None)
             self.assertEquals(task.get_status(), D3RTask.UNKNOWN_STATUS)
             self.assertEquals(os.path.exists(os.path.join(task.get_dir(),

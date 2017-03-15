@@ -3,6 +3,7 @@ __author__ = 'churas'
 import unittest
 import tempfile
 import os.path
+import stat
 
 """
 test_evaluation
@@ -140,6 +141,94 @@ class TestEvaluation(unittest.TestCase):
             flist.index(rmsdpickle)
         finally:
             shutil.rmtree(temp_dir)
+
+    def test_evaluationtaskfactory_update_priorities_of_tasks(self):
+        params = D3RParameters()
+        params.hi = True
+        etf = EvaluationTaskFactory('/foo', params)
+
+        plist = [Participant('1name', '1d3rusername', '12345',
+                             '1email@email.com',
+                             priority=4),
+                 Participant('4name', '4d3rusername', '5678_foo',
+                             '4email@email.com',
+                             priority=9)]
+
+        pdb = ParticipantDatabase(plist)
+
+        # one task not updated
+        dtask = D3RTask('/foo', params)
+        dtask.set_name('33' + EvaluationTask.EXT_SUBMISSION_SUFFIX)
+        task = EvaluationTask('/foo', dtask.get_name(),
+                              dtask, params)
+        self.assertEqual(task.get_priority(), 0)
+        etasks = etf._update_priorities_of_tasks([task], pdb)
+        self.assertEqual(len(etasks), 1)
+        self.assertEqual(etasks[0].get_priority(), 0)
+
+        # two tasks both updated
+        dtask = D3RTask('/foo', params)
+        dtask.set_name('12345' + EvaluationTask.EXT_SUBMISSION_SUFFIX)
+        taskone = EvaluationTask('/foo', dtask.get_name(),
+                                 dtask, params)
+        self.assertEqual(taskone.get_priority(), 0)
+
+        dtask = D3RTask('/foo', params)
+        dtask.set_name('5678_foo' + EvaluationTask.EXT_SUBMISSION_SUFFIX)
+        tasktwo = EvaluationTask('/foo', dtask.get_name(),
+                                 dtask, params)
+        self.assertEqual(tasktwo.get_priority(), 0)
+
+        etasks = etf._update_priorities_of_tasks([taskone, tasktwo], pdb)
+        self.assertEqual(len(etasks), 2)
+        self.assertEqual(etasks[0].get_priority(), 4)
+        self.assertEqual(etasks[1].get_priority(), 9)
+
+    def test_evaluationtaskfactory_sort_tasks_by_participant_priority(self):
+        params = D3RParameters()
+        params.hi = True
+        etf = EvaluationTaskFactory('/foo', params)
+
+        # test with no tasks
+        self.assertEqual(etf._sort_tasks_by_participant_priority(None, None),
+                         None)
+
+        # test with NO participant database
+        self.assertEqual(etf._sort_tasks_by_participant_priority([params],
+                                                                 None),
+                         [params])
+
+        plist = [Participant('1name', '1d3rusername', '12345',
+                             '1email@email.com',
+                             priority=4),
+                 Participant('4name', '4d3rusername', '5678_foo',
+                             '4email@email.com',
+                             priority=9)]
+
+        pdb = ParticipantDatabase(plist)
+        # two tasks both updated
+        dtask = D3RTask('/foo', params)
+        dtask.set_name('12345' + EvaluationTask.EXT_SUBMISSION_SUFFIX)
+        taskone = EvaluationTask('/foo', dtask.get_name(),
+                                 dtask, params)
+        self.assertEqual(taskone.get_priority(), 0)
+
+        dtask = D3RTask('/foo', params)
+        dtask.set_name('5678_foo' + EvaluationTask.EXT_SUBMISSION_SUFFIX)
+        tasktwo = EvaluationTask('/foo', dtask.get_name(),
+                                 dtask, params)
+        self.assertEqual(tasktwo.get_priority(), 0)
+
+        etasks = etf._sort_tasks_by_participant_priority([taskone, tasktwo],
+                                                         pdb)
+        self.assertEqual(len(etasks), 2)
+        self.assertEqual(etasks[0].get_priority(), 9)
+        self.assertEqual(etasks[0].get_name(), '5678_foo' +
+                         EvaluationTask.EXT_SUBMISSION_SUFFIX)
+
+        self.assertEqual(etasks[1].get_priority(), 4)
+        self.assertEqual(etasks[1].get_name(), '12345' +
+                         EvaluationTask.EXT_SUBMISSION_SUFFIX)
 
     def test_evaluationtaskfactory_constructor(self):
         params = D3RParameters()
@@ -318,6 +407,9 @@ class TestEvaluation(unittest.TestCase):
                                     docktask, params)
         self.assertEquals(evaluation.get_name(), 'foo.evaluation')
         self.assertEquals(evaluation.get_stage(), 7)
+        self.assertEqual(evaluation.get_priority(), 0)
+        evaluation.set_priority(4)
+        self.assertEqual(evaluation.get_priority(), 4)
 
     def test_can_run(self):
         temp_dir = tempfile.mkdtemp()
@@ -542,6 +634,89 @@ class TestEvaluation(unittest.TestCase):
             self.assertEqual(os.path.isfile(stderr), True)
             stdout = os.path.join(evaluation.get_dir(),
                                   'true.stdout')
+            self.assertEqual(os.path.isfile(stdout), True)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_run_succeeds_no_emailer_withtimeout(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            params.evaluation = 'true'
+            params.evaluationtimeout = 100
+            params.evaluationtimeoutkilldelay = 10
+            params.pdbdb = '/data/pdb'
+            docktask = D3RTask(temp_dir, params)
+            docktask.set_name('foo')
+            docktask.set_stage(EvaluationTaskFactory.DOCKSTAGE)
+            docktask.create_dir()
+            open(os.path.join(docktask.get_dir(), D3RTask.COMPLETE_FILE),
+                 'a').close()
+            evaluation = EvaluationTask(temp_dir, 'foo.evaluation',
+                                        docktask, params)
+            evaluation.run()
+            self.assertEqual(evaluation.get_error(), None)
+            # test files get created
+            errfile = os.path.join(evaluation.get_dir(),
+                                   D3RTask.ERROR_FILE)
+            self.assertEqual(os.path.isfile(errfile), False)
+
+            compfile = os.path.join(evaluation.get_dir(),
+                                    D3RTask.COMPLETE_FILE)
+            self.assertEqual(os.path.isfile(compfile), True)
+            stderr = os.path.join(evaluation.get_dir(),
+                                  'true.stderr')
+            self.assertEqual(os.path.isfile(stderr), True)
+            stdout = os.path.join(evaluation.get_dir(),
+                                  'true.stdout')
+            self.assertEqual(os.path.isfile(stdout), True)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_run_fails_due_to_timeout_no_emailer(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            foo_script = os.path.join(temp_dir, 'foo.py')
+            params.evaluation = foo_script
+            params.evaluationtimeout = 1
+            params.evaluationtimeoutkilldelay = 2
+            params.pdbdb = '/data/pdb'
+
+            # create fake blastnfilter script that makes csv files
+            f = open(foo_script, 'w')
+            f.write('#! /usr/bin/env python\n\n')
+            f.write('import time\n')
+            f.write('time.sleep(360)\n')
+            f.flush()
+            f.close()
+            os.chmod(foo_script, stat.S_IRWXU)
+
+            docktask = D3RTask(temp_dir, params)
+            docktask.set_name('foo')
+            docktask.set_stage(EvaluationTaskFactory.DOCKSTAGE)
+            docktask.create_dir()
+            open(os.path.join(docktask.get_dir(), D3RTask.COMPLETE_FILE),
+                 'a').close()
+            evaluation = EvaluationTask(temp_dir, 'foo.evaluation',
+                                        docktask, params)
+            evaluation.run()
+            self.assertEqual(evaluation.get_error(),
+                             'Non zero exit code: -15 received. '
+                             'Standard out:  Standard error: ')
+            # test files get created
+            errfile = os.path.join(evaluation.get_dir(),
+                                   D3RTask.ERROR_FILE)
+            self.assertEqual(os.path.isfile(errfile), True)
+
+            compfile = os.path.join(evaluation.get_dir(),
+                                    D3RTask.COMPLETE_FILE)
+            self.assertEqual(os.path.isfile(compfile), False)
+            stderr = os.path.join(evaluation.get_dir(),
+                                  'foo.py.stderr')
+            self.assertEqual(os.path.isfile(stderr), True)
+            stdout = os.path.join(evaluation.get_dir(),
+                                  'foo.py.stdout')
             self.assertEqual(os.path.isfile(stdout), True)
         finally:
             shutil.rmtree(temp_dir)

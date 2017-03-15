@@ -97,7 +97,7 @@ class TestCelppRunner(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             theargs = D3RParameters()
-            theargs.celppdir = temp_dir
+            theargs.latest_weekly = temp_dir
 
             # get the lock file which should work
             lock = celpprunner._get_lock(theargs, 'blast')
@@ -113,12 +113,36 @@ class TestCelppRunner(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
+    def test_get_lock_where_lockfile_exists_and_process_is_running(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            theargs = D3RParameters()
+            theargs.latest_weekly = temp_dir
+
+            lockfile = os.path.join(temp_dir,
+                                    'celpprunner.blast.lockpid')
+            f = open(lockfile, 'w')
+            pid = str(os.getppid())
+            f.write(pid)
+            f.flush()
+            f.close()
+            # get the lock file which should work
+            try:
+                celpprunner._get_lock(theargs, 'blast')
+                self.fail('Expected Exception')
+            except Exception as e:
+                self.assertEqual(str(e), 'celpprunner with pid ' +
+                                 pid + ' is running')
+        finally:
+            shutil.rmtree(temp_dir)
+
     def test_parse_arguments(self):
         theargs = ['--stage', 'blast', 'foo']
         result = celpprunner._parse_arguments('hi', theargs)
         self.assertEqual(result.stage, 'blast')
         self.assertEqual(result.celppdir, 'foo')
         self.assertEqual(result.email, None)
+        self.assertEqual(result.summaryemail, None)
         self.assertEqual(result.loglevel, celpprunner.DEFAULT_LOG_LEVEL)
         self.assertEqual(result.blastnfilter, 'blastnfilter.py')
         self.assertEqual(result.proteinligprep, 'proteinligprep.py')
@@ -130,6 +154,8 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEqual(result.importretry, 60)
         self.assertEqual(result.importsleep, 600)
         self.assertEqual(result.rdkitpython, '')
+        self.assertEqual(result.summaryemail, None)
+        self.assertEqual(result.postevaluation, 'post_evaluation.py')
         theargs = ['foo', '--stage', 'dock,glide', '--email', 'b@b.com,h@h',
                    '--log', 'ERROR',
                    '--blastnfilter', '/bin/blastnfilter.py',
@@ -145,11 +171,14 @@ class TestCelppRunner(unittest.TestCase):
                    '--skipimportwait',
                    '--importretry', '10',
                    '--importsleep', '30',
-                   '--rdkitpython', '/usr/bin']
+                   '--rdkitpython', '/usr/bin',
+                   '--summaryemail', 'j@j,g@g',
+                   '--postevaluation', '/bin/yo.py']
         result = celpprunner._parse_arguments('hi', theargs)
         self.assertEqual(result.stage, 'dock,glide')
         self.assertEqual(result.celppdir, 'foo')
         self.assertEqual(result.email, 'b@b.com,h@h')
+        self.assertEqual(result.summaryemail, 'j@j,g@g')
         self.assertEqual(result.loglevel, 'ERROR')
         self.assertEqual(result.blastnfilter, '/bin/blastnfilter.py')
         self.assertEqual(result.proteinligprep, '/bin/proteinligprep.py')
@@ -165,6 +194,7 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEqual(result.importretry, 10)
         self.assertEqual(result.importsleep, 30)
         self.assertEqual(result.rdkitpython, '/usr/bin')
+        self.assertEqual(result.postevaluation, '/bin/yo.py')
 
     def test_run_tasks_passing_none_and_empty_list(self):
         self.assertEquals(celpprunner.run_tasks(None), 3)
@@ -242,6 +272,38 @@ class TestCelppRunner(unittest.TestCase):
 
         self.assertEquals(task._run_count, 1)
         self.assertEquals(task_two._run_count, 1)
+
+    def test_get_set_of_email_address_from_email_flags(self):
+
+        params = D3RParameters()
+        res = celpprunner._get_set_of_email_address_from_email_flags(params)
+        self.assertEqual(res, None)
+
+        # email set
+        params.email = 'b@b.com'
+        res = celpprunner._get_set_of_email_address_from_email_flags(params)
+        self.assertEqual(res, ['b@b.com'])
+
+        # email set w dup
+        params.email = 'b@b.com,j@j.com,b@b.com'
+        res = celpprunner._get_set_of_email_address_from_email_flags(params)
+        self.assertEqual(res, ['b@b.com', 'j@j.com'])
+
+        # summary set only
+        params.email = None
+        params.summaryemail = 'b@b.com'
+        res = celpprunner._get_set_of_email_address_from_email_flags(params)
+        self.assertEqual(res, ['b@b.com'])
+
+        # summary w dups
+        params.summaryemail = 'b@b.com,j@j.com,b@b.com'
+        res = celpprunner._get_set_of_email_address_from_email_flags(params)
+        self.assertEqual(res, ['b@b.com', 'j@j.com'])
+
+        # both set
+        params.email = 'h@h.com,j@j.com'
+        res = celpprunner._get_set_of_email_address_from_email_flags(params)
+        self.assertEqual(res, ['b@b.com', 'h@h.com', 'j@j.com'])
 
     def test_get_task_list_for_stage_with_invalid_stage_name(self):
 
@@ -603,6 +665,34 @@ class TestCelppRunner(unittest.TestCase):
             except NotImplementedError:
                 pass
 
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_task_list_for_stage_postevaluation(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            theargs = D3RParameters()
+            theargs.latest_weekly = temp_dir
+            theargs.stage = celpprunner.POST_EVAL
+            t_list = celpprunner.get_task_list_for_stage(theargs,
+                                                         theargs.stage)
+            self.assertEqual(len(t_list), 1)
+            self.assertEqual(t_list[0].get_name(), 'postevaluation')
+
+            # try this time with email set
+            theargs.email = 'b@b.com,j@j.com'
+            t_list = celpprunner.get_task_list_for_stage(theargs,
+                                                         theargs.stage)
+            self.assertEqual(len(t_list), 1)
+            self.assertEqual(t_list[0].get_name(), 'postevaluation')
+
+            # try this time with both set
+            theargs.email = 'b@b.com,j@j.com'
+            theargs.summaryemail = 'b@b.com,h@h.com'
+            t_list = celpprunner.get_task_list_for_stage(theargs,
+                                                         theargs.stage)
+            self.assertEqual(len(t_list), 1)
+            self.assertEqual(t_list[0].get_name(), 'postevaluation')
         finally:
             shutil.rmtree(temp_dir)
 

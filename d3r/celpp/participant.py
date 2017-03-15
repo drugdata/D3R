@@ -12,13 +12,23 @@ class Participant(object):
     """Represents a an external participant in the challenge
     """
 
-    def __init__(self, name, d3rusername, guid, email):
+    def __init__(self, name, d3rusername, guid, email,
+                 priority=0):
         """Constructor
+        :param name: Full name of participant
+        :param d3rusername: D3R username
+        :param guid: unique id given to participant
+        :param email: participant email address
+        :param priority: int defining priority participants docked
+                         results should be evaluated. default is 0
+                         and higher values have higher priority
+        :raises ValueError: if priority is set to a non int value
         """
         self._name = name
         self._d3rusername = d3rusername
         self._guid = guid
         self._email = email
+        self._priority = int(priority)
 
     def get_name(self):
         """Gets name
@@ -39,6 +49,14 @@ class Participant(object):
         """Gets email
         """
         return self._email
+
+    def get_priority(self):
+        """Gets priority for Participant used
+           in determining order evaluations are run
+        :returns: int denoting priority with higher
+                  numbers meaning higher priority
+        """
+        return self._priority
 
 
 class ParticipantDatabase(object):
@@ -79,15 +97,13 @@ class ParticipantDatabase(object):
                          'to True. returning None for guid: ' + guid)
             return None
 
-        #stripped_guid = re.sub('_[0-9A-Za-z-]+$', '', guid)
+        # TODO This wont work if the participant guids become a
+        # TODO length other then 5 digits ie #####_XXXXX
         possible_guids = re.findall('([0-9]{5})_[0-9A-Za-z-]+$', guid)
-        if len(possible_guids) > 1:
-            logger.debug('Stripped guid is not unique. Stripping ' + guid +
-                         ' yielded ' + possible_guids)
-            return None
-        if len(possible_guids) == 0:
-            logger.debug('guid stripping did not yield a match. Original'
-                         ' guid was ' + guid)
+        if len(possible_guids) is not 1:
+            logger.debug('Stripped guid ' + guid +
+                         ' did not yield single answer but this ' +
+                         str(possible_guids))
             return None
         stripped_guid = possible_guids[0]
         if stripped_guid != guid:
@@ -142,16 +158,30 @@ class ParticipantDatabaseFromCSVFactory(object):
                         continue
 
                 splitline = line.rstrip().split(',')
-                if len(splitline) is not 4:
+                split_len = len(splitline)
+                if split_len is not 4 and split_len is not 5:
                     logger.warning('Problems splitting line ' + line +
                                    ' got ' + str(len(splitline)) +
-                                   ' elements expecting 4')
+                                   ' elements expecting 4 or 5 fields'
+                                   ' name,username,guid,email or '
+                                   ' name,username,guid,email,prority')
                     counter = + 1
                     continue
+                priority = 0
+
+                if split_len is 5:
+                    try:
+                        priority = int(splitline[4].rstrip())
+                    except ValueError:
+                        logger.error('Expected int for priority got: ' +
+                                     splitline[4].rstrip())
+                        pass
+
                 plist.append(Participant(splitline[0].strip(),
                                          splitline[1].strip(),
                                          splitline[2].strip(),
-                                         splitline[3].strip()))
+                                         splitline[3].strip(),
+                                         priority=priority))
                 counter = + 1
             f.close()
             return ParticipantDatabase(plist)
