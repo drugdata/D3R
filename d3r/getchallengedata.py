@@ -91,7 +91,7 @@ if ("__main__") == (__name__):
     parser.add_argument("-u", "--unpackdir", metavar="PATH", help = "Dir where the newest challenge data package should be unpacked")
     parser.add_argument("-f", "--ftpconfig", metavar="PATH", help = "File containing user ftp config information (see included example ftp config for specifics)")
     parser.add_argument("-l", "--localdata", metavar="PATH", help = "Use a local challengedata tarball instead of downloading")
-    parser.add_argument("-s", "--sleep", metavar="INT", help = "Number of seconds to wait between checking if challenge package exists", default=300)
+    parser.add_argument("-s", "--sleep", metavar="INT", help = "Number of seconds to wait between checking if challenge package exists", default=3600)
 
     logger = logging.getLogger()
     logging.basicConfig( format  = '%(asctime)s: %(message)s', datefmt = '%m/%d/%y %I:%M:%S', filename = 'final.log', filemode = 'w', level = logging.INFO )

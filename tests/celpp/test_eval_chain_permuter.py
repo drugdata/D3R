@@ -21,10 +21,10 @@ class TestChainPermuter(unittest.TestCase):
     def setUp(self):
         try:
             import openeye.oechem  # noqa: F401
-            sys.stdout.write("epeneye.oechem importable.")
+            sys.stdout.write("openeye.oechem importable.")
             self.has_oechem = True
         except:
-            sys.stdout.write("epeneye.oechem not importable.")
+            sys.stdout.write("openeye.oechem not importable.")
             self.has_oechem = False
 
         ret_code = os.system('$SCHRODINGER/run split_structure.py &> '
