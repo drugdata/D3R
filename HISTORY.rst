@@ -31,6 +31,9 @@ History
   can be changed with --evaluationtimeout flag.
   `Issue #123 <https://github.com/drugdata/D3R/issues/123>`_ 
 
+* Fixed bug in blastnfilter to correctly rank the list of 
+  hiTanimoto candidates.
+
 1.6.8 (2017-03-07)
 ------------------
 
