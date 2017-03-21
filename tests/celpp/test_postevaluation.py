@@ -239,13 +239,15 @@ class TestPostEvaluation(unittest.TestCase):
                                     'bla_dock.extsubmission.evaluation',
                                     None, params)
             etask2.create_dir()
-            open(os.path.join(etask2.get_dir(), D3RTask.ERROR_FILE), 'a').close()
+            open(os.path.join(etask2.get_dir(),
+                              D3RTask.ERROR_FILE), 'a').close()
 
             etask3 = EvaluationTask(temp_dir,
                                     '12_x.extsubmission.evaluation',
                                     None, params)
             etask3.create_dir()
-            open(os.path.join(etask3.get_dir(), D3RTask.COMPLETE_FILE), 'a').close()
+            open(os.path.join(etask3.get_dir(),
+                              D3RTask.COMPLETE_FILE), 'a').close()
 
             res = task.get_all_evaluation_tasks()
             self.assertEqual(len(res), 3)
@@ -282,13 +284,15 @@ class TestPostEvaluation(unittest.TestCase):
                                     'bla_dock.extsubmission.evaluation',
                                     None, params)
             etask2.create_dir()
-            open(os.path.join(etask2.get_dir(), D3RTask.ERROR_FILE), 'a').close()
+            open(os.path.join(etask2.get_dir(),
+                              D3RTask.ERROR_FILE), 'a').close()
 
             etask3 = EvaluationTask(temp_dir,
                                     '12_x.extsubmission.evaluation',
                                     None, params)
             etask3.create_dir()
-            open(os.path.join(etask3.get_dir(), D3RTask.COMPLETE_FILE), 'a').close()
+            cfile = os.path.join(etask3.get_dir(), D3RTask.COMPLETE_FILE)
+            open(cfile, 'a').close()
 
             res = task._get_evaluationdir_args()
             self.assertTrue(' ' + PostEvaluationTask.EVALUATIONDIR_ARG +
@@ -364,8 +368,8 @@ class TestPostEvaluation(unittest.TestCase):
 
             self.assertEqual(task.get_error(), None)
             self.assertEqual(task.get_status(), D3RTask.COMPLETE_STATUS)
-            self.assertTrue(os.path.isfile(os.path.join(task.get_dir(),
-                                                        D3RTask.COMPLETE_FILE)))
+            cfile = os.path.join(task.get_dir(), D3RTask.COMPLETE_FILE)
+            self.assertTrue(os.path.isfile(cfile))
             stdout_file = os.path.join(task.get_dir(), 'echo' +
                                        D3RTask.STDOUT_SUFFIX)
             self.assertTrue(os.path.isfile(stdout_file))
@@ -578,8 +582,8 @@ class TestPostEvaluation(unittest.TestCase):
 
             self.assertEqual(task.get_error(), None)
             self.assertEqual(task.get_status(), D3RTask.COMPLETE_STATUS)
-            self.assertTrue(os.path.isfile(os.path.join(task.get_dir(),
-                                                        D3RTask.COMPLETE_FILE)))
+            cfile = os.path.join(task.get_dir(), D3RTask.COMPLETE_FILE)
+            self.assertTrue(os.path.isfile(cfile))
             stdout_file = os.path.join(task.get_dir(), 'foo.py' +
                                        D3RTask.STDOUT_SUFFIX)
             self.assertTrue(os.path.isfile(stdout_file))

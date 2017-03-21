@@ -99,7 +99,8 @@ class PostEvaluationEmailer(object):
 
             if self._to_list is None:
                 logger.debug('No email addresses in to list')
-                self._append_to_message_log('\nNo email addresses in to list\n')
+                self._append_to_message_log('\nNo email addresses ' +
+                                            'in to list\n')
                 return
 
             subject, msg = self._generate_post_evaluation_email_body(petask)
@@ -188,7 +189,8 @@ class PostEvaluationTask(D3RTask):
     def _get_evaluationdir_args(self):
         """Generates a string containing all the evaluation
            tasks to pass to post_evaluation.py script
-        :returns: string of format --evaluationdir <path1> --evaluationdir <path2>
+        :returns: string of format --evaluationdir <path1>
+                  --evaluationdir <path2>
         """
         eval_args = ''
         for task in self.get_all_evaluation_tasks():
@@ -209,7 +211,8 @@ class PostEvaluationTask(D3RTask):
                 if os.path.isfile(full_path):
                     csv_list.append(full_path)
                 else:
-                    logger.warning(full_path + ' is a directory which is weird')
+                    logger.warning(full_path +
+                                   ' is a directory which is weird')
         return csv_list
 
     def get_summary_txt(self):

@@ -674,8 +674,8 @@ def main(args):
 
               If {stageflag} '{postevaluation}'
 
-              Finds all stage.{evalstage}.<algo>.evaluation directories and runs
-              script set via --postevaluation parameter storing a
+              Finds all stage.{evalstage}.<algo>.evaluation directories and
+               runs script set via --postevaluation parameter storing a
               summary of found docking evaluations into
               {postevalstage} into a file named summary.txt and a set
               of files with name Overall_RMSD_<candidate_type>.csv.
