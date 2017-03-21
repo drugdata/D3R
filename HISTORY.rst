@@ -3,7 +3,7 @@
 History
 -------
 
-1.7.0 (Not released)
+1.7.0 (2017-03-21)
 --------------------
 
 * Added Post Evaluation Stage which summarizes evaluations
