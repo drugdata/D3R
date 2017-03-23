@@ -584,7 +584,7 @@ class EvaluationTask(D3RTask):
         eval_name = os.path.basename(self.get_args().evaluation)
 
         self.run_external_command(eval_name, cmd_to_run,
-                                  True,
+                                  False,
                                   timeout=evaltimeout,
                                   kill_delay=killdelay)
 

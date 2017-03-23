@@ -558,13 +558,11 @@ class TestEvaluation(unittest.TestCase):
             evaluation = EvaluationTask(temp_dir, 'foo.evaluation',
                                         docktask, params)
             evaluation.run()
-            self.assertEqual(evaluation.get_error(),
-                             'Non zero exit code: 1 received. Standard out: ' +
-                             ' Standard error: ')
+            self.assertEqual(evaluation.get_error(), None)
             # test file gets created
-            errfile = os.path.join(evaluation.get_dir(),
-                                   D3RTask.ERROR_FILE)
-            self.assertEqual(os.path.isfile(errfile), True)
+            compfile = os.path.join(evaluation.get_dir(),
+                                   D3RTask.COMPLETE_FILE)
+            self.assertEqual(os.path.isfile(compfile), True)
 
             stderr = os.path.join(evaluation.get_dir(),
                                   'false.stderr')
@@ -701,17 +699,12 @@ class TestEvaluation(unittest.TestCase):
             evaluation = EvaluationTask(temp_dir, 'foo.evaluation',
                                         docktask, params)
             evaluation.run()
-            self.assertEqual(evaluation.get_error(),
-                             'Non zero exit code: -15 received. '
-                             'Standard out:  Standard error: ')
-            # test files get created
-            errfile = os.path.join(evaluation.get_dir(),
-                                   D3RTask.ERROR_FILE)
-            self.assertEqual(os.path.isfile(errfile), True)
+            self.assertEqual(evaluation.get_error(), None)
 
+            # test files get created
             compfile = os.path.join(evaluation.get_dir(),
                                     D3RTask.COMPLETE_FILE)
-            self.assertEqual(os.path.isfile(compfile), False)
+            self.assertEqual(os.path.isfile(compfile), True)
             stderr = os.path.join(evaluation.get_dir(),
                                   'foo.py.stderr')
             self.assertEqual(os.path.isfile(stderr), True)
