@@ -3,6 +3,12 @@
 History
 -------
 
+1.7.1 (2017-03-27)
+--------------------
+
+* Bug fix, evaluation task will not fail if call to external
+  script fails. `Issue #129 <https://github.com/drugdata/D3R/issues/129>`_
+
 1.7.0 (2017-03-21)
 --------------------
 
