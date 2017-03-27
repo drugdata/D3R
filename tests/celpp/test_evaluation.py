@@ -561,7 +561,7 @@ class TestEvaluation(unittest.TestCase):
             self.assertEqual(evaluation.get_error(), None)
             # test file gets created
             compfile = os.path.join(evaluation.get_dir(),
-                                   D3RTask.COMPLETE_FILE)
+                                    D3RTask.COMPLETE_FILE)
             self.assertEqual(os.path.isfile(compfile), True)
 
             stderr = os.path.join(evaluation.get_dir(),
