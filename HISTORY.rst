@@ -2,6 +2,12 @@
 
 History
 -------
+1.7.3 (2017-04-11)
+--------------------
+
+* requirements.txt and setup.py modified to require biopython 
+  v1.6.8, which is the last version compatible with python2.6
+
 
 1.7.2 (2017-04-11)
 --------------------
