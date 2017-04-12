@@ -3,6 +3,13 @@
 History
 -------
 
+1.7.2 (2017-04-11)
+--------------------
+
+* Bug fix, evaluation of a submission will not fail if one
+  candidate in that submission fails.
+
+
 1.7.1 (2017-03-27)
 --------------------
 
