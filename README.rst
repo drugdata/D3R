@@ -11,6 +11,8 @@ Drug Design Data Resource CELPP Runner
 .. image:: https://coveralls.io/repos/github/drugdata/D3R/badge.svg?branch=master 
         :target: https://coveralls.io/github/drugdata/D3R?branch=master
 
+.. image:: https://zenodo.org/badge/32555382.svg
+   :target: https://zenodo.org/badge/latestdoi/32555382
 
 Drug Design Data Resource is a suite of software to enable 
 filtering, docking, and scoring of new sequences from 
