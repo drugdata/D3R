@@ -26,6 +26,54 @@ class SelectChains(PDB.Select):
     def accept_chain(self, chain):
         return (chain.get_id() in self.chain_letters)
 
+def get_chain_length_and_position (pdb_filename, pdb_id):
+    parser = PDB.PDBParser()
+    writer = PDB.PDBIO()
+    struct = parser.get_structure (pdb_id, pdb_filename)
+    chain_dic = {}
+    for model in struct:
+        for chain in model:
+            chain_id = chain.get_id()
+            chain_lenth = len(chain)
+            if chain_id not in chain_dic:
+                chain_dic[chain_id] = []
+            chain_x_coord = 0
+            chain_y_coord = 0
+            chain_z_coord = 0
+            total_number_of_atoms = 0
+            for residue in chain:
+                for atom in residue:
+                    chain_x_coord += atom.get_coord()[0]      
+                    chain_y_coord += atom.get_coord()[1]      
+                    chain_z_coord += atom.get_coord()[2]      
+                    total_number_of_atoms += 1
+            average_x = chain_x_coord/(3*total_number_of_atoms)
+            average_y = chain_y_coord/(3*total_number_of_atoms)
+            average_z = chain_z_coord/(3*total_number_of_atoms)
+            average_position = (average_x, average_y, average_z)
+            chain_dic[chain_id] = [chain_lenth, average_position]
+    return chain_dic
+def get_distance (pos1, pos2):
+    _dist_0 = float(pos1[0])-float(pos2.split(",")[0])
+    _dist_1 = float(pos1[1])-float(pos2.split(",")[1])
+    _dist_2 = float(pos1[2])-float(pos2.split(",")[2])
+    return (_dist_0**2 + _dist_1**2 + _dist_2**2)**0.5
+def extract_chain(pdb_filename, pdb_id, ligand_center, chain_length = 100):
+    #extract the chain in the pdb file which is the most closet to ligand center and have the chain length larger than the default chain length
+    chain_dic = get_chain_length_and_position(pdb_filename, pdb_id)
+    ID_list = []
+    distance_list = []
+    for chain_ID in chain_dic:
+        if chain_dic[chain_ID][0] > chain_length:
+            ID_list.append(chain_ID)
+            distance = get_distance(chain_dic[chain_ID][1], ligand_center)
+            distance_list.append(distance)
+    if ID_list:
+        ID_list, distance_list = (list(x) for x in zip(*sorted(zip(ID_list, distance_list), key=lambda pair: pair[1])))
+        target_chain_ID = ID_list [0]
+        split_chain(pdb_filename, pdb_filename, pdb_id, target_chain_ID)
+    
+
 def parse_txt (txt_filename):
     #parsing the result txt file and give back the
 
@@ -208,7 +256,7 @@ def main_gendata (s3_result_path, path_2_ent, s4_result_path):
         LMCSS_pdbloc = os.path.join(path_2_ent, LMCSS_pdb_folder_name, LMCSS_ent_file)
         if not os.path.isfile(LMCSS_pdbloc):            
             logging.info("Unable to find the ent file associate with the LMCSS pdb: %s at location %s"%(LMCSS_pro_id, LMCSS_pdbloc))
-            os.chdir(current_dic_layer_1)
+            os.chdir(current_dir_layer_1)
             continue
         else:
             #TC = target candidate                                
@@ -223,7 +271,7 @@ def main_gendata (s3_result_path, path_2_ent, s4_result_path):
                 os.chdir(current_dir_layer_1)
                 continue
                 
-            logging.info("Succsessfully generate this protein:%s"%LMCSS_protein_name)
+            logging.info("Successfully generate this protein:%s"%LMCSS_protein_name)
             ligand_center = get_center (LMCSS_ligand_name)
             if not ligand_center:
                 logging.info("Unable to find the center of the ligand for the LMCSS candidate pdb: %s"%(pot_target_id))
@@ -246,7 +294,7 @@ def main_gendata (s3_result_path, path_2_ent, s4_result_path):
                     rest_pdbloc = os.path.join(path_2_ent, rest_protein_folder_name, rest_ent_file)
                     if not os.path.isfile(rest_pdbloc):       
                         logging.info("Unable to find the ent file associate with the %s pdb with ID: %s at location %s"%(rest_protein, rest_protein_id, rest_pdbloc))
-                        os.chdir(current_dic_layer_1)
+                        #os.chdir(current_dir_layer_1)
                         continue
                     else:
                         TC_id_rest = "%s_%s"%(query_pro, rest_protein_id)
@@ -262,15 +310,24 @@ def main_gendata (s3_result_path, path_2_ent, s4_result_path):
                         
                         try:
                             do_alignment = align_proteins (LMCSS_protein_name, rest_protein_name, rest_protein_name)
+                            #if it's the Apo structure, need to extract the chain which is close to the ligand center in case the Apo have multiple chains
+                            if rest_protein == "hiResApo":
+                                #extract the chain based on the ligand center 
+                                try:
+                                    extract_chain (rest_protein_name, rest_protein_id, ligand_center, chain_length = 100) 
+                                    logging.info("Successfully extract the chain from Apo structure")
+                                except:
+                                    logging.info("The extraction of Apo chain is not finish...")
+                                    continue
                         except:
                             logging.info("The alignment could not be done for this protein:%s"%(rest_protein_name))
-                            os.chdir(current_dic_layer_1)
                             continue
 
                             #remove the "rot-%s"%LMCSS_protein_name
                         if os.path.isfile("rot-%s"%LMCSS_protein_name):
                             commands.getoutput("rm rot-%s"%LMCSS_protein_name) 
-                        logging.info("Succsessfully generate this protein:%s"%(rest_protein_name))
+                        
+                        logging.info("Successfully generate this protein:%s "%(rest_protein_name))
                         #here we got the valid aligned structures
                         valid = True
         os.chdir(current_dir_layer_1)        
