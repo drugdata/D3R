@@ -320,7 +320,10 @@ class TestEvaluation(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
-
+            blasttask = BlastNFilterTask(temp_dir, params)
+            blasttask.create_dir()
+            open(os.path.join(blasttask.get_dir(),
+                              D3RTask.COMPLETE_FILE), 'a').close()
             glidedir = os.path.join(temp_dir,
                                     EvaluationTaskFactory.DOCKSTAGE_PREFIX +
                                     'glide')
@@ -337,6 +340,12 @@ class TestEvaluation(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
+
+            blasttask = BlastNFilterTask(temp_dir, params)
+            blasttask.create_dir()
+            open(os.path.join(blasttask.get_dir(),
+                              D3RTask.COMPLETE_FILE), 'a').close()
+
             glidedir = os.path.join(temp_dir,
                                     EvaluationTaskFactory.DOCKSTAGE_PREFIX +
                                     'glide')
@@ -362,6 +371,12 @@ class TestEvaluation(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
+
+            blasttask = BlastNFilterTask(temp_dir, params)
+            blasttask.create_dir()
+            open(os.path.join(blasttask.get_dir(),
+                              D3RTask.COMPLETE_FILE), 'a').close()
+
             glidedir = os.path.join(temp_dir,
                                     EvaluationTaskFactory.DOCKSTAGE_PREFIX +
                                     'glide')
@@ -378,6 +393,11 @@ class TestEvaluation(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
+            blasttask = BlastNFilterTask(temp_dir, params)
+            blasttask.create_dir()
+            open(os.path.join(blasttask.get_dir(),
+                              D3RTask.COMPLETE_FILE), 'a').close()
+
             glidedir = os.path.join(temp_dir,
                                     EvaluationTaskFactory.DOCKSTAGE_PREFIX +
                                     'glide')
@@ -449,10 +469,25 @@ class TestEvaluation(unittest.TestCase):
             self.assertEqual(evaluation.get_error(),
                              'foo task has error status')
 
-            # docktask success
+            # docktask success and blasttask missing
             os.remove(error_file)
             open(os.path.join(docktask.get_dir(),
                               D3RTask.COMPLETE_FILE), 'a').close()
+            evaluation = EvaluationTask(temp_dir, 'foo.evaluation',
+                                        docktask, params)
+            self.assertEqual(evaluation.can_run(), False)
+            blasttask = BlastNFilterTask(temp_dir, params)
+            self.assertEqual(evaluation.get_error(),
+                             blasttask.get_name() + ' task has ' +
+                             D3RTask.NOTFOUND_STATUS + ' status')
+
+            # create blast task success
+            blasttask.create_dir()
+            open(os.path.join(blasttask.get_dir(),
+                              D3RTask.COMPLETE_FILE), 'a').close()
+
+
+            # docktask and blastnfilter success
             evaluation = EvaluationTask(temp_dir, 'foo.evaluation',
                                         docktask, params)
             self.assertEqual(evaluation.can_run(), True)
@@ -482,6 +517,10 @@ class TestEvaluation(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
+            blasttask = BlastNFilterTask(temp_dir, params)
+            blasttask.create_dir()
+            open(os.path.join(blasttask.get_dir(),
+                              D3RTask.COMPLETE_FILE), 'a').close()
             # return immediately cause can_run is false
             docktask = D3RTask(temp_dir, params)
             docktask.set_name('foo')
@@ -498,6 +537,10 @@ class TestEvaluation(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
+            blasttask = BlastNFilterTask(temp_dir, params)
+            blasttask.create_dir()
+            open(os.path.join(blasttask.get_dir(),
+                              D3RTask.COMPLETE_FILE), 'a').close()
             docktask = D3RTask(temp_dir, params)
             docktask.set_name('foo')
             docktask.set_stage(EvaluationTaskFactory.DOCKSTAGE)
@@ -522,6 +565,10 @@ class TestEvaluation(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
+            blasttask = BlastNFilterTask(temp_dir, params)
+            blasttask.create_dir()
+            open(os.path.join(blasttask.get_dir(),
+                              D3RTask.COMPLETE_FILE), 'a').close()
             params.evaluation = 'true'
             docktask = D3RTask(temp_dir, params)
             docktask.set_name('foo')
@@ -547,6 +594,12 @@ class TestEvaluation(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
+
+            blasttask = BlastNFilterTask(temp_dir, params)
+            blasttask.create_dir()
+            open(os.path.join(blasttask.get_dir(),
+                              D3RTask.COMPLETE_FILE), 'a').close()
+
             params.evaluation = 'false'
             params.pdbdb = '/data/pdb'
             docktask = D3RTask(temp_dir, params)
@@ -577,6 +630,10 @@ class TestEvaluation(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
+            blasttask = BlastNFilterTask(temp_dir, params)
+            blasttask.create_dir()
+            open(os.path.join(blasttask.get_dir(),
+                              D3RTask.COMPLETE_FILE), 'a').close()
             params.evaluation = '/bin/doesnotexist'
             params.pdbdb = '/data/pdb'
             docktask = D3RTask(temp_dir, params)
@@ -588,13 +645,11 @@ class TestEvaluation(unittest.TestCase):
             evaluation = EvaluationTask(temp_dir, 'foo.evaluation',
                                         docktask, params)
             evaluation.run()
-            self.assertEqual(evaluation.get_error(),
-                             'Caught Exception trying to run ' +
-                             '/bin/doesnotexist --pdbdb /data/pdb ' +
-                             '--dockdir ' +
-                             docktask.get_dir() + ' --outdir ' +
-                             evaluation.get_dir() +
-                             ' : [Errno 2] No such file or directory')
+            self.assertTrue('/bin/doesnotexist --pdbdb /data/pdb ' in evaluation.get_error())
+            self.assertTrue(' --dockdir ' + docktask.get_dir() in evaluation.get_error())
+            self.assertTrue(' --outdir ' + evaluation.get_dir() in evaluation.get_error())
+            self.assertTrue(' --blastnfilterdir ' + blasttask.get_dir() in evaluation.get_error())
+            self.assertTrue(' : [Errno 2] No such file or directory' in evaluation.get_error())
 
             # test files get created
             errfile = os.path.join(evaluation.get_dir(),
@@ -607,6 +662,10 @@ class TestEvaluation(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
+            blasttask = BlastNFilterTask(temp_dir, params)
+            blasttask.create_dir()
+            open(os.path.join(blasttask.get_dir(),
+                              D3RTask.COMPLETE_FILE), 'a').close()
             params.evaluation = 'true'
             params.pdbdb = '/data/pdb'
             docktask = D3RTask(temp_dir, params)
@@ -640,6 +699,10 @@ class TestEvaluation(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
+            blasttask = BlastNFilterTask(temp_dir, params)
+            blasttask.create_dir()
+            open(os.path.join(blasttask.get_dir(),
+                              D3RTask.COMPLETE_FILE), 'a').close()
             params.evaluation = 'true'
             params.evaluationtimeout = 100
             params.evaluationtimeoutkilldelay = 10
@@ -675,6 +738,10 @@ class TestEvaluation(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
+            blasttask = BlastNFilterTask(temp_dir, params)
+            blasttask.create_dir()
+            open(os.path.join(blasttask.get_dir(),
+                              D3RTask.COMPLETE_FILE), 'a').close()
             foo_script = os.path.join(temp_dir, 'foo.py')
             params.evaluation = foo_script
             params.evaluationtimeout = 1
@@ -718,6 +785,10 @@ class TestEvaluation(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
+            blasttask = BlastNFilterTask(temp_dir, params)
+            blasttask.create_dir()
+            open(os.path.join(blasttask.get_dir(),
+                              D3RTask.COMPLETE_FILE), 'a').close()
             params.evaluation = 'true'
             params.pdbdb = '/data/pdb'
             docktask = D3RTask(temp_dir, params)
@@ -766,6 +837,10 @@ class TestEvaluation(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
+            blasttask = BlastNFilterTask(temp_dir, params)
+            blasttask.create_dir()
+            open(os.path.join(blasttask.get_dir(),
+                              D3RTask.COMPLETE_FILE), 'a').close()
             task = EvaluationTask(temp_dir, 'foo', None, params)
             # test where no RMSD.txt file is found
             val = task.get_evaluation_summary()
@@ -800,6 +875,10 @@ class TestEvaluation(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
+            blasttask = BlastNFilterTask(temp_dir, params)
+            blasttask.create_dir()
+            open(os.path.join(blasttask.get_dir(),
+                              D3RTask.COMPLETE_FILE), 'a').close()
             dtask = D3RTask('/foo', params)
             dtask.set_name('foo')
             task = EvaluationTask(temp_dir, dtask.get_name(), dtask, params)

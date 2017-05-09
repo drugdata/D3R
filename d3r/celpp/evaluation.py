@@ -7,6 +7,7 @@ from d3r.celpp.task import D3RTask
 from d3r.celpp.task import D3RParameters
 from d3r.celpp.proteinligprep import ProteinLigPrepTask
 from d3r.celpp.dataimport import DataImportTask
+from d3r.celpp.blastnfilter import BlastNFilterTask
 from d3r.celpp.participant import ParticipantDatabaseFromCSVFactory
 from d3r.celpp import util
 from d3r.celpp.task import SmtpEmailer
@@ -507,6 +508,17 @@ class EvaluationTask(D3RTask):
                            self._docktask.get_status() + ' status')
             return False
 
+        # check blast
+        blastnfilter = BlastNFilterTask(self._path, self._args)
+        blastnfilter.update_status_from_filesystem()
+        if blastnfilter.get_status() != D3RTask.COMPLETE_STATUS:
+            logger.info('Cannot run ' + self.get_name() + 'task ' +
+                        'because ' + blastnfilter.get_name() + 'task' +
+                        'has a status of ' + blastnfilter.get_status())
+            self.set_error(blastnfilter.get_name() + ' task has ' +
+                           blastnfilter.get_status() + ' status')
+            return False
+
         # check this task is not complete and does not exist
 
         self.update_status_from_filesystem()
@@ -572,6 +584,7 @@ class EvaluationTask(D3RTask):
         except AttributeError:
             killdelay = 60
 
+        blastnfilter = BlastNFilterTask(self._path, self._args)
         #
         # --pdbdb <path to pdb.extracted> --dockdir <stage.4.glide> \
         # --outdir <path to stage.5.glide.evaluation>
@@ -579,6 +592,8 @@ class EvaluationTask(D3RTask):
         cmd_to_run = (self.get_args().evaluation + ' --pdbdb ' +
                       self.get_args().pdbdb + ' --dockdir ' +
                       self._docktask.get_dir() +
+                      ' --blastnfilterdir ' +
+                      blastnfilter.get_dir() +
                       ' --outdir ' + self.get_dir())
 
         eval_name = os.path.basename(self.get_args().evaluation)

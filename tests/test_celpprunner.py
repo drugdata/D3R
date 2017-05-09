@@ -406,6 +406,10 @@ class TestCelppRunner(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
+            blasttask = BlastNFilterTask(temp_dir, params)
+            blasttask.create_dir()
+            open(os.path.join(blasttask.get_dir(),
+                              D3RTask.COMPLETE_FILE), 'a').close()
             params.latest_weekly = temp_dir
             glidedir = os.path.join(temp_dir,
                                     EvaluationTaskFactory.DOCKSTAGE_PREFIX +
@@ -423,6 +427,10 @@ class TestCelppRunner(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
+            blasttask = BlastNFilterTask(temp_dir, params)
+            blasttask.create_dir()
+            open(os.path.join(blasttask.get_dir(),
+                              D3RTask.COMPLETE_FILE), 'a').close()
             params.latest_weekly = temp_dir
             glidedir = os.path.join(temp_dir,
                                     EvaluationTaskFactory.DOCKSTAGE_PREFIX +
