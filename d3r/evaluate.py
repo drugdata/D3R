@@ -1,562 +1,630 @@
 #!/usr/bin/env python
-
-import commands
+__author__ = 'sliu'
 import os
-import glob
-import logging
+from Bio import PDB
+import copy
+import commands
 import time
 from openeye.oechem import *
+import glob
+import re
 import pickle
 import numpy
-import re
-
-logger = logging.getLogger()
-logging.basicConfig( format  = '%(asctime)s: %(message)s', datefmt = '%m/%d/%y %I:%M:%S', filename = 'final.log', filemode = 'w', level   = logging.INFO )
 
 
-schrodingerScriptText = '''
-import schrodinger.structutils.transform as ssut
-import schrodinger.structure as ss
-import numpy as np
-import sys
-if len(sys.argv) != 4:
-    print "Usage: python temp.py inputmol outputmol rotationmatrix"
-inFile = sys.argv[1]
-outFile = sys.argv[2]
-matrixFile = sys.argv[3]
-rotMat = np.genfromtxt(matrixFile, skip_header=1)
-#rotMat = np.concatenate((rotMat.T, np.zeros((1,4))))
-rotMat = np.concatenate((rotMat, np.zeros((4,1))), axis=1)
-rotMat[0,3] = rotMat[3,0]
-rotMat[1,3] = rotMat[3,1]
-rotMat[2,3] = rotMat[3,2]
-#print rotMat
-mol = ss.StructureReader(inFile).next()
-ssut.transform_structure(mol, rotMat)
-writer = ss.StructureWriter(outFile)
-writer.append(mol)
-writer.close()
-'''
+def calculate_rmsd(crystal_obj, docked_lig_mol, docked_receptor, docked_structure_type):
+    docked_obj = docked(docked_lig_mol, docked_receptor, docked_structure_type, crystal_obj)
+    docked_obj.create_complex()
+    docked_obj.align_complex_onto_crystal(check_point_number = 10)
+    docked_obj.calculate_rmsd_and_distance()
+    return docked_obj
 
+def create_crystal_obj (crystal_file, ligand_name, crystal_id):
+    crystal_obj = crystal(crystal_file, ligand_name, crystal_id)
+    crystal_obj.get_ligand_info()
+    crystal_obj.get_ligand_and_receptor_files()
+    return crystal_obj
 
-def merge_two_pdb (receptor, ligand, complex_pdb):
-    complex_lines = []
-    f1 = open(receptor, "r")
-    protein_lines = f1.readlines()
-    f1.close()
-    for p_line in protein_lines:
-        if p_line [:6] not in ["CONECT", "ENDMDL", "END   "]:
-            complex_lines.append(p_line)
-    complex_lines.append("TER   \n")
-    f2 = open(ligand, "r")
-    ligand_lines = f2.readlines()
-    f2.close()
-    for l_line in ligand_lines:
-        if l_line [:6] not in ["REMARK", "MODEL ", "CONECT", "ENDMDL", "END   "]:
-            complex_lines.append(l_line) 
-    f3 = open(complex_pdb, "w")
-    f3.writelines(complex_lines)
-    f3.close()
+def get_submitted_file_list (file_pattern_name = "docked.mol"):
+    all_mol_files = glob.glob("*%s"%file_pattern_name)
+    all_receptor_files = []
+    if all_mol_files:
+        for mol_file in all_mol_files:
+            receptor_file = mol_file.replace('.mol','.pdb')
+            all_receptor_files.append(receptor_file)
+    return (all_mol_files, all_receptor_files)
 
-def heavy_atom (mol):
-#check the heavy atom numbers
-    heavy_atom_numbers = 0
-    for atom in mol.GetAtoms():
-        if not atom.IsHydrogen():
-            heavy_atom_numbers += 1
-    return heavy_atom_numbers
+def extract_crystal_file (crystal_pdbid, crystal_path):
+    crystal_middle_name = crystal_pdbid[1:3]
+    crystal_ent_file = "pdb" + crystal_pdbid + ".ent"
+    crystal_pdbloc = os.path.join(crystal_path, crystal_middle_name, crystal_ent_file)
+    if os.path.isfile(crystal_pdbloc):
+        return crystal_pdbloc
+    else:
+        return False
 
-def mcs(ref_mol, fit_mol, ref_ignore = [], fit_ignore = []):
-#do the mcs search and return OEMatch object.
-    #count heavy atoms 
-    ref_mol_heavy_atoms = heavy_atom(ref_mol)
-    fit_mol_heavy_atoms = heavy_atom(fit_mol)
+def get_distance (pos1, pos2):
+    _dist_0 = float(pos1.split(",")[0])-float(pos2.split(",")[0])
+    _dist_1 = float(pos1.split(",")[1])-float(pos2.split(",")[1])
+    _dist_2 = float(pos1.split(",")[2])-float(pos2.split(",")[2])
+    return (_dist_0**2 + _dist_1**2 + _dist_2**2)**0.5
+
+def get_center(ligand_pdb):
+    xyz_lines = open(ligand_pdb,"r").readlines()
+    multi_ligand = False
+    atom_list = []
+    x = y = z = 0
+    for xyz_line in xyz_lines:
+        if "HETATM" in xyz_line:
+            #logging.debug("Check the get center of this protein: %s for this ligand: %s"%(protein_file, ligname))                                                                                                               
+            atom_name = xyz_line[12:16]
+            if atom_name in atom_list:
+                multi_ligand = True
+            else:
+                atom_list.append(atom_name)
+                try:
+                    x += float(xyz_line[30:38])
+                    y+= float(xyz_line[38:46])
+                    z+= float(xyz_line[46:54])                                  
+                except:                                                         
+                    logging.debug("Fatal error: Cannot find the XYZ coordinate for this ligand:%s"%ligand_pdb)
+                    return False                                                
+    if not multi_ligand:                                                        
+        lig_center = "%8.3f, %8.3f, %8.3f"%(x/len(atom_list), y/len(atom_list), z/len(atom_list))
+        logging.debug("Ligand center for this case:%s is %s"%(ligand_pdb, lig_center))        
+        return lig_center                                                       
+    else:                                                                       
+        logging.debug("Fatal error: Found multiple ligands in file:%s"%ligand_pdb)
+
+def extract_ligand_name(blastnfilter_result_txt):
+    #extract the ligand name from blastnfilter result
+    result_txt = open(blastnfilter_result_txt, "r")
+    result_lines = result_txt.readlines()
+    for result_line in result_lines:
+        if "ligand," in result_line:
+            ligand_name = result_line.split(",")[1].split("\n")[0].strip()
+    return ligand_name
+
+def mcs(ref_mol, fit_mol):
+    #do the mcs search and return OEMatch object.
     #ignore Hydrogen 
     OESuppressHydrogens(fit_mol)
     OESuppressHydrogens(ref_mol)
     #set atom and bond expression                                       
-    atomexpr = OEExprOpts_AtomicNumber                                  
-    bondexpr = 0                                                        
-    #do the mcs search, using defined atom, bond expression options, and make sure using the small molecule as reference mol
-    if not ref_mol_heavy_atoms > fit_mol_heavy_atoms:                   
-        mcss = OEMCSSearch( ref_mol, atomexpr, bondexpr, True)          
-    else:                                                               
-        mcss = OEMCSSearch( fit_mol, atomexpr, bondexpr, True)          
-    mcss.SetMCSFunc(OEMCSMaxAtomsCompleteCycles(1.5) )                  
+    atomexpr = OEExprOpts_AtomicNumber
+    bondexpr = 0
+    #do the mcs search, using defined atom, bond expression options 
+    mcss = OEMCSSearch( ref_mol, atomexpr, bondexpr, True)
+    mcss.SetMCSFunc(OEMCSMaxAtomsCompleteCycles(1.5) )
     #create a new match object to store mcs search info.                
-    new_match_list = []                                                 
-    new_match_dic  = {}                                                 
-    i = 0                                                               
-    j = 0                                                               
-    for match1 in mcss.Match(ref_mol):                                  
-        i += 1                                                          
+    new_match_list = []
+    new_match_dic  = {}
+    i = 0
+    j = 0
+    for match1 in mcss.Match(ref_mol):                                      
+        i += 1                                                              
         #write out match1 molecule                                      
-        mol1 = OEGraphMol()  
-        OESubsetMol(mol1,match1, True)                                  
-        match1_heavy_atom = heavy_atom(mol1)                            
-        ofs1 = oemolostream("match1_%s.pdb"%i)                          
-        OEWriteMolecule(ofs1, mol1)                                     
-        ofs1.close()                                                    
-        for match2 in mcss.Match(fit_mol):                              
-            j += 1                                                      
-            check_list = []                                             
-            #write out match2 molecule                                  
-            new_match = OEMatch()                                       
-            mol2 = OEGraphMol()                                         
-            OESubsetMol(mol2,match2, True)                              
-            match2_heavy_atom = heavy_atom(mol2)
-            ofs2 = oemolostream("match2_%s.pdb"%j)                      
-            OEWriteMolecule(ofs2, mol2)                                 
-            ofs2.close()                                                
-            if match1_heavy_atom != match2_heavy_atom:                  
-                print "WARNING: match1_%s.pdb and match2_%s.pdb have different heavy atoms, need to check..."%(i,j)
-            for mp1, mp2 in zip(match1.GetAtoms(), match2.GetAtoms()):  
-                ref_name = mp1.target.GetName().strip()                 
-                fit_name = mp2.target.GetName().strip()                 
-                if (ref_name not in ref_ignore) and (fit_name not in fit_ignore ) :   
-                    new_match.AddPair (mp1.target, mp2.target)          
-                else:                                                   
-                    print "             Deleted atom pair", mp1.target.GetName(), mp2.target.GetName()
-            new_match_list.append(new_match)                            
+        mol1 = OEGraphMol()
+        OESubsetMol(mol1,match1, True)                                      
+        ofs1 = oemolostream("match1_%s.pdb"%i)                              
+        OEWriteMolecule(ofs1, mol1)                                         
+        ofs1.close()                                                        
+        for match2 in mcss.Match(fit_mol):                                  
+            j += 1                                                          
+            check_list = []                                                 
+            #write out match2 molecule                                      
+            new_match = OEMatch()                                           
+            mol2 = OEGraphMol()                                             
+            OESubsetMol(mol2,match2, True)                                  
+            ofs2 = oemolostream("match2_%s.pdb"%j)
+            OEWriteMolecule(ofs2, mol2)                                     
+            ofs2.close()                                                    
+            for mp1, mp2 in zip(match1.GetAtoms(), match2.GetAtoms()):      
+                ref_name = mp1.target.GetName().strip()                     
+                fit_name = mp2.target.GetName().strip()                     
+                new_match.AddPair (mp1.target, mp2.target)                  
+            #store the match info
+            new_match_list.append(new_match)                                
             new_match_dic[new_match] = (["match1_%s_vs_match2_%s"%(i,j), check_list ])
-    return new_match_dic 
+    return new_match_dic
 
-def is_number(s):
-    try:
-        float(s)
-        return True
-    except ValueError:
-        return False
-
-def add_symbol (pdb_file):
-    # check the file format, if it is pdb file then do the add.
-    if os.path.splitext(pdb_file)[-1] == ".pdb":
-        f = open(pdb_file, "r")
-        lines = f.readlines()
-        new_lines = []
-        for line in lines:
-            #lines with atom informations  
-            if "ATOM" or "HETATM" in line.split()[0]:
-                if is_number(line.split()[-1]) and is_number(line.split()[-2]):
-                    #ensure the end has no atom symbol, which means the end is number. Also ensure the end is not charge. 
-                    atom_name = line.split()[2]
-                    #remove numbers in atom name.                       
-                    atom_symbol = ''.join(i for i in atom_name if not i.isdigit())     
-                    #add whitespace because of the requirment of the pdb format       
-                    lenth_symbol = "          " + "%s"%atom_symbol      
-                    new_line = line.split("\n")[0].strip()+ lenth_symbol + "\n"       
-                    new_lines.append(new_line)                          
-                else:                                                   
-                    new_lines.append(line)                              
-            else:                                                       
-                new_lines.append(line)                                  
-        file_name, file_extension = os.path.splitext(pdb_file)          
-        out_file = file_name + "_new_atom_symbol" + file_extension      
-        f2 = open(out_file,"w")                                         
-        f2.writelines(new_lines)
-        return out_file                                                 
-    else:                                                               
-        #if the format is not pdb then return original                  
-        return pdb_file
-
-def main_rmsd(ref_struc, fit_struc):
+def rmsd_mcss(ref_struc, fit_struc):
+    #This function use the openeye mcss calculation to get the atom mapping first and then calculate RMSD, if multiple atom mapping is avaiable, the lowest RMSM will be returned 
     reffs = oemolistream()
-    reffs.open(add_symbol(ref_struc))
-    fitfs = oemolistream() 
-    fitfs.open(add_symbol(fit_struc))
+    reffs.open(ref_struc)
+    fitfs = oemolistream()
+    fitfs.open(fit_struc)
     refmol = OEGraphMol()
     OEReadMolecule(reffs, refmol)
     for fitmol in fitfs.GetOEGraphMols():
-        rmsd  = OERMSD(refmol, fitmol)
-        rot  = OEDoubleArray(9)
-        trans = OEDoubleArray(3)
-        automorph = True
-        heavyOnly = True
-        overlay = True
-        rmsd  = OERMSD(refmol, fitmol, automorph, heavyOnly, overlay, rot, trans)
+        #get all possible matching 
         ss = mcs(refmol, fitmol,)
         mcss_rmsd_list = []
         match_info = []
         for mcss in ss.keys():
-            #mcss_rmsd = OERMSD(refmol, fitmol, mcss, overlay, rot, trans)
+            #calculate the RMSD based on atom mapping
             mcss_rmsd = OERMSD(refmol, fitmol, mcss)
             mcss_rmsd_list.append(mcss_rmsd)
             match_info.append(ss[mcss])
-        for filename in glob.glob('*_new_atom_symbol.pdb'):             
-            os.remove(filename) 
-        SMCSS_number_index = mcss_rmsd_list.index(min(mcss_rmsd_list))
-        biggest_number_index = mcss_rmsd_list.index(max(mcss_rmsd_list))
-    return min(mcss_rmsd_list)
+    try:
+        minimum_mcss = min(mcss_rmsd_list)
+        return minimum_mcss
+    except:
+        return False
+
+def align_protein (template_complex, input_complex, output_complex):
+    #use schrodinger binding site alignment to get the aligned structure
+    try:
+        running_dir = os.getcwd()
+        target_dir = os.path.dirname(os.path.abspath(output_complex))
+        output_complex_filename = os.path.basename(output_complex)
+        #change to the target dir since the align binding site only allow to run locally
+        os.chdir(target_dir)
+        commands.getoutput("$SCHRODINGER/utilities/align_binding_sites %s %s -o %s"%(template_complex, input_complex, output_complex_filename))
+        os.chdir(running_dir)
+    except Exception as ex:
+        logging.exception("Could not align the protein %s onto template %s"%(input_complex, template_complex))
 
 
-def old_structure_align(template_pro, target_pro):
-    commands.getoutput("$SCHRODINGER/utilities/structalign %s %s"%(template_pro, target_pro))
-    out_rot_target_pro = "rot-" + target_pro
-    if os.path.isfile(out_rot_target_pro):
-        return out_rot_target_pro
-    else:
-        logging.info("Could not algin %s onto %s"%(target_pro,template_pro))
+def extract_ligand_from_complex (complex_pdb_file, ligand_pdb_file, ligand_info = "UNK-900"):
+    #here the default ligand info is from schrodinger structure convert default ligand name. 
+    complex_file = open(complex_pdb_file, "r")
+    complex_lines = complex_file.readlines()
+    complex_file.close()
+    ligid = ligand_info.split("-")
+    ligand_lines = []
+    for complex_line in complex_lines:
+        if (complex_line[17:20].strip()==ligid[0] and complex_line[22:26].strip()==ligid[1]):
+            ligand_lines.append(complex_line)
+    ligand_file = open(ligand_pdb_file, "w")
+    ligand_file.writelines(ligand_lines)
+    ligand_file.close()
 
-def structure_align(prefix, actual_xtal_pdb, receptor_in, ligand_in):
-    receptor_mae = 'rot_%s_receptor1.mae' %(prefix)
-    receptor_out = 'rot_%s' %(receptor_in)
-    ligand_out = 'rot_%s' %(ligand_in)
-    #matrixFile = receptor_in.replace('.pdb','.rot')
-    matrixFile = 'temp_receptor.rot'
-    with open('temp.py','wb') as of:
-        of.write(schrodingerScriptText)
-    
-    
-    ## On the old version of maestro/structalign that's on nif1, we can't get the rotation matrix by aligning two pdbs. Until it gets updated, I'll convert a copy to mae and get the rotation matrix by aligning that.
-    
-    cmd0 = '$SCHRODINGER/utilities/structconvert -ipdb %s -omae temp_xtal.mae >& %s-0-convertXtalPdbToMae' %(actual_xtal_pdb, prefix)
-    commands.getoutput(cmd0)
-    cmd0point5 = '$SCHRODINGER/utilities/structconvert -ipdb %s -omae temp_receptor.mae >& %s-0.5-convertCanPdbToMae' %(receptor_in, prefix)
-    commands.getoutput(cmd0point5)
-    
-    ## NOTE! the default rotation matrix output by structalign only has 3 decimal places. This might make a difference. 
-    ## To fix it, make a copy of $SCHRODINGER/mmshare-v<whatever>/bin/Linux-x86_64/structalign_utility.py in which the %.3f's in the mat.write lines are replaced with %.5f's.
-    #cmd1 = '$SCHRODINGER/utilities/structalign -matrix %s %s >& %s_structAlignOut' %(actual_xtal_pdb, receptor_in, prefix)
-    cmd1 = '$SCHRODINGER/utilities/structalign -matrix temp_xtal.mae temp_receptor.mae >& %s-1-alignMatrixGenOut' %(prefix)
-    commands.getoutput(cmd1)
-    
-    cmd2 = '$SCHRODINGER/utilities/python temp.py %s %s %s >& %s-2-receptorAlignOut' %(receptor_in, receptor_mae, matrixFile, prefix)
-    commands.getoutput(cmd2)
-    
-    cmd3 = '$SCHRODINGER/utilities/python temp.py %s %s %s >& %s-3-ligandAlignOut' %(ligand_in, ligand_out, matrixFile, prefix)
-    commands.getoutput(cmd3)
-    
-    cmd4 = '$SCHRODINGER/utilities/structconvert -imae %s -opdb %s >& %s-4-structConvertOut' %(receptor_mae, receptor_out, prefix)
-    commands.getoutput(cmd4)
-    
-    return receptor_out, ligand_out
-
-def make_complex_pdb(receptor_pdb, ligand_mol, complex_pdb):
-    ## First, convert the ligand to pdb
-    ligand_pdb = ligand_mol.replace('.mol','_lig.pdb')
-    commands.getoutput('babel -imol %s -opdb %s' %(ligand_mol, ligand_pdb))
-    ## Now combine the ligand and receptor pdbs
-    commands.getoutput('babel --join -ipdb %s -ipdb %s -opdb %s' %(receptor_pdb, ligand_pdb, complex_pdb))
-    return ligand_pdb, complex_pdb
- 
-
-def layout_result (pickle_file, out_file, outformat = "txt"):
-    data = []
-    p_file = open(pickle_file,"r")
-    score_dic = pickle.load(p_file)
-    p_file.close()
-    if outformat == "csv":
-        data = ["%-20s%-10s, %-10s, %-10s, %-10s, %-10s \n"%("Target_PDBID,", "LMCSS", "SMCSS", "hiResApo", "hiResHolo", "hiTanimoto")]
-    elif outformat =="txt":
-        data = ["%-20s%-10s%-10s%-10s%-10s%-10s \n"%("Target_PDBID", "LMCSS", "SMCSS", "hiResApo", "hiResHolo", "hiTanimoto")]
-    #add hiTanimoto 0909 sliu
-    all_pro_type = ["LMCSS", "SMCSS", "hiResApo", "hiResHolo", "hiTanimoto"]
-    LMCSS_list =  []
-    SMCSS_list = []
-    hiResApo_list = []
-    hiResHolo_list = []
-    hiTanimoto_list = []
-    abnormal_dic = {}
-    total_pdb = 0
-    for pdbid in score_dic:
-        for pro_type in all_pro_type:
-            if pro_type in score_dic[pdbid]:
-                if pro_type == "LMCSS":
-                    LMCSS_list.append(score_dic[pdbid][pro_type])
-                    if float(score_dic[pdbid][pro_type]) > 8.0:
-                        abnormal_dic[pdbid] = score_dic[pdbid][pro_type]
-                if pro_type == "SMCSS":
-                    SMCSS_list.append(score_dic[pdbid][pro_type])
-                if pro_type == "hiResApo":
-                    hiResApo_list.append(score_dic[pdbid][pro_type]) 
-                if pro_type == "hiResHolo":
-                    hiResHolo_list.append(score_dic[pdbid][pro_type])
-                if pro_type == "hiTanimoto":
-                    hiTanimoto_list.append(score_dic[pdbid][pro_type])
-        total_pdb += 1
-    if outformat == "csv":
-        data.append("%-20s%-10s, %-10s, %-10s, %-10s, %-10s, \n"%("Number_of_cases,", len(LMCSS_list), len(SMCSS_list), len(hiResApo_list), len(hiResHolo_list), len(hiTanimoto_list)))
-    elif outformat == "txt":
-        data.append("%-20s%-10s%-10s%-10s%-10s%-10s\n"%("Number_of_cases", len(LMCSS_list), len(SMCSS_list), len(hiResApo_list), len(hiResHolo_list), len(hiTanimoto_list)))
-    
-    whole_list = (LMCSS_list, SMCSS_list, hiResApo_list, hiResHolo_list, hiTanimoto_list)
-    if outformat == "csv":
-        average_line, max_line, min_line = ("%-20s"%"Average,", "%-20s"%"Maximum,", "%-20s"%"Minimum,")
-    elif outformat == "txt":
-        average_line, max_line, min_line = ("%-20s"%"Average", "%-20s"%"Maximum", "%-20s"%"Minimum")
-    for index, this_list in enumerate (whole_list):
-        if len(this_list) == 0:
-            if outformat == "csv":
-                average_line += "%-10s, "%(" ")
-                min_line += "%-10s, "%(" ")
-                max_line += "%-10s, "%(" ")
-            elif outformat == "txt":
-                average_line += "%-10s"%(" ")
-                min_line += "%-10s"%(" ")
-                max_line += "%-10s"%(" ")
+def wait_and_check (filename, timestep = 5, how_many_times = 100):
+    #add some relaxing time
+    count = 0
+    while (count < how_many_times):
+        if not os.path.isfile(filename):
+            time.sleep(timestep)
+            count = count + 1
         else:
-            if outformat == "csv":
-                average_line += "%-10.3f, "%(numpy.average(this_list))
-                min_line += "%-10.3f, "%(min(this_list))
-                max_line += "%-10.3f, "%(max(this_list))
-            if outformat == "txt":
-                average_line += "%-10.3f"%(numpy.average(this_list))
-                min_line += "%-10.3f"%(min(this_list))
-                max_line += "%-10.3f"%(max(this_list))
-    average_line += "\n" 
-    max_line += "\n"
-    min_line += "\n"
-    data.append(average_line)
-    data.append(min_line)
-    data.append(max_line)
-       
-    #add main score lines 
-    for pdbid in score_dic:
-        new_line_score = ""
-        valid_line = False
-        for pro_type in all_pro_type:
-            if pro_type in score_dic[pdbid]:
-                if outformat == "csv":
-                    new_line_score += "%-10.3f, "%score_dic[pdbid][pro_type] 
-                if outformat == "txt":
-                    new_line_score += "%-10.3f"%score_dic[pdbid][pro_type] 
-                valid_line = True
-            else:
-                if outformat == "csv":
-                    new_line_score += "%-10s, "%(" ")
-                if outformat == "txt":
-                    new_line_score += "%-10s"%(" ")
-        if valid_line:
-            if outformat == "csv":
-                pdbid_full = "%s,"%pdbid
-            if outformat == "txt":
-                pdbid_full = "%s"%pdbid
-            new_line = "%-20s"%(pdbid_full)
-            new_line += new_line_score
-            new_line += "\n" 
-            data.append(new_line)
-    #data.append("=====Total number of target protein: %s =====\n"%total_pdb)
-    #append total number of valid pdb for each type 
-    #data.append("%-20s%-10s, %-10s, %-10s, %-10s, %-10s, \n"%("Valid_cases,", len(LMCSS_list), len(SMCSS_list), len(hiResApo_list), len(hiResHolo_list), len(hiTanimoto_list)))
-    #data.append("%-20s%-10.3f, %-10.3f, %-10.3f, %-10.3f, %-10.3f, \n"%("Average,", numpy.average(LMCSS_list), numpy.average(SMCSS_list), numpy.average(hiResApo_list), numpy.average(hiResHolo_list), numpy.average(hiTanimoto_list)))
-    #data.append("=====Abnormal RMSDs (LMCSS cases where the RMSD > 8.0)=====\n")
-    #for abnormal_id in abnormal_dic:
-    #    abnormal_id_full = "\"%s\","%abnormal_id
-    #    data.append("%-20s%-10.3f, \n"%(abnormal_id_full, abnormal_dic[abnormal_id]))
-    out_txt = open(out_file, "w")
-    out_txt.writelines(data)
-    out_txt.close()  
-     
+            return True
+    return False
 
-def main_score (dock_dir, pdb_protein_path, evaluate_dir, update= True):
-    pickle_file_name = "RMSD.pickle"
-    pickle_out = open (pickle_file_name, "w")
-    score_dic = {}
+def merge_two_pdb (receptor, ligand, complex_pdb):
+    try:
+        complex_lines = []
+        f1 = open(receptor, "r")
+        protein_lines = f1.readlines()
+        f1.close()
+        for p_line in protein_lines:
+            if p_line [:6] not in ["CONECT", "ENDMDL" ] and p_line [:3] not in ["END"]:
+                complex_lines.append(p_line)
+        complex_lines.append("TER   \n")
+        f2 = open(ligand, "r")
+        ligand_lines = f2.readlines()
+        f2.close()
+        for l_line in ligand_lines:                               
+            if l_line [:6] not in ["REMARK", "MODEL ", "CONECT", "ENDMDL"] and l_line not in ["END"]:
+                complex_lines.append(l_line)
+        f3 = open(complex_pdb, "w")
+        f3.writelines(complex_lines)
+        f3.close()
+        return True
+    except Exception as ex:
+        logging.exception("The receptor %s and ligand %s cannot be merged into complex %s"%(receptor, ligand, complex_pdb))
+        return False
+
+
+def convert_ligand_format (input_ligand, output_ligand):
+    try:
+        commands.getoutput("$SCHRODINGER/utilities/structconvert %s %s"%(input_ligand, output_ligand))
+        return True
+    except Exception as ex:
+        logging.exception("This ligand %s cannot be convertted to %s, need to check the format"%(input_ligand, output_ligand))
+        return False
+
+def generate_ligand_and_receptor(complex_filename,ligand_filename, receptor_filename, ligand_info):
+    complex_f = open(complex_filename, "r")
+    complex_lines = complex_f.readlines()
+    complex_f.close()
+    ligand_lines = []
+    receptor_lines = []
+    logging.info("we are try to generate the ligand and receptor the ligand info is :%s"%ligand_info)
+    for line in complex_lines:
+        if 'ATOM' in line[:4] or 'HETATM' in line[:6]:
+            ligand_name = line[17:20].strip()
+            ligand_chain = line[20:22].strip()
+            ligand_resnum = line[22:26].strip()
+            logging.debug("The ligand info for the atom in the complex is %s-%s-%s"%(ligand_name, ligand_resnum, ligand_chain))
+            if "%s-%s-%s"%(ligand_name, ligand_resnum, ligand_chain)  == ligand_info:
+                logging.debug("find a ligand which fits the ligand info")
+                ligand_lines.append(line)
+                #receptor will have the target ligand 
+                receptor_lines.append(line)
+            else:
+                #if not "%s-%s-%s"%(ligand_name, ligand_resnum, ligand_chain) in rest_ligand_info:
+                if not 'HETATM' in line[:6]:
+                    #receptor will append all atoms except the other ligand
+                    receptor_lines.append(line)
+                else:
+                    pass
+    receptor_f = open(receptor_filename, "w")
+    receptor_f.writelines(receptor_lines)
+    receptor_f.close()
+    ligand_f = open(ligand_filename, "w")
+    ligand_f.writelines(ligand_lines)
+    ligand_f.close()
+
+#create the crystal structure class
+#input the ligand ID, get all structure from crystal file
+
+class crystal (object):
+    def __init__(self, crystal_file, ligand_name, pdbid):
+        self._crystal = crystal_file
+        self._ligand_name = ligand_name
+        self._crystal_path = os.path.dirname(self._crystal)
+        self._crystal_name = os.path.basename(self._crystal)
+        parser = PDB.PDBParser()
+        writer = PDB.PDBIO()
+        self._biostruc = parser.get_structure (pdbid, crystal_file) 
+        logging.info("+++Initiallize the crystal class for crystal file %s+++"%(crystal_file))
+    def get_ligand_info (self):
+        #extract the target ligand information
+        self._ligand_residue_info = []
+        for _model in self._biostruc:
+            for _chain in _model:
+                for _residue in _chain:   
+                    _residue_ligand_name = _residue.get_resname()
+                    if _residue_ligand_name == self._ligand_name: 
+                        _residue_info = "%s-%s-%s"%(_residue.get_resname(), _residue.get_id()[1], _chain.get_id())
+                        if _residue_info not in self._ligand_residue_info:
+                            self._ligand_residue_info.append(_residue_info)
+                            logging.info("Get the residue info :%s"%_residue_info)
+                        else:
+                            logging.info("Got multiple ligand with the same residue info %s"%_residue_info)
+                            pass
+                    else:
+                        pass
+    def get_ligand_and_receptor_files(self):
+        #get the ligand pdb file and receptor file per ligand 
+        self._ligand = []
+        self._receptor = []
+        self._valid_ligand_info = []
+        if len(self._ligand_residue_info) > 0:
+            for _ligand_residue_info in self._ligand_residue_info:
+                ###_temp_rest_ligand_residue_info = copy.deepcopy(self._ligand_residue_info)
+                #get the ligand info for the rest of the ligand other than the target ligand and remove all of those ligand when generate the receptor
+                ###_temp_rest_ligand_residue_info.remove(_ligand_residue_info)
+                ###logging.debug("Check the rest ligand info list %s"%_temp_rest_ligand_residue_info)
+                _crystal_filename, _crystal_file_extension = os.path.splitext(self._crystal_name)
+                _ligand_filename = _crystal_filename + "_" + _ligand_residue_info + "_" + "ligand" + _crystal_file_extension
+                _receptor_filename = _crystal_filename + "_" + _ligand_residue_info + "_" + "receptor" + _crystal_file_extension  
+                #store the ligand and receptor at the same path folder as the crystal path
+                _ligand_file_full_path = os.path.join(self._crystal_path, _ligand_filename)
+                _receptord_file_full_path = os.path.join(self._crystal_path, _receptor_filename)
+                try:
+                    ###generate_ligand_and_receptor (self._crystal, _ligand_file_full_path, _receptord_file_full_path, _ligand_residue_info, _temp_rest_ligand_residue_info)
+                    generate_ligand_and_receptor (self._crystal, _ligand_file_full_path, _receptord_file_full_path, _ligand_residue_info )
+                    logging.info("Generating the ligand %s and receptor %s "%(_ligand_file_full_path, _receptord_file_full_path))
+                    self._ligand.append(_ligand_file_full_path)
+                    self._receptor.append(_receptord_file_full_path)
+                    self._valid_ligand_info.append(_ligand_residue_info)
+                except Exception as ex:
+                    logging.exception("Failed to generate the ligand and receptor")
+                    pass
+        else:
+            logging.info("There is no valid ligand in the crystal file, pass the ligand and receptor extraction step") 
+            pass
+
+
+def get_all_docked_type(score_dic, docked_type = "LMCSS"):
+    #from a score dic like score_dic[target_ID][docked_type]
+    #get all docked_type value list for all target ID
+    docked_type_value = []
+    if score_dic:
+        for target_ID in score_dic:
+            if docked_type in score_dic[target_ID]:
+                docked_type_value.append(score_dic[target_ID][docked_type])
+    return docked_type_value
+def calculate_average_min_max_medium(list_of_value):
+    if list_of_value:
+        average = "%-15.3f, "%numpy.average(list_of_value)                                                               
+        minimum = "%-15.3f, "%min(list_of_value)                                                                         
+        maximum = "%-15.3f, "%max(list_of_value)                                                                         
+        medium  = "%-15.3f, "%numpy.median(list_of_value)                                                                
+    else:                                                                                                                
+        average  = minimum  = maximum = medium = "%-15s, "%(" ")                                                         
+    return average ,minimum , maximum, medium 
+
+class docked (object):
+    #need to name the title as LMCSS, SMCSS etc
+    #1, merge ligand and receptor
+    #2, align the complex onto the crystal receptor
+    #3, calculate the RMSD for each aligned ligand 
+    def __init__(self, docked_ligand_filename, docked_receptor_filename, docked_category, crystal_obj):
+        #load the ligand file
+        self._docked_type = docked_category
+        self._docked_ligand_mol = docked_ligand_filename
+        self._docked_ligand_mol_path = os.path.dirname(self._docked_ligand_mol)
+        self._docked_ligand_mol_name = os.path.basename(self._docked_ligand_mol)
+        self._docked_ligand_mol_basename, self._docked_ligand_mol_extension = os.path.splitext(self._docked_ligand_mol_name)
+        #load the receptor file
+        self._docked_receptor_pdb = docked_receptor_filename
+        self._docked_receptor_pdb_path = os.path.dirname(self._docked_receptor_pdb)
+        self._docked_receptor_pdb_name = os.path.basename(self._docked_receptor_pdb)
+        self._docked_receptor_pdb_basename, self._docked_receptor_pdb_extension = os.path.splitext(self._docked_receptor_pdb_name)
+        #check 1, if the path of ligand and the path of receptor are the same
+        
+        self._docked_ligand_pdb = None
+        self._crystal = crystal_obj
+        if self._docked_ligand_mol_extension != ".mol":
+            logging.info ("This docked ligand %s is not in mol file format"%self._docked_ligand_mol)
+        elif self._docked_receptor_pdb_extension != ".pdb":
+            logging.info ("This docked receptor %s is not in pdb file format"%self._docked_receptor_pdb)
+        else:
+            #convert to pdb file
+            self._docked_ligand_pdb_name = self._docked_ligand_mol_basename + "_ligand.pdb"
+            #make sure the pdb format file has the same path with the mol format file
+            self._docked_ligand_pdb = os.path.join(self._docked_ligand_mol_path, self._docked_ligand_pdb_name) 
+            #convert mol to pdb
+            if not convert_ligand_format(self._docked_ligand_mol, self._docked_ligand_pdb):
+                self._docked_ligand_pdb = None
+            
+    def create_complex (self):
+        self._docked_complex = None
+        if self._docked_ligand_pdb:
+            #merge the receptor and the ligand together
+            self._docked_complex_name = self._docked_ligand_pdb_name + "_complex.pdb"
+            self._docked_complex = os.path.join(self._docked_ligand_mol_path, self._docked_complex_name)
+            if not merge_two_pdb(self._docked_receptor_pdb, self._docked_ligand_pdb, self._docked_complex):
+                self._docked_complex = None
+    def align_complex_onto_crystal (self, time_check_frequence = 5, check_point_number = 100, sc_ligand_default = "UNK-900"):
+        self._all_aligned_complex = {} 
+        self._all_aligned_ligand = {} 
+        if self._docked_complex:
+            for _crystal_receptor_index, _crystal_receptor in enumerate(self._crystal._receptor):
+                #_crystal_ligand = self._crystal._crystal_ligand[_crystal_receptor_index]
+                _crystal_ligand_info = self._crystal._valid_ligand_info[_crystal_receptor_index]
+                logging.info("Try to align the docked ligand onto this crystal receptor:%s"%(_crystal_receptor))
+                self._aligned_complex_name = self._docked_ligand_mol_basename + "_complex_aligned" + "_" + _crystal_ligand_info + ".pdb"
+                self._aligned_ligand_name = self._docked_ligand_mol_basename + "_complex_aligned_ligand" + "_" + _crystal_ligand_info + ".pdb"
+                self._aligned_complex = os.path.join(self._docked_ligand_mol_path, self._aligned_complex_name)
+                self._aligned_ligand = os.path.join(self._docked_ligand_mol_path, self._aligned_ligand_name)
+                #do the alignment
+                logging.info("Try to align the docked complex %s onto the crystal receptor %s"%(self._docked_complex, _crystal_receptor))
+                align_protein(_crystal_receptor, self._docked_complex, self._aligned_complex )
+                if wait_and_check(self._aligned_complex, timestep = time_check_frequence, how_many_times = check_point_number):
+                    logging.info("Successfully align %s onto %s and get the aligned structure %s"%(self._docked_complex, _crystal_receptor, self._aligned_complex))
+                    self._all_aligned_complex[_crystal_ligand_info] = self._aligned_complex
+                    #extract the ligand from aligned complex
+                    try:
+                        extract_ligand_from_complex(self._aligned_complex, self._aligned_ligand, ligand_info = sc_ligand_default)
+                        logging.info("Successfully extract ligand file %s from aligned complex %s"%(self._aligned_ligand, self._aligned_complex))
+                        self._all_aligned_ligand[_crystal_ligand_info] = self._aligned_ligand
+                    except Exception as ex:
+                        logging.exception("Cannot extract ligand file %s from aligned complex %s"%(self._aligned_ligand, self._aligned_complex))
+                else:
+                    total_relaxing_time = time_check_frequence*check_point_number
+                    logging.info("The alignment from %s onto %s didn't finish in %s second... Need to break"%(self._docked_complex, _crystal_receptor, total_relaxing_time))
+    def calculate_rmsd_and_distance (self):
+        # 
+        self._rmsd_dis = {}
+        self._min_rmsd_dis = None
+        if self._all_aligned_ligand:
+            for _crystal_ligand_index, _crystal_ligand in enumerate(self._crystal._ligand):
+                _crystal_ligand_info = self._crystal._valid_ligand_info[_crystal_ligand_index]
+                if _crystal_ligand_info in self._all_aligned_ligand:
+                    _docked_ligand_aligned = self._all_aligned_ligand[_crystal_ligand_info]
+                    try:
+                        #_rmsd, _distance = rmsd_mcss (_crystal_ligand, _docked_ligand_aligned)
+                        _rmsd = rmsd_mcss (_crystal_ligand, _docked_ligand_aligned)
+                        _crystal_ligand_center = get_center(_crystal_ligand)
+                        _docked_ligand_aligned_center = get_center(_docked_ligand_aligned) 
+                        _distance = get_distance(_crystal_ligand_center, _docked_ligand_aligned_center)
+                        _all_mapping_files = glob.glob("match*.pdb")
+                        for _mapping_file in _all_mapping_files:
+                            os.remove(_mapping_file)
+                        self._rmsd_dis[_crystal_ligand_info] = (_rmsd, _distance)
+                        #logging.info("The rmsd and distance for %s vs %s is %s, %s"%(_crystal_ligand, _docked_ligand_aligned, _rmsd, _distance))
+                        logging.info("The rmsd and distance for %s vs %s is %s"%(_crystal_ligand, _docked_ligand_aligned, _rmsd))
+                    except Exception as ex:
+                        logging.exception("The rmsd calculation for %s vs %s failed"%(_crystal_ligand, _docked_ligand_aligned))
+            #get the lowest RMSD and the corresponding distance
+            if self._rmsd_dis:
+                self._min_rmsd_dis = sorted(self._rmsd_dis.values())[0]
+
+class data_container(object):
+    def __init__(self, ):
+        self._data = {}
+    def register(self, target_ID, docked_type, value):
+        #the docked type could be either "LMCSS" or "LMCSS_dis"
+        # the value could be either rmsd or distance
+        if target_ID not in self._data:
+            self._data[target_ID] = {}
+        if docked_type:
+            if docked_type not in self._data[target_ID]:
+                self._data[target_ID][docked_type] = value
+    def layout_pickle( self, pickle_filename = "RMSD.pickle"):
+        self._pf = open(pickle_filename, "w")
+        pickle.dump(self._data, self._pf)
+        self._pf.close()
+    def layout_plain (self,  plain_filename = "RMSD"):
+        self._plain_filename = plain_filename
+        self._combined_csv_filename = self._plain_filename + ".csv" 
+        self._combined_txt_filename = self._plain_filename + ".txt" 
+        self._LMCSS_list = get_all_docked_type(self._data, docked_type = "LMCSS") 
+        self._SMCSS_list = get_all_docked_type(self._data, docked_type = "SMCSS") 
+        self._hiResApo_list = get_all_docked_type(self._data, docked_type = "hiResApo") 
+        self._hiResHolo_list = get_all_docked_type(self._data, docked_type = "hiResHolo") 
+        self._hiTanimoto_list = get_all_docked_type(self._data, docked_type = "hiTanimoto") 
+        self._whole_data_lines = ["%-20s%-15s, %-15s, %-15s, %-15s, %-15s \n"%("Target_PDBID,", "LMCSS", "SMCSS", "hiResApo", "hiResHolo", "hiTanimoto")]
+        self._whole_data_lines.append("%-20s%-15s, %-15s, %-15s, %-15s, %-15s, \n"%("Number_of_cases,", len(self._LMCSS_list), len(self._SMCSS_list), len(self._hiResApo_list), len(self._hiResHolo_list), len(self._hiTanimoto_list)))
+            #append the average min max medium, first 
+        self._average_line, self._max_line, self._min_line, self._medium_line = ("%-20s"%"Average,", "%-20s"%"Maximum,", "%-20s"%"Minimum,", "%-20s"%"Medium,")
+        for value_list in (self._LMCSS_list, self._SMCSS_list, self._hiResApo_list, self._hiResHolo_list, self._hiTanimoto_list):
+            average_score, max_score, min_score, medium_score = calculate_average_min_max_medium(value_list)
+            self._average_line += average_score 
+            self._max_line += max_score 
+            self._min_line += min_score 
+            self._medium_line += medium_score
+        self._average_line += "\n" 
+        self._max_line += "\n" 
+        self._min_line += "\n" 
+        self._medium_line += "\n" 
+        self._whole_data_lines.append(self._average_line)
+        self._whole_data_lines.append(self._max_line)
+        self._whole_data_lines.append(self._min_line)
+        self._whole_data_lines.append(self._medium_line)
+        #append the value for each PDBID 
+        all_pro_type = ["LMCSS", "SMCSS", "hiResApo", "hiResHolo", "hiTanimoto"]
+        for target_ID in self._data:
+            self._new_line_score = ""
+            self._valid_line = False
+            for docked_type in all_pro_type:
+                if docked_type in self._data[target_ID]:
+                    self._new_line_score += "%-15.3f, "%self._data[target_ID][docked_type]
+                    self._valid_line = True
+                else:
+                    self._new_line_score += "%-15s, "%(" ")
+            if self._valid_line:
+                pdbid_full = "%s,"%target_ID
+                self._new_line = "%-20s"%(pdbid_full)
+                self._new_line += self._new_line_score
+                self._new_line += "\n"
+                self._whole_data_lines.append(self._new_line)
+        #write out csv file
+        self._plain_csv_file = open(self._combined_csv_filename, "w")
+        self._plain_csv_file.writelines(self._whole_data_lines)
+        self._plain_csv_file.close()
+        #write out txt file
+        self._whole_data_lines_txt = [item.replace(",", " ") for item in self._whole_data_lines]
+        self._plain_txt_file = open(self._combined_txt_filename, "w")
+        self._plain_txt_file.writelines(self._whole_data_lines_txt)
+        self._plain_txt_file.close()
+        
+def main_score(dock_dir, pdb_protein_path, evaluate_dir, blastnfilter_dir, update= True):
+    #1 copy docked dir info into evaluate dir and create score for targe
+    #2 create score dir and copy the ideal files into score dir
+    #3 create submit obj and crystal obj in the crystal obj, and store the cyrstal obj directly 
+    #4 after each calculation, append the crystal obj to the final result file in the upper level path
+    #5 if for individual folder, the crystal obj is empty, also save it and skip it and go to the next case
+    #1 switch to evaluation folder
     os.chdir(evaluate_dir)
     current_dir = os.getcwd()
-    #target_dirs = []
-    #all_pdbids = next(os.walk(dock_dir))[1]    
-    ##all_pdbids = ['4xm7']
-    #for all_pdb_path in os.walk(dock_dir):
-    #    if all_pdb_path[0] != dock_dir:
-    #        
-    #        if all_pdb_path[0].split("/")[-1] in all_pdbids:
-    #            #make sure that we didn't visit the deep folders other than the pdbid ones
-    #            target_dirs.append(all_pdb_path[0])
-    
-    ## os.walk will return a tuple of (directory absolute path, subdirectories, files)
-
+    result_container = data_container()
+    result_pickle = "RMSD.pickle"
+    pickle_full_path = os.path.join(current_dir, result_pickle) 
+    result_plain = "RMSD"
+    plain_full_path = os.path.join(current_dir, result_plain)
+    #get all target dir info from the docked dir
     target_dirs = list(os.walk(dock_dir))[0][1]
-
-    
     for target_dir in target_dirs:
-        all_docked_structures = []
-        valid_target = False # this flag indicates whether we have at least one valid docked structure for scoring
+        #valid target must have at least one RMSD value return, else this target is invalid
+        valid_target = False
+        
+        #copy the target dir to the evaluate dir
         commands.getoutput("cp -r %s/%s %s"%(dock_dir,target_dir, evaluate_dir))
         target_name = os.path.basename(target_dir)
+        #2 switch into the individual case
         os.chdir(target_name)
-        ## Ensure the target is in score_dic
-        if target_name not in score_dic:
-            score_dic[target_name] = {}
-            
-        #now we are in folders named by pdbid
-        current_dir_layer_2 = os.getcwd()
-        ##################
-        #Do the scoring here
-        #1, get all the docked structures and crystal structure
-        potential_mols = glob.glob('*docked.mol' )
-        ## Go copy in all the submitted poses
-        for potential_mol in potential_mols:
-            
-            ## First, ensure that this ligand has a corresponding receptor
-            potential_receptor = potential_mol.replace('.mol','.pdb')
-            if not(os.path.isfile(potential_receptor)):
-                logging.info('There is no receptor corresponding to docked molecule %s. Skipping scoring this pose.' %(potential_mol))
-                continue
-            
-            ## If it does, set up the directory for scoring 
-            if valid_target == False:
-                valid_target = True
-                os.mkdir("score")
-                
-            ## don't copy in the original pdb and mol files - Just convert them to mae
-            #complex_mae = os.path.basename(potential_mol).replace('.mol','_complex.mae')
-            #commands.getoutput('$SCHRODINGER/utilities/structcat -imol score/%s -ipdb score/%s -omae score/%s' %(potential_mol, potential_receptor, complex_mae))
-            #all_docked_structures.append(complex_mae)
-            
-            ## copy in the structures intended for scoring
-            commands.getoutput("cp %s score" %potential_mol)
-            commands.getoutput("cp %s score" %potential_receptor)
-            
-            ## Combine them into a single structure for RSR calculation
-            ## The score subdirectory is flat, so we need to drop the target directory structure attached to potential_mol
-            local_potential_mol = os.path.basename(potential_mol)
-            local_potential_receptor = os.path.basename(potential_receptor)
-            #intermediate_lig_pdb = local_potential_mol.replace('.mol','_ligand.pdb')
-            ## The complex mae will be called "<method>-<target>_<candidate>_docked_complex.pdb"
-            #complex_pdb = local_potential_mol.replace('.mol','_complex.pdb')
-            #commands.getoutput('babel -imol score/%s -opdb score/%s' %(potential_mol, intermediate_lig_pdb))
-            #commands.getoutput('babel --join -ipdb score/%s -ipdb score/%s -opdb score/%s' %(potential_receptor, intermediate_lig_pdb, complex_pdb))
-            
-            
-            ## Package the ligand, receptor, and complex file up for the next step
-            all_docked_structures.append((local_potential_mol, local_potential_receptor))
-        
-        ## Check whether it makes sense to continue scoring
-        if not(valid_target):
-            #no docked structure available for this case, skip this one
-            logging.info("There are no valid docked structures for this PDBID: %s"%target_name)
-            os.chdir(current_dir)
-            continue
-        
-        ## Extract the crystal (local pdb database is organized by middle 2 characters of pdb codes)
-        crystal_id = target_name
-        crystal_pdb_folder_name = crystal_id[1:3]    
-        crystal_ent_file = "pdb" + crystal_id + ".ent"
-        crystal_pdbloc = os.path.join(pdb_protein_path,crystal_pdb_folder_name, crystal_ent_file )
-        ## Ensure that the xtal entry for this pdb code exists
-        if not os.path.isfile(crystal_pdbloc):
-            logging.info("Unable to find the ent file associate with the crystal pdb: %s at location %s"%(crystal_id, crystal_pdbloc))
+        all_mol_files, all_receptor_files = get_submitted_file_list()
+        if not all_mol_files:
+            logging.info("For this folder %s, there is no valid docked structure"%target_dir)
+            result_container.register(target_dir, docked_type = None, value = None)
+            ######need to register into the result pickle and txt, csv 
             os.chdir(current_dir)
             continue
         else:
-            commands.getoutput("cp %s score/crystal.pdb"%(crystal_pdbloc))
-            
-        ## Finish step 1 
-        ## Move into score dir 
-        os.chdir("score")    
-        logging.info("=============Start working in this case:%s=========="%target_name)
-        #2, split the maegz file into pdb files and combine receptor with ligand
-        #align the complex onto the crystal structure and split into ligands with receptor
-        
-        #all_docked_structures = glob.glob("*_docked.mol") 
-        ## remove all files start with rot-
-        #previous_files = glob.glob("rot-*_docked.mol")
-        #for item in previous_files:
-        #    all_docked_structures.remove (item)
-        
-        ## Split the xtal ligands from the xtal stucture
-        commands.getoutput("$SCHRODINGER/run split_structure.py -many_files -m ligand crystal.pdb crystal.pdb")
-        if not os.path.isfile("crystal_ligand1.pdb"):
-            logging.info("Crystal structure is not splittable. Skipping")
-            os.chdir(current_dir_layer_2)
-            os.chdir(current_dir)
-            continue    
-        else:
-            # Get the filenames of all the crystal ligands
-            crystal_ligand_list = glob.glob("crystal_ligand*.pdb")
-        
-        ## Remember that all_docked_structures is a list of tuples: (potential_mol, potential_receptor, complex_pdb))
-        for docked_lig_mol, docked_receptor in all_docked_structures:
-
-            ## Get the method type, target, and candidate info from the filename
-            # for example, this will parse 'hiResApo-5hib_2eb2_docked.mol' into [('hiResApo', '5hib', '2eb2')]
-            parsed_name = re.findall('([a-zA-Z0-9]+)-([a-zA-Z0-9]+)_([a-zA-Z0-9]+)_docked.mol',docked_lig_mol)
-            if len(parsed_name) != 1:
-                logging.info('Failed to parse docked structure name "%s". Parsing yielded %r' %(docked_lig_mol, parsed_name))
-                continue
-            docked_structure_type = parsed_name[0][0]
-            docked_structure_target = parsed_name[0][1]
-            docked_structure_candidate = parsed_name[0][2]
-
-
-            ## Align the submission to the crystal structure
-            file_prefix = "%s-%s_%s_docked" %(docked_structure_type,
-                                              docked_structure_target,
-                                              docked_structure_candidate)             
-            aln_complex_pdb = '%s_complex.pdb' %(file_prefix)
-                
-            ## Loop over permutations of crystal and docked chains
-            commands.getoutput("$SCHRODINGER/run split_structure.py -many_files -m chain crystal_receptor1.pdb crystal_chains.pdb")
-            crystal_chain_list = glob.glob('crystal_chains_chain?.pdb')
-            commands.getoutput("$SCHRODINGER/run split_structure.py -many_files -m molecule %s docked_molecules.pdb" %(docked_receptor))
-            docked_chain_list = glob.glob('docked_molecules_mol*.pdb')
-
-            for crystal_chain_pdb in crystal_chain_list:
-                for docked_chain in docked_chain_list:
-                    aln_recep, aln_lig = structure_align(file_prefix, crystal_chain_pdb, docked_chain, docked_lig_mol)
-                    aln_lig_pdb, aln_complex_pdb = make_complex_pdb(aln_recep, aln_lig, aln_complex_pdb)
-                    #docked_lig_pdb = docked_lig_mol.replace('.mol','.pdb')
-
-
-                    ## Now compare the RMSDs of every ligand to those in the crystal
-                    ## We need the ligand as a pdb
+            os.mkdir("score")
+            #copy the crystal structure first
+            crystal_ID = target_name
+            #extract the crystal ligand name from blastnfilter result txt file
+            blastnfilter_result_name = crystal_ID + ".txt"
+            blastnfilter_txt = os.path.join(blastnfilter_dir, blastnfilter_result_name)
+            ligand_name = extract_ligand_name(blastnfilter_txt) 
+            #get crystal structure location
+            crystal_file = extract_crystal_file(crystal_ID, pdb_protein_path)
+            if crystal_file:
+                pdbid_local_path = os.getcwd()
+                commands.getoutput("cp %s score/crystal.pdb"%(crystal_file))
+                try:
+                    os.chdir("score")
+                    crystal_obj = create_crystal_obj("crystal.pdb", ligand_name, crystal_ID)
+                    os.chdir(pdbid_local_path)
+                except Exception as ex:
+                    result_container.register(target_dir, docked_type = None, value = None)
+                    logging.exception("For this folder %s, could not create the crystal object"%target_dir)
+                    os.chdir(current_dir)
+                    continue
+                #here get the crystal obj and loop all docked structure 
+                for mol_index, potential_mol in enumerate (all_mol_files):              
+                    potential_pdb = all_receptor_files[mol_index]                       
+                    commands.getoutput("cp %s score"%potential_mol)                     
+                    commands.getoutput("cp %s score"%potential_pdb)                     
+                    #change path to local score folder
+                    os.chdir("score")
+                    local_potential_mol = os.path.basename(potential_mol)               
+                    local_potential_pdb = os.path.basename(potential_pdb)
+                    parsed_name = re.findall('([a-zA-Z0-9]+)-([a-zA-Z0-9]+)_([a-zA-Z0-9]+)_docked.mol',local_potential_mol)
+                    docked_structure_type = parsed_name[0][0]
                     try:
-                        rmsd_list = []
-                        for crystal_ligand in crystal_ligand_list:
-                            rmsd = main_rmsd(crystal_ligand, aln_lig_pdb)
-                            logging.info( "RMSD for the first ligand: %s comparing with crystal ligand :%s, is : %s"%(aln_lig_pdb, crystal_ligand, rmsd))
-                            rmsd_list.append(rmsd)
-                        if docked_structure_type not in score_dic[target_name]:
-                            score_dic[target_name][docked_structure_type] = []
-                        score_dic[target_name][docked_structure_type] += rmsd_list
-                    except:
-                        logging.info("RMSD cannot be calculated for the ligand: %s"%(aln_lig_pdb))
-            try:
-                score_dic[target_name][docked_structure_type] = min(score_dic[target_name][docked_structure_type])
-            except:
-                logging.info('Unable to score target %s candidate %s' 
-                             %(target_name, docked_structure_type))
+                        docked_obj = docked(local_potential_mol, local_potential_pdb, docked_structure_type, crystal_obj)
+                        docked_obj.create_complex()                       
+                        docked_obj.align_complex_onto_crystal(check_point_number = 10)
+                        docked_obj.calculate_rmsd_and_distance()
+                        #(rmsd, dis) = docked_obj._min_rmsd_dis
+                        rmsd = docked_obj._min_rmsd_dis[0]
+                        valid_target = True
+                        result_container.register(target_dir, docked_type = docked_structure_type, value = rmsd) 
+                        #update the pickle and txt csv file if there is valid case found 
+                        result_container.layout_pickle (pickle_filename = pickle_full_path)
+                        result_container.layout_plain (plain_filename = plain_full_path)
+                        os.chdir(pdbid_local_path)
+                    except Exception as ex:
+                        result_container.register(target_dir, docked_type = docked_structure_type, value = None) 
+                        os.chdir(pdbid_local_path)
+                        logging.exception("For this type of strcutre: %s, the rmsd could not be calculated"%docked_structure_type)
+                        continue
+                os.chdir(current_dir)
+            else:
+                result_container.register(target_dir, docked_type = None, value = None)
+                logging.info("For this folder %s, there is no valid crystal structure"%target_dir)
+                ######need to register into the result pickle and txt, csv 
+                os.chdir(current_dir)
+                continue
+    #after loop all possible target, layout the pickle and plain files    
+    result_container.layout_pickle (pickle_filename = pickle_full_path)
+    result_container.layout_plain (plain_filename = plain_full_path)
+            
 
-
-
-        #Finish scoring, come back to the folder with pdbid
-        os.chdir(current_dir_layer_2)
-        # Finish scoring for this pdbid, come back to the main folder
-        os.chdir(current_dir)
-        ##################
-    pickle.dump(score_dic, pickle_out)
-    pickle_out.close()
-    return pickle_file_name
-
-if ("__main__") == (__name__):
+if ("__main__" == __name__) :
+    import logging
+    logger = logging.getLogger()
+    logging.basicConfig( format  = '%(asctime)s: %(message)s', datefmt = '%m/%d/%y %I:%M:%S', filename = 'final.log', filemode = 'w', level   = logging.INFO )
     from argparse import ArgumentParser
     parser = ArgumentParser()
     parser.add_argument("-d", "--dockdir", metavar="PATH",
-                      help="PATH where we could find the docking stage output")
+                  help="PATH where we could find the docking stage output")
+
+    parser.add_argument("-b", "--blastnfilterdir", metavar="PATH",
+                  help="PATH where we could find the blastnfilter stage output")
 
     parser.add_argument("-o", "--outdir", metavar="PATH",
-                      help="PATH where we will run the evaluate stage")
+                  help="PATH where we will run the evaluate stage")
 
     parser.add_argument("-p", "--pdbdb", metavar="PATH",
-                      help="PDB DATABANK which we will "
-                           "get the crystal structure")
-    logger = logging.getLogger()
-    logging.basicConfig(format='%(asctime)s: %(message)s',
-                        datefmt='%m/%d/%y %I:%M:%S', filename='final.log',
-                        filemode='w', level=logging.INFO)
+                  help="PDB DATABANK which we will "
+                       "get the crystal structure")
     opt = parser.parse_args()
     dockDir = opt.dockdir
     evaluateDir = opt.outdir
     pdbloc = opt.pdbdb
+    blastnfilterDir = opt.blastnfilterdir
     # running under this dir
     running_dir = os.getcwd()
-    pickle_result = main_score(dockDir, pdbloc, evaluateDir, )
-    pickle_loc = os.path.join(running_dir, "RMSD.pickle")
-    txt_result = layout_result(pickle_loc, "RMSD.txt", outformat = "txt")
-    txt_result = layout_result(pickle_loc, "RMSD.csv", outformat = "csv")
+    pickle_result = main_score(dockDir, pdbloc, evaluateDir, blastnfilterDir)
     # move the final log file to the result dir
     log_file_path = os.path.join(running_dir, 'final.log')
     commands.getoutput("mv %s %s" % (log_file_path, evaluateDir))
-    pickle_file_path = os.path.join(running_dir, 'RMSD.pickle')
-    commands.getoutput("mv %s %s" % (pickle_file_path, evaluateDir))
+    
