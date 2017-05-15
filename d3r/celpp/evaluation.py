@@ -8,6 +8,7 @@ from d3r.celpp.task import D3RParameters
 from d3r.celpp.proteinligprep import ProteinLigPrepTask
 from d3r.celpp.dataimport import DataImportTask
 from d3r.celpp.blastnfilter import BlastNFilterTask
+from d3r.celpp.challengedata import ChallengeDataTask
 from d3r.celpp.participant import ParticipantDatabaseFromCSVFactory
 from d3r.celpp import util
 from d3r.celpp.task import SmtpEmailer
@@ -585,6 +586,9 @@ class EvaluationTask(D3RTask):
             killdelay = 60
 
         blastnfilter = BlastNFilterTask(self._path, self._args)
+        challenge = ChallengeDataTask(self._path, self._args)
+        challdir = os.path.join(challenge.get_dir(),
+                                challenge.get_celpp_challenge_data_dir_name())
         #
         # --pdbdb <path to pdb.extracted> --dockdir <stage.4.glide> \
         # --outdir <path to stage.5.glide.evaluation>
@@ -594,6 +598,7 @@ class EvaluationTask(D3RTask):
                       self._docktask.get_dir() +
                       ' --blastnfilterdir ' +
                       blastnfilter.get_dir() +
+                      ' --challengedir ' + challdir +
                       ' --outdir ' + self.get_dir())
 
         eval_name = os.path.basename(self.get_args().evaluation)

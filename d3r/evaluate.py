@@ -1,6 +1,7 @@
+#! /usr/bin/env python
+
 import os
 from Bio import PDB
-import copy
 import commands
 import time
 from openeye.oechem import *
@@ -17,7 +18,7 @@ def get_distance (pos1, pos2):
     return (_dist_0**2 + _dist_1**2 + _dist_2**2)**0.5
 
 def get_center(ligand_pdb):
-    xyz_lines = open(ligand_pdb,"r").readlines()
+    xyz_lines = open(ligand_pdb, "r").readlines()
     multi_ligand = False
     atom_list = []
     x = y = z = 0

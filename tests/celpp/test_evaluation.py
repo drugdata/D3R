@@ -22,6 +22,7 @@ from d3r.celpp.dataimport import DataImportTask
 from d3r.celpp.blastnfilter import BlastNFilterTask
 from d3r.celpp.evaluation import EvaluationTaskFactory
 from d3r.celpp.evaluation import EvaluationTask
+from d3r.celpp.challengedata import ChallengeDataTask
 from d3r.celpp.glide import GlideTask
 from d3r.celpp.evaluation import PathNotDirectoryError
 from d3r.celpp.participant import ParticipantDatabaseFromCSVFactory
@@ -486,7 +487,6 @@ class TestEvaluation(unittest.TestCase):
             open(os.path.join(blasttask.get_dir(),
                               D3RTask.COMPLETE_FILE), 'a').close()
 
-
             # docktask and blastnfilter success
             evaluation = EvaluationTask(temp_dir, 'foo.evaluation',
                                         docktask, params)
@@ -640,16 +640,28 @@ class TestEvaluation(unittest.TestCase):
             docktask.set_name('foo')
             docktask.set_stage(EvaluationTaskFactory.DOCKSTAGE)
             docktask.create_dir()
+
+            challenge = ChallengeDataTask(temp_dir, params)
+            cdir = os.path.join(challenge.get_dir(),
+                                challenge.get_celpp_challenge_data_dir_name())
+
             open(os.path.join(docktask.get_dir(), D3RTask.COMPLETE_FILE),
                  'a').close()
             evaluation = EvaluationTask(temp_dir, 'foo.evaluation',
                                         docktask, params)
             evaluation.run()
-            self.assertTrue('/bin/doesnotexist --pdbdb /data/pdb ' in evaluation.get_error())
-            self.assertTrue(' --dockdir ' + docktask.get_dir() in evaluation.get_error())
-            self.assertTrue(' --outdir ' + evaluation.get_dir() in evaluation.get_error())
-            self.assertTrue(' --blastnfilterdir ' + blasttask.get_dir() in evaluation.get_error())
-            self.assertTrue(' : [Errno 2] No such file or directory' in evaluation.get_error())
+            self.assertTrue('/bin/doesnotexist --pdbdb /data/pdb '
+                            in evaluation.get_error())
+            self.assertTrue(' --dockdir ' + docktask.get_dir()
+                            in evaluation.get_error())
+            self.assertTrue(' --outdir ' + evaluation.get_dir()
+                            in evaluation.get_error())
+            self.assertTrue(' --challengedir ' + cdir
+                            in evaluation.get_error())
+            self.assertTrue(' --blastnfilterdir ' + blasttask.get_dir()
+                            in evaluation.get_error())
+            self.assertTrue(' : [Errno 2] No such file or directory'
+                            in evaluation.get_error())
 
             # test files get created
             errfile = os.path.join(evaluation.get_dir(),
