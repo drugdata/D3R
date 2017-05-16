@@ -11,7 +11,7 @@ git clone -b chrisdev https://github.com/drugdata/puppet-d3r.git d3r
 # me get puppet to use the catalog 
 # TODO: fix this hack at some point
 
-echo -e "\n# Run the d3r open class\nclass { 'd3r::open': }\n" >> /home/vagrant/puppet-d3r/manifests/open.pp
+echo -e "\n# Run the d3r open class\nclass { 'd3r::open': }\n" >> /home/vagrant/d3r/manifests/open.pp
 
 echo "Running puppet apply"
-/opt/puppetlabs/bin/puppet apply /home/vagrant/puppet-d3r/manifests/open.pp
+/opt/puppetlabs/bin/puppet apply /home/vagrant/d3r/manifests/open.pp
