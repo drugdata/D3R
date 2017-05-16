@@ -127,19 +127,25 @@ class TestPostEvaluation(unittest.TestCase):
 
     def test_get_list_of_stats(self):
         res = post_evaluation.get_list_of_stats(None)
-        self.assertEqual(res, (-1, -1, -1, -1))
+        self.assertEqual(res, (-1, -1, -1, -1, -1))
+
+        res = post_evaluation.get_list_of_stats([])
+        self.assertEqual(res, (-1, -1, -1, -1, -1))
 
         res = post_evaluation.get_list_of_stats([1.0])
-        self.assertEqual(res, (1, 1.0, 1.0, 1.0))
+        self.assertEqual(res, (1, 1.0, 1.0, 1.0, 1.0))
 
         res = post_evaluation.get_list_of_stats([3.0, 1.0])
-        self.assertEqual(res, (2, 1.0, 3.0, 2.0))
+        self.assertEqual(res, (2, 1.0, 3.0, 2.0, 3.0))
+
+        res = post_evaluation.get_list_of_stats([3.0, 2.0, 1.0])
+        self.assertEqual(res, (3, 1.0, 3.0, 2.0, 2.0))
 
         res = post_evaluation.get_list_of_stats([1.0, 'foo'])
-        self.assertEqual(res, (-1, -1, -1, -1))
+        self.assertEqual(res, (-1, -1, -1, -1, -1))
 
         res = post_evaluation.get_list_of_stats([3.0, 1.0, 2.0, 14.0])
-        self.assertEqual(res, (4, 1.0, 14.0, 5.0))
+        self.assertEqual(res, (4, 1.0, 14.0, 5.0, 3.0))
 
     def test_get_pickle_paths(self):
         temp_dir = tempfile.mkdtemp()
@@ -267,7 +273,7 @@ class TestPostEvaluation(unittest.TestCase):
             self.assertTrue(post_evaluation.LMCSS + ' (3 dockable)' in data)
             self.assertTrue(('stage.7.foo_dock.' +
                             'extsubmission.evaluation') in data)
-            self.assertTrue('2 ( 67%)    4.000       9.000' in data)
+            self.assertTrue('2 ( 67%)    4.00        9.00        6.50        9.00' in data)
 
             csv_file = os.path.join(result_dir,
                                     post_evaluation.OVERALL_RMSD_PREFIX +
@@ -279,7 +285,7 @@ class TestPostEvaluation(unittest.TestCase):
             f.close()
             self.assertTrue('SubmissionID for LMCSS,# Docked,' in data)
             self.assertTrue('stage.7.foo_dock.extsubmission' in data)
-            self.assertTrue('submission.evaluation,2,3,4.000,9.000,6.500' in data)
+            self.assertTrue('submission.evaluation,2,3,4.00,9.00,6.50,9.00' in data)
 
             # test prefix suffix removal
             os.remove(summary_file)
@@ -297,7 +303,8 @@ class TestPostEvaluation(unittest.TestCase):
             f = open(csv_file, 'r')
             data = f.read()
             f.close()
-            self.assertTrue('foo_dock,2,3,4.000,9.000,6.500' in data)
+            self.assertTrue('foo_dock,2,3,4.00,9.00,6.50,9.00' in data)
+            self.assertTrue(1==2, msg='Double check summary.txt looks good')
         finally:
             shutil.rmtree(temp_dir)
 
@@ -372,7 +379,7 @@ class TestPostEvaluation(unittest.TestCase):
 
             self.assertTrue(post_evaluation.LMCSS + ' (2 dockable)' in data)
             self.assertTrue('foo_dock ' in data)
-            self.assertTrue(' 2 (100%)    4.000       9.000' in data)
+            self.assertTrue(' 2 (100%)    4.00        9.00' in data)
 
             csv_file = os.path.join(result_dir,
                                     post_evaluation.OVERALL_RMSD_PREFIX +
@@ -383,7 +390,7 @@ class TestPostEvaluation(unittest.TestCase):
             data = f.read()
             f.close()
             self.assertTrue('SubmissionID for LMCSS,# Docked,' in data)
-            self.assertTrue('foo_dock,2,2,4.000,9.000,6.500' in data)
+            self.assertTrue('foo_dock,2,2,4.00,9.00,6.50,9.00' in data)
 
             # TODO check contents of other CSV files
         finally:

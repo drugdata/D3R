@@ -108,21 +108,28 @@ def get_list_of_stats(list_of_dock_scores):
        The format of the pickle file should be
        { 'ligand': {'ctype': score}}
     :param list_of_dock_scores: list of dock scores
-    :returns: tuple (count, min, max, average)
+    :returns: tuple (count, min, max, average, median)
     """
     if list_of_dock_scores is None or len(list_of_dock_scores) is 0:
         logger.error('Unable to get and dock scores')
-        return -1, -1, -1, -1
+        return -1, -1, -1, -1, -1
     try:
         count = len(list_of_dock_scores)
+
         average = sum(list_of_dock_scores)/count
+        if count == 1:
+            median = list_of_dock_scores[0]
+        else:
+
+            sorted_list = sorted(list_of_dock_scores)
+            median = sorted_list[int(round(count/2))]
         return (count,
                 min(list_of_dock_scores),
                 max(list_of_dock_scores),
-                average)
+                average, median)
     except Exception:
-        logger.exception('Caught Exception just returning -1, -1')
-        return -1, -1, -1, -1
+        logger.exception('Caught Exception just returning -1')
+        return -1, -1, -1, -1, -1
 
 
 def _get_pickle_paths(path_list):
@@ -184,25 +191,27 @@ def generate_overall_csv(evaluation_path, challenge_dir, post_evaluation_path,
     summary_txt = open(os.path.join(post_evaluation_path,
                                     SUMMARY_TXT), 'a')
 
-    s_line_format = '%-25s%-12s%-12s%-12s%-12s\n'
+    s_line_format = '%-25s%-12s%-12s%-12s%-12s%-12s\n'
     summary_txt.write(s_line_format % (candidates_type + ' (' +
                                        str(total_candidates) +
                                        ' dockable)',
                                        '#Docked',
                                        'Min RMSD',
                                        'Max RMSD',
-                                       'Mean RMSD'))
+                                       'Mean RMSD',
+                                       'Median RMSD'))
 
     summary_txt.write('-'*72 + '\n')
 
-    data_line_format = '%s,%s,%s,%s,%s,%s\n'
+    data_line_format = '%s,%s,%s,%s,%s,%s,%s\n'
     full_data_lines = [data_line_format % ("SubmissionID for " +
                                            candidates_type,
                                            "# Docked",
                                            "# Dockable",
                                            "Min RMSD",
                                            "Max RMSD",
-                                           "Mean RMSD")]
+                                           "Mean RMSD",
+                                           "Median RMSD")]
     for p_file in all_pickle_files:
         sub_name = _get_submission_name_from_pickle_path(p_file,
                                                          eval_stage_prefix,
@@ -210,7 +219,8 @@ def generate_overall_csv(evaluation_path, challenge_dir, post_evaluation_path,
         try:
             d_scores = get_dock_scores_as_list(p_file,
                                                ctype=candidates_type)
-            num_docked, minrmsd, maxrmsd, avgrmsd = get_list_of_stats(d_scores)
+            num_docked, minrmsd, maxrmsd, \
+            avgrmsd, medianrmsd = get_list_of_stats(d_scores)
 
             pc_docked = '(NA%)'
             if total_candidates > 0:
@@ -221,14 +231,16 @@ def generate_overall_csv(evaluation_path, challenge_dir, post_evaluation_path,
             full_data_lines.append(data_line_format % (sub_name,
                                                        num_docked,
                                                        total_candidates,
-                                                       '%.3f' % minrmsd,
-                                                       '%.3f' % maxrmsd,
-                                                       '%.3f' % avgrmsd))
+                                                       '%.2f' % minrmsd,
+                                                       '%.2f' % maxrmsd,
+                                                       '%.2f' % avgrmsd,
+                                                       '%.2f' % medianrmsd))
             summary_txt.write(s_line_format % (sub_name,
                                                str(num_docked) + pc_docked,
-                                               '%.3f' % minrmsd,
-                                               '%.3f' % maxrmsd,
-                                               '%.3f' % avgrmsd))
+                                               '%.2f' % minrmsd,
+                                               '%.2f' % maxrmsd,
+                                               '%.2f' % avgrmsd,
+                                               '%.2f' % medianrmsd))
         except IOError:
             logging.exception('Error writing entry')
         except (ValueError, TypeError):
@@ -237,8 +249,10 @@ def generate_overall_csv(evaluation_path, challenge_dir, post_evaluation_path,
                                                        total_candidates,
                                                        "N/A",
                                                        "N/A",
+                                                       "N/A",
                                                        "N/A"))
             summary_txt.write(s_line_format % (sub_name,
+                                               "N/A",
                                                "N/A",
                                                "N/A",
                                                "N/A",
@@ -280,6 +294,9 @@ def main(args):
                              "task ")
     parser.add_argument("--stageprefix", default='stage.7.',
                         help="Evaluation task dir prefix (default stage.7.) ")
+    parser.add_argument("--histogrambinsize", default=1,
+                        help='Sets histogram bin size in angstroms (default 1)')
+    parser.add_argument("--histogrambincount", default=3)
     parser.add_argument("--evaluationsuffix",
                         default='.extsubmission.evaluation$|.evaluation$',
                         help="Evaluation task dir suffix regex"
