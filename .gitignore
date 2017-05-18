@@ -5,6 +5,8 @@
 *.pyo
 *.swp
 .idea/workspace.xml
+.idea/D3R.iml
+.idea/misc.xml
 .coverage
 .tox/
 dist/
