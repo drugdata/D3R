@@ -24,7 +24,7 @@ History
 
 * Add the ligand center calculation step in the evaluate.py to output the distance of the docked ligand with the crystal ligand. Also calculate the distance between the original LMCSS ligand center with the crystal ligand center
 
-* Update the genchallengedata.py to extract Apo chain which is closed to the LMCSS ligand Issue #135 <https://github.com/drugdata/D3R/issues/135>`_
+* Update the genchallengedata.py to extract Apo chain which is closed to the LMCSS ligand `Issue #135 <https://github.com/drugdata/D3R/issues/135>`_
 
 
 1.7.3 (2017-04-11)
