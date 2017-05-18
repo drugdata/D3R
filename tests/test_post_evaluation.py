@@ -16,7 +16,6 @@ import shutil
 import pickle
 
 from d3r import post_evaluation
-from d3r.celpp.task import D3RParameters
 
 
 class TestPostEvaluation(unittest.TestCase):
@@ -91,7 +90,7 @@ class TestPostEvaluation(unittest.TestCase):
 
             # test None for ctype
             res = post_evaluation.get_dock_scores_as_list(apickle,
-                                                               ctype=None)
+                                                          ctype=None)
             self.assertEqual(res, [])
 
             # test where no matches found
@@ -146,6 +145,27 @@ class TestPostEvaluation(unittest.TestCase):
 
         res = post_evaluation.get_list_of_stats([3.0, 1.0, 2.0, 14.0])
         self.assertEqual(res, (4, 1.0, 14.0, 5.0, 3.0))
+
+    def test_get_histogram_of_dock_scores(self):
+        res = post_evaluation.get_histogram_of_dock_scores(None, 1, 0)
+        self.assertEqual(res, None)
+
+        res = post_evaluation.get_histogram_of_dock_scores([], 1, -1)
+        self.assertEqual(res, None)
+
+        res = post_evaluation.get_histogram_of_dock_scores([], 1, 3)
+        self.assertEqual(res, [0, 0, 0])
+
+        res = post_evaluation.get_histogram_of_dock_scores([2.4, 3.4], 0, 4)
+        self.assertEqual(res, None)
+
+        res = post_evaluation.get_histogram_of_dock_scores([2.4, 3.4], 1, 8)
+        self.assertEqual(res, [0, 0, 1, 1, 0, 0, 0, 0])
+
+        res = post_evaluation.get_histogram_of_dock_scores([0, 0.99, 1, 2,
+                                                            6.99, 7, 50, -2],
+                                                           1, 8)
+        self.assertEqual(res, [3, 1, 1, 0, 0, 0, 1, 2])
 
     def test_get_pickle_paths(self):
         temp_dir = tempfile.mkdtemp()
@@ -207,12 +227,19 @@ class TestPostEvaluation(unittest.TestCase):
                                                                      suffix)
         self.assertEqual(name, 'foo_dock')
 
-        # non external submission
-        somepath = os.path.join('data', 'celpp', '2017', 'dataset.week.10',
-                                'stage.7.foo_dock.evaluation',
-                                post_evaluation.RMSD_PICKLE)
-
+        # try truncation to 2 which is too small
+        name = post_evaluation._get_submission_name_from_pickle_path(somepath,
+                                                                     prefix,
+                                                                     suffix,
+                                                                     max_submission_name_width=2)
         self.assertEqual(name, 'foo_dock')
+
+        # try truncation to 5
+        name = post_evaluation._get_submission_name_from_pickle_path(somepath,
+                                                                     prefix,
+                                                                     suffix,
+                                                                     max_submission_name_width=5)
+        self.assertEqual(name, 'foo..')
 
     def test_generate_overall_csv_valid_single_evaldataset(self):
         temp_dir = tempfile.mkdtemp()
@@ -224,7 +251,8 @@ class TestPostEvaluation(unittest.TestCase):
             os.makedirs(chall_dir, mode=0o755)
 
             # write out the final.log file
-            finalfile = os.path.join(chall_dir, post_evaluation.CHALL_FINAL_LOG)
+            finalfile = os.path.join(chall_dir,
+                                     post_evaluation.CHALL_FINAL_LOG)
             f = open(finalfile, 'w')
             f.write("""03/04/17 03:32:54: ============Start to work in this query protein: 5uub============
 03/04/17 03:32:55: Warning: Found multiple ligand for this protein:LMCSS-5uub_5un3-XYP.pdb
@@ -242,7 +270,8 @@ class TestPostEvaluation(unittest.TestCase):
             f.close()
 
             task_dir = os.path.join(temp_dir,
-                                    'stage.7.foo_dock.extsubmission.evaluation')
+                                    'stage.7.foo_dock.'
+                                    'extsubmission.evaluation')
             os.makedirs(task_dir, mode=0o755)
 
             # write out the pickle dir
@@ -269,11 +298,13 @@ class TestPostEvaluation(unittest.TestCase):
             f = open(summary_file, 'r')
             data = f.read()
             f.close()
-
+            self.assertTrue(' 0<1 1<2 2<3 3<4 4<5 5<6 6<7 7+' in data)
             self.assertTrue(post_evaluation.LMCSS + ' (3 dockable)' in data)
             self.assertTrue(('stage.7.foo_dock.' +
-                            'extsubmission.evaluation') in data)
-            self.assertTrue('2 ( 67%)    4.00        9.00        6.50        9.00' in data)
+                            'extsubmissi.. ') in data)
+            self.assertTrue('2 ( 67%)  4.00      9.00      '
+                            '6.50      9.00' in data)
+            self.assertTrue('0   0   0   0   1   0   0   1' in data)
 
             csv_file = os.path.join(result_dir,
                                     post_evaluation.OVERALL_RMSD_PREFIX +
@@ -285,7 +316,8 @@ class TestPostEvaluation(unittest.TestCase):
             f.close()
             self.assertTrue('SubmissionID for LMCSS,# Docked,' in data)
             self.assertTrue('stage.7.foo_dock.extsubmission' in data)
-            self.assertTrue('submission.evaluation,2,3,4.00,9.00,6.50,9.00' in data)
+            self.assertTrue('submission.evaluation,2,3,4.00,9.00,'
+                            '6.50,9.00' in data)
 
             # test prefix suffix removal
             os.remove(summary_file)
@@ -303,8 +335,11 @@ class TestPostEvaluation(unittest.TestCase):
             f = open(csv_file, 'r')
             data = f.read()
             f.close()
-            self.assertTrue('foo_dock,2,3,4.00,9.00,6.50,9.00' in data)
-            self.assertTrue(1==2, msg='Double check summary.txt looks good')
+            self.assertTrue('SubmissionID for LMCSS,# Docked,# Dockable,'
+                            'Min RMSD,Max RMSD,Mean RMSD,Median RMSD,0<1,'
+                            '1<2,2<3,3<4,4<5,5<6,6<7,7+' in data)
+            self.assertTrue('foo_dock,2,3,4.00,9.00,6.50,9.00,0,0,0,0,'
+                            '1,0,0,1' in data)
         finally:
             shutil.rmtree(temp_dir)
 
@@ -330,24 +365,26 @@ class TestPostEvaluation(unittest.TestCase):
             os.makedirs(chall_dir, mode=0o755)
 
             # write out the final.log file
-            finalfile = os.path.join(chall_dir, post_evaluation.CHALL_FINAL_LOG)
+            finalfile = os.path.join(chall_dir,
+                                     post_evaluation.CHALL_FINAL_LOG)
             f = open(finalfile, 'w')
             f.write("""03/04/17 03:32:54: ============Start to work in this query protein: 5uub============
             03/04/17 03:32:55: Warning: Found multiple ligand for this protein:LMCSS-5uub_5un3-XYP.pdb
-            03/04/17 03:32:55: Succsessfully generate this protein:LMCSS-5uub_5un3-XYP.pdb
+            03/04/17 03:32:55: Successfully generate this protein:LMCSS-5uub_5un3-XYP.pdb
             03/04/17 03:32:55: Ligand center for this case:LMCSS-5uub_5un3-XYP-lig.pdb is   38.448,   73.584,   58.680
-            03/04/17 03:33:00: Succsessfully generate this protein:SMCSS-5uub_5fsj-OXY.pdb
+            03/04/17 03:33:00: Successfully generate this protein:SMCSS-5uub_5fsj-OXY.pdb
             03/04/17 03:33:12: ============Start to work in this query protein: 5ur3============
-            03/04/17 03:33:12: Succsessfully generate this protein:LMCSS-5ur3_3njq-NJQ.pdb
+            03/04/17 03:33:12: Successfully generate this protein:LMCSS-5ur3_3njq-NJQ.pdb
             03/04/17 03:33:12: Ligand center for this case:LMCSS-5ur3_3njq-NJQ-lig.pdb is  -27.326,  -19.578,  -43.347
-            03/04/17 03:33:19: Succsessfully generate this protein:hiResHolo-5ur3_4p3h-25G.pdb
+            03/04/17 03:33:19: Successfully generate this protein:hiResHolo-5ur3_4p3h-25G.pdb
             03/04/17 03:33:25: Ligand center for this case:LMCSS-5uud_1qf2-TI3-lig.pdb is   38.308,   38.885,   -3.382
-            03/04/17 03:33:40: Succsessfully generate this protein:hiTanimoto-5uud_1gxw-VAL.pdb""")
+            03/04/17 03:33:40: Successfully generate this protein:hiTanimoto-5uud_1gxw-VAL.pdb""")
             f.flush()
             f.close()
 
             task_dir = os.path.join(temp_dir,
-                                    'stage.7.foo_dock.extsubmission.evaluation')
+                                    'stage.7.foo_dock.'
+                                    'extsubmission.evaluation')
             os.makedirs(task_dir, mode=0o755)
 
             # write out the pickle dir
@@ -379,7 +416,7 @@ class TestPostEvaluation(unittest.TestCase):
 
             self.assertTrue(post_evaluation.LMCSS + ' (2 dockable)' in data)
             self.assertTrue('foo_dock ' in data)
-            self.assertTrue(' 2 (100%)    4.00        9.00' in data)
+            self.assertTrue(' 2 (100%)  4.00      9.00' in data)
 
             csv_file = os.path.join(result_dir,
                                     post_evaluation.OVERALL_RMSD_PREFIX +

@@ -6,6 +6,7 @@ import logging
 import os
 import re
 import sys
+import math
 
 __author__ = 'sliu'
 
@@ -23,6 +24,8 @@ HI_RESHOLO = 'hiResHolo'
 SUMMARY_TXT = 'summary.txt'
 OVERALL_RMSD_PREFIX = 'Overall_RMSD_'
 CSV_SUFFIX = '.csv'
+NUMBER_BINS = 8
+BINSIZE = 1
 
 logger = logging.getLogger()
 
@@ -36,7 +39,7 @@ def check_case_number(log_file, phrase):
               there was an error or if `log_file` or 1phrase`
               is None
     """
-
+    # TODO Need to find a better way then parsing final.log to get # candidates
     total_number = -1
     if log_file is None:
         logger.error('log file is None')
@@ -85,7 +88,6 @@ def get_dock_scores_as_list(pickle_file, ctype=LMCSS):
         p_f = open(pickle_file, "rb")
         p_d = pickle.load(p_f)
         p_f.close()
-        data = []
         for ligand in p_d:
             try:
                 value = p_d[ligand][ctype]
@@ -111,7 +113,7 @@ def get_list_of_stats(list_of_dock_scores):
     :returns: tuple (count, min, max, average, median)
     """
     if list_of_dock_scores is None or len(list_of_dock_scores) is 0:
-        logger.error('Unable to get and dock scores')
+        logger.error('No dock scores to generate stats from')
         return -1, -1, -1, -1, -1
     try:
         count = len(list_of_dock_scores)
@@ -130,6 +132,41 @@ def get_list_of_stats(list_of_dock_scores):
     except Exception:
         logger.exception('Caught Exception just returning -1')
         return -1, -1, -1, -1, -1
+
+
+def get_histogram_of_dock_scores(list_of_dock_scores, binsize,
+                                 number_bins):
+    """creates histogram of dock scores
+    :param list_of_dock_scores: list of dock scores
+    :param binsize: size of each bin
+    :param number_bins: number of bins. If set to say 4 then
+                        bin 1 will be values between 0 and < binsize
+                        bin 2 will be values between binsize & < binsize x 2
+                        bin 3 will be values between binsize x 2 &
+                                                     < binsize x 3
+                        bin 4 will be values binsize x 3 and greater
+    :returns list containing number of scores in each bin
+    """
+    if number_bins is None or number_bins <= 0:
+        logger.error('number_bins is None or <= 0')
+        return None
+    if binsize <= 0:
+        logger.error('binsize is <= 0')
+        return None
+    if list_of_dock_scores is None or len(list_of_dock_scores) is 0:
+        logger.error('No dock scores to generate histogram from')
+        return [0] * number_bins
+
+    histo = [0] * number_bins
+    for score in list_of_dock_scores:
+        thebin = int(math.floor(score/binsize))
+        if thebin < 0:
+            thebin = 0
+
+        if thebin >= number_bins:
+            thebin = number_bins - 1
+        histo[thebin] += 1
+    return histo
 
 
 def _get_pickle_paths(path_list):
@@ -159,7 +196,8 @@ def _get_pickle_paths(path_list):
     return pickle_list, no_pickle_count
 
 
-def _get_submission_name_from_pickle_path(path, prefix, suffix):
+def _get_submission_name_from_pickle_path(path, prefix, suffix,
+                                          max_submission_name_width=None):
     """Given path to pickle path in evaluation task
        get the submission name which is basically
        the prefix and suffix values lopped off
@@ -167,22 +205,41 @@ def _get_submission_name_from_pickle_path(path, prefix, suffix):
     dir_name = os.path.dirname(path)
     base_name = os.path.basename(dir_name)
     sub_name_suffix = re.sub('^' + prefix, '', base_name)
-    return re.sub(suffix, '', sub_name_suffix)
+    res = re.sub(suffix, '', sub_name_suffix)
+    if max_submission_name_width is None or max_submission_name_width <= 3:
+        return res
+    if len(res) > max_submission_name_width:
+        return res[0:max_submission_name_width-2] + '..'
+    return res
 
 
 def generate_overall_csv(evaluation_path, challenge_dir, post_evaluation_path,
                          candidates_type=LMCSS,
                          eval_stage_prefix='',
-                         eval_suffix=''):
+                         eval_suffix='',
+                         submission_name_width=30):
 
     not_valid_pickle = 0
 
     all_pickle_files, non_pickle_case = _get_pickle_paths(evaluation_path)
 
     candidates_report = os.path.join(challenge_dir, CHALL_FINAL_LOG)
-    total_candidates = check_case_number(candidates_report,
-                                         "Succsessfully generate "
-                                         "this protein:" + candidates_type)
+
+    # Doing 2 checks cause older versions had mispelled Succsessfully in
+    # final.log
+    # output and new ones fixed this.
+    mispelled_candidates = check_case_number(candidates_report,
+                                             "Succsessfully generate " +
+                                             "this protein:" + candidates_type)
+    correctspelled_candidates = check_case_number(candidates_report,
+                                                  "Successfully generate "
+                                                  "this protein:" +
+                                                  candidates_type)
+    total_candidates = 0
+    if mispelled_candidates > 0:
+        total_candidates += mispelled_candidates
+    if correctspelled_candidates > 0:
+        total_candidates += correctspelled_candidates
 
     overall_csv = open(os.path.join(post_evaluation_path,
                                     OVERALL_RMSD_PREFIX + candidates_type +
@@ -191,19 +248,30 @@ def generate_overall_csv(evaluation_path, challenge_dir, post_evaluation_path,
     summary_txt = open(os.path.join(post_evaluation_path,
                                     SUMMARY_TXT), 'a')
 
-    s_line_format = '%-25s%-12s%-12s%-12s%-12s%-12s\n'
-    summary_txt.write(s_line_format % (candidates_type + ' (' +
-                                       str(total_candidates) +
-                                       ' dockable)',
-                                       '#Docked',
-                                       'Min RMSD',
-                                       'Max RMSD',
-                                       'Mean RMSD',
-                                       'Median RMSD'))
+    s_line_format = ('%-' + str(submission_name_width+1) +
+                     's%-10s%-10s%-10s%-10s%-12s'
+                     '%-4s%-4s%-4s%-4s%-4s%-4s%-4s%-4s\n')
+    headerline = (s_line_format % (candidates_type + ' (' +
+                                   str(total_candidates) +
+                                   ' dockable)',
+                                   '#Docked',
+                                   'Min RMSD',
+                                   'Max RMSD',
+                                   'Mean RMSD',
+                                   'Median RMSD',
+                                   '0<1',
+                                   '1<2',
+                                   '2<3',
+                                   '3<4',
+                                   '4<5',
+                                   '5<6',
+                                   '6<7',
+                                   '7+'))
+    summary_txt.write(headerline)
 
-    summary_txt.write('-'*72 + '\n')
+    summary_txt.write('-'*int(len(headerline)-1) + '\n')
 
-    data_line_format = '%s,%s,%s,%s,%s,%s,%s\n'
+    data_line_format = '%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n'
     full_data_lines = [data_line_format % ("SubmissionID for " +
                                            candidates_type,
                                            "# Docked",
@@ -211,16 +279,33 @@ def generate_overall_csv(evaluation_path, challenge_dir, post_evaluation_path,
                                            "Min RMSD",
                                            "Max RMSD",
                                            "Mean RMSD",
-                                           "Median RMSD")]
+                                           "Median RMSD",
+                                           "0<1",
+                                           "1<2",
+                                           "2<3",
+                                           "3<4",
+                                           "4<5",
+                                           "5<6",
+                                           "6<7",
+                                           "7+")]
     for p_file in all_pickle_files:
         sub_name = _get_submission_name_from_pickle_path(p_file,
                                                          eval_stage_prefix,
                                                          eval_suffix)
+        tsub_name = _get_submission_name_from_pickle_path(p_file,
+                                                          eval_stage_prefix,
+                                                          eval_suffix,
+                                                          max_submission_name_width=submission_name_width)
         try:
             d_scores = get_dock_scores_as_list(p_file,
                                                ctype=candidates_type)
-            num_docked, minrmsd, maxrmsd, \
-            avgrmsd, medianrmsd = get_list_of_stats(d_scores)
+            (num_docked, minrmsd, maxrmsd,
+             avgrmsd, medianrmsd) = get_list_of_stats(d_scores)
+
+            histo = get_histogram_of_dock_scores(d_scores, BINSIZE,
+                                                 NUMBER_BINS)
+            if histo is None:
+                histo = [0] * NUMBER_BINS
 
             pc_docked = '(NA%)'
             if total_candidates > 0:
@@ -234,13 +319,29 @@ def generate_overall_csv(evaluation_path, challenge_dir, post_evaluation_path,
                                                        '%.2f' % minrmsd,
                                                        '%.2f' % maxrmsd,
                                                        '%.2f' % avgrmsd,
-                                                       '%.2f' % medianrmsd))
-            summary_txt.write(s_line_format % (sub_name,
+                                                       '%.2f' % medianrmsd,
+                                                       '%d' % histo[0],
+                                                       '%d' % histo[1],
+                                                       '%d' % histo[2],
+                                                       '%d' % histo[3],
+                                                       '%d' % histo[4],
+                                                       '%d' % histo[5],
+                                                       '%d' % histo[6],
+                                                       '%d' % histo[7]))
+            summary_txt.write(s_line_format % (tsub_name,
                                                str(num_docked) + pc_docked,
                                                '%.2f' % minrmsd,
                                                '%.2f' % maxrmsd,
                                                '%.2f' % avgrmsd,
-                                               '%.2f' % medianrmsd))
+                                               '%.2f' % medianrmsd,
+                                               '%d' % histo[0],
+                                               '%d' % histo[1],
+                                               '%d' % histo[2],
+                                               '%d' % histo[3],
+                                               '%d' % histo[4],
+                                               '%d' % histo[5],
+                                               '%d' % histo[6],
+                                               '%d' % histo[7]))
         except IOError:
             logging.exception('Error writing entry')
         except (ValueError, TypeError):
@@ -250,14 +351,31 @@ def generate_overall_csv(evaluation_path, challenge_dir, post_evaluation_path,
                                                        "N/A",
                                                        "N/A",
                                                        "N/A",
+                                                       "N/A",
+                                                       "N/A",
+                                                       "N/A",
+                                                       "N/A",
+                                                       "N/A",
+                                                       "N/A",
+                                                       "N/A",
+                                                       "N/A",
                                                        "N/A"))
-            summary_txt.write(s_line_format % (sub_name,
+            summary_txt.write(s_line_format % (tsub_name,
+                                               "N/A",
+                                               "N/A",
+                                               "N/A",
+                                               "N/A",
+                                               "N/A",
+                                               "N/A",
+                                               "N/A",
+                                               "N/A",
                                                "N/A",
                                                "N/A",
                                                "N/A",
                                                "N/A",
                                                "N/A"))
-            logging.exception("This pickle file :%s do not have valid data for "
+            logging.exception("This pickle file :%s do not have valid "
+                              "data for "
                               "candidates type  %s" % (p_file,
                                                        candidates_type))
             not_valid_pickle += 1
@@ -295,7 +413,8 @@ def main(args):
     parser.add_argument("--stageprefix", default='stage.7.',
                         help="Evaluation task dir prefix (default stage.7.) ")
     parser.add_argument("--histogrambinsize", default=1,
-                        help='Sets histogram bin size in angstroms (default 1)')
+                        help='Sets histogram bin size in angstroms '
+                             '(default 1)')
     parser.add_argument("--histogrambincount", default=3)
     parser.add_argument("--evaluationsuffix",
                         default='.extsubmission.evaluation$|.evaluation$',
