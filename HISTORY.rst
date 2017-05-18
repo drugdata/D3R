@@ -2,6 +2,31 @@
 
 History
 -------
+
+1.8.0 (2017-05-18)
+--------------------
+
+* EvaluationTask modified to pass path to blastnfilter task to evaluate.py
+  `Issue #139 <https://github.com/drugdata/D3R/issues/139>`_
+
+* Median RMSD added to post_evaluation.py outputs
+  `Issue #136 <https://github.com/drugdata/D3R/issues/136>`_
+
+* Added histogram of RMSD scores to post_evaluation.py outputs
+  `Issue #137 <https://github.com/drugdata/D3R/issues/137>`_
+
+* Continuously output the analysis result into the pickle csv and txt files
+  `Issue #133 <https://github.com/drugdata/D3R/issues/133>`_
+
+* Align the docked complex using the binding site alignment for each of the crystal template and calculate the RMSD, if the binding site alignment failed, then the whole protein alignment will be applied
+
+* Improve the extraction step in the evaluate.py to ensure the RMSD calculating was only applied to the docked ligand but not all others ligand like solvents or co-factors
+
+* Add the ligand center calculation step in the evaluate.py to output the distance of the docked ligand with the crystal ligand. Also calculate the distance between the original LMCSS ligand center with the crystal ligand center
+
+* Update the genchallengedata.py to extract Apo chain which is closed to the LMCSS ligand Issue #135 <https://github.com/drugdata/D3R/issues/135>`_
+
+
 1.7.3 (2017-04-11)
 --------------------
 
