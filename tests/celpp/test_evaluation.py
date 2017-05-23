@@ -907,13 +907,18 @@ class TestEvaluation(unittest.TestCase):
             self.assertEqual(subject,
                              '[d3rcelpp] Week 0 evaluation results for foo')
             self.assertEqual(body, 'Dear CELPP Participant,\n\nHere are your '
-                                   'docking evaluation results '
-                                   '(RMSD, Angstroms) '
-                                   'for CELPP week '
-                                   '0\n\n\nEvaluation of docking'
+                                   'docking evaluation results as '
+                                   'RMSD in Angstroms '
+                                   'for CELPP week 0\n\n'
+                                   'Note: The values in (parenthesis) below '
+                                   'are the distance in Angstroms '
+                                   'between ligand center of that candidate '
+                                   'type vs crystal '
+                                   'ligand center\n\n'
+                                   '\nEvaluation of docking'
                                    '\n=====================\n  LMCSS  XXX\n'
                                    '1fcz  0.2  0.4\n\n\n\nSincerely,\n\n'
-                                   'CELPP Automation')
+                                   'CELPP Automation ')
         finally:
             shutil.rmtree(temp_dir)
 

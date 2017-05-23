@@ -185,10 +185,10 @@ class TestD3rTask(unittest.TestCase):
     def test_get_program_version(self):
         params = D3RParameters()
         task = D3RTask(None, params)
-        self.assertEqual(task._get_program_version(), '')
+        self.assertEqual(task.get_program_version(), '')
         params.version = '0.1.1'
         task = D3RTask(None, params)
-        self.assertEqual(task._get_program_version(), '0.1.1')
+        self.assertEqual(task.get_program_version(), '0.1.1')
 
     def test_get_uploadable_files(self):
         task = D3RTask(None, D3RParameters())

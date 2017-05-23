@@ -266,9 +266,9 @@ class D3RTask(object):
         except:
             logger.debug('args.program  was not set.  '
                          'using __file__')
-        return program_name + ' ' + self._get_program_version()
+        return program_name + ' ' + self.get_program_version()
 
-    def _get_program_version(self):
+    def get_program_version(self):
         """Gets version of program running
         This is done by looking at _args.version
         :return: Version of program or empty string if unset
@@ -432,7 +432,7 @@ class D3RTask(object):
 
         sfile = open(os.path.join(self.get_dir(),
                                   D3RTask.START_FILE), 'w')
-        sfile.write(self._get_program_version())
+        sfile.write(self.get_program_version())
         sfile.flush()
         sfile.close()
 

@@ -272,11 +272,15 @@ class EvaluationEmailer(object):
         weekno = util.get_celpp_week_number_from_path(etask.get_path())
 
         msg = 'Dear CELPP Participant,\n\nHere are your docking ' \
-              'evaluation results (RMSD, Angstroms) for CELPP week ' +\
+              'evaluation results as RMSD in Angstroms for CELPP week ' +\
               str(weekno) + '\n\n'
+        msg += ('Note: The values in (parenthesis) below are the distance ' +
+                'in Angstroms ' +
+                'between ligand center of that candidate type vs crystal ' +
+                'ligand center\n\n')
         msg += etask.get_evaluation_summary()
 
-        msg += '\n\nSincerely,\n\nCELPP Automation'
+        msg += '\n\nSincerely,\n\nCELPP Automation ' + etask.get_program_version()
 
         guid = etask.get_guid_for_task()
         subject = (D3RTask.SUBJECT_LINE_PREFIX +
