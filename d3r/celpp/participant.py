@@ -164,7 +164,7 @@ class ParticipantDatabaseFromCSVFactory(object):
                                    ' got ' + str(len(splitline)) +
                                    ' elements expecting 4 or 5 fields'
                                    ' name,username,guid,email or '
-                                   ' name,username,guid,email,prority')
+                                   ' name,username,guid,email,priority')
                     counter = + 1
                     continue
                 priority = 0
