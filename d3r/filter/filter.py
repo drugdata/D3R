@@ -35,6 +35,13 @@ class QueryFilter(BaseFilter):
     def __init__(self, *args, **kwargs):
         super(QueryFilter, self).__init__(*args, **kwargs)
 
+    def filter_by_self_symmetry(self, symmetry_threshold = 100 ):
+        """
+        Remove target structures whose ligand have high self symmetry, default is 100. 
+        """
+        for ligand in self.query.dock:
+            if not ligand.symmetry < symmetry_threshold:
+                self.query.set_reason(12)
     def filter_by_inchi_error(self):
         """
         Remove target structures whose dockable ligand(s) produced an error on attempting to produce a rdkit.Chem.rdchem
@@ -74,7 +81,6 @@ class QueryFilter(BaseFilter):
             threshold = QueryFilter.dockable_ligand_threshold
             if self.query.dock_count > threshold:
                 self.query.set_reason(4)
-
 
 class HitFilter(BaseFilter):
     """

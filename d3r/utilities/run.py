@@ -95,7 +95,7 @@ def query_filter(query):
     filter.filter_by_dockable_ligand_count()
     filter.filter_by_inchi_error()
     filter.filter_by_sequence_type()
-
+    filter.filter_by_self_symmetry()
 
 def hit_filter(query):
     """

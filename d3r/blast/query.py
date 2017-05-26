@@ -66,6 +66,7 @@ class Query(Base):
             ligand.set_size()
             ligand.set_heavy_size()
             ligand.set_rot()
+            ligand.set_symmetry()
             self.dock.append(ligand)
             self.dock_count += 1
             self.ligand_count += 1
