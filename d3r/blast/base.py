@@ -27,7 +27,8 @@ class Base(object):
             8 : 'The BLAST query returned no suitable hits',
             9 : 'Error reading the InChI of the dockable ligand corresponding to the input pre-release sequence',
             10 : 'The structure contains no dockable ligands',
-            11 : 'Contains other than protein sequences'
+            11 : 'Contains other than protein sequences',
+            12 : 'Ligand self symmetry is not less than the threshold'
         }
 
     def set_reason(self, selection):
@@ -47,11 +48,12 @@ class Base(object):
             9 -> Error reading the InChI of the dockable ligand corresponding to the input pre-release sequence
             10 -> The structure contains no dockable ligands
             11 -> Contains other than protein sequences
+            12 -> Ligand self symmetry is not less than the threshold
         Note that if the selection is outside of the range 1 to 9, no reason is set. Once the value for reason has
         been initiated, it is not fixed, and can be reset.
         :param selection: (int)
         """
-        if int(selection) > 11 or int(selection) < 1:
+        if int(selection) > 12 or int(selection) < 1:
             pass
         else:
             self.triage = 'tosser'

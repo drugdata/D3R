@@ -16,6 +16,10 @@ try:
 except ImportError:
     logger.exception('Unable to import rdkit Ligand class will not work')
 
+try:
+    from openeye.oechem import *
+except ImportError:
+    logger.exception('Unable to import openeye, ligand symmetry will not work')
 
 class Ligand(object):
     """
@@ -64,6 +68,7 @@ class Ligand(object):
         self.size = None 
         self.heavy = None
         self.rot = None
+        self.symmetry = None
         self.mcsss = []                 # A list of d3r.blast.Mcss objects
         #self.tanimoto = []              # A list of (tanimoto_score, reference_ligand_name)
         self.tanimoto = {}              # A dic of reference_ligand_name:tanimoto_score
@@ -205,3 +210,22 @@ class Ligand(object):
         """
         #self.tanimoto.append((tanimoto_score, reference.resname))
         self.tanimoto[reference.resname] = tanimoto_score
+    def set_symmetry(self, maximum_symmetry = 100):
+        #1, convert the rd_mol to smile
+        self.smile = Chem.MolToSmiles(self.rd_mol)
+        #2, convert smile to openeye mol
+        try:
+            self.oe_mol = OEGraphMol()
+            OESmilesToMol(self.oe_mol, self.smile)
+            OESuppressHydrogens(self.oe_mol)
+            atomexpr = OEExprOpts_AtomicNumber
+            bondexpr = 0
+            mcss = OEMCSSearch (self.oe_mol, atomexpr, bondexpr, True)
+            mcss.SetMCSFunc(OEMCSMaxAtomsCompleteCycles(1.5) )
+            self.symmetry = 0
+            for match1 in mcss.Match(self.oe_mol):
+                self.symmetry += 1
+                if not self.symmetry < maximum_symmetry:
+                    break
+        except Exception as ex:
+            logger.exception('ligand smile could not convert to openeye mol')
