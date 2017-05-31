@@ -18,6 +18,10 @@ Include: yum
 %setup
     cp runscript.sh "$SINGULARITY_ROOTFS/singularity"
     chmod a+rx "$SINGULARITY_ROOTFS/singularity"
+    wheelfile=`find . -maxdepth 1 -name "d3r*whl" -type f | head -n 1`
+    if [ -f "$wheelfile" ] ; then
+      cp "$wheelfile" "$SINGULARITY_ROOTFS/."
+    fi
    
 %post
     echo "Hello from inside the container"
@@ -36,6 +40,13 @@ Include: yum
     rm /Miniconda2-latest-Linux-x86_64.sh 
     rm /pymol-v1.8.4.0.tar.bz2
     rm /autodock_vina_1_1_2_linux_x86.tgz
+    wheelfile=`find / -maxdepth 1 -name "d3r*whl" -type f | head -n 1`
+    if [ -f "$wheelfile" ] ; then
+       echo "Found $wheelfile  --  Replacing d3r with this version"
+       pip uninstall -y d3r
+       pip install "$wheelfile"
+    fi
+    rm "$wheelfile"
 %test
     /singularity --version
 
