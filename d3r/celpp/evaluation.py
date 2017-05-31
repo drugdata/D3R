@@ -274,10 +274,11 @@ class EvaluationEmailer(object):
         msg = 'Dear CELPP Participant,\n\nHere are your docking ' \
               'evaluation results as RMSD in Angstroms for CELPP week ' +\
               str(weekno) + '\n\n'
-        msg += ('Note: The values in (parenthesis) below are the distance ' +
-                'in Angstroms ' +
-                'between ligand center of that candidate type vs crystal ' +
-                'ligand center\n\n')
+        msg += ('Note: The value in (parentheses) by each RMSD is the ' +
+                'distance, in Angstroms, between submitted ligand center ' +
+                'of mass and the crystal ligand center of mass. The final '
+                'column is the distance between CELPP-provided pocket '
+                'center and the crystal ligand center of mass.\n\n')
         msg += etask.get_evaluation_summary()
 
         msg += '\n\nSincerely,\n\nCELPP Automation ' + etask.get_program_version()
