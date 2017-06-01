@@ -12,6 +12,7 @@
 dist/
 htmlcov/
 build/
+final.log
 vagrant/centos66/.vagrant/
 vagrant/centos66/Schrodinger_Suites_2016-2_Linux-x86_64.tar
 vagrant/centos66/Schrodinger_Suites_2016-2_Linux-x86_64/
@@ -19,6 +20,7 @@ vagrant/centos66/chimera-1.10.2-linux_x86_64.bin
 vagrant/centos66/schrodinger/
 vagrant/centos7/.vagrant/
 vagrant/centos7/oe_license.txt
+vagrant/centos7/chimera-1.10.2-linux_x86_64.bin
 singularity/d3r*whl
 singularity/oe_license.txt
 
