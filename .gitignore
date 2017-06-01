@@ -19,3 +19,6 @@ vagrant/centos66/chimera-1.10.2-linux_x86_64.bin
 vagrant/centos66/schrodinger/
 vagrant/centos7/.vagrant/
 vagrant/centos7/oe_license.txt
+singularity/d3r*whl
+singularity/oe_license.txt
+
