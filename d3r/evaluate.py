@@ -522,7 +522,7 @@ class data_container(object):
     def register(self, target_ID, docked_type, value):
         #the docked type could be either "LMCSS" or "LMCSS_dis"
         # the value could be either rmsd or distance
-        if value:
+        if value or value == 0.0:
             if target_ID not in self._data:
                 self._data[target_ID] = {}
             if docked_type:
