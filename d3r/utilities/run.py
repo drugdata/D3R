@@ -12,7 +12,6 @@ from d3r.filter.filter import CandidateFilter
 import out_put
 
 logger = logging.getLogger(__name__)
-logging.basicConfig( format  = '%(asctime)s: %(message)s', datefmt = '%m/%d/%y %I:%M:%S', filename = 'final.log', filemode = 'w', level   = logging.DEBUG )
 
 
 def split_input(options):
