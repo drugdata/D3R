@@ -1,6 +1,7 @@
 __author__ = 'robswift'
 
 import sys
+import os
 
 from d3r.blast.mcss import MCSS
 import logging
@@ -13,13 +14,18 @@ try:
     from rdkit import DataStructs
     from rdkit.Chem.Fingerprints import FingerprintMols
     from rdkit.Chem import Descriptors
-except ImportError:
+except ImportError as e:
     logger.exception('Unable to import rdkit Ligand class will not work')
+    sys.stderr.write('Unable to import rdkit,Ligand class will not work'
+                     'not work ' + str(e) + '\n')
 
 try:
     from openeye.oechem import *
-except ImportError:
+except ImportError as e:
     logger.exception('Unable to import openeye, ligand symmetry will not work')
+    sys.stderr.write('Unable to import openeye, ligand symmetry will '
+                     'not work ' + str(e) + '\n')
+
 
 class Ligand(object):
     """
@@ -73,6 +79,7 @@ class Ligand(object):
         #self.tanimoto = []              # A list of (tanimoto_score, reference_ligand_name)
         self.tanimoto = {}              # A dic of reference_ligand_name:tanimoto_score
         self.mcss_error = None          # set to True, False or None
+        self.oe_mol = None
 
     def set_rd_mol_from_inchi(self, inchi = None):
         """
@@ -154,6 +161,7 @@ class Ligand(object):
         except:
             logger.exception('Unable to set the num of rotatable bond from rd mol object')
             return False
+
     def mcss(self, reference):
         """
         Determines the maximum common substructure (MCSS) between the input, or reference ligand and itself. The MCSS is
@@ -189,6 +197,7 @@ class Ligand(object):
         except:
             logger.exception('Caught exception attempting to run rdkit FingerprintMols.FingerprintMol or DataStructs.FingerprintSimilarity')
             return None
+
     def set_mcss(self, reference, mcss_mol, tanimoto_score):
         """
         Creates an Mcss object and appends it to the list, Ligand.mcsss. It's assumed that the input maximum common
@@ -204,12 +213,14 @@ class Ligand(object):
         mcss.test = self.resname
         mcss.tanimoto = tanimoto_score
         self.mcsss.append(mcss)
+
     def set_tanimoto(self, reference, tanimoto_score):
         """
         store the tanimoto score and corresponding reference ligand resname
         """
         #self.tanimoto.append((tanimoto_score, reference.resname))
         self.tanimoto[reference.resname] = tanimoto_score
+
     def set_symmetry(self, maximum_symmetry = 100):
         #1, convert the rd_mol to smile
         self.smile = Chem.MolToSmiles(self.rd_mol)
@@ -227,5 +238,9 @@ class Ligand(object):
                 self.symmetry += 1
                 if not self.symmetry < maximum_symmetry:
                     break
+        except NameError as ex:
+            logger.exception("Looks like there was a problem loading openeye."
+                             "Is license valid and either put in default directory"
+                             "or set in OE_LICENSE?")
         except Exception as ex:
             logger.exception('ligand smile could not convert to openeye mol')
