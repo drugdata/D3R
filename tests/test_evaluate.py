@@ -175,7 +175,6 @@ class TestEvaluate(unittest.TestCase):
             self.assertTrue(lines[8].startswith('Median'))
             self.assertTrue(lines[10].startswith('Individual Results'))
 
-
         finally:
             shutil.rmtree(temp_dir)
 
