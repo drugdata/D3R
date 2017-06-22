@@ -4,11 +4,16 @@ import os
 from Bio import PDB
 import commands
 import time
-from openeye.oechem import *
+import sys
+
+try:
+    from openeye.oechem import *
+except ImportError as e:
+    sys.stderr.write('Unable to import openeye, evaluate.py will '
+                     'not work ' + str(e) + '\n')
 import glob
 import re
 import pickle
-import numpy
 
 
 def get_distance (pos1, pos2):
@@ -498,23 +503,48 @@ def get_all_docked_type(score_dic, docked_type = "LMCSS"):
             if docked_type in score_dic[target_ID]:
                 docked_type_value.append(score_dic[target_ID][docked_type])
     return docked_type_value
+
+
 def clean_up_list_of_value(list_of_value):
+    """Given list this method creates a
+    new list removing any items that have
+    value of None
+    :returns: list of values in same order with None
+              values removed
+    """
     #clean up all None values
     new_list = []
+    if list_of_value is None:
+        return new_list
+
     for item in list_of_value:
         if item:
             new_list.append(item)
     return new_list
-def calculate_average_min_max_medium(full_list_of_value):
+
+
+def calculate_average_min_max_median(full_list_of_value):
+    """Given a list of values in `full_list_of_value`
+    generate basic stats about values in list
+    :returns: tuple of strings (average, min, max, median)
+    """
     list_of_value = clean_up_list_of_value(full_list_of_value)
-    if list_of_value:
-        average = "%-15.3f, "%numpy.average(list_of_value) 
-        minimum = "%-15.3f, "%min(list_of_value)
-        maximum = "%-15.3f, "%max(list_of_value)
-        medium  = "%-15.3f, "%numpy.median(list_of_value)
+    if list_of_value is not None and len(list_of_value) > 0:
+        count = len(list_of_value)
+        average = "%-15.3f, " % (float(sum(list_of_value))/count)
+
+        if count == 1:
+            median = "%-15.3f" % list_of_value[0]
+        else:
+            sorted_list = sorted(list_of_value)
+            median = "%-15.3f" % sorted_list[int(round(count/2))]
+
+        minimum = "%-15.3f, " % min(list_of_value)
+        maximum = "%-15.3f, " % max(list_of_value)
     else:
-        average  = minimum  = maximum = medium = "%-15s, "%(" ")
-    return average ,minimum , maximum, medium 
+        average = minimum = maximum = median = "%-15s, " % " "
+
+    return average, minimum, maximum, median
         
 class data_container(object):
     def __init__(self, ):
@@ -542,12 +572,13 @@ class data_container(object):
         self._hiResHolo_list = get_all_docked_type(self._data, docked_type = "hiResHolo") 
         self._hiTanimoto_list = get_all_docked_type(self._data, docked_type = "hiTanimoto") 
         self._whole_data_lines = ["%-20s%-15s, %-15s, %-15s, %-15s, %-15s, %-15s \n"%("Target_PDBID,", "LMCSS", "SMCSS", "hiResApo", "hiResHolo", "hiTanimoto", "LMCSS_ori_distance")]
-            #append the number of cases line
+        #append the number of cases line
         self._whole_data_lines.append("%-20s%-15s, %-15s, %-15s, %-15s, %-15s, \n"%("Number_of_cases,", len(self._LMCSS_list), len(self._SMCSS_list), len(self._hiResApo_list), len(self._hiResHolo_list), len(self._hiTanimoto_list)))
-            #append the average min max medium, first 
-        self._average_line, self._max_line, self._min_line, self._medium_line = ("%-20s"%"Average,", "%-20s"%"Maximum,", "%-20s"%"Minimum,", "%-20s"%"Medium,")
+        self._whole_data_lines.append("\n\nSummary Statistics\n\n")
+        #append the average min max median, first
+        self._average_line, self._max_line, self._min_line, self._medium_line = ("%-20s"%"Average,", "%-20s"%"Maximum,", "%-20s"%"Minimum,", "%-20s"%"Median,")
         for value_list in (self._LMCSS_list, self._SMCSS_list, self._hiResApo_list, self._hiResHolo_list, self._hiTanimoto_list):
-            average_score, max_score, min_score, medium_score = calculate_average_min_max_medium(value_list)
+            average_score, min_score, max_score, medium_score = calculate_average_min_max_median(value_list)
             self._average_line += average_score 
             self._max_line += max_score 
             self._min_line += min_score 
@@ -560,6 +591,7 @@ class data_container(object):
         self._whole_data_lines.append(self._max_line)
         self._whole_data_lines.append(self._min_line)
         self._whole_data_lines.append(self._medium_line)
+        self._whole_data_lines.append("\nIndividual Results\n\n")
         #append the value for each PDBID 
         all_pro_type = ["LMCSS", "SMCSS", "hiResApo", "hiResHolo", "hiTanimoto", "LMCSS_ori"]
         for target_ID in self._data:
