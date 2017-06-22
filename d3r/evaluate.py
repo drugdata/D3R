@@ -534,10 +534,10 @@ def calculate_average_min_max_median(full_list_of_value):
         average = "%-15.3f, " % (float(sum(list_of_value))/count)
 
         if count == 1:
-            median = "%-15.3f" % list_of_value[0]
+            median = "%-15.3f, " % list_of_value[0]
         else:
             sorted_list = sorted(list_of_value)
-            median = "%-15.3f" % sorted_list[int(round(count/2))]
+            median = "%-15.3f, " % sorted_list[int(round(count/2))]
 
         minimum = "%-15.3f, " % min(list_of_value)
         maximum = "%-15.3f, " % max(list_of_value)
@@ -547,8 +547,10 @@ def calculate_average_min_max_median(full_list_of_value):
     return average, minimum, maximum, median
         
 class data_container(object):
+
     def __init__(self, ):
         self._data = {}
+
     def register(self, target_ID, docked_type, value):
         #the docked type could be either "LMCSS" or "LMCSS_dis"
         # the value could be either rmsd or distance
@@ -558,10 +560,12 @@ class data_container(object):
             if docked_type:
                 if docked_type not in self._data[target_ID]:
                     self._data[target_ID][docked_type] = value
+
     def layout_pickle( self, pickle_filename = "RMSD.pickle"):
         self._pf = open(pickle_filename, "w")
         pickle.dump(self._data, self._pf)
         self._pf.close()
+
     def layout_plain (self,  plain_filename = "RMSD"):
         self._plain_filename = plain_filename
         self._combined_csv_filename = self._plain_filename + ".csv" 
@@ -571,14 +575,37 @@ class data_container(object):
         self._hiResApo_list = get_all_docked_type(self._data, docked_type = "hiResApo") 
         self._hiResHolo_list = get_all_docked_type(self._data, docked_type = "hiResHolo") 
         self._hiTanimoto_list = get_all_docked_type(self._data, docked_type = "hiTanimoto") 
-        self._whole_data_lines = ["%-20s%-15s, %-15s, %-15s, %-15s, %-15s, %-15s \n"%("Target_PDBID,", "LMCSS", "SMCSS", "hiResApo", "hiResHolo", "hiTanimoto", "LMCSS_ori_distance")]
+
+        self._whole_data_lines = ["%-20s%-15s, %-15s, %-15s, %-15s, %-15s, "
+                                  "%-15s \n" % ("Target_PDBID,", "LMCSS", "SMCSS",
+                                                "hiResApo", "hiResHolo", "hiTanimoto",
+                                                "LMCSS_ori_distance")]
+
+        self._whole_data_lines.append("\nSummary Statistics\n\n")
+
         #append the number of cases line
-        self._whole_data_lines.append("%-20s%-15s, %-15s, %-15s, %-15s, %-15s, \n"%("Number_of_cases,", len(self._LMCSS_list), len(self._SMCSS_list), len(self._hiResApo_list), len(self._hiResHolo_list), len(self._hiTanimoto_list)))
-        self._whole_data_lines.append("\n\nSummary Statistics\n\n")
+        self._whole_data_lines.append("%-20s%-15s, %-15s, %-15s, %-15s, "
+                                      "%-15s, \n" % ("Number_of_cases,",
+                                                     len(self._LMCSS_list),
+                                                     len(self._SMCSS_list),
+                                                     len(self._hiResApo_list),
+                                                     len(self._hiResHolo_list),
+                                                     len(self._hiTanimoto_list)))
+
         #append the average min max median, first
-        self._average_line, self._max_line, self._min_line, self._medium_line = ("%-20s"%"Average,", "%-20s"%"Maximum,", "%-20s"%"Minimum,", "%-20s"%"Median,")
-        for value_list in (self._LMCSS_list, self._SMCSS_list, self._hiResApo_list, self._hiResHolo_list, self._hiTanimoto_list):
-            average_score, min_score, max_score, medium_score = calculate_average_min_max_median(value_list)
+        (self._average_line, self._max_line,
+         self._min_line, self._medium_line) = ("%-20s"%"Average,",
+                                               "%-20s"%"Maximum,",
+                                               "%-20s"%"Minimum,",
+                                               "%-20s"%"Median,")
+
+        for value_list in (self._LMCSS_list, self._SMCSS_list,
+                           self._hiResApo_list, self._hiResHolo_list,
+                           self._hiTanimoto_list):
+            (average_score, min_score,
+             max_score,
+             medium_score) = calculate_average_min_max_median(value_list)
+
             self._average_line += average_score 
             self._max_line += max_score 
             self._min_line += min_score 
@@ -593,7 +620,8 @@ class data_container(object):
         self._whole_data_lines.append(self._medium_line)
         self._whole_data_lines.append("\nIndividual Results\n\n")
         #append the value for each PDBID 
-        all_pro_type = ["LMCSS", "SMCSS", "hiResApo", "hiResHolo", "hiTanimoto", "LMCSS_ori"]
+        all_pro_type = ["LMCSS", "SMCSS", "hiResApo", "hiResHolo",
+                        "hiTanimoto", "LMCSS_ori"]
         for target_ID in self._data:
             self._new_line_score = ""
             self._valid_line = False
@@ -601,18 +629,19 @@ class data_container(object):
                 if docked_type in self._data[target_ID]:
                     docked_type_dis = docked_type + "_dis"
                     if docked_type_dis in self._data[target_ID]:
-                        self._new_line_score += "%-6.3f(%-6.3f) , "%(self._data[target_ID][docked_type], self._data[target_ID][docked_type_dis])
+                        self._new_line_score += "%-6.3f(%-6.3f) , " % (self._data[target_ID][docked_type],
+                                                                       self._data[target_ID][docked_type_dis])
                     else:
                         if not docked_type == "LMCSS_ori":
-                            self._new_line_score += "%-15.3f, "%(self._data[target_ID][docked_type])
+                            self._new_line_score += "%-15.3f, " % (self._data[target_ID][docked_type])
                         else:
-                            self._new_line_score += "(%-6.3f)       , "%(self._data[target_ID][docked_type]) 
+                            self._new_line_score += "(%-6.3f)       , " % (self._data[target_ID][docked_type])
                     self._valid_line = True
                 else:
-                    self._new_line_score += "%-15s, "%(" ")
+                    self._new_line_score += "%-15s, " % (" ")
             if self._valid_line:
-                pdbid_full = "%s,"%target_ID
-                self._new_line = "%-20s"%(pdbid_full)
+                pdbid_full = "%s," % target_ID
+                self._new_line = "%-20s" % (pdbid_full)
                 self._new_line += self._new_line_score
                 self._new_line += "\n"
                 self._whole_data_lines.append(self._new_line)
@@ -621,7 +650,8 @@ class data_container(object):
         self._plain_csv_file.writelines(self._whole_data_lines)
         self._plain_csv_file.close()
         #write out txt file
-        self._whole_data_lines_txt = [item.replace(",", " ") for item in self._whole_data_lines]
+        self._whole_data_lines_txt = [item.replace(",",
+                                                   " ") for item in self._whole_data_lines]
         self._plain_txt_file = open(self._combined_txt_filename, "w")
         self._plain_txt_file.writelines(self._whole_data_lines_txt)
         self._plain_txt_file.close()
