@@ -442,13 +442,13 @@ class TestEvaluation(unittest.TestCase):
                                     None, params)
         evaluation._write_evaluate_exitcode_file(0)
         self.assertTrue('exception trying to write exit code file' in
-                         evaluation.get_email_log())
+                        evaluation.get_email_log())
 
         # try with various values
         temp_dir = tempfile.mkdtemp()
         try:
             evaluation = EvaluationTask(temp_dir, 'foo.evaluation',
-                                    None, params)
+                                        None, params)
             evaluation.create_dir()
 
             # try with None

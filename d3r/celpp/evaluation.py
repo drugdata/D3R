@@ -2,7 +2,6 @@ __author__ = 'churas'
 
 import os
 import logging
-import signal
 
 from d3r.celpp.task import D3RTask
 from d3r.celpp.task import D3RParameters
@@ -282,7 +281,8 @@ class EvaluationEmailer(object):
                 'center and the crystal ligand center of mass.\n\n')
         msg += etask.get_evaluation_summary()
 
-        msg += '\n\nSincerely,\n\nCELPP Automation ' + etask.get_program_version()
+        msg += ('\n\nSincerely,\n\nCELPP Automation ' +
+                etask.get_program_version())
 
         guid = etask.get_guid_for_task()
         subject = (D3RTask.SUBJECT_LINE_PREFIX +
@@ -485,6 +485,10 @@ class EvaluationTask(D3RTask):
             final_log = os.path.join(out_dir, EvaluationTask.FINAL_LOG)
             if os.path.isfile(final_log):
                 file_list.append(final_log)
+
+            efile = os.path.join(out_dir, EvaluationTask.EVAL_EXITCODEFILE)
+            if os.path.isfile(efile):
+                file_list.append(efile)
 
             rmsd = self.get_rmsd_txt()
             if os.path.isfile(rmsd):
