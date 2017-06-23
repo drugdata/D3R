@@ -2,6 +2,7 @@ __author__ = 'churas'
 
 import os
 import logging
+import signal
 
 from d3r.celpp.task import D3RTask
 from d3r.celpp.task import D3RParameters
@@ -347,6 +348,9 @@ class EvaluationTask(D3RTask):
     FINAL_LOG = 'final.log'
     RMSD_TXT = 'RMSD.txt'
     RMSD_PICKLE = 'RMSD.pickle'
+
+    EVAL_EXITCODEFILE = 'evaluate.exitcode'
+
     EXT_SUBMISSION_SUFFIX = '.extsubmission'
     SCORE_DIR = 'score'
     COMPLEX_SUFFIX = '_complex.pdb'
@@ -374,6 +378,25 @@ class EvaluationTask(D3RTask):
         :returns: int denoting priority
         """
         return self._priority
+
+    def _write_evaluate_exitcode_file(self, ecode):
+        """Writes evaluate.py exit code to
+           self.get_dir().EVAL_EXITCODEFILE
+           If there is an error of any kind this method will
+           catch the exception and log it to email and to
+           the logger
+        """
+        try:
+            ecodefile = os.path.join(self.get_dir(),
+                                     EvaluationTask.EVAL_EXITCODEFILE)
+            logger.debug('Attempting to write to ' + str(ecodefile))
+            with open(ecodefile, 'w') as f:
+                f.write(str(ecode) + '\n')
+                f.flush()
+        except Exception as e:
+            logger.exception('Error writing exit code file')
+            self.append_to_email_log('Caught exception trying to '
+                                     'write exit code file ' + str(e) + '\n')
 
     def set_evaluation_emailer(self, emailer):
         self._emailer = emailer
@@ -608,10 +631,13 @@ class EvaluationTask(D3RTask):
 
         eval_name = os.path.basename(self.get_args().evaluation)
 
-        self.run_external_command(eval_name, cmd_to_run,
-                                  False,
-                                  timeout=evaltimeout,
-                                  kill_delay=killdelay)
+        ecode = self.run_external_command(eval_name, cmd_to_run,
+                                          False,
+                                          timeout=evaltimeout,
+                                          kill_delay=killdelay)
+
+        # write out evaluate exit code file
+        self._write_evaluate_exitcode_file(ecode)
 
         # attempt to send evaluation email
         try:
