@@ -3,6 +3,23 @@
 History
 -------
 
+1.9.0 (2017-06-23)
+--------------------
+
+* EvaluationTask now records evaluate.py task exit code in a file
+  `Issue #134 <https://github.com/drugdata/D3R/issues/134>`_
+
+* Symmetry filter added to blastnfilter.py
+  `Issue #145 <https://github.com/drugdata/D3R/issues/145>`_
+
+* In RMSD.txt,RMSD.csv renamed Medium to Median and swapped values
+  for Maximum and Minimum
+  `Issue #144 <https://github.com/drugdata/D3R/issues/144>`_
+
+* Added note about new values in parenthesis in individual results
+  email
+  `Issue #142 <https://github.com/drugdata/D3R/issues/142>`_
+
 1.8.0 (2017-05-18)
 --------------------
 
