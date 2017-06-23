@@ -4,6 +4,7 @@ import unittest
 import tempfile
 import os.path
 import stat
+import signal
 
 """
 test_evaluation
@@ -432,6 +433,50 @@ class TestEvaluation(unittest.TestCase):
         evaluation.set_priority(4)
         self.assertEqual(evaluation.get_priority(), 4)
 
+    def test_write_evaluate_exitcode_file(self):
+        # test where no directory exists so an error
+        # should be thrown
+        params = D3RParameters()
+        # no dock task found so it cannot run
+        evaluation = EvaluationTask('/blah', 'foo.evaluation',
+                                    None, params)
+        evaluation._write_evaluate_exitcode_file(0)
+        self.assertTrue('exception trying to write exit code file' in
+                         evaluation.get_email_log())
+
+        # try with various values
+        temp_dir = tempfile.mkdtemp()
+        try:
+            evaluation = EvaluationTask(temp_dir, 'foo.evaluation',
+                                    None, params)
+            evaluation.create_dir()
+
+            # try with None
+            evaluation._write_evaluate_exitcode_file(None)
+            efile = os.path.join(evaluation.get_dir(),
+                                 EvaluationTask.EVAL_EXITCODEFILE)
+            with open(efile, 'r') as f:
+                data = f.read().rstrip()
+            self.assertEqual(data, 'None')
+            self.assertEqual(evaluation.get_email_log(), None)
+
+            # try with 0
+            evaluation._write_evaluate_exitcode_file(0)
+            with open(efile, 'r') as f:
+                data = f.read().rstrip()
+            self.assertEqual(data, '0')
+            self.assertEqual(evaluation.get_email_log(), None)
+
+            # try with foo
+            evaluation._write_evaluate_exitcode_file('foo')
+            with open(efile, 'r') as f:
+                data = f.read().rstrip()
+            self.assertEqual(data, 'foo')
+            self.assertEqual(evaluation.get_email_log(), None)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
     def test_can_run(self):
         temp_dir = tempfile.mkdtemp()
         try:
@@ -667,6 +712,14 @@ class TestEvaluation(unittest.TestCase):
             errfile = os.path.join(evaluation.get_dir(),
                                    D3RTask.ERROR_FILE)
             self.assertEqual(os.path.isfile(errfile), True)
+
+            efile = os.path.join(evaluation.get_dir(),
+                                 EvaluationTask.EVAL_EXITCODEFILE)
+            self.assertTrue(os.path.isfile(efile))
+            with open(efile, 'r') as f:
+                data = f.read().rstrip()
+            self.assertEqual(data, '1')
+
         finally:
             shutil.rmtree(temp_dir)
 
@@ -704,6 +757,12 @@ class TestEvaluation(unittest.TestCase):
             stdout = os.path.join(evaluation.get_dir(),
                                   'true.stdout')
             self.assertEqual(os.path.isfile(stdout), True)
+            efile = os.path.join(evaluation.get_dir(),
+                                 EvaluationTask.EVAL_EXITCODEFILE)
+            self.assertTrue(os.path.isfile(efile))
+            with open(efile, 'r') as f:
+                data = f.read().rstrip()
+            self.assertEqual(data, '0')
         finally:
             shutil.rmtree(temp_dir)
 
@@ -743,6 +802,13 @@ class TestEvaluation(unittest.TestCase):
             stdout = os.path.join(evaluation.get_dir(),
                                   'true.stdout')
             self.assertEqual(os.path.isfile(stdout), True)
+
+            efile = os.path.join(evaluation.get_dir(),
+                                 EvaluationTask.EVAL_EXITCODEFILE)
+            self.assertTrue(os.path.isfile(efile))
+            with open(efile, 'r') as f:
+                data = f.read().rstrip()
+            self.assertEqual(data, '0')
         finally:
             shutil.rmtree(temp_dir)
 
@@ -790,6 +856,13 @@ class TestEvaluation(unittest.TestCase):
             stdout = os.path.join(evaluation.get_dir(),
                                   'foo.py.stdout')
             self.assertEqual(os.path.isfile(stdout), True)
+
+            efile = os.path.join(evaluation.get_dir(),
+                                 EvaluationTask.EVAL_EXITCODEFILE)
+            self.assertTrue(os.path.isfile(efile))
+            with open(efile, 'r') as f:
+                data = f.read().rstrip()
+            self.assertEqual(data, str(-signal.SIGTERM))
         finally:
             shutil.rmtree(temp_dir)
 
@@ -841,6 +914,13 @@ class TestEvaluation(unittest.TestCase):
                                                       'email to: bob@bob.com,'
                                                       ' joe@joe.com\n')
             self.assertTrue(res)
+
+            efile = os.path.join(evaluation.get_dir(),
+                                 EvaluationTask.EVAL_EXITCODEFILE)
+            self.assertTrue(os.path.isfile(efile))
+            with open(efile, 'r') as f:
+                data = f.read().rstrip()
+            self.assertEqual(data, '0')
 
         finally:
             shutil.rmtree(temp_dir)
