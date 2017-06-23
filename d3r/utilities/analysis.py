@@ -184,6 +184,7 @@ class OutputAnalysis(object):
         out.append('  Percent Coverage                 >=    {no:.2}'.format(no = HitFilter.coverage_threshold))
         out.append('  No. of hit sequences             <=    {no}'.format(no = HitFilter.sequence_threshold))
         out.append('  Structure determination method:        {method}'.format(method = HitFilter.method))
+        out.append('  Ligand self symmetries           <=    {no}'.format(no=100)) # TODO this filter needs to be redone
         out.append('')
         for l in out:
             logger.debug(l)
