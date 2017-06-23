@@ -43,7 +43,7 @@ Dependencies
  * `schrodinger <https://www.schrodinger.com/>`_ (needed by proteinligprep.py, glidedocking.py, chimera_proteinligprep.py & vinadocking.py)
  * `babel <http://openbabel.org/wiki/Main_Page>`_ (needed by chimera_proteinligprep.py)
  * `Autodock Vina <http://vina.scripps.edu/>`_ & `MGL Tools <http://mgltools.scripps.edu/downloads>`_ (needed by vinadocking.py)
- * `OpenEye Python with License <https://docs.eyesopen.com/toolkits/python/index.html`_ (needed by blastnfilter.py symmetry filter and by evaluate.py)
+ * `OpenEye Python with License <https://docs.eyesopen.com/toolkits/python/index.html>`_ (needed by blastnfilter.py symmetry filter and by evaluate.py)
 
 Installation
 ------------
