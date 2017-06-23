@@ -351,9 +351,8 @@ class TestFtpFileTransfer(unittest.TestCase):
 
             self.assertEqual(foo.upload_files([valid_file, afile]), True)
             self.assertEqual(foo.get_error_msg(), None)
-            self.assertEqual(foo.get_upload_summary(),
-                             '2 (6 bytes) files uploaded in 0 '
-                             'seconds to host hosty:/remote')
+            self.assertTrue('2 (6 bytes) files uploaded in ' in foo.get_upload_summary())
+            self.assertTrue(' seconds to host hosty:/remote' in foo.get_upload_summary())
             foo.disconnect()
             self.assertEqual(mockftp.put.call_count, 2)
 
