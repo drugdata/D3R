@@ -36,10 +36,8 @@ Include: yum
 
     echo "Running puppet apply"
     /opt/puppetlabs/bin/puppet apply /d3r/manifests/open.pp
-    rm /mgltools_x86_64Linux2_1.5.6.tar.gz
     rm /Miniconda2-latest-Linux-x86_64.sh 
     rm /pymol-v1.8.4.0.tar.bz2
-    rm /autodock_vina_1_1_2_linux_x86.tgz
     wheelfile=`find / -maxdepth 1 -name "d3r*whl" -type f | head -n 1`
     if [ -f "$wheelfile" ] ; then
        echo "Found $wheelfile  --  Replacing d3r with this version"
