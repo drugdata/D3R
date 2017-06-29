@@ -72,13 +72,11 @@ docs:
 	$(MAKE) -C docs html
 	open docs/_build/html/index.html
 
-testrelease: clean
-	python setup.py sdist upload -r pypitest
-	python setup.py bdist_wheel upload -r pypitest
+testrelease: dist
+	twine upload dist/* -r testpypi
 
-release: clean
-	python setup.py sdist upload -r pypi
-	python setup.py bdist_wheel upload -r pypi
+release: dist
+	twine upload dist/*
 	
 dist: clean
 	python setup.py sdist
