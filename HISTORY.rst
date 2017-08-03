@@ -3,6 +3,12 @@
 History
 -------
 
+1.9.1 (2017-08-03)
+--------------------
+
+* Fixed bug where Apo targets not getting pocket center correctly defined
+  `Issue #151 <https://github.com/drugdata/D3R/issues/151>`_ 
+
 1.9.0 (2017-06-23)
 --------------------
 
