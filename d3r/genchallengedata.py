@@ -35,8 +35,10 @@ def get_chain_length_and_position (pdb_filename, pdb_id):
         for chain in model:
             chain_id = chain.get_id()
             chain_lenth = len(chain)
-            if chain_id not in chain_dic:
-                chain_dic[chain_id] = []
+            #if chain_id not in chain_dic:
+            #    chain_dic[chain_id] = []
+            #if chain_id in chain_dic:
+            #    1/0
             chain_x_coord = 0
             chain_y_coord = 0
             chain_z_coord = 0
@@ -47,9 +49,9 @@ def get_chain_length_and_position (pdb_filename, pdb_id):
                     chain_y_coord += atom.get_coord()[1]      
                     chain_z_coord += atom.get_coord()[2]      
                     total_number_of_atoms += 1
-            average_x = chain_x_coord/(3*total_number_of_atoms)
-            average_y = chain_y_coord/(3*total_number_of_atoms)
-            average_z = chain_z_coord/(3*total_number_of_atoms)
+            average_x = chain_x_coord/(total_number_of_atoms)
+            average_y = chain_y_coord/(total_number_of_atoms)
+            average_z = chain_z_coord/(total_number_of_atoms)
             average_position = (average_x, average_y, average_z)
             chain_dic[chain_id] = [chain_lenth, average_position]
     return chain_dic
@@ -61,6 +63,7 @@ def get_distance (pos1, pos2):
 def extract_chain(pdb_filename, pdb_id, ligand_center, chain_length = 100):
     #extract the chain in the pdb file which is the most closet to ligand center and have the chain length larger than the default chain length
     chain_dic = get_chain_length_and_position(pdb_filename, pdb_id)
+    
     ID_list = []
     distance_list = []
     for chain_ID in chain_dic:
@@ -70,6 +73,7 @@ def extract_chain(pdb_filename, pdb_id, ligand_center, chain_length = 100):
             distance_list.append(distance)
     if ID_list:
         ID_list, distance_list = (list(x) for x in zip(*sorted(zip(ID_list, distance_list), key=lambda pair: pair[1])))
+
         target_chain_ID = ID_list [0]
         split_chain(pdb_filename, pdb_filename, pdb_id, target_chain_ID)
     
