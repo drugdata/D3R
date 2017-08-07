@@ -13,6 +13,10 @@ from d3r.blast.base import Base
 from d3r.blast.hit import Hit
 from d3r.blast.ligand import Ligand
 
+
+from memory_profiler import profile
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -90,6 +94,8 @@ class Query(Base):
         self.sequences.append(SeqRecord(Seq(seq, IUPAC.protein), id = id))
         self.sequence_count += 1
 
+
+    #@profile(precision=1)
     def run_blast(self, pdb_db, out_dir):
         """
         Runs BLASTP on the sequence(s) contained in the Query instance. If the chain of a sequence has not been
@@ -217,6 +223,7 @@ class Query(Base):
         std_out, std_err = cline()
         blast_records = NCBIXML.parse(StringIO(std_out))
         record = next(blast_records)
+        
         return record
 
     def write_fasta(self, sequence, out_dir):
@@ -268,6 +275,50 @@ class Query(Base):
         """
         self.hits.sort(key=lambda x: x.get_resolution())
 
+        '''
+    @profile(precision=1)
+    def set_hits(self, records):
+        """
+        Populate self.test_list with a list of hit objects. Each hit object corresponds to a BLASTP hit stored in one
+        of the alignment objects found in the input record.alignments list and contains the following information about
+        the structural hit: wwPDB id, % coverage (alignment length / query length), % identity (number of identical
+        amino acids in the alignment / hit length), experimental structural determination method, resolution,
+        :param record (Bio.blast.Record object)
+        """
+        # do something to set chain count and include those chains not in alignments
+        #### add stuff to make this work...move this stuff inside Query
+        logger.debug('Found ' + str(len(records)) + ' of hits')
+        for record_ind in range(len(records)):
+            logger.debug('Found ' + str(len(records[record_ind].alignments)) + ' alignments for record')
+            for alignment in records[record_ind].alignments:
+                pdb_id = self.get_pdb_id_from_alignment(alignment)
+                #print "\tCheck the alignment:%s, and pdb ID:%s "%(alignment, pdb_id)
+                chain_id = self.get_chain_id_from_alignment(alignment)
+                #print "\tCheck the chain ID", chain_id
+                if pdb_id in self.hit_membership.keys():
+                    self.hits[self.hit_membership[pdb_id]].set_sequence(pdb_id, chain_id, records[record_ind], alignment)
+                    #sliu 0808 add chain info in query
+                    self.hits[self.hit_membership[pdb_id]].set_ligands(chain_id)
+                else:
+                    hit = Hit()
+                    hit.pdb_id = pdb_id
+                    if not hit.read_pdb():
+                        continue
+                    hit.set_resolution()
+                    hit.set_expt_method()
+                    #sliu 01092017 fix the bug to skip the case where set sequence is not finished
+                    if hit.set_sequence(pdb_id, chain_id, records[record_ind], alignment):
+                        hit.set_ligands(chain_id)
+                    #print "Inside query set hits> set ligands check after set ligands"
+                    #raw_input()
+                        self.hits.append(hit)
+                        self.hit_membership[pdb_id] = len(self.hits) - 1
+            for hit_ind in range(len(self.hits)):
+                print 'AAAAAAA', hit_ind
+                self.hits[hit_ind].pdb = None
+
+                '''
+    @profile(precision=1)
     def set_hits(self, records):
         """
         Populate self.test_list with a list of hit objects. Each hit object corresponds to a BLASTP hit stored in one
@@ -287,9 +338,10 @@ class Query(Base):
                 chain_id = self.get_chain_id_from_alignment(alignment)
                 #print "\tCheck the chain ID", chain_id
                 if pdb_id in self.hit_membership.keys():
-                    self.hits[self.hit_membership[pdb_id]].set_sequence(pdb_id, chain_id, record, alignment)
+                    continue
+                    #self.hits[self.hit_membership[pdb_id]].set_sequence(pdb_id, chain_id, record, alignment)
                     #sliu 0808 add chain info in query
-                    self.hits[self.hit_membership[pdb_id]].set_ligands(chain_id)
+                    #self.hits[self.hit_membership[pdb_id]].set_ligands(chain_id)
                 else:
                     hit = Hit()
                     hit.pdb_id = pdb_id
@@ -299,11 +351,16 @@ class Query(Base):
                     hit.set_expt_method()
                     #sliu 01092017 fix the bug to skip the case where set sequence is not finished
                     if hit.set_sequence(pdb_id, chain_id, record, alignment):
-                        hit.set_ligands(chain_id)
+                        #hit.set_ligands(chain_id)
                     #print "Inside query set hits> set ligands check after set ligands"
                     #raw_input()
+                        #hit = None
                         self.hits.append(hit)
                         self.hit_membership[pdb_id] = len(self.hits) - 1
+            #for hit_ind in range(len(self.hits)):
+            #    print 'AAAAAAA', hit_ind
+            #    self.hits[hit_ind].pdb = None
+                
 
     def fill_sequences(self):
         """

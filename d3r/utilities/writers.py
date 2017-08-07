@@ -88,12 +88,14 @@ class Writer(object):
                     out.append('  Chain_{id}_{no}:  Length = {length}|%identity = {identity:.2} '
                                '(with Chain_{query_id})|%coverage = {coverage:.2} '
                                '(with Chain_{query_id})'.format(id=seq.hit_chain_id, no=seq.hit_sequence_id,
-                                                                length=len(seq.seq_record), identity=qa.identity,
+                                                                #length=len(seq.seq_record), identity=qa.identity,
+                                                                length=seq.seq_record_len, identity=qa.identity,
                                                                 coverage=qa.coverage, query_id=qa.query_chain_id))
             else:
                 out.append('  Chain_{id}_{no}: Length = {length}|Not a BLAST hit'.format(id=seq.hit_chain_id,
                                                                                           no=seq.hit_sequence_id,
-                                                                                          length=len(seq.seq_record)))
+                                                                                          #length=len(seq.seq_record)))
+                                                                                         length=seq.seq_record_len))
 
         for l in out: self.handle.write("%s\n" % l)
 
