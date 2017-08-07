@@ -226,15 +226,15 @@ class Ligand(object):
         self.smile = Chem.MolToSmiles(self.rd_mol)
         #2, convert smile to openeye mol
         try:
-            oe_mol = OEGraphMol()
-            OESmilesToMol(oe_mol, self.smile)
-            OESuppressHydrogens(oe_mol)
+            self.oe_mol = OEGraphMol()
+            OESmilesToMol(self.oe_mol, self.smile)
+            OESuppressHydrogens(self.oe_mol)
             atomexpr = OEExprOpts_AtomicNumber
             bondexpr = 0
-            mcss = OEMCSSearch (oe_mol, atomexpr, bondexpr, True)
+            mcss = OEMCSSearch (self.oe_mol, atomexpr, bondexpr, True)
             mcss.SetMCSFunc(OEMCSMaxAtomsCompleteCycles(1.5) )
             self.symmetry = 0
-            for match1 in mcss.Match(oe_mol):
+            for match1 in mcss.Match(self.oe_mol):
                 self.symmetry += 1
                 if not self.symmetry < maximum_symmetry:
                     break

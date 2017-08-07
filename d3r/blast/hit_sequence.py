@@ -22,9 +22,7 @@ class HitSequence(object):
         in the following:
             - query_alignments  - A list of QueryAlignment objects (list)
         """
-        #self.seq_record = seq_record
-        self.seq_record_seq = seq_record.seq
-        self.seq_record_len = len(seq_record)
+        self.seq_record = seq_record
         self.hit_pdb_id = None
         self.hit_chain_id = None
         self.hit_sequence_id = None

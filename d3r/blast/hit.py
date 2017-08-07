@@ -12,12 +12,6 @@ from d3r.blast.ligand import Ligand
 from d3r.filter import filtering_sets as filtering_sets
 from d3r.blast.hit_sequence import HitSequence
 
-
-
-from memory_profiler import profile
-
-
-
 logger = logging.getLogger(__name__)
 
 try:
@@ -47,7 +41,6 @@ class Hit(Base):
             raise IOError("'{pdb_path}' is not a directory".format(pdb_path=pdb_path))
 
     @staticmethod
-    #@profile(precision=1)
     def set_pdb_dict(fasta):
         """
         Each PDB ID is mapped to a list of sequences, one sequence for each of its chains. This information is stored
@@ -55,8 +48,6 @@ class Hit(Base):
         pdb_dict = { 'pdbid_chainid' : Bio.SeqRecord }
         :param fasta: path to the PDB sequences stored in FASTA format, i.e. "pdb_seqres.txt"
         """
-        #Hit.pdb_dict = RegDict()
-
         try:
             fasta_handle = open(fasta, 'r')
         except IOError:
@@ -254,8 +245,7 @@ class Hit(Base):
                 hs = HitSequence(seq_record)
                 hs.hit_sequence_id = self.sequence_count
             else:
-                #seq_id = [hs.hit_sequence_id for hs in self.sequences if hs.seq_record.seq == seq_record.seq][0]
-                seq_id = [hs.hit_sequence_id for hs in self.sequences if hs.seq_record_seq == seq_record.seq][0]
+                seq_id = [hs.hit_sequence_id for hs in self.sequences if hs.seq_record.seq == seq_record.seq][0]
                 hs = HitSequence(seq_record)
                 hs.hit_sequence_id = seq_id
             hs.blast_hit = True
@@ -288,8 +278,7 @@ class Hit(Base):
                     hs = HitSequence(seq_record)
                     hs.hit_sequence_id = self.sequence_count
                 else:
-                    #seq_id = [hs.hit_sequence_id for hs in self.sequences if hs.seq_record.seq == seq_record.seq][0]
-                    seq_id = [hs.hit_sequence_id for hs in self.sequences if hs.seq_record_seq == seq_record.seq][0]
+                    seq_id = [hs.hit_sequence_id for hs in self.sequences if hs.seq_record.seq == seq_record.seq][0]
                     hs = HitSequence(seq_record)
                     hs.hit_sequence_id = seq_id
                 hs.blast_hit = False
@@ -307,8 +296,7 @@ class Hit(Base):
         :param seq: a Bio.Seq object
         :return: Boolean
         """
-        #if len([hs for hs in self.sequences if hs.seq_record.seq == seq]) == 0:
-        if len([hs for hs in self.sequences if hs.seq_record_seq == seq]) == 0:
+        if len([hs for hs in self.sequences if hs.seq_record.seq == seq]) == 0:
             return True
         else:
             return False
@@ -360,7 +348,7 @@ class Hit(Base):
                 self.ligand_count += 1
             else:
                 ligand.label = 'dock'
-                #ligand.set_rd_mol_from_resname(resname)
+                ligand.set_rd_mol_from_resname(resname)
                 #modified by sliu 08/08
                 ligand.set_size()
                 ligand.set_heavy_size()
