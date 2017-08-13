@@ -14,7 +14,7 @@ except ImportError as e:
 import glob
 import re
 import pickle
-
+import json
 
 def get_distance (pos1, pos2):
     _dist_0 = float(pos1.split(",")[0])-float(pos2.split(",")[0])
@@ -566,6 +566,11 @@ class data_container(object):
         pickle.dump(self._data, self._pf)
         self._pf.close()
 
+    def layout_json(self, json_filename = "RMSD.json"):
+        self._jf = open(json_filename,'w')
+        json.dump(self._data, self._jf)
+        self._jf.close()
+
     def layout_plain (self,  plain_filename = "RMSD"):
         self._plain_filename = plain_filename
         self._combined_csv_filename = self._plain_filename + ".csv" 
@@ -701,6 +706,8 @@ def main_score(dock_dir, pdb_protein_path, evaluate_dir, blastnfilter_dir, chall
     result_container = data_container()
     result_pickle = "RMSD.pickle"
     pickle_full_path = os.path.join(current_dir, result_pickle) 
+    result_json = "RMSD.json"
+    json_full_path = os.path.join(current_dir, result_json) 
     result_plain = "RMSD"
     plain_full_path = os.path.join(current_dir, result_plain)
     #get all target dir info from the docked dir
@@ -800,12 +807,13 @@ def main_score(dock_dir, pdb_protein_path, evaluate_dir, blastnfilter_dir, chall
                         logging.info("\tSuccessfully calculate the rmsd for this category %s, the rmsd is %s"%(docked_structure_type, rmsd))
                         #update the pickle and txt csv file if there is valid case found 
                         result_container.layout_pickle (pickle_filename = pickle_full_path)
+                        result_container.layout_json (json_filename = json_full_path)
                         result_container.layout_plain (plain_filename = plain_full_path)
                         os.chdir(pdbid_local_path)
                     except Exception as ex:
                         result_container.register(target_dir, docked_type = docked_structure_type, value = None) 
                         os.chdir(pdbid_local_path)
-                        logging.exception("For this type of strcutre: %s, the rmsd could not be calculated"%docked_structure_type)
+                        logging.exception("For this type of structure: %s, the rmsd could not be calculated"%docked_structure_type)
                         continue
                 logging.info("++++++++++++++++Finished for this target %s+++++++++++++++++"%target_name)
                 os.chdir(current_dir)
@@ -817,6 +825,7 @@ def main_score(dock_dir, pdb_protein_path, evaluate_dir, blastnfilter_dir, chall
                 continue
     #after loop all possible target, layout the pickle and plain files    
     result_container.layout_pickle (pickle_filename = pickle_full_path)
+    result_container.layout_json (json_filename = json_full_path)
     result_container.layout_plain (plain_filename = plain_full_path)
             
 

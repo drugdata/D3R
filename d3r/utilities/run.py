@@ -4,6 +4,7 @@ __project__ = 'blastnfilter'
 import os
 import logging
 import in_put
+import sys
 from d3r.blast.hit import Hit
 from d3r.blast.ligand import Ligand
 from d3r.filter.filter import QueryFilter
@@ -64,10 +65,9 @@ def blast_the_query(query, pdb_db, pdb_path, fasta, out_dir, compinchi):
         query.set_hits(records)
         logger.debug('query.fill_sequences')
         query.fill_sequences()
-        for hit_ind in range(len(query.hits)):
-            print 'AAAAAA', hit_ind
-            del query.hits[hit_ind].pdb
-            query.hits[hit_ind].pdb = None
+        #for hit_ind in range(len(query.hits)):
+        #    del query.hits[hit_ind].pdb
+        #    query.hits[hit_ind].pdb = None
     return query
 
 
@@ -147,11 +147,10 @@ def run(options):
     out_analysis.print_filter_criteria(out_dir)
     logger.debug("# queries " + str(len(queries)))
     while queries:
-    #for query_ind in range(len(queries)):
-        #here the pop method extract the last item in the list and remove this item from the original list
+        #here the pop method extracts the last item in the list and removes this item from the original list
         query = queries.pop()
         pid = os.fork()
-        if pid is not 0:
+        if pid != 0:
           logger.info("In Parent waiting for process")
           os.waitpid(pid, 0)
           continue
@@ -180,8 +179,9 @@ def run(options):
         out_analysis.set_query(query)
         #out_put.writer(out_dir, queries[query_ind], True)
         out_put.writer(out_dir, query, True)
-        logger.info("Exiting child: " + str(pid))
-        sys.exit(0)
+        if pid == 0:
+            logger.info("Exiting child: " + str(pid))
+            sys.exit(0)
 
         #for hit_ind in range(len(queries[query_ind].hits)):
         #    queries[query_ind].hits[hit_ind].sequences = None
