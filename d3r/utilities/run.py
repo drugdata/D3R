@@ -4,7 +4,7 @@ __project__ = 'blastnfilter'
 import os
 import logging
 import in_put
-#import sys
+import sys
 from d3r.blast.hit import Hit
 from d3r.blast.ligand import Ligand
 from d3r.filter.filter import QueryFilter
