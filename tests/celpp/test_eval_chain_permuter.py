@@ -111,8 +111,8 @@ class TestChainPermuter(unittest.TestCase):
                                       '                 \n\n')
                 self.assertEqual(task.get_error(), None)
         finally:
-            pass
-            #shutil.rmtree(temp_dir)
+            #pass
+            shutil.rmtree(temp_dir)
 
 
 if __name__ == '__main__':
