@@ -32,7 +32,7 @@ class TestChainPermuter(unittest.TestCase):
             sys.stdout.write("openeye.oechem not importable.")
             self.has_oechem = False
 
-        ret_code = os.system('$SCHRODINGER/run split_structure.py &> '
+        ret_code = os.system('PYTHONPATH= $SCHRODINGER/run split_structure.py &> '
                              '/dev/null')
         if ret_code == 512:
             sys.stdout.write("Schrodinger commandline available.")
