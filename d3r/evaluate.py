@@ -5,6 +5,7 @@ from Bio import PDB
 import commands
 import time
 import sys
+import string
 
 try:
     from openeye.oechem import *
@@ -14,7 +15,7 @@ except ImportError as e:
 import glob
 import re
 import pickle
-
+import json
 
 def get_distance (pos1, pos2):
     _dist_0 = float(pos1.split(",")[0])-float(pos2.split(",")[0])
@@ -148,7 +149,7 @@ def align_protein (template_complex, input_complex, output_complex, timestep = 5
         output_complex_filename = os.path.basename(output_complex)
         #change to the target dir since the align binding site only allow to run locally
         os.chdir(target_dir)
-        commands.getoutput("$SCHRODINGER/utilities/align_binding_sites %s %s -o %s"%(template_complex, input_complex, output_complex_filename))
+        commands.getoutput("PYTHONPATH= $SCHRODINGER/utilities/align_binding_sites %s %s -o %s"%(template_complex, input_complex, output_complex_filename))
         os.chdir(running_dir)
         return wait_and_check(output_complex_filename, timestep = timestep, how_many_times = how_many_times)
     except Exception as ex:
@@ -161,7 +162,7 @@ def whole_protein_align (template_complex, input_complex, output_complex, timest
         target_dir = os.path.dirname(os.path.abspath(output_complex))
         output_complex_filename = os.path.basename(output_complex)
         os.chdir(target_dir) 
-        commands.getoutput("$SCHRODINGER/utilities/structalign %s %s"%(template_complex, input_complex))
+        commands.getoutput("PYTHONPATH= $SCHRODINGER/utilities/structalign %s %s"%(template_complex, input_complex))
         rotated_protein = "rot-" + input_complex
         if wait_and_check(rotated_protein, timestep = timestep, how_many_times = how_many_times):
             commands.getoutput("mv %s %s"%(rotated_protein, output_complex))  
@@ -232,7 +233,7 @@ def merge_two_pdb (receptor, ligand, complex_pdb):
 
 def convert_ligand_format (input_ligand, output_ligand):
     try:
-        commands.getoutput("$SCHRODINGER/utilities/structconvert %s %s"%(input_ligand, output_ligand))
+        commands.getoutput("PYTHONPATH= $SCHRODINGER/utilities/structconvert %s %s"%(input_ligand, output_ligand))
         return True
     except Exception as ex:
         logging.exception("This ligand %s cannot be convertted to %s, need to check the format"%(input_ligand, output_ligand))
@@ -430,10 +431,32 @@ class docked (object):
         self._docked_complex = None
         if self._docked_ligand_pdb:
             #merge the receptor and the ligand together
+            #self._docked_complex_name = self._docked_ligand_pdb_name + "_complex.pdb"
+            #self._docked_complex = os.path.join(self._docked_ligand_mol_path, self._docked_complex_name)
+            #if not merge_two_pdb(self._docked_receptor_pdb, self._docked_ligand_pdb, self._docked_complex):
+            #    self._docked_complex = None
+            os.system('PYTHONPATH= $SCHRODINGER/run split_structure.py -merge_ligands_with_chain -groupwaters -many_files ' + self._docked_receptor_pdb + ' docked_receptor.pdb')
+            whole_docked_protein = open(self._docked_receptor_pdb, "r")
+            string_docked_protein = whole_docked_protein.read()
+            whole_docked_protein.close()
+            self._split_docked_complex = []
             self._docked_complex_name = self._docked_ligand_pdb_name + "_complex.pdb"
             self._docked_complex = os.path.join(self._docked_ligand_mol_path, self._docked_complex_name)
-            if not merge_two_pdb(self._docked_receptor_pdb, self._docked_ligand_pdb, self._docked_complex):
-                self._docked_complex = None
+            chain_files = []
+            for chain_file in glob.glob("docked_receptor*.pdb"):
+                chain_files.append(chain_file)
+            for chain in range(0, len(chain_files)):
+                split_complex_name = self._docked_ligand_pdb_name.replace(".pdb", "_split_" + str(chain) + ".pdb")
+                split_complex = os.path.join(self._docked_ligand_mol_path, split_complex_name)
+                if not merge_two_pdb("docked_receptor_chain" + string.uppercase[chain] + ".pdb", self._docked_ligand_pdb, split_complex):
+                    self._docked_complex = None
+                else:
+                    f1 = open(split_complex)
+                    split_complex_text = f1.read()
+                    self._split_docked_complex.append(split_complex_text)
+                    f1.close()
+
+            
     def align_complex_onto_crystal (self, time_check_frequence = 5, check_point_number = 100, sc_ligand_default = "UNK-900"):
         self._all_aligned_complex = {} 
         self._all_aligned_ligand = {} 
@@ -441,58 +464,69 @@ class docked (object):
             for _crystal_receptor_index, _crystal_receptor in enumerate(self._crystal._receptor):
                 #_crystal_ligand = self._crystal._crystal_ligand[_crystal_receptor_index]
                 _crystal_ligand_info = self._crystal._valid_ligand_info[_crystal_receptor_index]
+                self._all_aligned_complex[_crystal_ligand_info] = []
+                self._all_aligned_ligand[_crystal_ligand_info] = []
                 logging.debug("Try to align the docked ligand onto this crystal receptor:%s"%(_crystal_receptor))
-                self._aligned_complex_name = self._docked_ligand_mol_basename + "_complex_aligned" + "_" + _crystal_ligand_info + ".pdb"
-                self._aligned_ligand_name = self._docked_ligand_mol_basename + "_complex_aligned_ligand" + "_" + _crystal_ligand_info + ".pdb"
-                self._aligned_complex = os.path.join(self._docked_ligand_mol_path, self._aligned_complex_name)
-                self._aligned_ligand = os.path.join(self._docked_ligand_mol_path, self._aligned_ligand_name)
-                #do the alignment
-                logging.debug("Try to align the docked complex %s onto the crystal receptor %s"%(self._docked_complex, _crystal_receptor))
-                #try the binding site alignment first
-                if not align_protein(_crystal_receptor, self._docked_complex, self._aligned_complex, timestep = time_check_frequence, how_many_times = check_point_number ):
-                    #go to whole protein alignment
-                    total_relaxing_time = time_check_frequence*check_point_number
-                    logging.debug("The binding site alignment from %s onto %s didn't finish in %s second... Need to break"%(self._docked_complex, _crystal_receptor, total_relaxing_time))
-                    if not whole_protein_align(_crystal_receptor, self._docked_complex, self._aligned_complex, timestep = time_check_frequence, how_many_times = check_point_number ):
+                for i, j in enumerate(self._split_docked_complex):
+                    self._aligned_complex_name = self._docked_ligand_mol_basename + "_complex_aligned" + "_" + _crystal_ligand_info + "_" + str(i) + ".pdb"
+                    self._aligned_ligand_name = self._docked_ligand_mol_basename + "_complex_aligned_ligand" + "_" + _crystal_ligand_info + "_" + str(i) + ".pdb"
+                    self._aligned_complex = os.path.join(self._docked_ligand_mol_path, self._aligned_complex_name)
+                    self._aligned_ligand = os.path.join(self._docked_ligand_mol_path, self._aligned_ligand_name)
+                    split_complex_name = self._docked_ligand_pdb_name.replace(".pdb", "_split_" + str(i) + ".pdb")
+                    split_complex = os.path.join(self._docked_ligand_mol_path, split_complex_name)
+                    #do the alignment
+                    logging.debug("Try to align the docked complex %s onto the crystal receptor %s"%(self._docked_complex, _crystal_receptor))
+                    #try the binding site alignment first
+                    if not align_protein(_crystal_receptor, split_complex, self._aligned_complex, timestep = time_check_frequence, how_many_times = check_point_number):
+                        #go to whole protein alignment
                         total_relaxing_time = time_check_frequence*check_point_number
-                        logging.info("The whole protein alignment from %s onto %s didn't finish in %s second... Need to break"%(self._docked_complex, _crystal_receptor, total_relaxing_time))
+                        logging.debug("The binding site alignment from %s onto %s didn't finish in %s second... Need to break"%(self._docked_complex, _crystal_receptor, total_relaxing_time))
+                        if not whole_protein_align(_crystal_receptor, split_complex, self._aligned_complex, timestep = time_check_frequence, how_many_times = check_point_number ):
+                            total_relaxing_time = time_check_frequence*check_point_number
+                            logging.info("The whole protein alignment from %s onto %s didn't finish in %s second... Need to break"%(self._docked_complex, _crystal_receptor, total_relaxing_time))
+                        else:
+                            self._all_aligned_complex[_crystal_ligand_info].append(self._aligned_complex)
                     else:
-                        self._all_aligned_complex[_crystal_ligand_info] = self._aligned_complex
-                else:
-                    self._all_aligned_complex[_crystal_ligand_info] = self._aligned_complex
-                logging.debug("Successfully align %s onto %s and get the aligned structure %s"%(self._docked_complex, _crystal_receptor, self._aligned_complex))
-                #extract the ligand from aligned complex
-                try:
-                    extract_ligand_from_complex(self._aligned_complex, self._aligned_ligand, ligand_info = sc_ligand_default)
-                    logging.debug("Successfully extract ligand file %s from aligned complex %s"%(self._aligned_ligand, self._aligned_complex))
-                    self._all_aligned_ligand[_crystal_ligand_info] = self._aligned_ligand
-                except Exception as ex:
-                    logging.exception("Cannot extract ligand file %s from aligned complex %s"%(self._aligned_ligand, self._aligned_complex))
+                        self._all_aligned_complex[_crystal_ligand_info].append(self._aligned_complex)
+                    logging.debug("Successfully align %s onto %s and get the aligned structure %s"%(self._docked_complex, _crystal_receptor, self._aligned_complex))
+                    #extract the ligand from aligned complex
+                    try:
+                        extract_ligand_from_complex(self._aligned_complex, self._aligned_ligand, ligand_info = sc_ligand_default)
+                        logging.debug("Successfully extract ligand file %s from aligned complex %s"%(self._aligned_ligand, self._aligned_complex))
+                        self._all_aligned_ligand[_crystal_ligand_info].append(self._aligned_ligand)
+                    except Exception as ex:
+                        logging.exception("Cannot extract ligand file %s from aligned complex %s"%(self._aligned_ligand, self._aligned_complex))
+
     def calculate_rmsd_and_distance (self):
         # 
+        self._many_rmsd_dis = []
         self._rmsd_dis = {}
         self._min_rmsd_dis = None
         if self._all_aligned_ligand:
             for _crystal_ligand_index, _crystal_ligand in enumerate(self._crystal._ligand):
                 _crystal_ligand_info = self._crystal._valid_ligand_info[_crystal_ligand_index]
+                self._rmsd_dis[_crystal_ligand_info] = []
                 if _crystal_ligand_info in self._all_aligned_ligand:
-                    _docked_ligand_aligned = self._all_aligned_ligand[_crystal_ligand_info]
-                    try:
-                        #_rmsd, _distance = rmsd_mcss (_crystal_ligand, _docked_ligand_aligned)
-                        _rmsd = rmsd_mcss (_crystal_ligand, _docked_ligand_aligned)
-                        _crystal_ligand_center = get_center(_crystal_ligand)
-                        _docked_ligand_aligned_center = get_center(_docked_ligand_aligned) 
-                        _distance = get_distance(_crystal_ligand_center, _docked_ligand_aligned_center)
-                        _all_mapping_files = glob.glob("match*.pdb")
-                        for _mapping_file in _all_mapping_files:
-                            os.remove(_mapping_file)
-                        self._rmsd_dis[_crystal_ligand_info] = (_rmsd, _distance)
-                        logging.debug("The rmsd and distance for %s vs %s is %s"%(_crystal_ligand, _docked_ligand_aligned, _rmsd))
-                    except Exception as ex:
-                        logging.exception("The rmsd calculation for %s vs %s failed"%(_crystal_ligand, _docked_ligand_aligned))
-            #get the lowest RMSD and the corresponding distance
-            if self._rmsd_dis:
-                self._min_rmsd_dis = sorted(self._rmsd_dis.values())[0]
+                    for chainnum, chain in enumerate(self._all_aligned_ligand[_crystal_ligand_info]):
+                        _docked_ligand_aligned = self._all_aligned_ligand[_crystal_ligand_info][chainnum]
+                        try:
+                            #_rmsd, _distance = rmsd_mcss (_crystal_ligand, _docked_ligand_aligned)
+                            _rmsd = rmsd_mcss(_crystal_ligand, _docked_ligand_aligned)
+                            _crystal_ligand_center = get_center(_crystal_ligand)
+                            _docked_ligand_aligned_center = get_center(_docked_ligand_aligned) 
+                            _distance = get_distance(_crystal_ligand_center, _docked_ligand_aligned_center)
+                            _all_mapping_files = glob.glob("match*.pdb")
+                            for _mapping_file in _all_mapping_files:
+                                os.remove(_mapping_file)
+                            self._many_rmsd_dis.append((_rmsd, _distance))
+                            logging.debug("The rmsd and distance for %s vs %s is %s"%(_crystal_ligand, _docked_ligand_aligned, _rmsd))
+                        except Exception as ex:
+                            logging.exception("The rmsd calculation for %s vs %s failed"%(_crystal_ligand, _docked_ligand_aligned))
+                        #get the lowest RMSD and the corresponding distance
+                if self._many_rmsd_dis:
+                    self._many_rmsd_dis.sort()
+                    self._rmsd_dis[_crystal_ligand_info].append(self._many_rmsd_dis[0])
+                self._min_rmsd_dis = sorted(self._rmsd_dis.values())[0][0]
 
 def get_all_docked_type(score_dic, docked_type = "LMCSS"):
     #from a score dic like score_dic[target_ID][docked_type]
@@ -565,6 +599,11 @@ class data_container(object):
         self._pf = open(pickle_filename, "w")
         pickle.dump(self._data, self._pf)
         self._pf.close()
+
+    def layout_json(self, json_filename = "RMSD.json"):
+        self._jf = open(json_filename,'w')
+        json.dump(self._data, self._jf)
+        self._jf.close()
 
     def layout_plain (self,  plain_filename = "RMSD"):
         self._plain_filename = plain_filename
@@ -701,6 +740,8 @@ def main_score(dock_dir, pdb_protein_path, evaluate_dir, blastnfilter_dir, chall
     result_container = data_container()
     result_pickle = "RMSD.pickle"
     pickle_full_path = os.path.join(current_dir, result_pickle) 
+    result_json = "RMSD.json"
+    json_full_path = os.path.join(current_dir, result_json) 
     result_plain = "RMSD"
     plain_full_path = os.path.join(current_dir, result_plain)
     #get all target dir info from the docked dir
@@ -800,12 +841,13 @@ def main_score(dock_dir, pdb_protein_path, evaluate_dir, blastnfilter_dir, chall
                         logging.info("\tSuccessfully calculate the rmsd for this category %s, the rmsd is %s"%(docked_structure_type, rmsd))
                         #update the pickle and txt csv file if there is valid case found 
                         result_container.layout_pickle (pickle_filename = pickle_full_path)
+                        result_container.layout_json (json_filename = json_full_path)
                         result_container.layout_plain (plain_filename = plain_full_path)
                         os.chdir(pdbid_local_path)
                     except Exception as ex:
                         result_container.register(target_dir, docked_type = docked_structure_type, value = None) 
                         os.chdir(pdbid_local_path)
-                        logging.exception("For this type of strcutre: %s, the rmsd could not be calculated"%docked_structure_type)
+                        logging.exception("For this type of structure: %s, the rmsd could not be calculated"%docked_structure_type)
                         continue
                 logging.info("++++++++++++++++Finished for this target %s+++++++++++++++++"%target_name)
                 os.chdir(current_dir)
@@ -817,6 +859,7 @@ def main_score(dock_dir, pdb_protein_path, evaluate_dir, blastnfilter_dir, chall
                 continue
     #after loop all possible target, layout the pickle and plain files    
     result_container.layout_pickle (pickle_filename = pickle_full_path)
+    result_container.layout_json (json_filename = json_full_path)
     result_container.layout_plain (plain_filename = plain_full_path)
             
 

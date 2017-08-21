@@ -4,12 +4,16 @@ __project__ = 'blastnfilter'
 import os
 import logging
 import in_put
+import sys
 from d3r.blast.hit import Hit
 from d3r.blast.ligand import Ligand
 from d3r.filter.filter import QueryFilter
 from d3r.filter.filter import HitFilter
 from d3r.filter.filter import CandidateFilter
 import out_put
+
+#from memory_profiler import profile
+
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +37,7 @@ def split_input(options):
     return non_polymer, polymer, ph, out_dir, blast_dir, pdb_db, pdb_path, fasta, compinchi
 
 
+#@profile(precision=1)
 def blast_the_query(query, pdb_db, pdb_path, fasta, out_dir, compinchi):
     """
     Runs a blast search using the target sequence as a query
@@ -60,6 +65,9 @@ def blast_the_query(query, pdb_db, pdb_path, fasta, out_dir, compinchi):
         query.set_hits(records)
         logger.debug('query.fill_sequences')
         query.fill_sequences()
+        #for hit_ind in range(len(query.hits)):
+        #    del query.hits[hit_ind].pdb
+        #    query.hits[hit_ind].pdb = None
     return query
 
 
@@ -125,8 +133,7 @@ def candidate_filter(queries):
     c_filter.filter_for_highest_tanimoto()
 
 
-#from memory_profiler import profile
-#@profile(precision=4)
+#@profile(precision=1)
 def run(options):
     """
     Run the BlastNFilter components
@@ -140,13 +147,25 @@ def run(options):
     out_analysis.print_filter_criteria(out_dir)
     logger.debug("# queries " + str(len(queries)))
     while queries:
-        #here the pop method extract the last item in the list and remove this item from the original list
+        #here the pop method extracts the last item in the list and removes this item from the original list
         query = queries.pop()
+        pid = os.fork()
+        if pid != 0:
+          logger.info("In Parent waiting for process")
+          os.waitpid(pid, 0)
+          continue
+        logger.info("Running as child: " + str(pid))
         query_filter(query)
+        #query_filter(queries[query_ind])
         if not query.triage:
-            logger.debug('Blasting query:  ' + query.pdb_id)
-            print "Blasting query:  %s "%query.pdb_id
+            #if not queries[query_ind].triage:
+            #logger.debug('Blasting query:  ' + queries[query_ind].pdb_id)
+            #print "Blasting query:  %s "%queries[query_ind].pdb_id
+            #logger.debug('Blasting query:  ' + queries[query_ind].pdb_id)
+            #print "Blasting query:  %s "%queries[query_ind].pdb_id
+            #logging.info("Blasting query:  %s "%queries[query_ind].pdb_id)
             logging.info("Blasting query:  %s "%query.pdb_id)
+            #queries[query_ind] = blast_the_query(queries[query_ind], pdb_db, pdb_path, fasta, out_dir, compinchi)
             query = blast_the_query(query, pdb_db, pdb_path, fasta, out_dir, compinchi)
             logger.debug('calculate mcss')
             calculate_mcss(query)
@@ -155,7 +174,23 @@ def run(options):
             logger.debug('hit_filter')
             candidate_filter(query)
             logger.debug('set_query')
+        #out_analysis.set_query(queries[query_ind])
+
         out_analysis.set_query(query)
+        #out_put.writer(out_dir, queries[query_ind], True)
         out_put.writer(out_dir, query, True)
-    out_analysis.print_to_file(out_dir)
+        if pid == 0:
+            logger.info("Exiting child: " + str(pid))
+            sys.exit(0)
+
+        #for hit_ind in range(len(queries[query_ind].hits)):
+        #    queries[query_ind].hits[hit_ind].sequences = None
+        #    queries[query_ind].hits[hit_ind].dock = None
+        #    queries[query_ind].hits[hit_ind].pdb = None
+        #    queries[query_ind].hits[hit_ind] = None
+           #queries[query_ind].hits[hit_ind].dock = None
+            #queries[query_ind].hits[hit_ind].dock = None
+        #queries[query_ind] = None
+        
+    #out_analysis.print_to_file(out_dir)
 
