@@ -3,7 +3,7 @@
 History
 -------
 
-1.9.1 (2017-08-03)
+1.9.1 (2017-08-21)
 --------------------
 
 * Fixed bug where Apo targets not getting pocket center correctly defined
