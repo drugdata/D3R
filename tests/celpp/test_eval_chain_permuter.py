@@ -14,6 +14,7 @@ import sys
 from d3r.celpp.task import D3RParameters
 from d3r.celpp.task import D3RTask
 from d3r.celpp.blastnfilter import BlastNFilterTask
+from d3r.celpp.challengedata import ChallengeDataTask
 from d3r.celpp.evaluation import EvaluationTaskFactory
 from d3r.celpp.evaluation import EvaluationTask
 from d3r.celpp.participant import ParticipantDatabase
@@ -57,6 +58,8 @@ class TestChainPermuter(unittest.TestCase):
                 params.pdbdb = os.path.abspath('tests/celpp/eval_test_data/'
                                                '%s_test_data/mini_pdb/'
                                                % (test_scale))
+                
+                # Make blastnfilter task
                 blastnfiltertask = BlastNFilterTask(temp_dir, params)
                 blastnfiltertask.create_dir()
                 open(os.path.join(blastnfiltertask.get_dir(), 
@@ -67,6 +70,22 @@ class TestChainPermuter(unittest.TestCase):
                                              % (test_scale))
                 os.system('cp -r %s/* %s' % (source_dir, 
                                              blastnfiltertask.get_dir()))
+
+
+                # Make challengedata task
+                challengedatatask = ChallengeDataTask(temp_dir, params)
+                challengedatatask.create_dir()
+                open(os.path.join(challengedatatask.get_dir(), 
+                                  D3RTask.COMPLETE_FILE),
+                    'a').close()
+                source_dir = os.path.abspath('tests/celpp/eval_test_data/'
+                                             '%s_test_data/stage.4.challengedata/'
+                                             % (test_scale))
+                os.system('cp -r %s/* %s' % (source_dir, 
+                                             challengedatatask.get_dir()))
+
+
+                # Make dock task
                 docktask = D3RTask(temp_dir, params)
                 docktask.set_name(method)
                 docktask.set_stage(EvaluationTaskFactory.DOCKSTAGE)
@@ -93,26 +112,32 @@ class TestChainPermuter(unittest.TestCase):
                 emailer = EvaluationEmailer(ParticipantDatabase(plist), None)
                 emailer.set_alternate_smtp_emailer(smtpemailer)
                 task.set_evaluation_emailer(emailer)
-
+                
                 task.run()
                 val = task.get_evaluation_summary()
-                self.assertEqual(val, '\nEvaluation of docking\n============='
-                                      '========\nTarget_PDBID        LMCSS   '
-                                      '  SMCSS     hiResApo  hiResHolo hiTani'
-                                      'moto \nNumber_of_cases     0         0'
-                                      '         1         0         0         '
-                                      '\nAverage                             '
-                                      '    6.452                         \nMi'
-                                      'nimum                                 6'
-                                      '.452                         \nMaximum '
-                                      '                                6.452  '
-                                      '                       \n5t6d          '
-                                      '                          6.452        '
-                                      '                 \n\n')
+                self.assertEqual(val, 
+                        '\nEvaluation of docking\n=====================\nTarge'
+                        't_PDBID        LMCSS            SMCSS            h'
+                        'iResApo         hiResHolo        hiTanimoto       '
+                        'LMCSS_ori_distance \n\nSummary Statistics\n\nNumber_of'
+                        '_cases     0                0                1    '
+                        '            0                0                \nAve'
+                        'rage                                              '
+                        ' 6.447                                            '
+                        '  \nMaximum                                        '
+                        '       6.447                                      '
+                        '        \nMinimum                                  '
+                        '             6.447                                '
+                        '              \nMedian                             '
+                        '                   6.447                          '
+                        '                    \n\nIndividual Results\n\n5t6d    '
+                        '                                              6.44'
+                        '7 (2.176 )                                        '
+                        '              \n\n')
                 self.assertEqual(task.get_error(), None)
         finally:
-            pass
-            #shutil.rmtree(temp_dir)
+            #pass
+            shutil.rmtree(temp_dir)
 
 
 if __name__ == '__main__':

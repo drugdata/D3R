@@ -1,4 +1,4 @@
-#!/celpp/mvhost/evaluation_permuter_virtualenv/bin/python
+#! /usr/bin/env python
 
 import os
 from Bio import PDB
@@ -149,7 +149,7 @@ def align_protein (template_complex, input_complex, output_complex, timestep = 5
         output_complex_filename = os.path.basename(output_complex)
         #change to the target dir since the align binding site only allow to run locally
         os.chdir(target_dir)
-        commands.getoutput("$SCHRODINGER/utilities/align_binding_sites %s %s -o %s"%(template_complex, input_complex, output_complex_filename))
+        commands.getoutput("PYTHONPATH= $SCHRODINGER/utilities/align_binding_sites %s %s -o %s"%(template_complex, input_complex, output_complex_filename))
         os.chdir(running_dir)
         return wait_and_check(output_complex_filename, timestep = timestep, how_many_times = how_many_times)
     except Exception as ex:
@@ -162,7 +162,7 @@ def whole_protein_align (template_complex, input_complex, output_complex, timest
         target_dir = os.path.dirname(os.path.abspath(output_complex))
         output_complex_filename = os.path.basename(output_complex)
         os.chdir(target_dir) 
-        commands.getoutput("$SCHRODINGER/utilities/structalign %s %s"%(template_complex, input_complex))
+        commands.getoutput("PYTHONPATH= $SCHRODINGER/utilities/structalign %s %s"%(template_complex, input_complex))
         rotated_protein = "rot-" + input_complex
         if wait_and_check(rotated_protein, timestep = timestep, how_many_times = how_many_times):
             commands.getoutput("mv %s %s"%(rotated_protein, output_complex))  
@@ -233,7 +233,7 @@ def merge_two_pdb (receptor, ligand, complex_pdb):
 
 def convert_ligand_format (input_ligand, output_ligand):
     try:
-        commands.getoutput("$SCHRODINGER/utilities/structconvert %s %s"%(input_ligand, output_ligand))
+        commands.getoutput("PYTHONPATH= $SCHRODINGER/utilities/structconvert %s %s"%(input_ligand, output_ligand))
         return True
     except Exception as ex:
         logging.exception("This ligand %s cannot be convertted to %s, need to check the format"%(input_ligand, output_ligand))
@@ -435,7 +435,7 @@ class docked (object):
             #self._docked_complex = os.path.join(self._docked_ligand_mol_path, self._docked_complex_name)
             #if not merge_two_pdb(self._docked_receptor_pdb, self._docked_ligand_pdb, self._docked_complex):
             #    self._docked_complex = None
-            os.system('$SCHRODINGER/run split_structure.py -merge_ligands_with_chain -groupwaters -many_files ' + self._docked_receptor_pdb + ' docked_receptor.pdb')
+            os.system('PYTHONPATH= $SCHRODINGER/run split_structure.py -merge_ligands_with_chain -groupwaters -many_files ' + self._docked_receptor_pdb + ' docked_receptor.pdb')
             whole_docked_protein = open(self._docked_receptor_pdb, "r")
             string_docked_protein = whole_docked_protein.read()
             whole_docked_protein.close()
@@ -455,21 +455,7 @@ class docked (object):
                     split_complex_text = f1.read()
                     self._split_docked_complex.append(split_complex_text)
                     f1.close()
-            '''
-            chain = 0
-            while True:
-                split_complex_name = self._docked_ligand_pdb_name.replace(".pdb", "_split_" + str(chain) + ".pdb")
-                split_complex = os.path.join(self._docked_ligand_mol_path, split_complex_name)
-                try:
-                    merge_two_pdb("docked_receptor_chain" + string.uppercase[chain] + ".pdb", self._docked_ligand_pdb, split_complex)
-                    f1 = open(split_complex)
-                    split_complex_text = f1.read()
-                    self._split_docked_complex.append(split_complex_text)
-                    f1.close()
-                    chain = chain + 1
-                except:
-                    break
-            '''
+
             
     def align_complex_onto_crystal (self, time_check_frequence = 5, check_point_number = 100, sc_ligand_default = "UNK-900"):
         self._all_aligned_complex = {} 
