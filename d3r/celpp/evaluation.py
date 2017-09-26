@@ -347,6 +347,7 @@ class EvaluationTask(D3RTask):
 
     FINAL_LOG = 'final.log'
     RMSD_TXT = 'RMSD.txt'
+    RMSD_JSON = 'RMSD.txt'
     RMSD_PICKLE = 'RMSD.pickle'
 
     EVAL_EXITCODEFILE = 'evaluate.exitcode'
@@ -421,6 +422,12 @@ class EvaluationTask(D3RTask):
         """
         return os.path.join(self.get_dir(), EvaluationTask.RMSD_TXT)
 
+    def get_rmsd_json(self):
+        """Returns full path to RMSD.json file
+        :returns: full path to RMSD.json file
+        """
+        return os.path.join(self.get_dir(), EvaluationTask.RMSD_JSON)
+
     def get_rmsd_pickle(self):
         """Returns full path to RMSD.pickle file
         :returns: full path to RMSD.pickle file
@@ -469,6 +476,7 @@ class EvaluationTask(D3RTask):
            plus stderr/stdout files
 
            RMSD.txt
+           RMSD.json
            RMSD.pickle
            final.log
            pbdid/score/crystal.pdb
@@ -493,6 +501,10 @@ class EvaluationTask(D3RTask):
             rmsd = self.get_rmsd_txt()
             if os.path.isfile(rmsd):
                 file_list.append(rmsd)
+
+            rmsdjson = self.get_rmsd_json()
+            if os.path.isfile(rmsdjson):
+                file_list.append(rmsdjson)
 
             rmsdpickle = self.get_rmsd_pickle()
             if os.path.isfile(rmsdpickle):
