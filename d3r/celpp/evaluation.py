@@ -347,7 +347,7 @@ class EvaluationTask(D3RTask):
 
     FINAL_LOG = 'final.log'
     RMSD_TXT = 'RMSD.txt'
-    RMSD_JSON = 'RMSD.txt'
+    RMSD_JSON = 'RMSD.json'
     RMSD_PICKLE = 'RMSD.pickle'
 
     EVAL_EXITCODEFILE = 'evaluate.exitcode'
