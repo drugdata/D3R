@@ -566,6 +566,10 @@ def setup_logging(theargs):
         .setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.celppreports')\
         .setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.genmoleculedb')\
+        .setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.molfilevalidator') \
+        .setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.celpp.blastnfilter')\
         .setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.celpp.challengedata')\
