@@ -11,12 +11,18 @@ import tempfile
 import pickle
 
 try:
-    from openeye import oechem
-    OPENEYE_MOD_LOADED = True
-except ImportError as e:
     OPENEYE_MOD_LOADED = False
+    from openeye import oechem
+    if oechem.OEChemIsLicensed():
+        OPENEYE_MOD_LOADED = True
+    else:
+        sys.stderr.write('WARNING: No valid license found for openeye ' +
+                         'Please verify OE_LICENSE environment variable'
+                         'is set to valid license file\n')
+except ImportError as e:
     sys.stderr.write('WARNING: Unable to import oechem: ' +
                      str(e) + ' validation will NOT work\n')
+    pass
 
 
 import d3r
@@ -68,6 +74,7 @@ def _parse_arguments(desc, args):
     # parser.add_argument('--molcsv', help='CSV file sent to participants')
     # parser.add_argument('--molcsvligandcol', help='0 offset column containing ligand ids')
     # parser.add_argument('--molcsvsmilescol', help='0 offset column containing smile strings')
+    parser.add_argument('--skipligand', help='comma delimited list of ligands to skip')
     parser.add_argument('--' + USER_SUBMISSION,
                         help='tar.gz file containing .mol files to validate')
     parser.add_argument('--' + OUTFILE,
@@ -163,8 +170,13 @@ class D3RMoleculeFromOpeneyeFactory(object):
         """
         istream = self._get_oechem_istream(source)
         openeye_mol = oechem.OEMol()
-        oechem.OEReadMolecule(istream, openeye_mol)
-        istream.close()
+        try:
+            val = oechem.OEReadMolecule(istream, openeye_mol)
+            if val is False:
+                raise ValueError('OEReadMolecule returned False '
+                                 'when trying to read mol file')
+        finally:
+            istream.close()
         return openeye_mol
 
 
@@ -176,7 +188,6 @@ class D3RMoleculeFromMolFileViaOpeneyeFactory(D3RMoleculeFromOpeneyeFactory):
 
     def _get_oechem_istream(self, source):
         istream = oechem.oemolistream()
-        istream.SetFormat(oechem.OEFormat_SMI)
         istream.open(source)
         return istream
 
@@ -205,6 +216,14 @@ def get_molecule_weight_and_summary(themolecule):
     atom_dic = {}
     heavy_atom = 0
     molecular_weight = 0
+    if themolecule is None:
+        logger.error('Molecule passed in is None')
+        return -1, -1, {}
+
+    if themolecule.get_atoms() is None:
+        logger.error('Molecule has None for atoms')
+        return heavy_atom, molecular_weight, atom_dic
+
     for atom in themolecule.get_atoms():
         if not atom.is_hydrogen():
             heavy_atom +=1
@@ -214,7 +233,8 @@ def get_molecule_weight_and_summary(themolecule):
                 atom_dic[atomical_number] = 1
             else:
                 atom_dic[atomical_number] += 1
-        logger.debug('Atom (' + atom.get_atomic_name() + ') atomic weight (' +
+        logger.debug('Atom (' + str(atom.get_atomic_name()) +
+                     ') atomic weight (' +
                      str(molecular_weight) + ') atom dictionary ' +
                      str(atom_dic))
     return heavy_atom, molecular_weight, atom_dic
@@ -285,20 +305,20 @@ class ValidationReport(object):
         """
         res = ''
         if len(self._ligand_errors) > 0:
-            res = '\nLigand Errors\n------------\n\n'
+            res += '\nLigand Errors\n------------\n\n'
 
         for entry in self._ligand_errors:
             res += ('In file: ' +\
-                    os.path.basename(entry[ValidationReport.MOLFILE]))
+                    os.path.basename(str(entry[ValidationReport.MOLFILE])))
             res += (' ligand: ' + str(entry[ValidationReport.LIGAND]) + '\n\t' +
-                    entry[ValidationReport.MESSAGE] + '\n\n')
+                    str(entry[ValidationReport.MESSAGE]) + '\n\n')
 
         if len(self._mol_errors) > 0:
-            res = '\nMolecule Errors\n------------\n\n'
+            res += '\nMolecule Errors\n------------\n\n'
 
         for entry in self._mol_errors:
             res += ('In file: ' +\
-                    os.path.basename(entry[ValidationReport.MOLFILE]))
+                    os.path.basename(str(entry[ValidationReport.MOLFILE])))
             exp_nonh_atoms = str(entry[ValidationReport.EXPECTEDMOL][0])
             usr_nonh_atoms = str(entry[ValidationReport.USERMOL][0])
             exp_m_weight = str(entry[ValidationReport.EXPECTEDMOL][1])
@@ -307,12 +327,14 @@ class ValidationReport(object):
             exp_atom_map = str(entry[ValidationReport.EXPECTEDMOL][2])
             usr_atom_map = str(entry[ValidationReport.USERMOL][2])
 
-            res += (' ligand: ' + str(entry[ValidationReport.LIGAND]) + '  ' +
-                    entry[ValidationReport.MESSAGE] + '\n' +
-                    '\tExpected ' + exp_nonh_atoms + ' non hydrogen atoms, but got ' +
+            res += (' ligand: ' + str(entry[ValidationReport.LIGAND]) + ' ' +
+                    str(entry[ValidationReport.MESSAGE]) + '\n' +
+                    '\tExpected ' + exp_nonh_atoms +
+                    ' non hydrogen atoms, but got ' +
                     usr_nonh_atoms + '\n\tExpected ' + exp_m_weight +
                     ' non hydrogen atomic weight, but got ' +
-                    usr_m_weight + '\n' + '\tExpected atom map ' +
+                    usr_m_weight + '\n' +
+                    '\tExpected atom map { atomic #: # atoms,...} ' +
                        exp_atom_map + ', but got ' + usr_atom_map + '\n\n')
 
         return res
@@ -383,6 +405,7 @@ def _get_molecule_database(theargs):
 def _validate_molfiles_in_tarball(theargs, molfactory, moleculedb):
     """Generates molecule validation report
     """
+    ligand_skip_list = theargs.skipligand.split(',')
     comparemols = CompareMolecules(moleculedb)
     report = ValidationReport()
     for molfile in _molfile_from_tarfile_generator(theargs.usersubmission):
@@ -390,6 +413,9 @@ def _validate_molfiles_in_tarball(theargs, molfactory, moleculedb):
            ligand_name = _get_ligand_name_from_file_name(molfile)
         except ValueError as e:
             report.add_ligand_error(molfile, ligand_name, str(e))
+            continue
+        if ligand_name in ligand_skip_list:
+            logger.debug(ligand_name + ' in skip list. Skipping...')
             continue
         if ligand_name not in moleculedb:
             report.add_ligand_error(molfile, ligand_name,
