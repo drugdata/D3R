@@ -76,8 +76,7 @@ setup(
                'd3r/celppreports.py', 'd3r/vinadocking.py',
                'd3r/genchallengedata.py', 'd3r/chimera_proteinligprep.py',
                'd3r/getchallengedata.py', 'd3r/packdockingresults.py',
-               'd3r/post_evaluation.py', 'd3r/genmoleculedb.py',
-               'd3r/molfilevalidator.py'
+               'd3r/post_evaluation.py', 'd3r/molfilevalidator.py'
                ],
     test_suite='tests',
     tests_require=test_requirements
