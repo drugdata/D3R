@@ -13,12 +13,16 @@ import pickle
 try:
     OPENEYE_MOD_LOADED = False
     from openeye import oechem
-    if oechem.OEChemIsLicensed():
-        OPENEYE_MOD_LOADED = True
-    else:
-        sys.stderr.write('WARNING: No valid license found for openeye ' +
-                         'Please verify OE_LICENSE environment variable'
-                         'is set to valid license file\n')
+    try:
+        if oechem.OEChemIsLicensed():
+            OPENEYE_MOD_LOADED = True
+        else:
+            sys.stderr.write('WARNING: No valid license found for openeye ' +
+                             'Please verify OE_LICENSE environment variable'
+                             'is set to valid license file\n')
+    except AttributeError as ae:
+        sys.stderr.write('WARNING Unable to check if openey is licensed' +
+                         str(ae))
 except ImportError as e:
     sys.stderr.write('WARNING: Unable to import oechem: ' +
                      str(e) + ' validation will NOT work\n')
@@ -285,6 +289,27 @@ class ValidationReport(object):
         self._ligand_errors = []
         self._mol_errors = []
 
+    def get_ligand_errors(self):
+        """Gets list of ligand errors in list of dictionaries with format:
+          [{ValidationReport.MOLFILE: molfile,
+           ValidationReport.LIGAND: ligand_name,
+           ValidationReport.MESSAGE: message}]
+        """
+        return self._ligand_errors
+
+    def get_molecule_errors(self):
+        """Gets list of ligand errors in list of dictionaries with format:
+          [{ValidationReport.MOLFILE: molfile,
+           ValidationReport.LIGAND: ligand_name,
+           ValidationReport.USERMOL: usermoltuple,
+           ValidationReport.EXPECTEDMOL: dbmoltuple,
+           ValidationReport.MESSAGE: message})]
+
+           usermoltuple and dbmoltuple are from output from
+           `get_molecule_weight_and_summary()`
+        """
+        return self._mol_errors
+
     def add_ligand_error(self, molfile, ligand_name, message):
         """Adds error message with ligand name"""
         self._ligand_errors.append({ValidationReport.MOLFILE: molfile,
@@ -317,25 +342,38 @@ class ValidationReport(object):
             res += '\nMolecule Errors\n------------\n\n'
 
         for entry in self._mol_errors:
+            logger.debug('For: ' + str(entry[ValidationReport.MOLFILE]))
             res += ('In file: ' +\
                     os.path.basename(str(entry[ValidationReport.MOLFILE])))
-            exp_nonh_atoms = str(entry[ValidationReport.EXPECTEDMOL][0])
-            usr_nonh_atoms = str(entry[ValidationReport.USERMOL][0])
-            exp_m_weight = str(entry[ValidationReport.EXPECTEDMOL][1])
-            usr_m_weight = str(entry[ValidationReport.USERMOL][1])
 
-            exp_atom_map = str(entry[ValidationReport.EXPECTEDMOL][2])
-            usr_atom_map = str(entry[ValidationReport.USERMOL][2])
+            if entry[ValidationReport.EXPECTEDMOL] is None or \
+               entry[ValidationReport.USERMOL] is None:
+                res += (' ligand: ' + str(entry[ValidationReport.LIGAND]) +
+                        '\n\t' +
+                        str(entry[ValidationReport.MESSAGE]) + '\n\n')
+            else:
 
-            res += (' ligand: ' + str(entry[ValidationReport.LIGAND]) + ' ' +
-                    str(entry[ValidationReport.MESSAGE]) + '\n' +
-                    '\tExpected ' + exp_nonh_atoms +
-                    ' non hydrogen atoms, but got ' +
-                    usr_nonh_atoms + '\n\tExpected ' + exp_m_weight +
-                    ' non hydrogen atomic weight, but got ' +
-                    usr_m_weight + '\n' +
-                    '\tExpected atom map { atomic #: # atoms,...} ' +
-                       exp_atom_map + ', but got ' + usr_atom_map + '\n\n')
+                exp_nonh_atoms = str(entry[ValidationReport.EXPECTEDMOL][0])
+                usr_nonh_atoms = str(entry[ValidationReport.USERMOL][0])
+                exp_m_weight = str(entry[ValidationReport.EXPECTEDMOL][1])
+                usr_m_weight = str(entry[ValidationReport.USERMOL][1])
+
+                exp_atom_map = str(entry[ValidationReport.EXPECTEDMOL][2])
+                usr_atom_map = str(entry[ValidationReport.USERMOL][2])
+
+                res += (' ligand: ' + str(entry[ValidationReport.LIGAND]) + ' ' +
+                        str(entry[ValidationReport.MESSAGE]) + '\n')
+
+                if exp_nonh_atoms != usr_nonh_atoms:
+                    res += ('\tExpected ' + exp_nonh_atoms +
+                            ' non hydrogen atoms, but got ' +
+                            usr_nonh_atoms + '\n')
+                if exp_m_weight != usr_m_weight:
+                    res += ('\tExpected ' + exp_m_weight +
+                            ' for non hydrogen atomic weight, but got ' +
+                            usr_m_weight + '\n')
+                res += ('\tExpected atom map { atomic #: # atoms,...} ' +
+                        exp_atom_map + ', but got ' + usr_atom_map + '\n\n')
 
         return res
 
@@ -435,8 +473,11 @@ def _run_validation(theargs, molfactory):
     moleculedb = _get_molecule_database(theargs)
     report = _validate_molfiles_in_tarball(theargs, molfactory, moleculedb)
 
-    return report.get_as_string()
-
+    report_str = report.get_as_string()
+    if report_str == '':
+        return 0
+    sys.stdout.write(report_str)
+    return 1
 
 """ORIGINAL SCRIPT
 

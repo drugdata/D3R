@@ -12,13 +12,22 @@ import unittest
 import tempfile
 import os
 import os.path
+import sys
 import shutil
 
 try:
     OPENEYE_MOD_LOADED = False
     from openeye import oechem
-    if oechem.OEChemIsLicensed():
-        OPENEYE_MOD_LOADED = True
+    try:
+        if oechem.OEChemIsLicensed():
+            OPENEYE_MOD_LOADED = True
+        else:
+            sys.stderr.write('WARNING: No valid license found for openeye ' +
+                             'Please verify OE_LICENSE environment variable'
+                             'is set to valid license file\n')
+    except AttributeError as ae:
+        sys.stderr.write('WARNING Unable to check if openey is licensed' +
+                         str(ae))
 except ImportError as e:
     pass
 
@@ -28,6 +37,7 @@ from d3r.molfilevalidator import D3RMolecule
 from d3r.molfilevalidator import D3RMoleculeFromSmileViaOpeneyeFactory
 from d3r.molfilevalidator import D3RMoleculeFromMolFileViaOpeneyeFactory
 from d3r.molfilevalidator import ValidationReport
+from d3r.molfilevalidator import CompareMolecules
 
 
 class TestMolFileValidator(unittest.TestCase):
@@ -220,6 +230,13 @@ M  END
         self.assertTrue('\n\nIn file: None ligand: '
                         'None\n\tNone' in vr.get_as_string())
 
+        # add a molecule with no tuples
+        vr = ValidationReport()
+        vr.add_molecule_error('x.mol', 'DDD_3', None, None, 'yo')
+        self.assertTrue('\nMolecule Errors\n' in vr.get_as_string())
+        self.assertTrue('\n\nIn file: x.mol ligand: '
+                        'DDD_3\n\tyo\n\n' in vr.get_as_string())
+
         vr = ValidationReport()
         vr.add_ligand_error('/foo/my.mol', 'ABC_1', 'some error')
         self.assertTrue('\nLigand Errors\n'
@@ -240,10 +257,87 @@ M  END
                         'XXX_2 ha' in vr.get_as_string())
         self.assertTrue('\n\tExpected 3 non hydrogen atoms, '
                          'but got 1' in vr.get_as_string())
-        self.assertTrue('\n\tExpected 4 non hydrogen atomic weight, '
+        self.assertTrue('\n\tExpected 4 for non hydrogen atomic weight, '
                          'but got 2' in vr.get_as_string())
         self.assertTrue('\n\tExpected atom map { atomic #: # atoms,...} '
                         '{6: 5}, but got {6: 2}\n\n' in vr.get_as_string())
+
+
+    def test_compare_molecules(self):
+        cm = CompareMolecules({})
+        vr = ValidationReport()
+
+        # test with molecule not in db
+        res = cm.compare_molecules('m.mol', vr, 'XXX_1', D3RMolecule())
+        self.assertEqual(res, False)
+        self.assertEqual(len(vr.get_molecule_errors()), 0)
+        ligand_errors = vr.get_ligand_errors()
+        self.assertEqual(len(ligand_errors), 1)
+        self.assertEqual(ligand_errors[0][ValidationReport.MOLFILE], 'm.mol')
+        self.assertEqual(ligand_errors[0][ValidationReport.LIGAND], 'XXX_1')
+        self.assertEqual(ligand_errors[0][ValidationReport.MESSAGE],
+                         'ligand not in molecule database')
+
+        # test with molecule not matching number heavy atoms
+        mol = D3RMolecule()
+        atom = D3RAtom()
+        atom.set_is_hydrogen(False)
+        atom.set_atomic_number(5)
+        mol.set_atoms([atom])
+
+        vr = ValidationReport()
+        cm = CompareMolecules({'XXX_1': (3, 5, {5: 1})})
+        res = cm.compare_molecules('m.mol', vr, 'XXX_1', mol)
+        self.assertEqual(res, False)
+        m_errors = vr.get_molecule_errors()
+        self.assertEqual(len(m_errors), 1)
+        self.assertEqual(m_errors[0][ValidationReport.MOLFILE], 'm.mol')
+        self.assertEqual(m_errors[0][ValidationReport.LIGAND], 'XXX_1')
+        self.assertEqual(m_errors[0][ValidationReport.USERMOL], (1, 5, {5: 1}))
+        self.assertEqual(m_errors[0][ValidationReport.EXPECTEDMOL],
+                         (3, 5, {5: 1}))
+        self.assertTrue('Number of heavy '
+                        'atoms and or' in m_errors[0][ValidationReport.MESSAGE])
+
+        # test with molecule not matching molecular weight
+        vr = ValidationReport()
+        cm = CompareMolecules({'XXX_1': (1, 6, {5: 1})})
+        res = cm.compare_molecules('m.mol', vr, 'XXX_1', mol)
+        self.assertEqual(res, False)
+        m_errors = vr.get_molecule_errors()
+        self.assertEqual(len(m_errors), 1)
+        self.assertEqual(m_errors[0][ValidationReport.MOLFILE], 'm.mol')
+        self.assertEqual(m_errors[0][ValidationReport.LIGAND], 'XXX_1')
+        self.assertEqual(m_errors[0][ValidationReport.USERMOL], (1, 5, {5: 1}))
+        self.assertEqual(m_errors[0][ValidationReport.EXPECTEDMOL],
+                         (1, 6, {5: 1}))
+        self.assertTrue('Number of heavy '
+                        'atoms and or' in m_errors[0][ValidationReport.MESSAGE])
+
+        # test with matching molecule
+        vr = ValidationReport()
+        cm = CompareMolecules({'XXX_1': (1, 5, {5: 1})})
+        res = cm.compare_molecules('m.mol', vr, 'XXX_1', mol)
+        self.assertEqual(res, True)
+        m_errors = vr.get_molecule_errors()
+        self.assertEqual(len(m_errors), 0)
+
+    def test_get_ligand_name_from_file_name(self):
+        try:
+            molfilevalidator._get_ligand_name_from_file_name(None)
+            self.fail('Expected ValueError')
+        except ValueError as e:
+            self.assertEqual(str(e), 'file_name cannot be None')
+
+        try:
+            molfilevalidator._get_ligand_name_from_file_name('hi')
+            self.fail('Expected ValueError')
+        except ValueError as e:
+            self.assertEqual(str(e), 'Error parsing ligand name from file name: hi')
+
+        res = molfilevalidator._get_ligand_name_from_file_name('DSV-FXR_12-1.mol')
+        self.assertEqual(res, 'FXR_12')
+
 
 
 if __name__ == '__main__':
