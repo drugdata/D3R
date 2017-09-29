@@ -66,7 +66,6 @@ setup(
         'License :: Free for non-commercial use',
         'Natural Language :: English',
         'Environment :: Console',
-        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Topic :: Scientific/Engineering :: Chemistry'
     ],
