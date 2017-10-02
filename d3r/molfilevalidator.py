@@ -394,8 +394,30 @@ def _get_ligand_name_from_file_name(file_name):
 
 
 def _generate_molecule_database(theargs, molfactory):
+    """Creates molecule database which is a pickle file
+       containing a dictionary where keyword is LIGAND ID and
+       value is a tuple `from get_molecule_weight_and_summary()`
+       This molecules are obtained by looking for all files ending
+       with MOL_SUFFIX in `theargs.moldir` directory.
+       The molecule database is written to a file specified by
+       `theargs.outputfile`
+    :returns: 0 upon success otherwise failure
+    """
+    if theargs.moldir is None:
+        logger.error('--moldir must be set to generate the molecule database')
+        return 1
+
+    if theargs.outputfile is None:
+        logger.error('--outputfile must be set to generate the molecule '
+                     'database')
+        return 3
+
     search_path = os.path.join(theargs.moldir, '*' + MOL_SUFFIX)
     all_mol_files = glob.glob(search_path)
+    if len(all_mol_files) == 0:
+        logger.error('No files with suffix ' + MOL_SUFFIX + ' found in ' +
+                     str(theargs.moldir))
+        return 4
     ligand_dic = {}
     for mol_file in all_mol_files:
         logger.info('Reading file: ' + mol_file)
@@ -443,14 +465,27 @@ def _get_molecule_database(theargs):
 def _validate_molfiles_in_tarball(theargs, molfactory, moleculedb):
     """Generates molecule validation report
     """
-    ligand_skip_list = theargs.skipligand.split(',')
+    if theargs.usersubmission is None:
+        logger.error('--usersubmission must be set with path to tarball '
+                     'to validate')
+        return 1
+
+    ligand_skip_list = []
+
+    try:
+        if theargs.skipligand is not None:
+            ligand_skip_list = theargs.skipligand.split(',')
+            logger.debug('Skipping ligands: ' + str(ligand_skip_list))
+    except AttributeError as e:
+        logger.debug('Got attribute error ' + str(e))
+
     comparemols = CompareMolecules(moleculedb)
     report = ValidationReport()
     for molfile in _molfile_from_tarfile_generator(theargs.usersubmission):
         try:
            ligand_name = _get_ligand_name_from_file_name(molfile)
         except ValueError as e:
-            report.add_ligand_error(molfile, ligand_name, str(e))
+            report.add_ligand_error(molfile, None, str(e))
             continue
         if ligand_name in ligand_skip_list:
             logger.debug(ligand_name + ' in skip list. Skipping...')
@@ -479,85 +514,6 @@ def _run_validation(theargs, molfactory):
     sys.stdout.write(report_str)
     return 1
 
-"""ORIGINAL SCRIPT
-
-def validation_mol (template_pickle, mol_file_path, result_log, log_update = True, ignore_ligand = ["FXR_33"]):
-    template_p = open(template_pickle,"r")
-    template_dic = pickle.load(template_p)
-    template_p.close()
-    log_lines = []
-    all_mol_files = glob.glob("%s/*.mol"%mol_file_path)
-    print "AAAAAAAAAAAAAAAAA", all_mol_files
-    passed = True
-    for mol_file in all_mol_files:
-        try:
-            #for stage 2 the file don't have the pose number so need to split furthert to get the ligand name
-            ligand_name = os.path.splitext(os.path.basename(mol_file))[0].split("-")[1]
-            if ligand_name in ignore_ligand:
-                continue
-        except:
-            log_lines.append("Fatal Error: The ligand name of the mol file:%s cannot be extracted, need to check the naming\n"%(ligand_name))
-            passed = False
-        if ligand_name not in template_dic:
-            log_lines.append("Fatal Error: This ligand: %s corresponding to this mol file: %s could not be found in the template, need to check how the mol file be named...\n"%(ligand_name, os.path.basename(mol_file)))
-            passed = False
-        else:
-            try:
-                print "CCCCCCCCCCCCCCCCCC", mol_file
-                #raw_input()
-                istream = oechem.oemolistream()
-                istream.open(mol_file)
-                rd_mol = oechem.OEMol()
-                oechem.OEReadMolecule(istream, rd_mol)
-                print "IIIIIIIIIIIIIII", rd_mol.GetAtoms()
-                istream.close()
-            except:
-                log_lines.append("Fatal Error: This mol file %s cannot be parse as OpenEye OEMol object, need to check the format...\n"%(os.path.basename(mol_file)))
-
-                rd_mol = False
-                passed = False
-            if rd_mol:
-                heavy_atoms, molecular_weight, atom_dic = get_molecule_weight_and_summary(rd_mol)
-            else:
-                log_lines.append("Fatal Error: This mol file %s cannot be parse as OpenEye OEMol object, need to check the format...\n"%(os.path.basename(mol_file)))
-                passed = False
-                continue
-            if (heavy_atoms, molecular_weight) == (template_dic[ligand_name][0], template_dic[ligand_name][1]):
-                log_lines.append("This ligand :%s in this file: %s passed the validation\n"%(ligand_name, os.path.basename(mol_file)))
-            else:
-                log_lines.append("Fatal Error: This ligand: %s in this file: %s failed the validation\n"%(ligand_name, os.path.basename(mol_file)))
-                log_lines.append("      This ligand has %s heavy atoms and the mol weight is %s\n"%(heavy_atoms, molecular_weight))
-                log_lines.append("      This ligand has atom dictionary as %s, note: the atom dictionary format is {atomic number: number of atoms}\n"%(atom_dic))
-                log_lines.append("      The template has %s heavy atoms and the mol weight is %s\n"%(template_dic[ligand_name][0], template_dic[ligand_name][1]))
-                log_lines.append("      The template has atom dictionary as %s, note: the atom dictionary format is {atomic number: number of atoms}\n"%(template_dic[ligand_name][2]))
-                passed = False
-    if not passed:
-        log_lines.append("This submittion failed the validation because of the Fatal Errors...\n")
-        out_f = open(result_log, "w")
-        out_f.writelines(log_lines)
-        out_f.close()
-        return False
-    else:
-        log_lines.append("This submittion passed the mol file validation\n")
-        out_f = open(result_log, "w")
-        out_f.writelines(log_lines)
-        out_f.close()
-        return True
-
-#main code
-logger = logging.getLogger()
-logging.basicConfig( format  = '%(asctime)s: %(message)s', datefmt = '%m/%d/%y %I:%M:%S', filename = 'final.log', filemode = 'w', level   = logging.INFO )
-#logging.basicConfig( filename = 'final.log', filemode = 'w', level   = logging.INFO )
-
-template_pickle = "mw_na_template_openeye.pickle"
-main_folder_path = os.getcwd()
-validation = validation_mol(template_pickle, main_folder_path, "final.log")
-print "Passed the validation:%s"%validation
-if not validation:
-    commands.getoutput('touch "failed"')
-
-"""
-
 
 def main(args):
     """Main entry into genmoleculedb
@@ -567,10 +523,53 @@ def main(args):
     desc = """
               Version {version}
 
-              Validates a set of .mol files found in input directory
-              (http://www.drugdesigndata.org)
+              Performs mol file validation on files with {mol_suffix}
+              in gzipped tar files.
 
-              """.format(version=d3r.__version__)
+              This script runs in two modes: {genmol_mode} & {validate_mode}
+
+              These modes are set via the first argument passed into this script.
+
+              In general '{genmol_mode}' mode is run first and '{validate_mode}'
+              mode is run multiple times to perform the validation.
+
+              '{genmol_mode}' mode takes a directory of {mol_suffix} files or a CSV
+                            file with SMILES strings and generates a
+                            molecule database. This database is a pickle file
+                            and is used to validate the mol files. The output
+                            database is specified by the --{output} flag.
+                            This database basically is a dictionary of
+                            Ligand names as parsed from the mol file
+                            name XXX-####-XXX.mol where the ligand name is expected
+                            to be the value between first and second - character.
+
+                            Any problems found are output to standard out/err and
+                            a non 0 exit code is returned.
+
+              '{validate_mode}' mode takes the molecule database from {genmol_mode}
+                              (which is passed in via --{moldb} flag) and
+                              validates all mol files found in the  tarfile
+                              specified by --{usersubmission} flag. It is assumed
+                              all mol files have a file name format like this:
+                              XXX-####-XXX.mol where #### between 1st and second -
+                              is considered to be the Ligand ID.
+
+                              Validation is done by comparing number and atomic
+                              weight of non hydrogen atoms against the database.
+
+                              Any problems found are output to standard out/err and
+                              a non 0 exit code is returned.
+
+
+              For more information visit: http://www.drugdesigndata.org
+
+              """.format(version=d3r.__version__,
+                         mol_suffix=MOL_SUFFIX,
+                         output=OUTFILE,
+                         genmol_mode=GENMOLECULEDB_MODE,
+                         validate_mode=VALIDATE_MODE,
+                         moldb=MOLDB,
+                         usersubmission=USER_SUBMISSION)
 
     theargs = _parse_arguments(desc, args[1:])
     theargs.program = args[0]
@@ -588,7 +587,7 @@ def main(args):
         if theargs.mode == VALIDATE_MODE:
             logger.info('Running in ' + VALIDATE_MODE + ' validation mode')
             return _run_validation(theargs, molfactory)
-        raise ValueError('Unsupported mode: ' + theargs.mode)
+        raise ValueError('Unsupported mode: ' + str(theargs.mode))
     except Exception:
         logger.exception("Error caught exception")
         return 2

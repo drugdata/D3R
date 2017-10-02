@@ -7,13 +7,20 @@ test_molfilevalidator
 
 Tests for `molfilevalidator` module.
 """
+import sys
 
-import unittest
+if sys.version_info < (2, 7):
+    import unittest2 as unittest
+else:
+    import unittest
+
 import tempfile
 import os
 import os.path
-import sys
 import shutil
+import tarfile
+
+from mock import Mock
 
 try:
     OPENEYE_MOD_LOADED = False
@@ -31,6 +38,7 @@ try:
 except ImportError as e:
     pass
 
+from d3r.celpp.task import D3RParameters
 from d3r import molfilevalidator
 from d3r.molfilevalidator import D3RAtom
 from d3r.molfilevalidator import D3RMolecule
@@ -48,6 +56,29 @@ class TestMolFileValidator(unittest.TestCase):
 
     def tearDown(self):
         pass
+
+    def _get_mol_as_str(self):
+        return """
+-OEChem-09291710502D
+
+  2  1  0     0  0  0  0  0  0999 V2000
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    1.0000    0.0000    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  1  0  0  0  0
+M  END
+"""
+
+
+    def _get_mol2_as_str(self):
+        return """
+-OEChem-09291710502D
+
+  2  1  0     0  0  0  0  0  0999 V2000
+    0.0000    0.0000    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0
+    1.0000    0.0000    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  1  0  0  0  0
+M  END
+"""
 
     def test_parse_arguments(self):
 
@@ -102,19 +133,10 @@ class TestMolFileValidator(unittest.TestCase):
         mol.set_atoms(['hi', 'bye'])
         self.assertEqual(mol.get_atoms(), ['hi', 'bye'])
 
-    @unittest.skipIf(OPENEYE_MOD_LOADED == False,
+    @unittest.skipIf(OPENEYE_MOD_LOADED is False,
                      'No valid openeye installation or license found')
     def test_d3rmoleculefrommolfileviaopeneyefactory(self):
-
-        mol = """
--OEChem-09291710502D
-
-  2  1  0     0  0  0  0  0  0999 V2000
-    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    1.0000    0.0000    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0
-  1  2  1  0  0  0  0
-M  END
-"""
+        mol = self._get_mol_as_str()
         temp_dir = tempfile.mkdtemp()
         try:
             factory = D3RMoleculeFromMolFileViaOpeneyeFactory()
@@ -144,7 +166,7 @@ M  END
         finally:
             shutil.rmtree(temp_dir)
 
-    @unittest.skipIf(OPENEYE_MOD_LOADED == False,
+    @unittest.skipIf(OPENEYE_MOD_LOADED is False,
                      'No valid openeye installation or license found')
     def test_d3rmoleculefromsmileviaopeneyefactory(self):
         factory = D3RMoleculeFromSmileViaOpeneyeFactory()
@@ -262,7 +284,6 @@ M  END
         self.assertTrue('\n\tExpected atom map { atomic #: # atoms,...} '
                         '{6: 5}, but got {6: 2}\n\n' in vr.get_as_string())
 
-
     def test_compare_molecules(self):
         cm = CompareMolecules({})
         vr = ValidationReport()
@@ -338,6 +359,264 @@ M  END
         res = molfilevalidator._get_ligand_name_from_file_name('DSV-FXR_12-1.mol')
         self.assertEqual(res, 'FXR_12')
 
+    def test_generate_molecule_database_no_moldir_is_none(self):
+        params = D3RParameters()
+        params.moldir = None
+        res = molfilevalidator._generate_molecule_database(params, None)
+        self.assertEqual(res, 1)
+
+    def test_generate_molecule_database_no_outputfile_is_none(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            params.moldir = temp_dir
+            output = os.path.join(temp_dir, 'foo.pickle')
+            params.outputfile = None
+            res = molfilevalidator._generate_molecule_database(params, None)
+            self.assertEqual(res, 3)
+            self.assertFalse(os.path.isfile(output))
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_generate_molecule_database_no_molfiles(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            params.moldir = temp_dir
+            output = os.path.join(temp_dir, 'foo.pickle')
+            params.outputfile = output
+            res = molfilevalidator._generate_molecule_database(params, None)
+            self.assertEqual(res, 4)
+            self.assertFalse(os.path.isfile(output))
+        finally:
+            shutil.rmtree(temp_dir)
+
+    @unittest.skipIf(OPENEYE_MOD_LOADED is False,
+                     'No valid openeye installation or license found')
+    def test_generate_molecule_database_one_molfile_with_openeye(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            params.moldir = temp_dir
+            output = os.path.join(temp_dir, 'foo.pickle')
+            params.outputfile = output
+            mymol = os.path.join(temp_dir, 'my-ABC_1-1.mol')
+            with open(mymol, 'w') as f:
+                f.write(self._get_mol_as_str())
+                f.flush()
+            fac = D3RMoleculeFromMolFileViaOpeneyeFactory()
+            res = molfilevalidator._generate_molecule_database(params, fac)
+            self.assertEqual(res, 0)
+            self.assertTrue(os.path.isfile(output))
+
+            params.moleculedb = output
+            moldb = molfilevalidator._get_molecule_database(params)
+            self.assertEqual(len(moldb), 1)
+            self.assertEqual(moldb['ABC_1'][0], 2)
+            self.assertEqual(moldb['ABC_1'][1], 13)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    @unittest.skipIf(OPENEYE_MOD_LOADED is False,
+                     'No valid openeye installation or license found')
+    def test_generate_molecule_database_two_molfiles_with_openeye(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            params.moldir = temp_dir
+            output = os.path.join(temp_dir, 'foo.pickle')
+            params.outputfile = output
+            mymol = os.path.join(temp_dir, 'my-ABC_1-1.mol')
+            with open(mymol, 'w') as f:
+                f.write(self._get_mol_as_str())
+                f.flush()
+
+            mymol2 = os.path.join(temp_dir, 'yo-XXX_2-3.mol')
+            with open(mymol2, 'w') as f:
+                f.write(self._get_mol2_as_str())
+                f.flush()
+
+            fac = D3RMoleculeFromMolFileViaOpeneyeFactory()
+            res = molfilevalidator._generate_molecule_database(params, fac)
+            self.assertEqual(res, 0)
+            self.assertTrue(os.path.isfile(output))
+
+            params.moleculedb = output
+            moldb = molfilevalidator._get_molecule_database(params)
+            self.assertEqual(len(moldb), 2)
+            self.assertEqual(moldb['ABC_1'][0], 2)
+            self.assertEqual(moldb['ABC_1'][1], 13)
+            self.assertEqual(moldb['XXX_2'][0], 2)
+            self.assertEqual(moldb['XXX_2'][1], 14)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_molfile_from_tarfile_generator_no_tarfile(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            n = os.path.join(temp_dir, 'foo.tar.gz')
+            try:
+                mols = list(molfilevalidator._molfile_from_tarfile_generator(n))
+                self.fail('Expected IOError')
+            except IOError as e:
+                self.assertTrue('No such file' in str(e))
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_molfile_from_tarfile_generator_no_mols_in_tar(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            afile = os.path.join(temp_dir, 'foo.pdb')
+            with open(afile, 'w') as f:
+                f.write(self._get_mol_as_str())
+                f.flush()
+            myf = os.path.join(temp_dir, 'foo.tar.gz')
+            with tarfile.open(myf, 'w:gz') as tf:
+                tf.add(afile)
+
+            mols = list(molfilevalidator._molfile_from_tarfile_generator(myf))
+            self.assertEqual(len(mols), 0)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_molfile_from_tarfile_generator_one_mol_in_tar(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            afile = os.path.join(temp_dir, 'foo.pdb')
+            with open(afile, 'w') as f:
+                f.write(self._get_mol_as_str())
+                f.flush()
+
+            mfile = os.path.join(temp_dir, 'yo.mol')
+            with open(mfile, 'w') as f:
+                f.write(self._get_mol_as_str())
+                f.flush()
+
+            myf = os.path.join(temp_dir, 'foo.tar.gz')
+            with tarfile.open(myf, 'w:gz') as tf:
+                tf.add(afile)
+                tf.add(mfile, arcname='hi.mol')
+
+            mols = list(molfilevalidator._molfile_from_tarfile_generator(myf))
+            self.assertEqual(len(mols), 1)
+            self.assertTrue(mols[0].endswith('hi.mol'))
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_molfile_from_tarfile_generator_one_mol_in_tar(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            afile = os.path.join(temp_dir, 'foo.pdb')
+            with open(afile, 'w') as f:
+                f.write(self._get_mol_as_str())
+                f.flush()
+
+            mfile = os.path.join(temp_dir, 'yo.mol')
+            with open(mfile, 'w') as f:
+                f.write(self._get_mol_as_str())
+                f.flush()
+
+            m2file = os.path.join(temp_dir, 'xxd.mol')
+            with open(m2file, 'w') as f:
+                f.write(self._get_mol_as_str())
+                f.flush()
+
+            myf = os.path.join(temp_dir, 'foo.tar.gz')
+            with tarfile.open(myf, 'w:gz') as tf:
+                tf.add(afile)
+                tf.add(mfile, arcname='hi.mol')
+                tf.add(m2file, arcname='bye.mol')
+
+            mols = list(molfilevalidator._molfile_from_tarfile_generator(myf))
+            self.assertEqual(len(mols), 2)
+            self.assertTrue(mols[0].endswith('hi.mol'))
+            self.assertTrue(mols[1].endswith('bye.mol'))
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_validate_molfiles_in_tarball_usersubmission_is_none(self):
+        params = D3RParameters()
+        params.usersubmission = None
+        res = molfilevalidator._validate_molfiles_in_tarball(params, None, None)
+        self.assertEqual(res, 1)
+
+    @unittest.skipIf(OPENEYE_MOD_LOADED is False,
+                     'No valid openeye installation or license found')
+    def test_validate_molfiles_in_tarball_real(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+
+            mfile = os.path.join(temp_dir, 'yo.mol')
+            with open(mfile, 'w') as f:
+                f.write(self._get_mol_as_str())
+                f.flush()
+            myf = os.path.join(temp_dir, 'foo.tar.gz')
+
+            bfile = os.path.join(temp_dir, 'x.mol')
+            with open(bfile, 'w') as f:
+                f.write('blah\n')
+                f.flush()
+                f.close()
+            with tarfile.open(myf, 'w:gz') as tf:
+                tf.add(mfile, arcname='yo.mol')
+                tf.add(mfile, arcname='x-ABC_1-1.mol')
+                tf.add(bfile, arcname='z-BBB_2-213.mol')
+
+            params = D3RParameters()
+            params.usersubmission = myf
+            moldb = {}
+            moldb['ABC_1'] = (1, 2, {7: 2})
+            molfactory = D3RMoleculeFromMolFileViaOpeneyeFactory()
+            res = molfilevalidator._validate_molfiles_in_tarball(params,
+                                                                 molfactory,
+                                                                 moldb)
+            self.assertTrue('parsing ligand name from file '
+                            'name: yo.mol' in res.get_as_string())
+            self.assertTrue('1 non hydrogen atoms, but '
+                            'got 2' in res.get_as_string())
+            self.assertTrue('2 for non hydrogen atomic weight, but '
+                            'got 13' in res.get_as_string())
+            self.assertTrue('BBB_2\n\tligand not in molecule '
+                            in res.get_as_string())
+        finally:
+            shutil.rmtree(temp_dir)
+
+    @unittest.skipIf(OPENEYE_MOD_LOADED is False,
+                     'No valid openeye installation or license found')
+    def test_validate_molfiles_in_tarball_real_with_skiplist(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            myf = os.path.join(temp_dir, 'foo.tar.gz')
+            mfile = os.path.join(temp_dir, 'yo.mol')
+            with open(mfile, 'w') as f:
+                f.write(self._get_mol_as_str())
+                f.flush()
+            with tarfile.open(myf, 'w:gz') as tf:
+
+                tf.add(mfile, arcname='x-ABC_1-1.mol')
+
+            params = D3RParameters()
+            params.usersubmission = myf
+            params.skipligand = 'XXX_3,ABC_1'
+            moldb = {}
+            moldb['ABC_1'] = (1, 2, {7: 2})
+            molfactory = D3RMoleculeFromMolFileViaOpeneyeFactory()
+            res = molfilevalidator._validate_molfiles_in_tarball(params,
+                                                                 molfactory,
+                                                                 moldb)
+            self.assertEqual(res.get_as_string(), '')
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_main_with_error(self):
+        res = molfilevalidator.main(['yo', molfilevalidator.VALIDATE_MODE])
+        self.assertEqual(res, 2)
+
+        res = molfilevalidator.main(['yo', molfilevalidator.GENMOLECULEDB_MODE])
+        self.assertEqual(res, 1)
 
 
 if __name__ == '__main__':
