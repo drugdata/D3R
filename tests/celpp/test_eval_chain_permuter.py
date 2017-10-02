@@ -23,30 +23,31 @@ from d3r.celpp.task import SmtpEmailer
 from d3r.celpp.evaluation import EvaluationEmailer
 from mock import Mock
 
+
 class TestChainPermuter(unittest.TestCase):
     def setUp(self):
         try:
             import openeye.oechem  # noqa: F401
-            sys.stdout.write("openeye.oechem importable.")
+            sys.stdout.write("openeye.oechem importable.\n")
             self.has_oechem = True
         except:
-            sys.stdout.write("openeye.oechem not importable.")
+            sys.stdout.write("openeye.oechem not importable.\n")
             self.has_oechem = False
 
         ret_code = os.system('PYTHONPATH= $SCHRODINGER/run split_structure.py &> '
                              '/dev/null')
         if ret_code == 512:
-            sys.stdout.write("Schrodinger commandline available.")
+            sys.stdout.write("Schrodinger commandline available.\n")
             self.has_schrodinger = True
         else:
-            sys.stdout.write("Schrodinger commandline not available.")
+            sys.stdout.write("Schrodinger commandline not available.\n")
             self.has_schrodinger = False
         #pd = ParticipantDatabase([])
         #self.eval_emailer = EvaluationEmailer(pd, reply_to_address, smtp='localhost', smtpport=25)
 
     def test_permute_chains_and_take_min_rmsd(self):
         if not(self.has_oechem) or not (self.has_schrodinger):
-            sys.stdout.write("Missing essential component. Skipping test.")
+            sys.stdout.write("Missing essential component. Skipping test.\n")
             return
         test_scale = 'github'
         method_list = ['autodockvina']
