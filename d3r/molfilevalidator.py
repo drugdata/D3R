@@ -591,7 +591,7 @@ def main(args):
               Version {version}
 
               Performs mol file validation on files with {mol_suffix}
-              in gzipped tar files.
+              extension in gzipped tar files.
 
               This script runs in two modes: {genmol_mode} & {validate_mode}
 
