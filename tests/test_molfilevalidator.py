@@ -90,6 +90,8 @@ M  END
         self.assertEqual(params.skipligand, None)
         self.assertEqual(params.outputfile, None)
         self.assertEqual(params.moleculedb, None)
+        self.assertEqual(params.molcsvligandcol, 0)
+        self.assertEqual(params.molcsvsmilecol, 1)
         self.assertEqual(params.loglevel, molfilevalidator.DEFAULT_LOG_LEVEL)
 
         params = molfilevalidator._parse_arguments('hi',
@@ -359,22 +361,45 @@ M  END
         res = molfilevalidator._get_ligand_name_from_file_name('DSV-FXR_12-1.mol')
         self.assertEqual(res, 'FXR_12')
 
+    def test_generate_molecule_database_fromcsv_molcsv_is_none(self):
+        params = D3RParameters()
+        params.molcsv = None
+        res = molfilevalidator._generate_molecule_database_fromcsv(params, None)
+        self.assertEqual(res, 1)
+
     def test_generate_molecule_database_no_moldir_is_none(self):
         params = D3RParameters()
         params.moldir = None
-        res = molfilevalidator._generate_molecule_database(params, None)
+        res = molfilevalidator._generate_molecule_database_frommolfiles(params, None)
         self.assertEqual(res, 1)
 
-    def test_generate_molecule_database_no_outputfile_is_none(self):
+    @unittest.skipIf(OPENEYE_MOD_LOADED is False,
+                     'No valid openeye installation or license found')
+    def test_generate_molecule_database_from_csv_with_validcsv(self):
         temp_dir = tempfile.mkdtemp()
         try:
+            csvfile = os.path.join(temp_dir, 'foo.csv')
+            with open(csvfile, 'w') as f:
+                f.write('Ligand_ID, Smiles, Target, Subchallenge\n')
+                f.write('ABC_1,FC(F),abc,something\n')
+                f.write('DEF_1,CC,abc,something\n')
+                f.flush()
             params = D3RParameters()
-            params.moldir = temp_dir
-            output = os.path.join(temp_dir, 'foo.pickle')
-            params.outputfile = None
-            res = molfilevalidator._generate_molecule_database(params, None)
-            self.assertEqual(res, 3)
-            self.assertFalse(os.path.isfile(output))
+            params.molcsv = csvfile
+            params.outputfile = os.path.join(temp_dir, 'res.pickle')
+            params.molcsvligandcol = 0
+            params.molcsvsmilecol = 1
+            factory = D3RMoleculeFromSmileViaOpeneyeFactory()
+            res = molfilevalidator._generate_molecule_database_fromcsv(params,
+                                                                       factory)
+            self.assertEqual(res, 0)
+            self.assertTrue(os.path.isfile(params.outputfile))
+
+            params.moleculedb = params.outputfile
+            ligand_dic = molfilevalidator._get_molecule_database(params)
+            self.assertEqual(len(ligand_dic), 2)
+            self.assertEqual(ligand_dic['ABC_1'][0], 3)
+            self.assertEqual(ligand_dic['DEF_1'][0], 2)
         finally:
             shutil.rmtree(temp_dir)
 
@@ -385,7 +410,7 @@ M  END
             params.moldir = temp_dir
             output = os.path.join(temp_dir, 'foo.pickle')
             params.outputfile = output
-            res = molfilevalidator._generate_molecule_database(params, None)
+            res = molfilevalidator._generate_molecule_database_frommolfiles(params, None)
             self.assertEqual(res, 4)
             self.assertFalse(os.path.isfile(output))
         finally:
@@ -405,7 +430,7 @@ M  END
                 f.write(self._get_mol_as_str())
                 f.flush()
             fac = D3RMoleculeFromMolFileViaOpeneyeFactory()
-            res = molfilevalidator._generate_molecule_database(params, fac)
+            res = molfilevalidator._generate_molecule_database_frommolfiles(params, fac)
             self.assertEqual(res, 0)
             self.assertTrue(os.path.isfile(output))
 
@@ -437,7 +462,7 @@ M  END
                 f.flush()
 
             fac = D3RMoleculeFromMolFileViaOpeneyeFactory()
-            res = molfilevalidator._generate_molecule_database(params, fac)
+            res = molfilevalidator._generate_molecule_database_frommolfiles(params, fac)
             self.assertEqual(res, 0)
             self.assertTrue(os.path.isfile(output))
 
@@ -472,8 +497,9 @@ M  END
                 f.write(self._get_mol_as_str())
                 f.flush()
             myf = os.path.join(temp_dir, 'foo.tar.gz')
-            with tarfile.open(myf, 'w:gz') as tf:
-                tf.add(afile)
+            tf = tarfile.open(myf, 'w:gz')
+            tf.add(afile)
+            tf.close()
 
             mols = list(molfilevalidator._molfile_from_tarfile_generator(myf))
             self.assertEqual(len(mols), 0)
@@ -495,9 +521,10 @@ M  END
                 f.flush()
 
             myf = os.path.join(temp_dir, 'foo.tar.gz')
-            with tarfile.open(myf, 'w:gz') as tf:
-                tf.add(afile)
-                tf.add(mfile, arcname='hi.mol')
+            tf = tarfile.open(myf, 'w:gz')
+            tf.add(afile)
+            tf.add(mfile, arcname='hi.mol')
+            tf.close()
 
             mols = list(molfilevalidator._molfile_from_tarfile_generator(myf))
             self.assertEqual(len(mols), 1)
@@ -525,10 +552,11 @@ M  END
                 f.flush()
 
             myf = os.path.join(temp_dir, 'foo.tar.gz')
-            with tarfile.open(myf, 'w:gz') as tf:
-                tf.add(afile)
-                tf.add(mfile, arcname='hi.mol')
-                tf.add(m2file, arcname='bye.mol')
+            tf = tarfile.open(myf, 'w:gz')
+            tf.add(afile)
+            tf.add(mfile, arcname='hi.mol')
+            tf.add(m2file, arcname='bye.mol')
+            tf.close()
 
             mols = list(molfilevalidator._molfile_from_tarfile_generator(myf))
             self.assertEqual(len(mols), 2)
@@ -560,10 +588,11 @@ M  END
                 f.write('blah\n')
                 f.flush()
                 f.close()
-            with tarfile.open(myf, 'w:gz') as tf:
-                tf.add(mfile, arcname='yo.mol')
-                tf.add(mfile, arcname='x-ABC_1-1.mol')
-                tf.add(bfile, arcname='z-BBB_2-213.mol')
+            tf = tarfile.open(myf, 'w:gz')
+            tf.add(mfile, arcname='yo.mol')
+            tf.add(mfile, arcname='x-ABC_1-1.mol')
+            tf.add(bfile, arcname='z-BBB_2-213.mol')
+            tf.close()
 
             params = D3RParameters()
             params.usersubmission = myf
@@ -616,7 +645,7 @@ M  END
         self.assertEqual(res, 2)
 
         res = molfilevalidator.main(['yo', molfilevalidator.GENMOLECULEDB_MODE])
-        self.assertEqual(res, 1)
+        self.assertEqual(res, 3)
 
 
 if __name__ == '__main__':

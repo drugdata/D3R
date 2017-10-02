@@ -9,6 +9,7 @@ import tarfile
 import shutil
 import tempfile
 import pickle
+import csv
 
 try:
     OPENEYE_MOD_LOADED = False
@@ -26,7 +27,7 @@ try:
 except ImportError as e:
     sys.stderr.write('WARNING: Unable to import oechem: ' +
                      str(e) + ' validation will NOT work\n')
-    pass
+
 
 
 import d3r
@@ -75,9 +76,17 @@ def _parse_arguments(desc, args):
                         ' database writing it to --' + OUTFILE)
     parser.add_argument('--moldir', help='Directory containing mol files used to '
                                          'generate database from')
-    # parser.add_argument('--molcsv', help='CSV file sent to participants')
-    # parser.add_argument('--molcsvligandcol', help='0 offset column containing ligand ids')
-    # parser.add_argument('--molcsvsmilescol', help='0 offset column containing smile strings')
+    parser.add_argument('--molcsv', help='CSV file sent to participants containing'
+                                         'ligand id and Smile string for molecules.'
+                                         'Used to generate molecule database')
+    parser.add_argument('--molcsvligandcol', default=0, type=int,
+                        help='Column containing ligand id in csv file'
+                        'set via --molcsv. 0 offset so 1st column'
+                        'is 0 (default 0)')
+    parser.add_argument('--molcsvsmilecol', default=1, type=int,
+                        help='Column containing SMILE string in csv file'
+                             'set via --molcsv. 0 offset so 1st column'
+                             'is 0 (default 1)')
     parser.add_argument('--skipligand', help='comma delimited list of ligands to skip')
     parser.add_argument('--' + USER_SUBMISSION,
                         help='tar.gz file containing .mol files to validate')
@@ -180,7 +189,8 @@ class D3RMoleculeFromOpeneyeFactory(object):
                 raise ValueError('OEReadMolecule returned False '
                                  'when trying to read mol file')
         finally:
-            istream.close()
+            if istream is not None:
+                istream.close()
         return openeye_mol
 
 
@@ -203,8 +213,11 @@ class D3RMoleculeFromSmileViaOpeneyeFactory(D3RMoleculeFromOpeneyeFactory):
         super(D3RMoleculeFromOpeneyeFactory, self).__init__()
 
     def _get_oechem_istream(self, source):
+        if source == '':
+            logger.error('Source string is empty')
+            return None
         istream = oechem.oemolistream()
-        istream.SetFormat(oechem.OEFormat_SMI)
+        istream.SetFormat(oechem.OEFormat_USM)
         istream.openstring(source)
         return istream
 
@@ -393,7 +406,69 @@ def _get_ligand_name_from_file_name(file_name):
     return hyphen_split[1]
 
 
-def _generate_molecule_database(theargs, molfactory):
+def _write_molecule_database(theargs, ligand_dictionary):
+    """Writes ligand_dictionary to pickle file specified by
+    theargs.outputfile
+    """
+    logger.debug('Writing output to: ' + theargs.outputfile)
+    p_f = open(theargs.outputfile, "w")
+    pickle.dump(ligand_dictionary, p_f)
+    p_f.close()
+
+
+def _generate_molecule_database_fromcsv(theargs, molfactory):
+    """Creates molecule database which is a pickle file
+       containing a dictionary where keyword is LIGAND ID and
+       value is a tuple `from get_molecule_weight_and_summary()`
+       This molecules are obtained by parsing csv file set via
+       `theargs.molcsv` with ligand column set to `theargs.molcsvligandcol`
+       and the smiles column set to `theargs.molcsvsmilecol`
+       The molecule database is written to a file specified by
+       `theargs.outputfile`
+    :returns: 0 upon success otherwise failure
+    """
+    if theargs.molcsv is None:
+        logger.error('--molcsv must be set to csv file to generate database')
+        return 1
+
+    ligand_col = theargs.molcsvligandcol
+    smile_col = theargs.molcsvsmilecol
+    counter = -1
+    ligand_dic = {}
+    with open(theargs.molcsv, 'r') as cf:
+        reader = csv.reader(cf, quotechar='"')
+        for row in reader:
+            counter += 1
+            if counter is 0:
+                logger.info('Skipping header row: ' + str(row))
+                continue
+            numcols = len(row)
+            if ligand_col >= numcols:
+                logger.error('In row ' + str(counter) +
+                             ' ligand column index ' + str(ligand_col) +
+                             ' is >= number of columns: ' + str(numcols))
+                continue
+            if smile_col >= numcols:
+                logger.error('In row ' + str(counter) +
+                             ' smile column index ' + str(ligand_col) +
+                             ' is >= number of columns: ' + str(numcols))
+                continue
+
+            ligand_name = row[ligand_col]
+            if row[smile_col] == '':
+                logger.error('In row ' + str(counter) +
+                             ' smile string is empty: ' + str(row))
+                continue
+
+            themol = molfactory.get_d3rmolecule(row[smile_col])
+            if not ligand_name in ligand_dic:
+                ligand_dic[ligand_name] = get_molecule_weight_and_summary(themol)
+
+    _write_molecule_database(theargs, ligand_dic)
+    return 0
+
+
+def _generate_molecule_database_frommolfiles(theargs, molfactory):
     """Creates molecule database which is a pickle file
        containing a dictionary where keyword is LIGAND ID and
        value is a tuple `from get_molecule_weight_and_summary()`
@@ -406,11 +481,6 @@ def _generate_molecule_database(theargs, molfactory):
     if theargs.moldir is None:
         logger.error('--moldir must be set to generate the molecule database')
         return 1
-
-    if theargs.outputfile is None:
-        logger.error('--outputfile must be set to generate the molecule '
-                     'database')
-        return 3
 
     search_path = os.path.join(theargs.moldir, '*' + MOL_SUFFIX)
     all_mol_files = glob.glob(search_path)
@@ -427,10 +497,7 @@ def _generate_molecule_database(theargs, molfactory):
         if not ligand_name in ligand_dic:
             ligand_dic[ligand_name] = get_molecule_weight_and_summary(themol)
 
-    logger.debug('Writing output to: ' + theargs.outputfile)
-    p_f = open(theargs.outputfile, "w")
-    pickle.dump(ligand_dic, p_f)
-    p_f.close()
+    _write_molecule_database(theargs, ligand_dic)
     return 0
 
 
@@ -583,7 +650,18 @@ def main(args):
         if theargs.mode == GENMOLECULEDB_MODE:
             logger.info('Running in ' + GENMOLECULEDB_MODE +
                         ' database generation mode')
-            return _generate_molecule_database(theargs, molfactory)
+
+            if theargs.outputfile is None:
+                logger.error('--outputfile must be set to generate the molecule '
+                             'database')
+                return 3
+            if theargs.moldir is not None:
+                return _generate_molecule_database_frommolfiles(theargs, molfactory)
+            if theargs.molcsv is not None:
+                smilefactory = D3RMoleculeFromSmileViaOpeneyeFactory()
+                return _generate_molecule_database_fromcsv(theargs, smilefactory)
+            raise ValueError('Either --moldir or --molcsv must be set to generate'
+                             'molecule database')
         if theargs.mode == VALIDATE_MODE:
             logger.info('Running in ' + VALIDATE_MODE + ' validation mode')
             return _run_validation(theargs, molfactory)
