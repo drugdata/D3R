@@ -1,8 +1,29 @@
 __author__ = 'churas'
 
-import unittest
+import sys
+
+if sys.version_info < (2, 7):
+    import unittest2 as unittest
+else:
+    import unittest
 import tempfile
 import os.path
+
+try:
+    OPENEYE_MOD_LOADED = False
+    from openeye import oechem
+    try:
+        if oechem.OEChemIsLicensed():
+            OPENEYE_MOD_LOADED = True
+        else:
+            sys.stderr.write('WARNING: No valid license found for openeye ' +
+                             'Please verify OE_LICENSE environment variable'
+                             'is set to valid license file\n')
+    except AttributeError as ae:
+        sys.stderr.write('WARNING Unable to check if openey is licensed' +
+                         str(ae))
+except ImportError as e:
+    pass
 
 from d3r.blast.query import Query
 """
@@ -71,6 +92,8 @@ class TestInPut(unittest.TestCase):
 4YDE    ZN      InChI=1S/Zn/q+2"""
         return val
 
+    @unittest.skipIf(OPENEYE_MOD_LOADED is False,
+                     'No valid openeye installation or license found')
     def test_read_ligands_valid_file(self):
         temp_dir = tempfile.mkdtemp()
         try:
@@ -134,6 +157,8 @@ class TestInPut(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
+    @unittest.skipIf(OPENEYE_MOD_LOADED is False,
+                     'No valid openeye installation or license found')
     def test_create_queries(self):
         temp_dir = tempfile.mkdtemp()
         try:
