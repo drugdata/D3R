@@ -145,6 +145,7 @@ class D3RMolecule(object):
     """Represents a Molecule"""
     def __init__(self):
         self._atoms = None
+        self._smiles = None
 
     def set_atoms(self, atoms):
         """Sets list of atoms
@@ -155,6 +156,14 @@ class D3RMolecule(object):
         """Gets list of atoms
         """
         return self._atoms
+
+    def set_canonical_smiles_str(self, smiles_str):
+        """Sets unique smiles string"""
+        self._smiles = smiles_str
+
+    def get_canonical_smiles_str(self):
+        """Gets unique smiles string"""
+        return self._smiles
 
 
 class D3RMoleculeFromOpeneyeFactory(object):
@@ -175,6 +184,8 @@ class D3RMoleculeFromOpeneyeFactory(object):
 
         d3rmol = D3RMolecule()
         d3rmol.set_atoms(d3ratoms)
+        smi_str = oechem.OECreateCanSmiString(openeye_mol)
+        d3rmol.set_canonical_smiles_str(smi_str)
         return d3rmol
 
     def _get_molecule_from_openeye(self, source):
@@ -254,7 +265,7 @@ def get_molecule_weight_and_summary(themolecule):
                      ') atomic weight (' +
                      str(molecular_weight) + ') atom dictionary ' +
                      str(atom_dic))
-    return heavy_atom, molecular_weight, atom_dic
+    return heavy_atom, molecular_weight, atom_dic, themolecule.get_canonical_smiles_str()
 
 
 class CompareMolecules(object):
@@ -276,14 +287,19 @@ class CompareMolecules(object):
             return False
 
         (h_atom, m_weight,
-         atom_dic) = get_molecule_weight_and_summary(user_molecule)
+         atom_dic, smi_str) = get_molecule_weight_and_summary(user_molecule)
 
         if h_atom == self._moleculedb[ligand_name][0]:
             if m_weight == self._moleculedb[ligand_name][1]:
-                return True
+                if smi_str == self._moleculedb[ligand_name][3]:
+                    return True
+                    vreport.add_molecule_error(molfile, ligand_name,
+                                               (h_atom, m_weight, atom_dic, smi_str),
+                                               self._moleculedb[ligand_name],
+                                               'Canonical SMILE strings do NOT match')
 
         vreport.add_molecule_error(molfile, ligand_name,
-                                   (h_atom, m_weight, atom_dic),
+                                   (h_atom, m_weight, atom_dic, smi_str),
                                    self._moleculedb[ligand_name],
                                    'Number of heavy atoms and or molecular weight '
                                    'did not match ')
@@ -373,6 +389,9 @@ class ValidationReport(object):
 
                 exp_atom_map = str(entry[ValidationReport.EXPECTEDMOL][2])
                 usr_atom_map = str(entry[ValidationReport.USERMOL][2])
+
+                # exp_smi =
+                # usr_smi =
 
                 res += (' ligand: ' + str(entry[ValidationReport.LIGAND]) + ' ' +
                         str(entry[ValidationReport.MESSAGE]) + '\n')
