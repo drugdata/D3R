@@ -3,6 +3,11 @@
 History
 -------
 
+1.9.2
+--------------------
+
+* Added molfilevalidator.py to validate D3R submission tarfiles.
+
 1.9.1 (2017-08-21)
 --------------------
 
