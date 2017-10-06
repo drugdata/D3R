@@ -20,8 +20,6 @@ import os.path
 import shutil
 import tarfile
 
-from mock import Mock
-
 try:
     OPENEYE_MOD_LOADED = False
     from openeye import oechem
@@ -67,7 +65,6 @@ class TestMolFileValidator(unittest.TestCase):
   1  2  1  0  0  0  0
 M  END
 """
-
 
     def _get_mol2_as_str(self):
         return """
@@ -179,10 +176,10 @@ M  END
         self.assertEqual(d3rmol.get_atoms()[1].is_hydrogen(), False)
         self.assertEqual(d3rmol.get_atoms()[1].get_atomic_number(), 7)
 
-
     def test_get_molecule_weight_and_summary(self):
         # test where molecule is None
-        (ha, mw, adic, smi_str) = molfilevalidator.get_molecule_weight_and_summary(None)
+        (ha, mw, adic, smi_str) = molfilevalidator.\
+            get_molecule_weight_and_summary(None)
         self.assertEqual(ha, -1)
         self.assertEqual(mw, -1)
         self.assertEqual(adic, {})
@@ -190,21 +187,21 @@ M  END
         mol = D3RMolecule()
 
         # test None for atoms
-        (ha, mw, adic, smi_str) = molfilevalidator.get_molecule_weight_and_summary(mol)
+        (ha, mw, adic, smi_str) = molfilevalidator.\
+            get_molecule_weight_and_summary(mol)
         self.assertEqual(ha, 0)
         self.assertEqual(mw, 0)
         self.assertEqual(adic, {})
         self.assertEqual(smi_str, '')
 
-
         # test with empty list for atoms
         mol.set_atoms([])
-        (ha, mw, adic, smi_str) = molfilevalidator.get_molecule_weight_and_summary(mol)
+        (ha, mw, adic, smi_str) = molfilevalidator.\
+            get_molecule_weight_and_summary(mol)
         self.assertEqual(ha, 0)
         self.assertEqual(mw, 0)
         self.assertEqual(adic, {})
         self.assertEqual(smi_str, None)
-
 
         # test with 1 atom is hydrogen
         atom = D3RAtom()
@@ -212,24 +209,24 @@ M  END
         atom.set_atomic_number(1)
         mol.set_atoms([atom])
         mol.set_canonical_smiles_str('CC')
-        (ha, mw, adic, smi_str) = molfilevalidator.get_molecule_weight_and_summary(mol)
+        (ha, mw, adic, smi_str) = molfilevalidator.\
+            get_molecule_weight_and_summary(mol)
         self.assertEqual(ha, 0)
         self.assertEqual(mw, 0)
         self.assertEqual(adic, {})
         self.assertEqual(smi_str, 'CC')
-
 
         # test with 1 atom non hydrogen
         atom.set_is_hydrogen(False)
         atom.set_atomic_number(5)
         mol.set_atoms([atom])
         mol.set_canonical_smiles_str('CCN')
-        (ha, mw, adic, smi_str) = molfilevalidator.get_molecule_weight_and_summary(mol)
+        (ha, mw, adic, smi_str) = molfilevalidator.\
+            get_molecule_weight_and_summary(mol)
         self.assertEqual(ha, 1)
         self.assertEqual(mw, 5)
         self.assertEqual(adic, {5: 1})
         self.assertEqual(smi_str, 'CCN')
-
 
         # test with 2 atoms where one is 1 non hydrogen
         hatom = D3RAtom()
@@ -237,19 +234,20 @@ M  END
         hatom.set_atomic_number(1)
 
         mol.set_atoms([atom, hatom])
-        (ha, mw, adic, smi_str) = molfilevalidator.get_molecule_weight_and_summary(mol)
+        (ha, mw, adic, smi_str) = molfilevalidator.\
+            get_molecule_weight_and_summary(mol)
         self.assertEqual(ha, 1)
         self.assertEqual(mw, 5)
         self.assertEqual(adic, {5: 1})
         self.assertEqual(smi_str, 'CCN')
-
 
         # test with 4 atoms where one is hydrogen
         catom = D3RAtom()
         catom.set_atomic_number(6)
         catom.set_is_hydrogen(False)
         mol.set_atoms([atom, hatom, catom, catom])
-        (ha, mw, adic, smi_str) = molfilevalidator.get_molecule_weight_and_summary(mol)
+        (ha, mw, adic, smi_str) = molfilevalidator.\
+            get_molecule_weight_and_summary(mol)
         self.assertEqual(ha, 3)
         self.assertEqual(mw, 17)
         self.assertEqual(adic, {5: 1, 6: 2})
@@ -294,9 +292,9 @@ M  END
         self.assertTrue('\n\nIn file: b.mol ligand: '
                         'XXX_2 ha' in vr.get_as_string())
         self.assertTrue('\n\tExpected 3 non hydrogen atoms, '
-                         'but got 1' in vr.get_as_string())
+                        'but got 1' in vr.get_as_string())
         self.assertTrue('\n\tExpected 4 for non hydrogen atomic weight, '
-                         'but got 2' in vr.get_as_string())
+                        'but got 2' in vr.get_as_string())
         self.assertTrue('\n\tExpected atom map { atomic #: # atoms,...} '
                         '{6: 5}, but got {6: 2}\n\n' in vr.get_as_string())
 
@@ -331,11 +329,12 @@ M  END
         self.assertEqual(len(m_errors), 1)
         self.assertEqual(m_errors[0][ValidationReport.MOLFILE], 'm.mol')
         self.assertEqual(m_errors[0][ValidationReport.LIGAND], 'XXX_1')
-        self.assertEqual(m_errors[0][ValidationReport.USERMOL], (1, 5, {5: 1}, 'CC'))
+        self.assertEqual(m_errors[0][ValidationReport.USERMOL],
+                         (1, 5, {5: 1}, 'CC'))
         self.assertEqual(m_errors[0][ValidationReport.EXPECTEDMOL],
                          (3, 5, {5: 1}, 'CC'))
-        self.assertTrue('Number of heavy '
-                        'atoms and or' in m_errors[0][ValidationReport.MESSAGE])
+        self.assertTrue('Number of heavy atoms '
+                        'and or' in m_errors[0][ValidationReport.MESSAGE])
 
         # test with molecule not matching molecular weight
         vr = ValidationReport()
@@ -346,11 +345,12 @@ M  END
         self.assertEqual(len(m_errors), 1)
         self.assertEqual(m_errors[0][ValidationReport.MOLFILE], 'm.mol')
         self.assertEqual(m_errors[0][ValidationReport.LIGAND], 'XXX_1')
-        self.assertEqual(m_errors[0][ValidationReport.USERMOL], (1, 5, {5: 1}, 'CC'))
+        self.assertEqual(m_errors[0][ValidationReport.USERMOL],
+                         (1, 5, {5: 1}, 'CC'))
         self.assertEqual(m_errors[0][ValidationReport.EXPECTEDMOL],
                          (1, 6, {5: 1}, 'CC'))
-        self.assertTrue('Number of heavy '
-                        'atoms and or' in m_errors[0][ValidationReport.MESSAGE])
+        self.assertTrue('Number of heavy atoms '
+                        'and or' in m_errors[0][ValidationReport.MESSAGE])
 
         # test with matching molecule but SMILE String differs
         vr = ValidationReport()
@@ -361,7 +361,8 @@ M  END
         self.assertEqual(len(m_errors), 1)
         self.assertEqual(m_errors[0][ValidationReport.MOLFILE], 'm.mol')
         self.assertEqual(m_errors[0][ValidationReport.LIGAND], 'XXX_1')
-        self.assertEqual(m_errors[0][ValidationReport.USERMOL], (1, 5, {5: 1}, 'CC'))
+        self.assertEqual(m_errors[0][ValidationReport.USERMOL],
+                         (1, 5, {5: 1}, 'CC'))
         self.assertEqual(m_errors[0][ValidationReport.EXPECTEDMOL],
                          (1, 5, {5: 1}, 'CN'))
         self.assertTrue('Canonical SMILE strings do NOT '
@@ -396,21 +397,25 @@ M  END
             molfilevalidator._get_ligand_name_from_file_name('hi')
             self.fail('Expected ValueError')
         except ValueError as e:
-            self.assertEqual(str(e), 'Error parsing ligand name from file name: hi')
+            self.assertEqual(str(e), 'Error parsing ligand name from file '
+                                     'name: hi')
 
-        res = molfilevalidator._get_ligand_name_from_file_name('DSV-FXR_12-1.mol')
+        res = molfilevalidator._get_ligand_name_from_file_name('DSV-'
+                                                               'FXR_12-1.mol')
         self.assertEqual(res, 'FXR_12')
 
     def test_generate_molecule_database_fromcsv_molcsv_is_none(self):
         params = D3RParameters()
         params.molcsv = None
-        res = molfilevalidator._generate_molecule_database_fromcsv(params, None)
+        res = molfilevalidator.\
+            _generate_molecule_database_fromcsv(params, None)
         self.assertEqual(res, 1)
 
     def test_generate_molecule_database_no_moldir_is_none(self):
         params = D3RParameters()
         params.moldir = None
-        res = molfilevalidator._generate_molecule_database_frommolfiles(params, None)
+        res = molfilevalidator.\
+            _generate_molecule_database_frommolfiles(params, None)
         self.assertEqual(res, 1)
 
     @unittest.skipIf(OPENEYE_MOD_LOADED is False,
@@ -450,7 +455,8 @@ M  END
             params.moldir = temp_dir
             output = os.path.join(temp_dir, 'foo.pickle')
             params.outputfile = output
-            res = molfilevalidator._generate_molecule_database_frommolfiles(params, None)
+            res = molfilevalidator.\
+                _generate_molecule_database_frommolfiles(params, None)
             self.assertEqual(res, 4)
             self.assertFalse(os.path.isfile(output))
         finally:
@@ -470,7 +476,8 @@ M  END
                 f.write(self._get_mol_as_str())
                 f.flush()
             fac = D3RMoleculeFromMolFileViaOpeneyeFactory()
-            res = molfilevalidator._generate_molecule_database_frommolfiles(params, fac)
+            res = molfilevalidator.\
+                _generate_molecule_database_frommolfiles(params, fac)
             self.assertEqual(res, 0)
             self.assertTrue(os.path.isfile(output))
 
@@ -502,7 +509,8 @@ M  END
                 f.flush()
 
             fac = D3RMoleculeFromMolFileViaOpeneyeFactory()
-            res = molfilevalidator._generate_molecule_database_frommolfiles(params, fac)
+            res = molfilevalidator.\
+                _generate_molecule_database_frommolfiles(params, fac)
             self.assertEqual(res, 0)
             self.assertTrue(os.path.isfile(output))
 
@@ -521,7 +529,7 @@ M  END
         try:
             n = os.path.join(temp_dir, 'foo.tar.gz')
             try:
-                mols = list(molfilevalidator._molfile_from_tarfile_generator(n))
+                list(molfilevalidator._molfile_from_tarfile_generator(n))
                 self.fail('Expected IOError')
             except IOError as e:
                 self.assertTrue('No such file' in str(e))
@@ -573,7 +581,7 @@ M  END
         finally:
             shutil.rmtree(temp_dir)
 
-    def test_molfile_from_tarfile_generator_one_mol_in_tar(self):
+    def test_molfile_from_tarfile_generator_two_mol_in_tar(self):
         temp_dir = tempfile.mkdtemp()
         try:
             afile = os.path.join(temp_dir, 'foo.pdb')
@@ -608,7 +616,8 @@ M  END
     def test_validate_molfiles_in_tarball_usersubmission_is_none(self):
         params = D3RParameters()
         params.usersubmission = None
-        res = molfilevalidator._validate_molfiles_in_tarball(params, None, None)
+        res = molfilevalidator._validate_molfiles_in_tarball(params, None,
+                                                             None)
         self.assertEqual(res, 1)
 
     @unittest.skipIf(OPENEYE_MOD_LOADED is False,
@@ -684,7 +693,8 @@ M  END
         res = molfilevalidator.main(['yo', molfilevalidator.VALIDATE_MODE])
         self.assertEqual(res, 2)
 
-        res = molfilevalidator.main(['yo', molfilevalidator.GENMOLECULEDB_MODE])
+        res = molfilevalidator.main(['yo',
+                                     molfilevalidator.GENMOLECULEDB_MODE])
         self.assertEqual(res, 3)
 
 

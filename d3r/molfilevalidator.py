@@ -29,7 +29,6 @@ except ImportError as e:
                      str(e) + ' validation will NOT work\n')
 
 
-
 import d3r
 from d3r.celpp import util
 from d3r.celpp.task import D3RParameters
@@ -51,8 +50,8 @@ MOL_SUFFIX = '.mol'
 
 # supported modes which are set by user
 # via first argument to script
-VALIDATE_MODE='validate'
-GENMOLECULEDB_MODE='genmoleculedb'
+VALIDATE_MODE = 'validate'
+GENMOLECULEDB_MODE = 'genmoleculedb'
 
 # optional command line parameters
 USER_SUBMISSION = 'usersubmission'
@@ -74,11 +73,12 @@ def _parse_arguments(desc, args):
                              'set by --' + USER_SUBMISSION + ' flag and ' +
                         GENMOLECULEDB_MODE + ' mode generates the molecule ' +
                         ' database writing it to --' + OUTFILE)
-    parser.add_argument('--moldir', help='Directory containing mol files used to '
-                                         'generate database from')
-    parser.add_argument('--molcsv', help='CSV file sent to participants containing'
-                                         'ligand id and Smile string for molecules.'
-                                         'Used to generate molecule database')
+    parser.add_argument('--moldir', help='Directory containing mol files '
+                                         'used to generate database from')
+    parser.add_argument('--molcsv', help='CSV file sent to participants '
+                                         'containing ligand id and Smile '
+                                         'string for molecules. Used to '
+                                         'generate molecule database')
     parser.add_argument('--molcsvligandcol', default=0, type=int,
                         help='Column containing ligand id in csv file'
                         'set via --molcsv. 0 offset so 1st column'
@@ -87,9 +87,11 @@ def _parse_arguments(desc, args):
                         help='Column containing SMILE string in csv file'
                              'set via --molcsv. 0 offset so 1st column'
                              'is 0 (default 1)')
-    parser.add_argument('--skipligand', help='comma delimited list of ligands to skip')
+    parser.add_argument('--skipligand', help='comma delimited list of '
+                                             'ligands to skip')
     parser.add_argument('--skipsmilecompare', action='store_true',
-                        help='If set, skip comparison of Canonical SMILE strings')
+                        help='If set, skip comparison of Canonical SMILE '
+                             'strings')
     parser.add_argument('--' + USER_SUBMISSION,
                         help='tar.gz file containing .mol files to validate')
     parser.add_argument('--' + OUTFILE,
@@ -101,7 +103,8 @@ def _parse_arguments(desc, args):
                         choices=['DEBUG', 'INFO', DEFAULT_LOG_LEVEL,
                                  'ERROR', 'CRITICAL'],
                         help="Set the logging level (default " +
-                             DEFAULT_LOG_LEVEL + ")", default=DEFAULT_LOG_LEVEL)
+                             DEFAULT_LOG_LEVEL + ")",
+                        default=DEFAULT_LOG_LEVEL)
     parser.add_argument('--version', action='version',
                         version=('%(prog)s ' + d3r.__version__))
     return parser.parse_args(args, namespace=parsed_arguments)
@@ -257,7 +260,7 @@ def get_molecule_weight_and_summary(themolecule):
 
     for atom in themolecule.get_atoms():
         if not atom.is_hydrogen():
-            heavy_atom +=1
+            heavy_atom += 1
             atomical_number = atom.get_atomic_number()
             molecular_weight += atomical_number
             if atomical_number not in atom_dic:
@@ -308,16 +311,18 @@ class CompareMolecules(object):
                 if smi_str == self._moleculedb[ligand_name][3]:
                     return True
                 vreport.add_molecule_error(molfile, ligand_name,
-                                           (h_atom, m_weight, atom_dic, smi_str),
+                                           (h_atom, m_weight, atom_dic,
+                                            smi_str),
                                            self._moleculedb[ligand_name],
-                                           'Canonical SMILE strings do NOT match')
+                                           'Canonical SMILE strings do NOT '
+                                           'match')
                 return False
 
         vreport.add_molecule_error(molfile, ligand_name,
                                    (h_atom, m_weight, atom_dic, smi_str),
                                    self._moleculedb[ligand_name],
-                                   'Number of heavy atoms and or molecular weight '
-                                   'did not match ')
+                                   'Number of heavy atoms and or molecular '
+                                   'weight did not match ')
         return False
 
 
@@ -377,17 +382,17 @@ class ValidationReport(object):
             res += '\nLigand Errors\n------------\n\n'
 
         for entry in self._ligand_errors:
-            res += ('In file: ' +\
+            res += ('In file: ' +
                     os.path.basename(str(entry[ValidationReport.MOLFILE])))
-            res += (' ligand: ' + str(entry[ValidationReport.LIGAND]) + '\n\t' +
-                    str(entry[ValidationReport.MESSAGE]) + '\n\n')
+            res += (' ligand: ' + str(entry[ValidationReport.LIGAND]) +
+                    '\n\t' + str(entry[ValidationReport.MESSAGE]) + '\n\n')
 
         if len(self._mol_errors) > 0:
             res += '\nMolecule Errors\n------------\n\n'
 
         for entry in self._mol_errors:
             logger.debug('For: ' + str(entry[ValidationReport.MOLFILE]))
-            res += ('In file: ' +\
+            res += ('In file: ' +
                     os.path.basename(str(entry[ValidationReport.MOLFILE])))
 
             if entry[ValidationReport.EXPECTEDMOL] is None or \
@@ -408,8 +413,8 @@ class ValidationReport(object):
                 exp_smi = str(entry[ValidationReport.EXPECTEDMOL][3])
                 usr_smi = str(entry[ValidationReport.USERMOL][3])
 
-                res += (' ligand: ' + str(entry[ValidationReport.LIGAND]) + ' ' +
-                        str(entry[ValidationReport.MESSAGE]) + '\n')
+                res += (' ligand: ' + str(entry[ValidationReport.LIGAND]) +
+                        ' ' + str(entry[ValidationReport.MESSAGE]) + '\n')
 
                 if exp_nonh_atoms != usr_nonh_atoms:
                     res += ('\tExpected ' + exp_nonh_atoms +
@@ -500,8 +505,9 @@ def _generate_molecule_database_fromcsv(theargs, molfactory):
                 continue
 
             themol = molfactory.get_d3rmolecule(row[smile_col])
-            if not ligand_name in ligand_dic:
-                ligand_dic[ligand_name] = get_molecule_weight_and_summary(themol)
+            if ligand_name not in ligand_dic:
+                ligand_dic[ligand_name] = \
+                    get_molecule_weight_and_summary(themol)
 
     _write_molecule_database(theargs, ligand_dic)
     return 0
@@ -533,7 +539,7 @@ def _generate_molecule_database_frommolfiles(theargs, molfactory):
         ligand_name = _get_ligand_name_from_file_name(mol_file)
         logger.info('Ligand: ' + ligand_name)
         themol = molfactory.get_d3rmolecule(mol_file)
-        if not ligand_name in ligand_dic:
+        if ligand_name not in ligand_dic:
             ligand_dic[ligand_name] = get_molecule_weight_and_summary(themol)
 
     _write_molecule_database(theargs, ligand_dic)
@@ -599,7 +605,7 @@ def _validate_molfiles_in_tarball(theargs, molfactory, moleculedb):
     report = ValidationReport()
     for molfile in _molfile_from_tarfile_generator(theargs.usersubmission):
         try:
-           ligand_name = _get_ligand_name_from_file_name(molfile)
+            ligand_name = _get_ligand_name_from_file_name(molfile)
         except ValueError as e:
             report.add_ligand_error(molfile, None, str(e))
             continue
@@ -644,38 +650,43 @@ def main(args):
 
               This script runs in two modes: {genmol_mode} & {validate_mode}
 
-              These modes are set via the first argument passed into this script.
+              These modes are set via the first argument passed into this
+              script.
 
-              In general '{genmol_mode}' mode is run first and '{validate_mode}'
-              mode is run multiple times to perform the validation.
+              In general '{genmol_mode}' mode is run first and
+              '{validate_mode}' mode is run multiple times to perform the
+              validation.
 
-              '{genmol_mode}' mode takes a directory of {mol_suffix} files or a CSV
-                            file with SMILES strings and generates a
+              '{genmol_mode}' mode takes a directory of {mol_suffix} files or a
+                             CSV file with SMILES strings and generates a
                             molecule database. This database is a pickle file
                             and is used to validate the mol files. The output
                             database is specified by the --{output} flag.
                             This database basically is a dictionary of
                             Ligand names as parsed from the mol file
-                            name XXX-####-XXX.mol where the ligand name is expected
-                            to be the value between first and second - character.
+                            name XXX-####-XXX.mol where the ligand name is
+                            expected to be the value between first and
+                             second - character.
 
-                            Any problems found are output to standard out/err and
-                            a non 0 exit code is returned.
+                            Any problems found are output to standard out/err
+                             and a non 0 exit code is returned.
 
-              '{validate_mode}' mode takes the molecule database from {genmol_mode}
-                              (which is passed in via --{moldb} flag) and
-                              validates all mol files found in the  tarfile
-                              specified by --{usersubmission} flag. It is assumed
-                              all mol files have a file name format like this:
-                              XXX-####-XXX.mol where #### between 1st and second -
-                              is considered to be the Ligand ID.
+              '{validate_mode}' mode takes the molecule database from
+                               {genmol_mode} (which is passed in via
+                                --{moldb} flag) and
+                                validates all mol files found in the  tarfile
+                                specified by --{usersubmission} flag. It is
+                                assumed all mol files have a file name format
+                                like this: XXX-####-XXX.mol where #### between
+                                1st and second - is considered to be the
+                                Ligand ID.
 
-                              Validation is done by comparing number and atomic
-                              weight of non hydrogen atoms against the database.
+                              Validation is done by comparing number and
+                                atomic weight of non hydrogen atoms against the
+                                database.
 
-                              Any problems found are output to standard out/err and
-                              a non 0 exit code is returned.
-
+                              Any problems found are output to standard
+                               out/err and a non 0 exit code is returned.
 
               For more information visit: http://www.drugdesigndata.org
 
@@ -701,16 +712,18 @@ def main(args):
                         ' database generation mode')
 
             if theargs.outputfile is None:
-                logger.error('--outputfile must be set to generate the molecule '
-                             'database')
+                logger.error('--outputfile must be set to generate the '
+                             'molecule database')
                 return 3
             if theargs.moldir is not None:
-                return _generate_molecule_database_frommolfiles(theargs, molfactory)
+                return _generate_molecule_database_frommolfiles(theargs,
+                                                                molfactory)
             if theargs.molcsv is not None:
                 smilefactory = D3RMoleculeFromSmileViaOpeneyeFactory()
-                return _generate_molecule_database_fromcsv(theargs, smilefactory)
-            raise ValueError('Either --moldir or --molcsv must be set to generate'
-                             'molecule database')
+                return _generate_molecule_database_fromcsv(theargs,
+                                                           smilefactory)
+            raise ValueError('Either --moldir or --molcsv must be '
+                             'set to generate molecule database')
         if theargs.mode == VALIDATE_MODE:
             logger.info('Running in ' + VALIDATE_MODE + ' validation mode')
             return _run_validation(theargs, molfactory)
