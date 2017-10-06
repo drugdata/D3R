@@ -88,6 +88,8 @@ def _parse_arguments(desc, args):
                              'set via --molcsv. 0 offset so 1st column'
                              'is 0 (default 1)')
     parser.add_argument('--skipligand', help='comma delimited list of ligands to skip')
+    parser.add_argument('--skipsmilecompare', action='store_true',
+                        help='If set, skip comparison of Canonical SMILE strings')
     parser.add_argument('--' + USER_SUBMISSION,
                         help='tar.gz file containing .mol files to validate')
     parser.add_argument('--' + OUTFILE,
@@ -244,13 +246,14 @@ def get_molecule_weight_and_summary(themolecule):
     atom_dic = {}
     heavy_atom = 0
     molecular_weight = 0
+    smi_str = ''
     if themolecule is None:
         logger.error('Molecule passed in is None')
-        return -1, -1, {}
+        return -1, -1, {}, smi_str
 
     if themolecule.get_atoms() is None:
         logger.error('Molecule has None for atoms')
-        return heavy_atom, molecular_weight, atom_dic
+        return heavy_atom, molecular_weight, atom_dic, smi_str
 
     for atom in themolecule.get_atoms():
         if not atom.is_hydrogen():
@@ -265,15 +268,23 @@ def get_molecule_weight_and_summary(themolecule):
                      ') atomic weight (' +
                      str(molecular_weight) + ') atom dictionary ' +
                      str(atom_dic))
-    return heavy_atom, molecular_weight, atom_dic, themolecule.get_canonical_smiles_str()
+
+    smi_str = themolecule.get_canonical_smiles_str()
+    return heavy_atom, molecular_weight, atom_dic, smi_str
 
 
 class CompareMolecules(object):
     """Compares 2 D3RMolecule objects
+    :param moleculedb: Dictionary of ligand id as keys and
+                       values set to output of
+                       get_molecule_weight_and_summary()
+    :param skipsmilecompare: If True then skip comparison of canonical
+                             SMILE strings
     """
-    def __init__(self, moleculedb):
+    def __init__(self, moleculedb, skipsmilecompare=False):
         """Constructor"""
         self._moleculedb = moleculedb
+        self._skip_smile_compare = skipsmilecompare
 
     def compare_molecules(self, molfile, vreport, ligand_name,
                           user_molecule):
@@ -291,12 +302,16 @@ class CompareMolecules(object):
 
         if h_atom == self._moleculedb[ligand_name][0]:
             if m_weight == self._moleculedb[ligand_name][1]:
+                if self._skip_smile_compare is True:
+                    return True
+
                 if smi_str == self._moleculedb[ligand_name][3]:
                     return True
-                    vreport.add_molecule_error(molfile, ligand_name,
-                                               (h_atom, m_weight, atom_dic, smi_str),
-                                               self._moleculedb[ligand_name],
-                                               'Canonical SMILE strings do NOT match')
+                vreport.add_molecule_error(molfile, ligand_name,
+                                           (h_atom, m_weight, atom_dic, smi_str),
+                                           self._moleculedb[ligand_name],
+                                           'Canonical SMILE strings do NOT match')
+                return False
 
         vreport.add_molecule_error(molfile, ligand_name,
                                    (h_atom, m_weight, atom_dic, smi_str),
@@ -390,8 +405,8 @@ class ValidationReport(object):
                 exp_atom_map = str(entry[ValidationReport.EXPECTEDMOL][2])
                 usr_atom_map = str(entry[ValidationReport.USERMOL][2])
 
-                # exp_smi =
-                # usr_smi =
+                exp_smi = str(entry[ValidationReport.EXPECTEDMOL][3])
+                usr_smi = str(entry[ValidationReport.USERMOL][3])
 
                 res += (' ligand: ' + str(entry[ValidationReport.LIGAND]) + ' ' +
                         str(entry[ValidationReport.MESSAGE]) + '\n')
@@ -404,6 +419,11 @@ class ValidationReport(object):
                     res += ('\tExpected ' + exp_m_weight +
                             ' for non hydrogen atomic weight, but got ' +
                             usr_m_weight + '\n')
+
+                if exp_smi != usr_smi:
+                    res += ('\tExpected SMILE: ' + exp_smi + '\n' +
+                            '\tReceived SMILE: ' + usr_smi + '\n')
+
                 res += ('\tExpected atom map { atomic #: # atoms,...} ' +
                         exp_atom_map + ', but got ' + usr_atom_map + '\n\n')
 
@@ -565,7 +585,17 @@ def _validate_molfiles_in_tarball(theargs, molfactory, moleculedb):
     except AttributeError as e:
         logger.debug('Got attribute error ' + str(e))
 
-    comparemols = CompareMolecules(moleculedb)
+    skipsmilecompare = False
+    try:
+        if theargs.skipsmilecompare is True:
+            logger.info('--skipsmilecompare flag set. Skipping SMILE '
+                        'string comparison')
+            skipsmilecompare = True
+    except AttributeError:
+        pass
+
+    comparemols = CompareMolecules(moleculedb,
+                                   skipsmilecompare=skipsmilecompare)
     report = ValidationReport()
     for molfile in _molfile_from_tarfile_generator(theargs.usersubmission):
         try:

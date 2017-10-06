@@ -182,43 +182,54 @@ M  END
 
     def test_get_molecule_weight_and_summary(self):
         # test where molecule is None
-        (ha, mw, adic) = molfilevalidator.get_molecule_weight_and_summary(None)
+        (ha, mw, adic, smi_str) = molfilevalidator.get_molecule_weight_and_summary(None)
         self.assertEqual(ha, -1)
         self.assertEqual(mw, -1)
         self.assertEqual(adic, {})
+        self.assertEqual(smi_str, '')
         mol = D3RMolecule()
 
         # test None for atoms
-        (ha, mw, adic) = molfilevalidator.get_molecule_weight_and_summary(mol)
+        (ha, mw, adic, smi_str) = molfilevalidator.get_molecule_weight_and_summary(mol)
         self.assertEqual(ha, 0)
         self.assertEqual(mw, 0)
         self.assertEqual(adic, {})
+        self.assertEqual(smi_str, '')
+
 
         # test with empty list for atoms
         mol.set_atoms([])
-        (ha, mw, adic) = molfilevalidator.get_molecule_weight_and_summary(mol)
+        (ha, mw, adic, smi_str) = molfilevalidator.get_molecule_weight_and_summary(mol)
         self.assertEqual(ha, 0)
         self.assertEqual(mw, 0)
         self.assertEqual(adic, {})
+        self.assertEqual(smi_str, None)
+
 
         # test with 1 atom is hydrogen
         atom = D3RAtom()
         atom.set_is_hydrogen(True)
         atom.set_atomic_number(1)
         mol.set_atoms([atom])
-        (ha, mw, adic) = molfilevalidator.get_molecule_weight_and_summary(mol)
+        mol.set_canonical_smiles_str('CC')
+        (ha, mw, adic, smi_str) = molfilevalidator.get_molecule_weight_and_summary(mol)
         self.assertEqual(ha, 0)
         self.assertEqual(mw, 0)
         self.assertEqual(adic, {})
+        self.assertEqual(smi_str, 'CC')
+
 
         # test with 1 atom non hydrogen
         atom.set_is_hydrogen(False)
         atom.set_atomic_number(5)
         mol.set_atoms([atom])
-        (ha, mw, adic) = molfilevalidator.get_molecule_weight_and_summary(mol)
+        mol.set_canonical_smiles_str('CCN')
+        (ha, mw, adic, smi_str) = molfilevalidator.get_molecule_weight_and_summary(mol)
         self.assertEqual(ha, 1)
         self.assertEqual(mw, 5)
         self.assertEqual(adic, {5: 1})
+        self.assertEqual(smi_str, 'CCN')
+
 
         # test with 2 atoms where one is 1 non hydrogen
         hatom = D3RAtom()
@@ -226,20 +237,23 @@ M  END
         hatom.set_atomic_number(1)
 
         mol.set_atoms([atom, hatom])
-        (ha, mw, adic) = molfilevalidator.get_molecule_weight_and_summary(mol)
+        (ha, mw, adic, smi_str) = molfilevalidator.get_molecule_weight_and_summary(mol)
         self.assertEqual(ha, 1)
         self.assertEqual(mw, 5)
         self.assertEqual(adic, {5: 1})
+        self.assertEqual(smi_str, 'CCN')
+
 
         # test with 4 atoms where one is hydrogen
         catom = D3RAtom()
         catom.set_atomic_number(6)
         catom.set_is_hydrogen(False)
         mol.set_atoms([atom, hatom, catom, catom])
-        (ha, mw, adic) = molfilevalidator.get_molecule_weight_and_summary(mol)
+        (ha, mw, adic, smi_str) = molfilevalidator.get_molecule_weight_and_summary(mol)
         self.assertEqual(ha, 3)
         self.assertEqual(mw, 17)
         self.assertEqual(adic, {5: 1, 6: 2})
+        self.assertEqual(smi_str, 'CCN')
 
     def test_validation_report(self):
         vr = ValidationReport()
@@ -269,8 +283,8 @@ M  END
                         'ABC_1\n\tsome error' in vr.get_as_string())
 
         # add a molecule error
-        vr.add_molecule_error('/blah/b.mol', 'XXX_2', (1, 2, {6: 2}),
-                              (3, 4, {6: 5}), 'ha')
+        vr.add_molecule_error('/blah/b.mol', 'XXX_2', (1, 2, {6: 2}, 'CC'),
+                              (3, 4, {6: 5}, 'CC'), 'ha')
         self.assertTrue('\nLigand Errors\n'
                         '------------\n\n' in vr.get_as_string())
         self.assertTrue('\n\nIn file: my.mol ligand: '
@@ -307,39 +321,65 @@ M  END
         atom.set_is_hydrogen(False)
         atom.set_atomic_number(5)
         mol.set_atoms([atom])
+        mol.set_canonical_smiles_str('CC')
 
         vr = ValidationReport()
-        cm = CompareMolecules({'XXX_1': (3, 5, {5: 1})})
+        cm = CompareMolecules({'XXX_1': (3, 5, {5: 1}, 'CC')})
         res = cm.compare_molecules('m.mol', vr, 'XXX_1', mol)
         self.assertEqual(res, False)
         m_errors = vr.get_molecule_errors()
         self.assertEqual(len(m_errors), 1)
         self.assertEqual(m_errors[0][ValidationReport.MOLFILE], 'm.mol')
         self.assertEqual(m_errors[0][ValidationReport.LIGAND], 'XXX_1')
-        self.assertEqual(m_errors[0][ValidationReport.USERMOL], (1, 5, {5: 1}))
+        self.assertEqual(m_errors[0][ValidationReport.USERMOL], (1, 5, {5: 1}, 'CC'))
         self.assertEqual(m_errors[0][ValidationReport.EXPECTEDMOL],
-                         (3, 5, {5: 1}))
+                         (3, 5, {5: 1}, 'CC'))
         self.assertTrue('Number of heavy '
                         'atoms and or' in m_errors[0][ValidationReport.MESSAGE])
 
         # test with molecule not matching molecular weight
         vr = ValidationReport()
-        cm = CompareMolecules({'XXX_1': (1, 6, {5: 1})})
+        cm = CompareMolecules({'XXX_1': (1, 6, {5: 1}, 'CC')})
         res = cm.compare_molecules('m.mol', vr, 'XXX_1', mol)
         self.assertEqual(res, False)
         m_errors = vr.get_molecule_errors()
         self.assertEqual(len(m_errors), 1)
         self.assertEqual(m_errors[0][ValidationReport.MOLFILE], 'm.mol')
         self.assertEqual(m_errors[0][ValidationReport.LIGAND], 'XXX_1')
-        self.assertEqual(m_errors[0][ValidationReport.USERMOL], (1, 5, {5: 1}))
+        self.assertEqual(m_errors[0][ValidationReport.USERMOL], (1, 5, {5: 1}, 'CC'))
         self.assertEqual(m_errors[0][ValidationReport.EXPECTEDMOL],
-                         (1, 6, {5: 1}))
+                         (1, 6, {5: 1}, 'CC'))
         self.assertTrue('Number of heavy '
                         'atoms and or' in m_errors[0][ValidationReport.MESSAGE])
 
-        # test with matching molecule
+        # test with matching molecule but SMILE String differs
         vr = ValidationReport()
-        cm = CompareMolecules({'XXX_1': (1, 5, {5: 1})})
+        cm = CompareMolecules({'XXX_1': (1, 5, {5: 1}, 'CN')})
+        res = cm.compare_molecules('m.mol', vr, 'XXX_1', mol)
+        self.assertEqual(res, False)
+        m_errors = vr.get_molecule_errors()
+        self.assertEqual(len(m_errors), 1)
+        self.assertEqual(m_errors[0][ValidationReport.MOLFILE], 'm.mol')
+        self.assertEqual(m_errors[0][ValidationReport.LIGAND], 'XXX_1')
+        self.assertEqual(m_errors[0][ValidationReport.USERMOL], (1, 5, {5: 1}, 'CC'))
+        self.assertEqual(m_errors[0][ValidationReport.EXPECTEDMOL],
+                         (1, 5, {5: 1}, 'CN'))
+        self.assertTrue('Canonical SMILE strings do NOT '
+                        'match' in m_errors[0][ValidationReport.MESSAGE])
+
+        # test with matching molecule but SMILE String differs
+        # but this time we are skipping smile string comparison
+        vr = ValidationReport()
+        cm = CompareMolecules({'XXX_1': (1, 5, {5: 1}, 'CN')},
+                              skipsmilecompare=True)
+        res = cm.compare_molecules('m.mol', vr, 'XXX_1', mol)
+        self.assertEqual(res, True)
+        m_errors = vr.get_molecule_errors()
+        self.assertEqual(len(m_errors), 0)
+
+        # test with full match
+        vr = ValidationReport()
+        cm = CompareMolecules({'XXX_1': (1, 5, {5: 1}, 'CC')})
         res = cm.compare_molecules('m.mol', vr, 'XXX_1', mol)
         self.assertEqual(res, True)
         m_errors = vr.get_molecule_errors()
@@ -597,7 +637,7 @@ M  END
             params = D3RParameters()
             params.usersubmission = myf
             moldb = {}
-            moldb['ABC_1'] = (1, 2, {7: 2})
+            moldb['ABC_1'] = (1, 2, {7: 2}, 'CC')
             molfactory = D3RMoleculeFromMolFileViaOpeneyeFactory()
             res = molfilevalidator._validate_molfiles_in_tarball(params,
                                                                  molfactory,
