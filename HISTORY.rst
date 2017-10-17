@@ -3,10 +3,17 @@
 History
 -------
 
-1.9.2
+1.9.2 (2017-10-17)
 --------------------
 
 * Added molfilevalidator.py to validate D3R submission tarfiles.
+  `Issue #165 <https://github.com/drugdata/D3R/issues/165>`_
+
+* evaluation.py now generates RMSD.json which is a JSON version of
+  RMSD files. `Issue #143 <https://github.com/drugdata/D3R/issues/143>`_
+
+* Added a fix to deal with out of memory errors encountered in 
+  blastnfilter stage. `Issue #5 https://github.com/drugdata/D3R/issues/5>`_
 
 1.9.1 (2017-08-21)
 --------------------
