@@ -13,7 +13,7 @@ History
   RMSD files. `Issue #143 <https://github.com/drugdata/D3R/issues/143>`_
 
 * Added a fix to deal with out of memory errors encountered in 
-  blastnfilter stage. `Issue #5 https://github.com/drugdata/D3R/issues/5>`_
+  blastnfilter stage. `Issue #5 <https://github.com/drugdata/D3R/issues/5>`_
 
 1.9.1 (2017-08-21)
 --------------------
