@@ -552,12 +552,17 @@ M  END
             mols = list(molfilevalidator._molfile_from_tarfile_generator(myf))
             self.assertEqual(len(mols), 0)
 
+            mols = list(molfilevalidator._molfile_from_tarfile_generator(myf,
+                                                                         direxclude='blah'))
+            self.assertEqual(len(mols), 0)
+
         finally:
             shutil.rmtree(temp_dir)
 
     def test_molfile_from_tarfile_generator_one_mol_in_tar(self):
         temp_dir = tempfile.mkdtemp()
         try:
+
             afile = os.path.join(temp_dir, 'foo.pdb')
             with open(afile, 'w') as f:
                 f.write(self._get_mol_as_str())
@@ -571,13 +576,22 @@ M  END
             myf = os.path.join(temp_dir, 'foo.tar.gz')
             tf = tarfile.open(myf, 'w:gz')
             tf.add(afile)
-            tf.add(mfile, arcname='hi.mol')
+            tf.add(mfile, arcname='SuppInfo/hi.mol')
             tf.close()
 
             mols = list(molfilevalidator._molfile_from_tarfile_generator(myf))
             self.assertEqual(len(mols), 1)
             self.assertTrue(mols[0].endswith('hi.mol'))
 
+            # try with exclude enabled not match
+            mols = list(molfilevalidator._molfile_from_tarfile_generator(myf,
+                                                                         direxclude='Supp,yo'))
+            self.assertEqual(len(mols), 1)
+
+            # try with exclude enabled
+            mols = list(molfilevalidator._molfile_from_tarfile_generator(myf,
+                                                                         direxclude='SuppInfo'))
+            self.assertEqual(len(mols), 0)
         finally:
             shutil.rmtree(temp_dir)
 

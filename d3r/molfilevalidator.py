@@ -45,6 +45,8 @@ util.setup_logging(p)
 # delimiter used to extract ligand name from molecule file
 LIG_NAME_DELIM = '-'
 
+COMMA = ','
+
 # suffix for .mol aka molecule files
 MOL_SUFFIX = '.mol'
 
@@ -79,6 +81,11 @@ def _parse_arguments(desc, args):
                                          'containing ligand id and Smile '
                                          'string for molecules. Used to '
                                          'generate molecule database')
+    parser.add_argument('--excludedir',
+                        help='Comma delimited list of of directories to'
+                             'not search through when examining user'
+                             'submission tar file (default: SuppInfo)',
+                        default='SuppInfo')
     parser.add_argument('--molcsvligandcol', default=0, type=int,
                         help='Column containing ligand id in csv file'
                         'set via --molcsv. 0 offset so 1st column'
@@ -546,17 +553,37 @@ def _generate_molecule_database_frommolfiles(theargs, molfactory):
     return 0
 
 
-def _molfile_from_tarfile_generator(thefile, tmpdir=None):
+def _molfile_from_tarfile_generator(thefile, tmpdir=None,
+                                    direxclude=None):
     """Generator method that takes a tarfile and
        returns molfiles written to a temporary directory
     """
     temp_dir = tempfile.mkdtemp(dir=tmpdir)
     tf = None
+
+    if direxclude is not None and direxclude is not '':
+        direxcludelist = direxclude.split(COMMA)
+        logger.debug('Directory exclude list set to: ' + str(direxcludelist))
+    else:
+        direxcludelist = None
+
+    skip_entry = False
     try:
         tf = tarfile.open(thefile, 'r:gz')
         for entry in tf.getmembers():
             if entry.name.endswith(MOL_SUFFIX) and entry.isfile():
                 fname = os.path.basename(entry.name)
+                if direxcludelist is not None:
+                    split_dir = os.path.dirname(entry.name).split(os.sep)
+                    for d in direxcludelist:
+                        if d in split_dir:
+                            skip_entry = True
+                            break
+                if skip_entry is True:
+                    logger.info('Skipping ' + str(entry.name) +
+                                ' since directory path in exclude list')
+                    skip_entry = False
+                    continue
                 dest_molfile = os.path.join(temp_dir, fname)
                 with open(dest_molfile, 'w') as f:
                     shutil.copyfileobj(tf.extractfile(entry), f)
@@ -603,7 +630,8 @@ def _validate_molfiles_in_tarball(theargs, molfactory, moleculedb):
     comparemols = CompareMolecules(moleculedb,
                                    skipsmilecompare=skipsmilecompare)
     report = ValidationReport()
-    for molfile in _molfile_from_tarfile_generator(theargs.usersubmission):
+    for molfile in _molfile_from_tarfile_generator(theargs.usersubmission,
+                                                   theargs.excludedir):
         try:
             ligand_name = _get_ligand_name_from_file_name(molfile)
         except ValueError as e:
