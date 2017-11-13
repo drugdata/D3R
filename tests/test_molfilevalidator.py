@@ -90,6 +90,7 @@ M  END
         self.assertEqual(params.molcsvligandcol, 0)
         self.assertEqual(params.molcsvsmilecol, 1)
         self.assertEqual(params.loglevel, molfilevalidator.DEFAULT_LOG_LEVEL)
+        self.assertEqual(params.excludedir, 'SuppInfo')
 
         params = molfilevalidator._parse_arguments('hi',
                                                    [gen_mode,
@@ -97,13 +98,15 @@ M  END
                                                     '--outputfile', 'out',
                                                     '--skipligand', 'FXR_33',
                                                     '--moleculedb', 'mdb',
-                                                    '--log', 'DEBUG'])
+                                                    '--log', 'DEBUG',
+                                                    '--excludedir', 'hi,how'])
         self.assertEqual(params.mode, gen_mode)
         self.assertEqual(params.moldir, '/foo')
         self.assertEqual(params.skipligand, 'FXR_33')
         self.assertEqual(params.outputfile, 'out')
         self.assertEqual(params.moleculedb, 'mdb')
         self.assertEqual(params.loglevel, 'DEBUG')
+        self.assertEqual(params.excludedir, 'hi,how')
 
         val_mode = molfilevalidator.VALIDATE_MODE
         params = molfilevalidator._parse_arguments('hi', [val_mode])
