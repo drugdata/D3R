@@ -502,6 +502,14 @@ class TestDataImportTask(unittest.TestCase):
 
             task._wait_for_url_to_be_updated('file://' + fakefile)
 
+            try:
+                task._wait_for_url_to_be_updated('file://' + temp_dir)
+                self.fail('We are passing a directory as a url which'
+                          'should keep failing on retries with Exception')
+            except ImportRetryCountExceededError:
+                pass
+
+
         finally:
             shutil.rmtree(temp_dir)
 

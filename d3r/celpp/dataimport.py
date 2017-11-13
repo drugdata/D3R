@@ -299,7 +299,7 @@ class DataImportTask(D3RTask):
             logger.exception('importsleep was not set using 1 second')
             importsleep = 1
 
-        val = util.has_url_been_updated_since_start_of_celpp_week(url)
+        val = False
         counter = 0
         while val is False:
             if counter > self.get_args().importretry:
@@ -307,12 +307,18 @@ class DataImportTask(D3RTask):
                     url + ' has not been updated after ' +
                     str(counter*importsleep) +
                     ' seconds')
-            logger.debug('Try #' + str(counter) + ' ' + url +
-                         ' has not been updated. Sleeping ' +
-                         str(importsleep) + ' seconds')
-            time.sleep(importsleep)
+            if counter > 0:
+                logger.debug('Try #' + str(counter) + ' ' + url +
+                             ' has not been updated. Sleeping ' +
+                             str(importsleep) + ' seconds')
+                time.sleep(importsleep)
 
-            val = util.has_url_been_updated_since_start_of_celpp_week(url)
+            try:
+                val = util.has_url_been_updated_since_start_of_celpp_week(url)
+            except Exception as e:
+                logger.warning('Unable to determine if url has been updated, '
+                               'assuming false: ' + str(e))
+                val = False
             counter += 1
 
     def can_run(self):
