@@ -23,6 +23,11 @@ class ChallengePackageDownloadError(Exception):
     pass
 
 
+class ChallengePackageFormatError(Exception):
+    """Raised when the structure of Challenge data package is invalid"""
+    pass
+
+
 class ExternalDataSubmissionFactory(object):
     """Factory to create ExternalDataSubmissionObjects
     """
@@ -270,8 +275,18 @@ class ExternalDataSubmissionTask(D3RTask):
     def _move_challenge_data_package_into_task_dir(self, chall_name):
         """Moves the contents of uncompressed challenge data package into
            `get_dir()` of task
+           :raises ChallengePackageFormatError: if expected challenge package
+                                                directory is missing
+           :raises OSError: If there is an error examining challenge package
+                            directory
         """
         package_dir = os.path.join(self.get_dir(), chall_name)
+        if not os.path.isdir(package_dir):
+            raise ChallengePackageFormatError('Directory: ' + str(package_dir) +
+                                              ' not found, but should have ' +
+                                              'been extracted from ' +
+                                              'challenge data package')
+
         for entry in os.listdir(package_dir):
             fullpath = os.path.join(package_dir, entry)
             logger.debug('Moving ' + fullpath)

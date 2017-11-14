@@ -13,6 +13,7 @@ from mock import Mock
 from d3r.celpp.extsubmission import ExternalDataSubmissionFactory
 from d3r.celpp.extsubmission import ExternalDataSubmissionTask
 from d3r.celpp.extsubmission import ChallengePackageDownloadError
+from d3r.celpp.extsubmission import ChallengePackageFormatError
 from d3r.celpp.task import D3RParameters
 from d3r.celpp import util
 from d3r.celpp.task import D3RTask
@@ -551,9 +552,12 @@ class TestExternalSubmission(unittest.TestCase):
             task.create_dir()
             try:
                 task._move_challenge_data_package_into_task_dir('foo')
-                self.fail('expected IOError')
-            except OSError:
-                pass
+                self.fail('expected ChallengePackageFormatError')
+            except ChallengePackageFormatError as e:
+                self.assertTrue('foo not found, but should '
+                                'have been extracted from '
+                                'challenge data package' in str(e))
+
         finally:
             shutil.rmtree(temp_dir)
 
