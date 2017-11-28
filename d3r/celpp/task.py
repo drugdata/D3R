@@ -778,7 +778,7 @@ class SmtpEmailer(object):
     """Simple Wrapper class to send email via smtplib
     """
 
-    def __init__(self, smtp_host='localhost', port=25):
+    def __init__(self, smtp_host='localhost', port=25, user=None, password=None):
         """Constructor
         :param smtp_host: host of stmp server
         :param port: port stmp server is on
@@ -786,6 +786,8 @@ class SmtpEmailer(object):
         self._smtp_host = smtp_host
         self._port = port
         self._alt_smtp_server = None
+        self._user = user
+        self._password = password
 
     def set_alternate_smtp_server(self, server):
         """Sets alternate smtp server to use
@@ -844,8 +846,12 @@ class SmtpEmailer(object):
         if self._alt_smtp_server is not None:
             return self._alt_smtp_server
 
-        return smtplib.SMTP(self._smtp_host,
+        smtp = smtplib.SMTP(self._smtp_host,
                             self._port)
+        if self._password is not None and self._user is not None:
+            logger.debug('Attempting SMTP login with user: ' + str(self._user))
+            smtp.login(self._user, self._password)
+        return smtp
 
     def _append_attachments(self, msg_root, attachments):
         """Attaches attachments to `msg_root`
