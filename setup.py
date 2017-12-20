@@ -22,7 +22,8 @@ requirements = [
     "xlsxwriter",
     "ftpretty",
     "python-dateutil",
-    "easywebdav"
+    "easywebdav",
+    "configparser"
 ]
 
 test_requirements = [
@@ -35,6 +36,7 @@ test_requirements = [
     "python-dateutil",
     "mock",
     "easywebdav",
+    "configparser",
     "unittest2"
 ]
 
