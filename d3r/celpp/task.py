@@ -9,6 +9,7 @@ import platform
 import mimetypes
 import shutil
 import uuid
+import configparser
 from email import encoders
 from email.mime.base import MIMEBase
 from email.mime.image import MIMEImage
@@ -233,26 +234,6 @@ class D3RTask(object):
 
         return file_list
 
-    def _get_smtp_server(self):
-        """Gets smtplib server for localhost
-
-           creates smtplib.SMTP server using get_args().smtp and
-           get_args().smtpport for the smtp server and port
-        :return: SMTP server
-        """
-        return smtplib.SMTP(self.get_args().smtp,
-                            self.get_args().smtpport)
-
-    def _build_from_address(self):
-        """Returns from email address
-
-           :return: string in format login@host
-        """
-        hostname = platform.node()
-        if hostname is '':
-            hostname = 'localhost'
-        return (pwd.getpwuid(os.getuid())[0] + '@' + hostname)
-
     def _get_program_name(self):
         """Gets name of program running
 
@@ -299,12 +280,10 @@ class D3RTask(object):
                        '\nunder path ' + self.get_dir() + '\n\n' + email_log +
                        'Sincerely,\n\n' + self._get_program_name())
 
-        msg = MIMEText(the_message)
-        msg['Subject'] = (D3RTask.SUBJECT_LINE_PREFIX + self._get_time() +
-                          self.get_dir_name() +
-                          ' has started running')
+        subject = (D3RTask.SUBJECT_LINE_PREFIX + self._get_time() +
+                   self.get_dir_name() + ' has started running')
         try:
-            self._send_email(msg, self.get_args().email)
+            self._send_email(self.get_args().email, subject, the_message)
         except AttributeError as e:
             logger.debug(str(e) + ' email not set. skipping')
 
@@ -328,28 +307,28 @@ class D3RTask(object):
                        '\nunder path ' + self.get_dir() + '\n\n' + email_log +
                        error_msg + 'Sincerely,\n\n' + self._get_program_name())
 
-        msg = MIMEText(the_message)
-        msg['Subject'] = (D3RTask.SUBJECT_LINE_PREFIX + self._get_time() +
-                          self.get_dir_name() +
-                          ' has finished with status ' + self.get_status())
+        subject = (D3RTask.SUBJECT_LINE_PREFIX + self._get_time() +
+                   self.get_dir_name() + ' has finished with status ' +
+                   self.get_status())
         try:
             try:
-                self._send_email(msg, self.get_args().email)
+                self._send_email(self.get_args().email, subject, the_message)
             except AttributeError as e:
                 logger.debug(str(e) + ' email not set. skipping')
 
             if self.get_error() is not None:
                 logger.debug("Sending summary email cause task failed")
                 try:
-                    self._send_email(msg, self.get_args().summaryemail)
+                    self._send_email(self.get_args().summaryemail, subject,
+                                     the_message)
                 except AttributeError as e:
-                    logger.debug(str(e) + ' email not set. skipping')
+                    logger.debug(str(e) + ' summary email not set. skipping')
 
         except Exception:
             logger.exception('Caught exception trying to send end email, '
                              'skipping email notification')
 
-    def _send_email(self, mime_msg, email_csv):
+    def _send_email(self, to_email_csv, subject, message):
         """Sends email with message passed in
 
 
@@ -358,25 +337,16 @@ class D3RTask(object):
            an email with `message` passed in as content.
         """
         try:
-            if email_csv is not None:
+            if to_email_csv is not None:
+                fac = SmtpEmailerFactory(self.get_args())
+                emailer = fac.get_smtp_emailer()
 
-                split_email_list = email_csv.split(',')
+                split_email_list = to_email_csv.split(',')
 
                 logger.debug('Sending email to: ' +
                              ", ".join(split_email_list))
-                server = self._get_smtp_server()
 
-                from_addr = self._build_from_address()
-
-                mime_msg['From'] = from_addr
-                mime_msg['To'] = ", ".join(split_email_list)
-
-                if self.get_args().loglevel == 'DEBUG':
-                    server.set_debuglevel(1)
-
-                server.sendmail(from_addr,
-                                email_csv, mime_msg.as_string())
-                server.quit()
+                emailer.send_email(split_email_list, subject, message)
                 return
             else:
                 logger.debug('Email was set to None, skipping email ' +
@@ -774,11 +744,185 @@ class Attachment(object):
         return self._desired_name
 
 
+class SmtpConfig(object):
+    """Parses configfile passed into constructor to
+       obtain parameters to connect to smtp server.
+       The configfile should be in configparser format
+       as seen in this example:
+
+       [smtp]
+       host = foo.com
+       user = bob
+       port = 25
+       password = 12345
+       from_address = no-reply@bob.com
+       replyto_address = uh@bob.com
+    """
+    DEFAULT = 'smtp'
+    SMTP_HOST = 'host'
+    SMTP_PORT = 'port'
+    SMTP_USER = 'user'
+    SMTP_PASS = 'password'
+    SMTP_FROM_ADDRESS = 'from_address'
+    SMTP_REPLYTO_ADDRESS = 'replyto_address'
+    DEFAULT_PORT = 25
+
+    def __init__(self, configfile=None):
+        """If set parses configuration file set in `configfile`
+           setting smtp connection information. If
+           port is not set in configuration, 25 is used  and
+           if host is not set then localhost is used.
+
+        :param configfile: path to config file containing
+                           information to connect to smtp
+                           server. See constructor
+                           comments for structure of
+                           configuration file
+
+        :return: SmtpConfig object
+        """
+        self._user = None
+        self._host = 'localhost'
+        self._port = SmtpConfig.DEFAULT_PORT
+        self._password = None
+        self._from_address = None
+        self._replyto_address = None
+
+        if configfile is not None:
+            try:
+                self._parse_config(configfile)
+            except configparser.Error as ce:
+                logger.exception('Caught Exception trying to parse ' +
+                                 configfile)
+
+    def _parse_config(self, configfile):
+        """Parses configuration file passed in
+           to set internal variables such as user, host, password, etc.
+        """
+        if not os.path.isfile(configfile):
+            logger.warning(configfile + ' is not a file')
+            return
+
+        config = configparser.ConfigParser()
+        config.read(configfile)
+
+        self._user = self._get_value(config, SmtpConfig.DEFAULT,
+                                     SmtpConfig.SMTP_USER)
+
+        host = self._get_value(config, SmtpConfig.DEFAULT,
+                               SmtpConfig.SMTP_HOST)
+        if host is not None:
+            self._host = host
+
+        port = self._get_value(config, SmtpConfig.DEFAULT,
+                               SmtpConfig.SMTP_PORT)
+        if port is not None:
+            try:
+                self._port = int(port)
+            except ValueError:
+                logger.exception('Unable to convert port to int. '
+                                 'Using default')
+                self._port = SmtpConfig.DEFAULT_PORT
+
+        self._password = self._get_value(config, SmtpConfig.DEFAULT,
+                               SmtpConfig.SMTP_PASS)
+
+        self._from_address = self._get_value(config, SmtpConfig.DEFAULT,
+                               SmtpConfig.SMTP_FROM_ADDRESS)
+
+        self._replyto_address = self._get_value(config, SmtpConfig.DEFAULT,
+                               SmtpConfig.SMTP_REPLYTO_ADDRESS)
+
+    def _get_value(self, config, section, option):
+        """Calls get() on configparser object `config` passed in to
+           get value for corresponding option
+           :param config: ConfigParser object loaded with smtp configuration
+           :param section: Section to look for value
+           :param option: Keyword value or value left of =
+                           (ie foo = X the keyword would be foo)
+           :returns: value as string or whatever ConfigParser().get() returns or None
+                     if not found
+        """
+        if section is None:
+            logger.error('Section cannot be None')
+            return None
+
+        if not config.has_section(section):
+            logger.warning(section + ' section not found in configuration')
+            return None
+
+        if not config.has_option(section, option):
+            logger.info('In parsing smtp configuration ' + option + ' not found')
+            return None
+
+        return config.get(section, option)
+
+    def get_host(self):
+        """Gets host"""
+        return self._host
+
+    def get_port(self):
+        """Gets port as int"""
+        return self._port
+
+    def get_user(self):
+        """Gets user"""
+        return self._user
+
+    def get_password(self):
+        """Gets password"""
+        return self._password
+
+    def get_from_address(self):
+        """Gets from address"""
+        return self._from_address
+
+    def get_replyto_address(self):
+        """Gets replyto address"""
+        return self._replyto_address
+
+
+class SmtpEmailerFactory(object):
+    """Factory that parses command line arguments
+       passed in via `args` in constructor to get
+       connection information and create a SmtpEmailer
+       object.
+    """
+
+    def __init__(self, args):
+        """Constructor
+        :param args: arguments set via argparse. This
+                     constructor looks for args.smtpconfig
+                     and if found it is assumed to be a path
+                     to smtp configuration file. See SmtpConfig
+                     class for the format of this configuration
+                     file.
+        """
+        configfile = None
+        if args is not None:
+            try:
+                configfile = args.smtpconfig
+            except AttributeError:
+                logger.info('No smtpconfig configuration file set')
+        self._smtpconfig = SmtpConfig(configfile=configfile)
+
+    def get_smtp_emailer(self):
+        """Gets SmtpEmailer object
+        """
+        return SmtpEmailer(smtp_host=self._smtpconfig.get_host(),
+                           port=self._smtpconfig.get_port(),
+                           user=self._smtpconfig.get_user(),
+                           password=self._smtpconfig.get_password(),
+                           fromaddr=self._smtpconfig.get_from_address(),
+                           replyto=self._smtpconfig.get_replyto_address())
+
+
 class SmtpEmailer(object):
     """Simple Wrapper class to send email via smtplib
     """
 
-    def __init__(self, smtp_host='localhost', port=25, user=None, password=None):
+    def __init__(self, smtp_host='localhost', port=25, user=None, password=None,
+                 fromaddr=None, replyto=None):
         """Constructor
         :param smtp_host: host of stmp server
         :param port: port stmp server is on
@@ -788,14 +932,19 @@ class SmtpEmailer(object):
         self._alt_smtp_server = None
         self._user = user
         self._password = password
+        if fromaddr is None:
+            self._fromaddr = self._generate_from_address_using_login_and_host()
+        else:
+            self._fromaddr = fromaddr
+
+        self._replyto = replyto
 
     def set_alternate_smtp_server(self, server):
         """Sets alternate smtp server to use
         """
         self._alt_smtp_server = server
 
-    def send_email(self, from_address, to_list, subject, message,
-                   reply_to=None, attachments=None):
+    def send_email(self, to_list, subject, message, attachments=None):
         """Sends email
         :param from_address: from email address
         :param to_list: list of email addresses as strings to send email to
@@ -812,11 +961,12 @@ class SmtpEmailer(object):
         """
         server = None
         try:
-            mime_msg = self._build_mime_message(from_address, to_list,
-                                                subject, message, reply_to,
+
+            mime_msg = self._build_mime_message(self._fromaddr, to_list,
+                                                subject, message, self._replyto,
                                                 attachments)
             server = self._get_server()
-            server.sendmail(from_address, to_list, mime_msg.as_string())
+            server.sendmail(self._fromaddr, to_list, mime_msg.as_string())
         except smtplib.SMTPConnectError as e:
             logger.exception('Caught exception')
             raise EmailSendError('Unable to connect to smtp server ' + str(e))
@@ -827,12 +977,14 @@ class SmtpEmailer(object):
             if server is not None:
                 server.quit()
 
-    def generate_from_address_using_login_and_host(self):
+    def _generate_from_address_using_login_and_host(self, hostname=None):
         """Creates from email address from login and hostname
         of machine running this script.
         :returns: from email address as string
         """
-        hostname = platform.node()
+        if hostname is None:
+            hostname = platform.node()
+
         if hostname is '':
             hostname = 'localhost'
         return pwd.getpwuid(os.getuid())[0] + '@' + hostname
@@ -844,10 +996,10 @@ class SmtpEmailer(object):
         which case that object is returned
         """
         if self._alt_smtp_server is not None:
-            return self._alt_smtp_server
-
-        smtp = smtplib.SMTP(self._smtp_host,
-                            self._port)
+            smtp = self._alt_smtp_server
+        else:
+            smtp = smtplib.SMTP(self._smtp_host,
+                                self._port)
         if self._password is not None and self._user is not None:
             logger.debug('Attempting SMTP login with user: ' + str(self._user))
             smtp.login(self._user, self._password)

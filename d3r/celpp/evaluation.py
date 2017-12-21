@@ -3,6 +3,7 @@ __author__ = 'churas'
 import os
 import logging
 
+from d3r.celpp.task import SmtpEmailerFactory
 from d3r.celpp.task import D3RTask
 from d3r.celpp.task import D3RParameters
 from d3r.celpp.proteinligprep import ProteinLigPrepTask
@@ -11,7 +12,6 @@ from d3r.celpp.blastnfilter import BlastNFilterTask
 from d3r.celpp.challengedata import ChallengeDataTask
 from d3r.celpp.participant import ParticipantDatabaseFromCSVFactory
 from d3r.celpp import util
-from d3r.celpp.task import SmtpEmailer
 from d3r.celpp.task import Attachment
 
 
@@ -73,16 +73,6 @@ class EvaluationTaskFactory(object):
         csvfile = dimport.get_participant_list_csv()
         pfac = ParticipantDatabaseFromCSVFactory(csvfile)
         return pfac.get_participant_database()
-
-    def _get_value_of_replytoaddress(self):
-        """Attempts to get value of replytoaddress from `get_args()`
-        :returns None if replytoaddress is None or does not exist in object
-        """
-        try:
-            return self.get_args().replytoaddress
-        except AttributeError:
-            logger.debug('replytoaddress not set in get_args()')
-            return None
 
     def _update_priorities_of_tasks(self, etasks,
                                     participant_db):
@@ -151,8 +141,9 @@ class EvaluationTaskFactory(object):
         path_list = os.listdir(path)
 
         participant_db = self._get_participant_database()
+        efac = SmtpEmailerFactory(self.get_args())
         emailer = EvaluationEmailer(participant_db,
-                                    self._get_value_of_replytoaddress())
+                                    efac.get_smtp_emailer())
 
         for entry in path_list:
             logger.debug('Checking if ' + entry + ' is a docking task')
@@ -194,27 +185,10 @@ class EvaluationTaskFactory(object):
 class EvaluationEmailer(object):
     """Sends evaluation email
     """
-    def __init__(self, participant_database, reply_to_address,
-                 smtp='localhost', smtpport=25):
+    def __init__(self, participant_database, emailer):
         self._participantdatabase = participant_database
-        self._alt_smtp_emailer = None
+        self._emailer = emailer
         self._msg_log = None
-        self._reply_to_address = reply_to_address
-        self._smtp = smtp
-        self._smtpport = smtpport
-
-    def set_alternate_smtp_emailer(self, emailer):
-        """Sets alternate smtp emailer
-        """
-        self._alt_smtp_emailer = emailer
-
-    def _get_smtp_emailer(self):
-        """Gets `SmtpEmailer` object or alternate
-        """
-        if self._alt_smtp_emailer is not None:
-            return self._alt_smtp_emailer
-        return SmtpEmailer(smtp_host=self._smtp,
-                           port=self._smtpport)
 
     def _append_to_message_log(self, msg):
         if self._msg_log is None:
@@ -256,14 +230,6 @@ class EvaluationEmailer(object):
             return None
 
         return part.get_email().split(',')
-
-    def _get_reply_to_address(self, from_address):
-        """Gets reply to address
-        :returns: reply to email address
-        """
-        if self._reply_to_address is None:
-            return from_address
-        return self._reply_to_address
 
     def _generate_external_submission_email_body(self, etask):
         """Creates body of email and subject
@@ -313,7 +279,6 @@ class EvaluationEmailer(object):
                                         ' docking evaluation email!!!\n')
             return
         try:
-            emailer = self._get_smtp_emailer()
 
             to_list = self._get_external_submitter_email(etask)
             if to_list is None:
@@ -323,15 +288,9 @@ class EvaluationEmailer(object):
             subject, msg = self\
                 ._generate_external_submission_email_body(etask)
 
-            from_addr = emailer.generate_from_address_using_login_and_host()
-
-            reply_to = self._get_reply_to_address(from_addr)
-
             rmsd = Attachment(etask.get_rmsd_txt(), 'rmsd.txt')
 
-            emailer.send_email(from_addr, to_list, subject, msg,
-                               reply_to=reply_to,
-                               attachments=[rmsd])
+            self._emailer.send_email(to_list, subject, msg, attachments=[rmsd])
             self._append_to_message_log('\nSent evaluation email to: ' +
                                         ", ".join(to_list) + '\n')
         except Exception as e:

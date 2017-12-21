@@ -422,16 +422,6 @@ class TestPostEvaluation(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
-    def test_get_reply_to_address(self):
-        pee = PostEvaluationEmailer('bob@bob.com', None)
-        self.assertEqual(pee._get_reply_to_address(None), None)
-        self.assertEqual(pee._get_reply_to_address('how@how.com'),
-                         'how@how.com')
-
-        pee = PostEvaluationEmailer('bob@bob.com', 'joe@joe.com')
-        self.assertEqual(pee._get_reply_to_address(None), 'joe@joe.com')
-        self.assertEqual(pee._get_reply_to_address('h@h.com'), 'joe@joe.com')
-
     def test_append_to_message_log(self):
         pee = PostEvaluationEmailer('bob@bob.com', 'joe@joe.com')
         self.assertEqual(pee.get_message_log(), None)
@@ -489,8 +479,7 @@ class TestPostEvaluation(unittest.TestCase):
             mockserver.sendmail = Mock()
             mockserver.quit = Mock()
             smtpemailer.set_alternate_smtp_server(mockserver)
-            pee = PostEvaluationEmailer(['bob@bob.com'], 'joe@joe.com')
-            pee.set_alternate_smtp_emailer(smtpemailer)
+            pee = PostEvaluationEmailer(['bob@bob.com'], smtpemailer)
             task.set_evaluation_emailer(pee)
             f = open(task.get_summary_txt(), 'w')
             f.write('hello')
@@ -521,8 +510,7 @@ class TestPostEvaluation(unittest.TestCase):
             mockserver.sendmail = Mock(side_effect=IOError('ha'))
             mockserver.quit = Mock()
             smtpemailer.set_alternate_smtp_server(mockserver)
-            pee = PostEvaluationEmailer(['bob@bob.com'], 'joe@joe.com')
-            pee.set_alternate_smtp_emailer(smtpemailer)
+            pee = PostEvaluationEmailer(['bob@bob.com'], smtpemailer)
             task.set_evaluation_emailer(pee)
             f = open(task.get_summary_txt(), 'w')
             f.write('hello')
@@ -573,8 +561,7 @@ class TestPostEvaluation(unittest.TestCase):
             mockserver.sendmail = Mock()
             mockserver.quit = Mock()
             smtpemailer.set_alternate_smtp_server(mockserver)
-            pee = PostEvaluationEmailer(['bob@bob.com'], 'joe@joe.com')
-            pee.set_alternate_smtp_emailer(smtpemailer)
+            pee = PostEvaluationEmailer(['bob@bob.com'], smtpemailer)
             task.set_evaluation_emailer(pee)
 
             ctask = ChallengeDataTask(temp_dir, params)

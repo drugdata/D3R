@@ -914,8 +914,7 @@ class TestEvaluation(unittest.TestCase):
             mockserver.sendmail = Mock()
             mockserver.quit = Mock()
             smtpemailer.set_alternate_smtp_server(mockserver)
-            emailer = EvaluationEmailer(ParticipantDatabase(plist), None)
-            emailer.set_alternate_smtp_emailer(smtpemailer)
+            emailer = EvaluationEmailer(ParticipantDatabase(plist), smtpemailer)
             evaluation.set_evaluation_emailer(emailer)
             evaluation.run()
             self.assertEqual(evaluation.get_error(), None)
@@ -1245,9 +1244,8 @@ class TestEvaluation(unittest.TestCase):
             mockserver.sendmail = Mock()
             mockserver.quit = Mock()
             smtpemailer.set_alternate_smtp_server(mockserver)
-            emailer = EvaluationEmailer(ParticipantDatabase(plist), None)
+            emailer = EvaluationEmailer(ParticipantDatabase(plist), smtpemailer)
 
-            emailer.set_alternate_smtp_emailer(smtpemailer)
             emailer.send_evaluation_email(task)
             mockserver.quit.assert_any_call()
             self.assertEqual(emailer.get_message_log(),
@@ -1276,8 +1274,7 @@ class TestEvaluation(unittest.TestCase):
             mockserver.sendmail = Mock(side_effect=IOError('ha'))
             mockserver.quit = Mock()
             smtpemailer.set_alternate_smtp_server(mockserver)
-            emailer = EvaluationEmailer(ParticipantDatabase(plist), None)
-            emailer.set_alternate_smtp_emailer(smtpemailer)
+            emailer = EvaluationEmailer(ParticipantDatabase(plist), smtpemailer)
             emailer.send_evaluation_email(task)
             mockserver.quit.assert_any_call()
             self.assertEqual(emailer.get_message_log(),
@@ -1301,32 +1298,13 @@ class TestEvaluation(unittest.TestCase):
             plist = [Participant('1name', '1d3rusername', '1234',
                                  'bob@bob.com')]
             # try single email address
-            emailer = EvaluationEmailer(ParticipantDatabase(plist), None)
             smtpemailer = SmtpEmailer()
-            emailer.set_alternate_smtp_emailer(smtpemailer)
+            emailer = EvaluationEmailer(ParticipantDatabase(plist), smtpemailer)
             emailer.send_evaluation_email(task)
             self.assertEqual(emailer.get_message_log(),
                              '\nNo participant found with guid: 12345\n')
         finally:
             shutil.rmtree(temp_dir)
-
-    def test_get_reply_to_address(self):
-        # test get reply_to where no replytoaddress is set
-        emailer = EvaluationEmailer(None, None)
-        val = emailer._get_reply_to_address('bob@bob.com')
-        self.assertEqual(val, 'bob@bob.com')
-
-        emailer = EvaluationEmailer(None, 'joe@joe.com')
-        val = emailer._get_reply_to_address('bob@bob.com')
-        self.assertEqual(val, 'joe@joe.com')
-
-    def test_get_smtp_emailer_valid(self):
-        try:
-            emailer = EvaluationEmailer(None, None)
-            ss = emailer._get_smtp_emailer()
-            self.assertTrue(ss is not None)
-        finally:
-            pass
 
     def tearDown(self):
         pass

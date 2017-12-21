@@ -15,7 +15,7 @@ import os
 import pwd
 import gzip
 from email.mime.multipart import MIMEMultipart
-
+import configparser
 from mock import Mock
 
 from d3r.celpp.task import D3RParameters
@@ -29,6 +29,8 @@ from d3r.celpp.task import SmtpEmailer
 from d3r.celpp.task import EmailSendError
 from d3r.celpp.task import Attachment
 from d3r.celpp.filetransfer import FtpFileTransfer
+from d3r.celpp.task import SmtpConfig
+from d3r.celpp.task import SmtpEmailerFactory
 
 
 class MockException(Exception):
@@ -454,23 +456,6 @@ class TestD3rTask(unittest.TestCase):
         task.set_name('foo')
         task._send_end_email()
 
-    def test_send_email_throws_exception(self):
-        temp_dir = tempfile.mkdtemp()
-        try:
-            params = D3RParameters()
-            params.smtp = 'doesnotexistxxx.x.x'
-            params.smtpport = 12345
-            task = D3RTask(temp_dir, params)
-            task.set_stage(1)
-            task.set_name('foo')
-            try:
-                task._send_email(None, 'bob@bob.com')
-                self.fail('Expected exception')
-            except Exception:
-                pass
-        finally:
-            shutil.rmtree(temp_dir)
-
     def test_send_end_email_throws_exception(self):
         temp_dir = tempfile.mkdtemp()
         try:
@@ -508,19 +493,6 @@ class TestD3rTask(unittest.TestCase):
         res = task._get_email_truncated_string(val, 15)
         self.assertEqual(res, D3RTask.TEXT_TRUNCATED_STR +
                          'bcdefghijklmnop')
-
-    def test_get_smtp_server(self):
-        params = D3RParameters()
-        params.smtp = ''
-        params.smtpport = '25'
-        task = D3RTask(None, params)
-        self.assertNotEqual(task._get_smtp_server(), None)
-
-    def test_build_from_address(self):
-        params = D3RParameters()
-        task = D3RTask(None, params)
-        exp_from_addr = pwd.getpwuid(os.getuid())[0] + '@' + platform.node()
-        self.assertEqual(task._build_from_address(), exp_from_addr)
 
     def test_run_external_command_all_params_None(self):
         params = D3RParameters()
@@ -685,9 +657,12 @@ class TestD3rTask(unittest.TestCase):
 
     def test_smtp_emailer_generate_from_address_using_login_and_host(self):
         emailer = SmtpEmailer()
-        val = emailer.generate_from_address_using_login_and_host()
+        val = emailer._generate_from_address_using_login_and_host()
         self.assertEqual(val, pwd.getpwuid(os.getuid())[0] + '@' +
                          platform.node())
+
+        val = emailer._generate_from_address_using_login_and_host(hostname='')
+        self.assertEqual(val, pwd.getpwuid(os.getuid())[0] + '@localhost')
 
     def test_sending_real_email_but_to_invalid_port_and_host(self):
         emailer = SmtpEmailer(port=1231231231232)
@@ -705,6 +680,14 @@ class TestD3rTask(unittest.TestCase):
         emailer.set_alternate_smtp_server(fake)
         self.assertEqual(emailer._get_server().hi, fake.hi)
 
+    def test_get_server_with_altserver_set_and_login_needed(self):
+        emailer = SmtpEmailer(user='bob', password='smith')
+        mockserver = D3RParameters()
+        mockserver.login = Mock()
+        emailer.set_alternate_smtp_server(mockserver)
+        emailer._get_server()
+        mockserver.login.assert_called_once_with('bob', 'smith')
+
     def test_send_valid_email_to_fake_server(self):
         emailer = SmtpEmailer()
         mockserver = D3RParameters()
@@ -712,8 +695,7 @@ class TestD3rTask(unittest.TestCase):
         mockserver.quit = Mock()
 
         emailer.set_alternate_smtp_server(mockserver)
-        emailer.send_email('bob@bob.com', ['joe@joe.com'], 'subby2',
-                           'hi\n', reply_to='rep@rep.com')
+        emailer.send_email(['joe@joe.com'], 'subby2', 'hi\n')
         mockserver.quit.assert_any_call()
         self.assertEqual(mockserver.sendmail.call_count, 1)
 
@@ -725,8 +707,7 @@ class TestD3rTask(unittest.TestCase):
 
         emailer.set_alternate_smtp_server(mockserver)
         try:
-            emailer.send_email('bob@bob.com', ['joe@joe.com'], 'subby2',
-                               'hi\n', reply_to='rep@rep.com')
+            emailer.send_email(['joe@joe.com'], 'subby2', 'hi\n')
         except EmailSendError:
             pass
 
@@ -803,6 +784,206 @@ class TestD3rTask(unittest.TestCase):
             res.as_string().index('Content-Type: application/octet-stream')
             res.as_string().index('Content-Disposition: attachment; '
                                   'filename="well.gz"')
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_smtp_config_noconfig(self):
+        smtpconfig = SmtpConfig()
+        self.assertEqual(smtpconfig.get_from_address(), None)
+        self.assertEqual(smtpconfig.get_host(), 'localhost')
+        self.assertEqual(smtpconfig.get_port(), 25)
+        self.assertEqual(smtpconfig.get_password(), None)
+        self.assertEqual(smtpconfig.get_from_address(), None)
+        self.assertEqual(smtpconfig.get_replyto_address(), None)
+
+    def test_smtp_config_nonexistantconfigfile(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            nonexist_file = os.path.join(temp_dir, 'foo')
+            smtpconfig = SmtpConfig(configfile=nonexist_file)
+            self.assertEqual(smtpconfig.get_from_address(), None)
+            self.assertEqual(smtpconfig.get_host(), 'localhost')
+            self.assertEqual(smtpconfig.get_port(), 25)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_smtp_config_get_value(self):
+
+            con = configparser.ConfigParser()
+            con.add_section(SmtpConfig.DEFAULT)
+            smtpconfig = SmtpConfig()
+
+            self.assertEqual(smtpconfig._get_value(con, None, None), None)
+            self.assertEqual(smtpconfig._get_value(con, 'blah', None), None)
+
+            self.assertEqual(smtpconfig._get_value(con, SmtpConfig.DEFAULT,
+                                                   'yo'), None)
+
+            con.set(SmtpConfig.DEFAULT, SmtpConfig.SMTP_USER,
+                    'user')
+            self.assertEqual(smtpconfig._get_value(con, SmtpConfig.DEFAULT,
+                                                   SmtpConfig.SMTP_USER),
+                             'user')
+
+    def test_smtp_config_empty_config_file(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            empty_file = os.path.join(temp_dir, 'foo')
+            open(empty_file, 'a').close()
+            smtpconfig = SmtpConfig(configfile=empty_file)
+            self.assertEqual(smtpconfig.get_from_address(), None)
+            self.assertEqual(smtpconfig.get_host(), 'localhost')
+            self.assertEqual(smtpconfig.get_port(), 25)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_smtp_config_parse_error(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            cfile = os.path.join(temp_dir, 'foo')
+            f = open(cfile, 'w')
+            f.write('[smtp\nas = xx=12=\n')
+            f.flush()
+            f.close()
+            # this is a coverage test. Basically the
+            # _parse_config method called from constructor
+            # below should catch the parsing error and
+            # not complain
+            smtpconfig = SmtpConfig(cfile)
+            self.assertEqual(smtpconfig.get_from_address(), None)
+            self.assertEqual(smtpconfig.get_host(), 'localhost')
+            self.assertEqual(smtpconfig.get_port(), 25)
+            self.assertEqual(smtpconfig.get_password(), None)
+            self.assertEqual(smtpconfig.get_from_address(), None)
+            self.assertEqual(smtpconfig.get_replyto_address(), None)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_smtp_config_valid_config_file(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+
+            cfile = os.path.join(temp_dir, 'foo')
+            con = configparser.ConfigParser()
+            con.add_section(SmtpConfig.DEFAULT)
+            con.set(SmtpConfig.DEFAULT, SmtpConfig.SMTP_FROM_ADDRESS,
+                    'from')
+            con.set(SmtpConfig.DEFAULT, SmtpConfig.SMTP_REPLYTO_ADDRESS,
+                    'replyto')
+            con.set(SmtpConfig.DEFAULT, SmtpConfig.SMTP_PASS,
+                    'pass')
+            con.set(SmtpConfig.DEFAULT, SmtpConfig.SMTP_PORT,
+                    '256')
+            con.set(SmtpConfig.DEFAULT, SmtpConfig.SMTP_HOST,
+                    'host')
+            con.set(SmtpConfig.DEFAULT, SmtpConfig.SMTP_USER,
+                    'user')
+            f = open(cfile, 'w')
+            con.write(f)
+            f.flush()
+            f.close()
+
+            smtpconfig = SmtpConfig(configfile=cfile)
+            self.assertEqual(smtpconfig.get_user(), 'user')
+            self.assertEqual(smtpconfig.get_host(), 'host')
+            self.assertEqual(smtpconfig.get_port(), 256)
+            self.assertEqual(smtpconfig.get_password(), 'pass')
+            self.assertEqual(smtpconfig.get_from_address(), 'from')
+            self.assertEqual(smtpconfig.get_replyto_address(), 'replyto')
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_smtp_config_host_and_port_not_set(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+
+            cfile = os.path.join(temp_dir, 'foo')
+            con = configparser.ConfigParser()
+            con.add_section(SmtpConfig.DEFAULT)
+            con.set(SmtpConfig.DEFAULT, SmtpConfig.SMTP_FROM_ADDRESS,
+                    'from')
+            con.set(SmtpConfig.DEFAULT, SmtpConfig.SMTP_REPLYTO_ADDRESS,
+                    'replyto')
+            con.set(SmtpConfig.DEFAULT, SmtpConfig.SMTP_PASS,
+                    'pass')
+            f = open(cfile, 'w')
+            con.write(f)
+            f.flush()
+            f.close()
+
+            smtpconfig = SmtpConfig(configfile=cfile)
+            self.assertEqual(smtpconfig.get_user(), None)
+            self.assertEqual(smtpconfig.get_host(), 'localhost')
+            self.assertEqual(smtpconfig.get_port(), 25)
+            self.assertEqual(smtpconfig.get_password(), 'pass')
+            self.assertEqual(smtpconfig.get_from_address(), 'from')
+            self.assertEqual(smtpconfig.get_replyto_address(), 'replyto')
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_smtp_config_port_not_a_number(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+
+            cfile = os.path.join(temp_dir, 'foo')
+            con = configparser.ConfigParser()
+            con.add_section(SmtpConfig.DEFAULT)
+            con.set(SmtpConfig.DEFAULT, SmtpConfig.SMTP_PORT,
+                    'hello')
+            f = open(cfile, 'w')
+            con.write(f)
+            f.flush()
+            f.close()
+
+            smtpconfig = SmtpConfig(configfile=cfile)
+            self.assertEqual(smtpconfig.get_user(), None)
+            self.assertEqual(smtpconfig.get_port(), 25)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_smtpemailerfactory_nosmtpconfig(self):
+        param = D3RParameters()
+        fac = SmtpEmailerFactory(param)
+
+        emailer = fac.get_smtp_emailer()
+        self.assertEqual(emailer._smtp_host, 'localhost')
+
+    def test_smtpemailerfactory_valid_config(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+
+            cfile = os.path.join(temp_dir, 'foo')
+            con = configparser.ConfigParser()
+            con.add_section(SmtpConfig.DEFAULT)
+            con.set(SmtpConfig.DEFAULT, SmtpConfig.SMTP_FROM_ADDRESS,
+                    'from')
+            con.set(SmtpConfig.DEFAULT, SmtpConfig.SMTP_REPLYTO_ADDRESS,
+                    'replyto')
+            con.set(SmtpConfig.DEFAULT, SmtpConfig.SMTP_PASS,
+                    'pass')
+            con.set(SmtpConfig.DEFAULT, SmtpConfig.SMTP_PORT,
+                    '256')
+            con.set(SmtpConfig.DEFAULT, SmtpConfig.SMTP_HOST,
+                    'host')
+            con.set(SmtpConfig.DEFAULT, SmtpConfig.SMTP_USER,
+                    'user')
+            f = open(cfile, 'w')
+            con.write(f)
+            f.flush()
+            f.close()
+            param = D3RParameters()
+            param.smtpconfig=cfile
+
+            fac = SmtpEmailerFactory(param)
+
+            emailer = fac.get_smtp_emailer()
+            self.assertEqual(emailer._user, 'user')
+            self.assertEqual(emailer._smtp_host, 'host')
+            self.assertEqual(emailer._port, 256)
+            self.assertEqual(emailer._password, 'pass')
+            self.assertEqual(emailer._fromaddr, 'from')
+            self.assertEqual(emailer._replyto, 'replyto')
         finally:
             shutil.rmtree(temp_dir)
 

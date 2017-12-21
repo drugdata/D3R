@@ -20,6 +20,8 @@ p.loglevel = DEFAULT_LOG_LEVEL
 util.setup_logging(p)
 
 
+from d3r.celpp.task import SmtpEmailerFactory
+from d3r.celpp.task import SmtpConfig
 from d3r.celpp.blastnfilter import BlastNFilterTask
 from d3r.celpp.proteinligprep import ProteinLigPrepTask
 from d3r.celpp.dataimport import DataImportTask
@@ -41,6 +43,7 @@ CREATE_CHALLENGE = 'createchallenge'
 CHIMERA_PREP = 'chimeraprep'
 POST_EVAL = 'postevaluation'
 STAGE_FLAG = '--stage'
+SMTPCONFIG_FLAG = '--smtpconfig'
 
 
 def _get_lock(theargs, stage):
@@ -287,8 +290,9 @@ def get_task_list_for_stage(theargs, stage_name):
         # create PostEvaluationEmailer object
         ptask = PostEvaluationTask(theargs.latest_weekly, theargs)
         a_list = _get_set_of_email_address_from_email_flags(theargs)
+        efac = SmtpEmailerFactory(theargs)
         pmailer = PostEvaluationEmailer(a_list,
-                                        None)
+                                        efac.get_smtp_emailer())
         ptask.set_evaluation_emailer(pmailer)
         task_list.append(ptask)
 
@@ -310,7 +314,7 @@ def _parse_arguments(desc, args):
     parser.add_argument("celppdir", help='Base celpp directory')
     parser.add_argument("--email", dest="email",
                         help='Comma delimited list of email addresses '
-                             'to receive an email when each task starts'
+                             'to receive an email when each task starts '
                              'and ends')
     parser.add_argument("--summaryemail", dest="summaryemail",
                         help='Comma delimited list of email addresses to'
@@ -405,12 +409,11 @@ def _parse_arguments(desc, args):
                         help="Set the logging level (default " +
                              DEFAULT_LOG_LEVEL + ")",
                         default=DEFAULT_LOG_LEVEL)
-    parser.add_argument('--smtp', dest='smtp', help='Sets smtpserver to use '
-                                                    '(default localhost)',
-                        default='localhost')
-    parser.add_argument('--smtpport', dest='smtpport',
-                        help='Sets smtp server port (default 25)',
-                        default='25')
+    parser.add_argument(SMTPCONFIG_FLAG,
+                        help='File containing configuration to connect to '
+                             'smtp server. If set any emails sent will '
+                             'use this configuration. Also if set this value'
+                             'ignores values set in --smtp and --smtpport')
     parser.add_argument('--skipimportwait', default=False, action='store_true',
                         help='Normally the import stage will wait if any of '
                              'the tsv files have not been updated since the'
@@ -436,9 +439,6 @@ def _parse_arguments(desc, args):
                         FtpFileTransfer.SUBMISSIONPATH + ') ' +
                         'SEE: description of challengedata '
                         'stage above for example file')
-    parser.add_argument('--replyto', dest='replytoaddress', default=None,
-                        help='Email address to set as reply-to for emails to '
-                             'external submitters')
     parser.add_argument('--version', action='version',
                         version=('%(prog)s ' + d3r.__version__))
     return parser.parse_args(args, namespace=parsed_arguments)
@@ -496,8 +496,9 @@ def main(args):
               If previous steps have failed or current stage already
               exists in an error or uncomplete state then program will
               report the error via email using addresses set in --email
-              flag. Errors will also be reported via stderr/stdout.
-              The program will also exit with nonzero exit code.
+              and in --summaryemail flag. Errors will also be reported
+              via stderr/stdout. The program will also exit with nonzero
+              exit code.
 
               This program utilizes simple token files to denote stage
               completion.  If within the stage directory there is a:
@@ -510,7 +511,20 @@ def main(args):
               'start' file - then stage is running.
 
               Notification of stage start and end will be sent to
-              addresses set via --email flag.
+              addresses set via --email flag and only errors will
+              be sent to addresses in --summaryemail.
+
+              Emails are sent via smtp which can be configured via
+              {smtpconfig} parameter which takes a configuration
+              file in the following format:
+
+              [{smtp_section}]
+              {smtp_host} = smtp.foo.com
+              {smtp_port} = 1234
+              {smtp_user} = bob
+              {smtp_pass} = somepass
+              {smtp_from_address} = no-reply@foo.com
+              {smtp_replyto_address} = reply@foo.com
 
               Unless --customweekdir is set, this program will
               examine the 'celppdir' (last argument passed on
@@ -711,7 +725,15 @@ def main(args):
                          version=d3r.__version__,
                          stageflag=STAGE_FLAG,
                          postevaluation=POST_EVAL,
-                         postevalstage=postevalstage.get_dir_name())
+                         postevalstage=postevalstage.get_dir_name(),
+                         smtpconfig=SMTPCONFIG_FLAG,
+                         smtp_section=SmtpConfig.DEFAULT,
+                         smtp_host=SmtpConfig.SMTP_HOST,
+                         smtp_port=SmtpConfig.SMTP_PORT,
+                         smtp_user=SmtpConfig.SMTP_USER,
+                         smtp_pass=SmtpConfig.SMTP_PASS,
+                         smtp_from_address=SmtpConfig.SMTP_FROM_ADDRESS,
+                         smtp_replyto_address=SmtpConfig.SMTP_REPLYTO_ADDRESS)
 
     theargs = _parse_arguments(desc, args[1:])
     theargs.program = args[0]

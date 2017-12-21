@@ -4,7 +4,9 @@ import os
 import logging
 
 from d3r.celpp.task import SmtpEmailer
+from d3r.celpp.task import SmtpEmailerFactory
 from d3r.celpp.task import Attachment
+
 from d3r.celpp import util
 from d3r.celpp.task import D3RTask
 from d3r.celpp.evaluation import EvaluationTask
@@ -23,27 +25,10 @@ class PathNotDirectoryError(Exception):
 class PostEvaluationEmailer(object):
     """Sends evaluation email
     """
-    def __init__(self, to_list, reply_to_address,
-                 smtp='localhost', smtpport=25):
-        self._alt_smtp_emailer = None
+    def __init__(self, to_list, emailer):
+        self._emailer = emailer
         self._msg_log = None
         self._to_list = to_list
-        self._reply_to_address = reply_to_address
-        self._smtp = smtp
-        self._smtpport = smtpport
-
-    def set_alternate_smtp_emailer(self, emailer):
-        """Sets alternate smtp emailer
-        """
-        self._alt_smtp_emailer = emailer
-
-    def _get_smtp_emailer(self):
-        """Gets `SmtpEmailer` object or alternate
-        """
-        if self._alt_smtp_emailer is not None:
-            return self._alt_smtp_emailer
-        return SmtpEmailer(smtp_host=self._smtp,
-                           port=self._smtpport)
 
     def _append_to_message_log(self, msg):
         if self._msg_log is None:
@@ -56,14 +41,6 @@ class PostEvaluationEmailer(object):
         :returns: Error log as string
         """
         return self._msg_log
-
-    def _get_reply_to_address(self, from_address):
-        """Gets reply to address
-        :returns: reply to email address
-        """
-        if self._reply_to_address is None:
-            return from_address
-        return self._reply_to_address
 
     def _generate_post_evaluation_email_body(self, petask):
         """Creates body of email and subject
@@ -95,7 +72,6 @@ class PostEvaluationEmailer(object):
             return
 
         try:
-            emailer = self._get_smtp_emailer()
 
             if self._to_list is None:
                 logger.debug('No email addresses in to list')
@@ -105,10 +81,6 @@ class PostEvaluationEmailer(object):
 
             subject, msg = self._generate_post_evaluation_email_body(petask)
 
-            from_addr = emailer.generate_from_address_using_login_and_host()
-
-            reply_to = self._get_reply_to_address(from_addr)
-
             attach_list = None
             for csv_file in petask.get_all_csv_files_in_dir():
                 if attach_list is None:
@@ -116,9 +88,8 @@ class PostEvaluationEmailer(object):
                 attach_list.append(Attachment(csv_file,
                                               os.path.basename(csv_file)))
 
-            emailer.send_email(from_addr, self._to_list, subject, msg,
-                               reply_to=reply_to,
-                               attachments=attach_list)
+            self._emailer.send_email(self._to_list, subject, msg,
+                                     attachments=attach_list)
 
             self._append_to_message_log('\nSent post evaluation email to: ' +
                                         ", ".join(self._to_list) + '\n')
