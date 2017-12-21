@@ -54,7 +54,8 @@ class PostEvaluationEmailer(object):
 
         msg += petask.get_postevaluation_summary()
 
-        msg += '\n\nSincerely,\n\nCELPP Automation'
+        msg += ('\n\nSincerely,\n\nCELPP Automation ' +
+                petask.get_program_version())
 
         subject = (D3RTask.SUBJECT_LINE_PREFIX + str(year) + ' ' +
                    'week ' + str(weekno) + ' post evaluation summary report')

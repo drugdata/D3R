@@ -444,6 +444,7 @@ class TestPostEvaluation(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
+            params.version='1.2.3'
             weekyear = os.path.join(temp_dir, '2017', 'dataset.week.12')
             os.makedirs(weekyear, mode=0o755)
             task = PostEvaluationTask(weekyear, params)
@@ -461,7 +462,7 @@ class TestPostEvaluation(unittest.TestCase):
             self.assertEqual(msg, 'Dear CELPP Admin,\n\nHere is the post '
                                   'evaluation  summary reports for CELPP '
                                   'week 12\n\n\n\nhello\n\n\nSincerely,\n\n'
-                                  'CELPP Automation')
+                                  'CELPP Automation 1.2.3')
         finally:
             shutil.rmtree(temp_dir)
 
