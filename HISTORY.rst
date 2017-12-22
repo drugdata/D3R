@@ -16,7 +16,7 @@ History
   let caller ignore directories when looking for mol files.
   `Issue #167 <https://github.com/drugdata/D3R/issues/167>`_
 
-* Fixed bug where a network hiccup raised an exception in during
+* Fixed bug where a network hiccup raised an exception during
   DataImportTask causing celpprunner.py to exit prematurely.
   `Issue #168 <https://github.com/drugdata/D3R/issues/168>`_
 
