@@ -171,47 +171,50 @@ class TestPostEvaluation(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             # none passed in
-            p_list, count = post_evaluation._get_pickle_paths(None)
+            p_list, no_list = post_evaluation._get_pickle_paths(None)
             self.assertEqual(p_list, [])
-            self.assertEqual(count, 0)
+            self.assertEqual(no_list, [])
 
             # emptylist
-            p_list, count = post_evaluation._get_pickle_paths([])
+            p_list, no_list = post_evaluation._get_pickle_paths([])
             self.assertEqual(p_list, [])
-            self.assertEqual(count, 0)
+            self.assertEqual(no_list, [])
 
             # one path no pickle
-            p_list, count = post_evaluation._get_pickle_paths([temp_dir])
+            p_list, no_list = post_evaluation._get_pickle_paths([temp_dir])
             self.assertEqual(p_list, [])
-            self.assertEqual(count, 1)
+            missing_pickle = os.path.join(temp_dir,
+                                          post_evaluation.RMSD_PICKLE)
+            self.assertEqual(no_list, [missing_pickle])
 
             # one path with pickle
             pfile = os.path.join(temp_dir, post_evaluation.RMSD_PICKLE)
             open(pfile, 'a').close()
-            p_list, count = post_evaluation._get_pickle_paths([temp_dir])
+            p_list, no_list = post_evaluation._get_pickle_paths([temp_dir])
             self.assertEqual(len(p_list), 1)
             self.assertTrue(pfile in p_list)
-            self.assertEqual(count, 0)
+            self.assertEqual(no_list, [])
 
             # two paths and only one with pickle
             subdir = os.path.join(temp_dir, 'foo')
             os.makedirs(subdir, mode=0o775)
-            p_list, count = post_evaluation._get_pickle_paths([temp_dir,
+            p_list, no_list = post_evaluation._get_pickle_paths([temp_dir,
                                                                subdir])
             self.assertEqual(len(p_list), 1)
             self.assertTrue(pfile in p_list)
-            self.assertEqual(count, 1)
+            foo_miss_pickle = os.path.join(subdir, post_evaluation.RMSD_PICKLE)
+            self.assertEqual(no_list, [foo_miss_pickle])
 
             # two paths with pickles
             p2file = os.path.join(subdir, post_evaluation.RMSD_PICKLE)
             open(p2file, 'a').close()
 
-            p_list, count = post_evaluation._get_pickle_paths([subdir,
+            p_list, no_list = post_evaluation._get_pickle_paths([subdir,
                                                                temp_dir])
             self.assertEqual(len(p_list), 2)
             self.assertTrue(pfile in p_list)
             self.assertTrue(p2file in p_list)
-            self.assertEqual(count, 0)
+            self.assertEqual(no_list, [])
         finally:
             shutil.rmtree(temp_dir)
 

@@ -172,14 +172,14 @@ def get_histogram_of_dock_scores(list_of_dock_scores, binsize,
 def _get_pickle_paths(path_list):
     """Given a list of evaluation task directories
        find all pickle files and return that as
-       a list as well as a count of those that failed
+       a list as well as a list of those that failed
     """
     pickle_list = []
-    no_pickle_count = 0
+    no_pickle_list = []
 
     if path_list is None:
         logger.error('Path list is None')
-        return pickle_list, no_pickle_count
+        return pickle_list, no_pickle_list
 
     logger.info('Given ' + str(len(path_list)) + ' paths to look for'
                                                  ' pickle files in')
@@ -191,9 +191,9 @@ def _get_pickle_paths(path_list):
         else:
             logging.info("The pickle file " + full_path +
                          "does not exist")
-            no_pickle_count += 1
+            no_pickle_list.append(full_path)
 
-    return pickle_list, no_pickle_count
+    return pickle_list, no_pickle_list
 
 
 def _get_submission_name_from_pickle_path(path, prefix, suffix,
@@ -221,7 +221,7 @@ def generate_overall_csv(evaluation_path, challenge_dir, post_evaluation_path,
 
     not_valid_pickle = 0
 
-    all_pickle_files, non_pickle_case = _get_pickle_paths(evaluation_path)
+    all_pickle_files, non_pickle_list = _get_pickle_paths(evaluation_path)
 
     candidates_report = os.path.join(challenge_dir, CHALL_FINAL_LOG)
 
@@ -382,7 +382,7 @@ def generate_overall_csv(evaluation_path, challenge_dir, post_evaluation_path,
 
     logging.info("We got : %s cases without pickle files and %s cases have "
                  "invalid pickle files for "
-                 "candidates type %s" % (non_pickle_case,
+                 "candidates type %s" % (str(len(non_pickle_list)),
                                          not_valid_pickle,
                                          candidates_type))
     overall_csv.writelines(full_data_lines)
