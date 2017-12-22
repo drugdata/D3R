@@ -31,6 +31,10 @@ History
   people in --summaryemail list if a task fails.
   `Issue #171 <https://github.com/drugdata/D3R/issues/171>`_
 
+* Post evaluation summary email now outputs lines with NA
+  values for any submissions that failed
+  `Issue #130 <https://github.com/drugdata/D3R/issues/130>`_
+
 1.9.2 (2017-10-30)
 --------------------
 
