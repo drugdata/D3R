@@ -380,6 +380,44 @@ def generate_overall_csv(evaluation_path, challenge_dir, post_evaluation_path,
                                                        candidates_type))
             not_valid_pickle += 1
 
+    for np_file in non_pickle_list:
+        sub_name = _get_submission_name_from_pickle_path(np_file,
+                                                         eval_stage_prefix,
+                                                         eval_suffix)
+        tsub_name = _get_submission_name_from_pickle_path(np_file,
+                                                          eval_stage_prefix,
+                                                          eval_suffix,
+                                                          max_submission_name_width=submission_name_width)
+        full_data_lines.append(data_line_format % (sub_name,
+                                                   "N/A",
+                                                   total_candidates,
+                                                   "N/A",
+                                                   "N/A",
+                                                   "N/A",
+                                                   "N/A",
+                                                   "N/A",
+                                                   "N/A",
+                                                   "N/A",
+                                                   "N/A",
+                                                   "N/A",
+                                                   "N/A",
+                                                   "N/A",
+                                                   "N/A"))
+        summary_txt.write(s_line_format % (tsub_name,
+                                           "N/A",
+                                           "N/A",
+                                           "N/A",
+                                           "N/A",
+                                           "N/A",
+                                           "N/A",
+                                           "N/A",
+                                           "N/A",
+                                           "N/A",
+                                           "N/A",
+                                           "N/A",
+                                           "N/A",
+                                           "N/A"))
+
     logging.info("We got : %s cases without pickle files and %s cases have "
                  "invalid pickle files for "
                  "candidates type %s" % (str(len(non_pickle_list)),
