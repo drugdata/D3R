@@ -3,6 +3,34 @@
 History
 -------
 
+1.10.0 
+--------------------
+
+* **Breaking change** Added new flag to celpprunner.py --smtpconfig
+  that lets a user specify smtp configuration information. 
+  At the same time removed --replyto --smtp, and --smtpport since
+  those options would be confusing to have also in place.
+ `Issue #166 <https://github.com/drugdata/D3R/issues/166>`_ 
+
+* molfilevalidator.py has new command line option --exludedir to
+  let caller ignore directories when looking for mol files.
+  `Issue #167 <https://github.com/drugdata/D3R/issues/167>`_
+
+* Fixed bug where a network hiccup raised an exception in during
+  DataImportTask causing celpprunner.py to exit prematurely.
+  `Issue #168 <https://github.com/drugdata/D3R/issues/168>`_
+
+* Improved error message output when a participant uploads a
+  malformed challenge data package. 
+  `Issue #169 <https://github.com/drugdata/D3R/issues/169>`_
+
+* Version of D3R is now output in post evaluation summary email.
+  `Issue #172 <https://github.com/drugdata/D3R/issues/172>`_
+
+* Fixed bug where celpprunner.py was not sending an email to
+  people in --summaryemail list if a task fails.
+  `Issue #171 <https://github.com/drugdata/D3R/issues/171>`_
+
 1.9.2 (2017-10-30)
 --------------------
 
