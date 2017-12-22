@@ -791,7 +791,7 @@ class SmtpConfig(object):
         if configfile is not None:
             try:
                 self._parse_config(configfile)
-            except configparser.Error as ce:
+            except configparser.Error:
                 logger.exception('Caught Exception trying to parse ' +
                                  configfile)
 
@@ -825,13 +825,14 @@ class SmtpConfig(object):
                 self._port = SmtpConfig.DEFAULT_PORT
 
         self._password = self._get_value(config, SmtpConfig.DEFAULT,
-                               SmtpConfig.SMTP_PASS)
+                                         SmtpConfig.SMTP_PASS)
 
         self._from_address = self._get_value(config, SmtpConfig.DEFAULT,
-                               SmtpConfig.SMTP_FROM_ADDRESS)
+                                             SmtpConfig.SMTP_FROM_ADDRESS)
 
         self._replyto_address = self._get_value(config, SmtpConfig.DEFAULT,
-                               SmtpConfig.SMTP_REPLYTO_ADDRESS)
+                                                SmtpConfig.
+                                                SMTP_REPLYTO_ADDRESS)
 
     def _get_value(self, config, section, option):
         """Calls get() on configparser object `config` passed in to
@@ -840,19 +841,21 @@ class SmtpConfig(object):
            :param section: Section to look for value
            :param option: Keyword value or value left of =
                            (ie foo = X the keyword would be foo)
-           :returns: value as string or whatever ConfigParser().get() returns or None
-                     if not found
+           :returns: value as string or whatever ConfigParser().get()
+                     returns or None if not found
         """
         if section is None:
             logger.error('Section cannot be None')
             return None
 
         if not config.has_section(section):
-            logger.warning(section + ' section not found in configuration')
+            logger.warning(section +
+                           ' section not found in configuration')
             return None
 
         if not config.has_option(section, option):
-            logger.info('In parsing smtp configuration ' + option + ' not found')
+            logger.info('In parsing smtp configuration ' + option +
+                        ' not found')
             return None
 
         return config.get(section, option)
@@ -921,8 +924,8 @@ class SmtpEmailer(object):
     """Simple Wrapper class to send email via smtplib
     """
 
-    def __init__(self, smtp_host='localhost', port=25, user=None, password=None,
-                 fromaddr=None, replyto=None):
+    def __init__(self, smtp_host='localhost', port=25, user=None,
+                 password=None, fromaddr=None, replyto=None):
         """Constructor
         :param smtp_host: host of stmp server
         :param port: port stmp server is on
@@ -963,8 +966,8 @@ class SmtpEmailer(object):
         try:
 
             mime_msg = self._build_mime_message(self._fromaddr, to_list,
-                                                subject, message, self._replyto,
-                                                attachments)
+                                                subject, message,
+                                                self._replyto, attachments)
             server = self._get_server()
             server.sendmail(self._fromaddr, to_list, mime_msg.as_string())
         except smtplib.SMTPConnectError as e:

@@ -2,11 +2,7 @@ __author__ = 'churas'
 
 import os
 import logging
-
-from d3r.celpp.task import SmtpEmailer
-from d3r.celpp.task import SmtpEmailerFactory
 from d3r.celpp.task import Attachment
-
 from d3r.celpp import util
 from d3r.celpp.task import D3RTask
 from d3r.celpp.evaluation import EvaluationTask

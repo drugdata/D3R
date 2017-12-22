@@ -914,7 +914,8 @@ class TestEvaluation(unittest.TestCase):
             mockserver.sendmail = Mock()
             mockserver.quit = Mock()
             smtpemailer.set_alternate_smtp_server(mockserver)
-            emailer = EvaluationEmailer(ParticipantDatabase(plist), smtpemailer)
+            emailer = EvaluationEmailer(ParticipantDatabase(plist),
+                                        smtpemailer)
             evaluation.set_evaluation_emailer(emailer)
             evaluation.run()
             self.assertEqual(evaluation.get_error(), None)
@@ -1244,7 +1245,8 @@ class TestEvaluation(unittest.TestCase):
             mockserver.sendmail = Mock()
             mockserver.quit = Mock()
             smtpemailer.set_alternate_smtp_server(mockserver)
-            emailer = EvaluationEmailer(ParticipantDatabase(plist), smtpemailer)
+            emailer = EvaluationEmailer(ParticipantDatabase(plist),
+                                        smtpemailer)
 
             emailer.send_evaluation_email(task)
             mockserver.quit.assert_any_call()
@@ -1274,7 +1276,8 @@ class TestEvaluation(unittest.TestCase):
             mockserver.sendmail = Mock(side_effect=IOError('ha'))
             mockserver.quit = Mock()
             smtpemailer.set_alternate_smtp_server(mockserver)
-            emailer = EvaluationEmailer(ParticipantDatabase(plist), smtpemailer)
+            emailer = EvaluationEmailer(ParticipantDatabase(plist),
+                                        smtpemailer)
             emailer.send_evaluation_email(task)
             mockserver.quit.assert_any_call()
             self.assertEqual(emailer.get_message_log(),
@@ -1299,7 +1302,8 @@ class TestEvaluation(unittest.TestCase):
                                  'bob@bob.com')]
             # try single email address
             smtpemailer = SmtpEmailer()
-            emailer = EvaluationEmailer(ParticipantDatabase(plist), smtpemailer)
+            emailer = EvaluationEmailer(ParticipantDatabase(plist),
+                                        smtpemailer)
             emailer.send_evaluation_email(task)
             self.assertEqual(emailer.get_message_log(),
                              '\nNo participant found with guid: 12345\n')

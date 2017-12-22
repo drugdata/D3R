@@ -444,7 +444,7 @@ class TestPostEvaluation(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             params = D3RParameters()
-            params.version='1.2.3'
+            params.version = '1.2.3'
             weekyear = os.path.join(temp_dir, '2017', 'dataset.week.12')
             os.makedirs(weekyear, mode=0o755)
             task = PostEvaluationTask(weekyear, params)

@@ -509,7 +509,6 @@ class TestDataImportTask(unittest.TestCase):
             except ImportRetryCountExceededError:
                 pass
 
-
         finally:
             shutil.rmtree(temp_dir)
 

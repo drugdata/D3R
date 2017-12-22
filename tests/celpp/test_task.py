@@ -973,7 +973,7 @@ class TestD3rTask(unittest.TestCase):
             f.flush()
             f.close()
             param = D3RParameters()
-            param.smtpconfig=cfile
+            param.smtpconfig = cfile
 
             fac = SmtpEmailerFactory(param)
 

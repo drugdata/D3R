@@ -34,7 +34,8 @@ class TestChainPermuter(unittest.TestCase):
             sys.stdout.write("openeye.oechem not importable.\n")
             self.has_oechem = False
 
-        ret_code = os.system('PYTHONPATH= $SCHRODINGER/run split_structure.py &> '
+        ret_code = os.system('PYTHONPATH= $SCHRODINGER/run '
+                             'split_structure.py &> '
                              '/dev/null')
         if ret_code == 512:
             sys.stdout.write("Schrodinger commandline available.\n")
@@ -42,8 +43,6 @@ class TestChainPermuter(unittest.TestCase):
         else:
             sys.stdout.write("Schrodinger commandline not available.\n")
             self.has_schrodinger = False
-        #pd = ParticipantDatabase([])
-        #self.eval_emailer = EvaluationEmailer(pd, reply_to_address, smtp='localhost', smtpport=25)
 
     def test_permute_chains_and_take_min_rmsd(self):
         if not(self.has_oechem) or not (self.has_schrodinger):
@@ -58,33 +57,31 @@ class TestChainPermuter(unittest.TestCase):
                 params.evaluation = 'evaluate.py'
                 params.pdbdb = os.path.abspath('tests/celpp/eval_test_data/'
                                                '%s_test_data/mini_pdb/'
-                                               % (test_scale))
-                
+                                               % test_scale)
+
                 # Make blastnfilter task
                 blastnfiltertask = BlastNFilterTask(temp_dir, params)
                 blastnfiltertask.create_dir()
-                open(os.path.join(blastnfiltertask.get_dir(), 
-                                  D3RTask.COMPLETE_FILE),
-                    'a').close()
+                open(os.path.join(blastnfiltertask.get_dir(),
+                                  D3RTask.COMPLETE_FILE), 'a').close()
                 source_dir = os.path.abspath('tests/celpp/eval_test_data/'
-                                             '%s_test_data/stage.3.blastnfilter/'
-                                             % (test_scale))
-                os.system('cp -r %s/* %s' % (source_dir, 
+                                             '%s_test_data/stage.3.'
+                                             'blastnfilter/'
+                                             % test_scale)
+                os.system('cp -r %s/* %s' % (source_dir,
                                              blastnfiltertask.get_dir()))
-
 
                 # Make challengedata task
                 challengedatatask = ChallengeDataTask(temp_dir, params)
                 challengedatatask.create_dir()
-                open(os.path.join(challengedatatask.get_dir(), 
-                                  D3RTask.COMPLETE_FILE),
-                    'a').close()
+                open(os.path.join(challengedatatask.get_dir(),
+                                  D3RTask.COMPLETE_FILE), 'a').close()
                 source_dir = os.path.abspath('tests/celpp/eval_test_data/'
-                                             '%s_test_data/stage.4.challengedata/'
-                                             % (test_scale))
-                os.system('cp -r %s/* %s' % (source_dir, 
+                                             '%s_test_data/stage.4.'
+                                             'challengedata/'
+                                             % test_scale)
+                os.system('cp -r %s/* %s' % (source_dir,
                                              challengedatatask.get_dir()))
-
 
                 # Make dock task
                 docktask = D3RTask(temp_dir, params)
@@ -113,31 +110,48 @@ class TestChainPermuter(unittest.TestCase):
                 emailer = EvaluationEmailer(ParticipantDatabase(plist), None)
                 emailer.set_alternate_smtp_emailer(smtpemailer)
                 task.set_evaluation_emailer(emailer)
-                
+
                 task.run()
                 val = task.get_evaluation_summary()
-                self.assertEqual(val, 
-                        '\nEvaluation of docking\n=====================\nTarge'
-                        't_PDBID        LMCSS            SMCSS            h'
-                        'iResApo         hiResHolo        hiTanimoto       '
-                        'LMCSS_ori_distance \n\nSummary Statistics\n\nNumber_of'
-                        '_cases     0                0                1    '
-                        '            0                0                \nAve'
-                        'rage                                              '
-                        ' 6.447                                            '
-                        '  \nMaximum                                        '
-                        '       6.447                                      '
-                        '        \nMinimum                                  '
-                        '             6.447                                '
-                        '              \nMedian                             '
-                        '                   6.447                          '
-                        '                    \n\nIndividual Results\n\n5t6d    '
-                        '                                              6.44'
-                        '7 (2.176 )                                        '
-                        '              \n\n')
+                self.assertEqual(val,
+                                 '\nEvaluation of docking\n==================='
+                                 '==\nTarge'
+                                 't_PDBID        LMCSS            SMCSS       '
+                                 '     h'
+                                 'iResApo         hiResHolo        hiTanimoto '
+                                 '      '
+                                 'LMCSS_ori_distance \n\nSummary Statistics\n'
+                                 '\nNumber_of'
+                                 '_cases     0                0               '
+                                 ' 1    '
+                                 '            0                0              '
+                                 '  \nAve'
+                                 'rage                                        '
+                                 '      '
+                                 ' 6.447                                     '
+                                 '       '
+                                 '  \nMaximum                                '
+                                 '        '
+                                 '       6.447                               '
+                                 '       '
+                                 '        \nMinimum                           '
+                                 '       '
+                                 '             6.447                          '
+                                 '      '
+                                 '              \nMedian                      '
+                                 '       '
+                                 '                   6.447                    '
+                                 '      '
+                                 '                    \n\nIndividual Results\n'
+                                 '\n5t6d    '
+                                 '                                            '
+                                 '  6.44'
+                                 '7 (2.176 )                                  '
+                                 '      '
+                                 '              \n\n')
                 self.assertEqual(task.get_error(), None)
         finally:
-            #pass
+            # pass
             shutil.rmtree(temp_dir)
 
 

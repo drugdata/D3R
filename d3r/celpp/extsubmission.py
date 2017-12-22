@@ -282,7 +282,8 @@ class ExternalDataSubmissionTask(D3RTask):
         """
         package_dir = os.path.join(self.get_dir(), chall_name)
         if not os.path.isdir(package_dir):
-            raise ChallengePackageFormatError('Directory: ' + str(package_dir) +
+            raise ChallengePackageFormatError('Directory: ' +
+                                              str(package_dir) +
                                               ' not found, but should have ' +
                                               'been extracted from ' +
                                               'challenge data package')
