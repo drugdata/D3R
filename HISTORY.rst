@@ -10,7 +10,7 @@ History
   that lets a user specify smtp configuration information. 
   At the same time removed --replyto --smtp, and --smtpport since
   those options would be confusing to have also in place.
- `Issue #166 <https://github.com/drugdata/D3R/issues/166>`_ 
+  `Issue #166 <https://github.com/drugdata/D3R/issues/166>`_ 
 
 * molfilevalidator.py has new command line option --excludedir to
   let caller ignore directories when looking for mol files.
