@@ -3,7 +3,7 @@
 History
 -------
 
-1.10.0 
+1.10.0 (2018-01-09) 
 --------------------
 
 * **Breaking change** Added new flag to celpprunner.py --smtpconfig
