@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import sys
+import os
 
 try:
     from setuptools import setup
@@ -13,6 +15,34 @@ with open('README.rst') as readme_file:
 
 with open('HISTORY.rst') as history_file:
     history = history_file.read().replace('.. :changelog:', '')
+
+try:
+    import rstcheck
+    found_errors = False
+
+    readme_errors = list(rstcheck.check(readme))
+    if len(readme_errors) > 0:
+        sys.stderr.write('\nErrors in README.rst [(line #, error)]\n' +
+                         str(readme_errors) + '\n')
+        found_errors = True
+
+    history_errors = list(rstcheck.check(history))
+    if len(history_errors) > 0:
+        sys.stderr.write('\nErrors in HISTORY.rst [(line #, error)]\n' +
+                         str(history_errors) + '\n')
+
+        found_errors = True
+
+    if 'sdist' in sys.argv or 'bdist_wheel' in sys.argv:
+        if found_errors is True:
+            sys.stderr.write('\n\nEXITING due to errors encountered in'
+                             ' History.rst or Readme.rst.\n\nSee errors above\n\n')
+            sys.exit(1)
+
+except Exception as e:
+    sys.stderr.write('WARNING: rstcheck library found, '
+                     'unable to validate README.rst or HISTORY.rst\n')
+
 
 requirements = [
     "argparse",
