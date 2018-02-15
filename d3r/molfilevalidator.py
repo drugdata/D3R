@@ -631,7 +631,7 @@ def _validate_molfiles_in_tarball(theargs, molfactory, moleculedb):
                                    skipsmilecompare=skipsmilecompare)
     report = ValidationReport()
     for molfile in _molfile_from_tarfile_generator(theargs.usersubmission,
-                                                   theargs.excludedir):
+                                                   direxclude=theargs.excludedir):
         try:
             ligand_name = _get_ligand_name_from_file_name(molfile)
         except ValueError as e:

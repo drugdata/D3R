@@ -662,6 +662,7 @@ M  END
 
             params = D3RParameters()
             params.usersubmission = myf
+            params.excludedir = 'SuppInfo'
             moldb = {}
             moldb['ABC_1'] = (1, 2, {7: 2}, 'CC')
             molfactory = D3RMoleculeFromMolFileViaOpeneyeFactory()
@@ -695,6 +696,7 @@ M  END
 
             params = D3RParameters()
             params.usersubmission = myf
+            params.excludedir = 'SuppInfo'
             params.skipligand = 'XXX_3,ABC_1'
             moldb = {}
             moldb['ABC_1'] = (1, 2, {7: 2})
