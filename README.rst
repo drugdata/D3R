@@ -15,10 +15,16 @@ Drug Design Data Resource CELPP Runner
    :target: https://zenodo.org/badge/latestdoi/32555382
 
 Drug Design Data Resource is a suite of software to enable 
-filtering, docking, and scoring of new sequences from 
-`wwpdb <http://www.wwpdb.org/>`_.
+filtering of new entries from 
+`wwpdb <http://www.wwpdb.org/>`_ and scoring of CELPP 
+participant submissions. This package runs on D3R
+servers to host the CELPP challenge. Participants in CELPP who
+use the D3R-provided workflow template, CELPPade, will 
+need to install this package as it uses some shared
+scripts. 
 
-For more information please visit our wiki page:
+For more information on this package or how to begin 
+participating in CELPP, please visit our wiki page:
 
 https://github.com/drugdata/d3r/wiki
 
