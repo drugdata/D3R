@@ -5,6 +5,7 @@ from Bio import PDB
 import commands
 import time
 import sys
+import shutil
 
 try:
     from openeye.oechem import *
@@ -240,12 +241,28 @@ def convert_ligand_format (input_ligand, output_ligand):
 
 #def generate_ligand_and_receptor(complex_filename,ligand_filename, receptor_filename, ligand_info, rest_ligand_info):
 def generate_ligand_and_receptor(complex_filename,ligand_filename, receptor_filename, ligand_info):
+    """This function takes a pdb file `complex_filename` which would be the target ie 1fcz.pdb/ent
+       and writes out 2 new pdb files, one containing just the ligand matching data in `ligand_info`
+
+    :param complex_filename: input target pdb file
+    :param ligand_filename: output file to write lines from `complex_filename` file starting with
+                            ATOM or HETATM and with matching `ligand_info` data
+    :param receptor_filename: output pdb file to write lines from `complex_filename` file starting with
+                            ATOM in addition any lines written to ligand_filename will be written here
+    :param ligand_info: string in format of <ligand name>-<ligand residue number>-<chain id>
+                        in case of 1fcz the ligand was 156-450-A
+    """
     complex_f = open(complex_filename, "r")
     complex_lines = complex_f.readlines()
     complex_f.close()
     ligand_lines = []
     receptor_lines = []
     for line in complex_lines:
+        # Example line:
+        # HETATM 1900  C1  156 A 450      34.748  18.156  88.412  1.00 17.97           C
+        #
+        # In above 17:20 is 156, 20:22 is A and 22:26 is 450
+        #
         if 'ATOM' in line[:4] or 'HETATM' in line[:6]:
             ligand_name = line[17:20].strip()
             ligand_chain = line[20:22].strip()
@@ -274,15 +291,49 @@ def generate_ligand_and_receptor(complex_filename,ligand_filename, receptor_file
 #input the ligand ID, get all structure from crystal file
 
 class crystal (object):
+    """Represents a crystal
+    """
+
     def __init__(self, crystal_file, ligand_name, pdbid):
+        """
+
+        :param crystal_file: file name only invocation seens uses crystal.pdb
+        :param ligand_name: name of ligand ie 156. For standard, it was obtained
+                            from
+                            stage.3.blastnfilter/1fcz.txt from ligand, line.
+        :param pdbid: target_name for gold standard its 1fcz
+        """
         self._crystal = crystal_file
         self._ligand_name = ligand_name
+        # in only invocation seen just crystal.pdb is passed in so
+        # code assumes file is in working directory and path will
+        # be set to ''
+        #
         self._crystal_path = os.path.dirname(self._crystal)
+
+        # since crystal.pdb is passed in this will be unchanged
+        # and set to crystal.pdb
+        #
         self._crystal_name = os.path.basename(self._crystal)
         parser = PDB.PDBParser()
+
+        # writer is never used
         writer = PDB.PDBIO()
         self._biostruc = parser.get_structure (pdbid, crystal_file) 
     def get_ligand_info (self):
+        """
+          This method builds an internal list of residues from
+          the crystal file passed in via the constructor using
+          Biopython's PDB.PDBParser(). The list only contains
+          entries whose residue name matches ligand_name passed
+          in via the constructor.
+
+          The contents of the list is are strings of this format:
+          <residue name>-<residue id>-<chain id>
+
+          Duplicate entries are ignored except for a message to debug
+          of logger
+        """
         #extract the target ligand information
         self._ligand_residue_info = []
         for _model in self._biostruc:
@@ -299,6 +350,7 @@ class crystal (object):
                             pass
                     else:
                         pass
+
     def get_ligand_and_receptor_files(self):
         #get the ligand pdb file and receptor file per ligand 
         self._ligand = []
@@ -314,6 +366,11 @@ class crystal (object):
                 _ligand_file_full_path = os.path.join(self._crystal_path, _ligand_filename)
                 _receptord_file_full_path = os.path.join(self._crystal_path, _receptor_filename)
                 try:
+                    # generate_ligand_and_receptor
+                    # writes out crystal_ligand-residueId-chainid_ligand.pdb
+                    #            crystal_ligand-residueId-chainid_receptor.pdb
+                    # which contain just the atoms for the ligand (in _ligand file) and atoms
+                    # for both target and ligand in the _receptor file)
                     generate_ligand_and_receptor (self._crystal, _ligand_file_full_path, _receptord_file_full_path, _ligand_residue_info )
                     logging.debug("Generating the ligand %s and receptor %s "%(_ligand_file_full_path, _receptord_file_full_path))
                     self._ligand.append(_ligand_file_full_path)
@@ -695,6 +752,23 @@ def extract_crystal_file (crystal_pdbid, crystal_path):
         return False
 
 def main_score(dock_dir, pdb_protein_path, evaluate_dir, blastnfilter_dir, challenge_data_path, update= True):
+    """
+    Main entry function
+    :param dock_dir:  Path to dock submission.
+                      Ex: /..../2018/data...12/stage.6.123_foo.extsubmission
+    :param pdb_protein_path: Path to uncompressed pdb
+                             Ex: /celpp/pdb.extracted
+    :param evaluate_dir: Output directory to use.
+                         Ex: /..../stage.7.123_foo.extsubmission.evaluation
+    :param blastnfilter_dir: Path to blastnfilter stage
+                         Ex: /..../stage.3.blastnfilter
+    :param challenge_data_path: Path to challenge data package uncompressed
+                                directory
+                        Ex: /..../stage.4.challengedata/celpp_week12_2018
+
+    :param update:
+    :return:
+    """
     #1 copy docked dir info into evaluate dir and create score for targe
     #2 create score dir and copy the ideal files into score dir
     #3 create submit obj and crystal obj in the crystal obj, and store the cyrstal obj directly 
@@ -703,6 +777,12 @@ def main_score(dock_dir, pdb_protein_path, evaluate_dir, blastnfilter_dir, chall
     #1 switch to evaluation folder
     os.chdir(evaluate_dir)
     current_dir = os.getcwd()
+
+    # data_container() is a class to hold the results of the evaluation
+    #                  Data is added via register() method and
+    #                  the information is held in a dictionary and
+    #                  persisted to various files via the layout_json(),
+    #                  layout_pickle(), and layout_plain() methods
     result_container = data_container()
     result_pickle = "RMSD.pickle"
     pickle_full_path = os.path.join(current_dir, result_pickle) 
@@ -710,18 +790,45 @@ def main_score(dock_dir, pdb_protein_path, evaluate_dir, blastnfilter_dir, chall
     json_full_path = os.path.join(current_dir, result_json) 
     result_plain = "RMSD"
     plain_full_path = os.path.join(current_dir, result_plain)
+
     #get all target dir info from the docked dir
+    #
+    # This giant for loop iterates through all directories
+    # in dock_dir which is stage.6.###_XXX.extsubmission directory
+    # and the target_dir is just the directory name. Ex: 1fcz
     target_dirs = list(os.walk(dock_dir))[0][1]
     for target_dir in target_dirs:
         #valid target must have at least one RMSD value return, else this target is invalid
+        #
+        # This variable is set to True below but never queried or used
+        # in the code
+        #
         valid_target = False
         
         #copy the target dir to the evaluate dir
-        commands.getoutput("cp -r %s/%s %s"%(dock_dir,target_dir, evaluate_dir))
+        # commands.getoutput("cp -r %s/%s %s"%(dock_dir,target_dir, evaluate_dir))
+        #
+        # My attempt to replace commands.getoutput with shutil. Looks
+        # like the dock_dir/target_dir is copied to the output directory recursively
+        # Not sure why since the files could just be referenced.
+
+        target_dir_path = os.path.join(dock_dir, target_dir)
+        evaluate_target_dir = os.path.join(evaluate_dir, target_dir)
+        logger.debug("Recursively copying " + target_dir_path + " to " + evaluate_target_dir)
+        shutil.copytree(target_dir_path, evaluate_target_dir)
+
+        #
+        # target_name is totally not needed since target_dir is already
+        # the directory name
+        #
         target_name = os.path.basename(target_dir)
         logging.info("=================We start to work on this target %s================="%target_name)
         #2 switch into the individual case
         os.chdir(target_name)
+        #
+        # get_submitted_file_list() looks for all *docked.mol in the directory
+        # and generates a tuple (*docked.mol, *docked.pdb)
+        #
         all_mol_files, all_receptor_files = get_submitted_file_list()
         if not all_mol_files:
             logging.info("For this folder %s, there is no valid docked structure"%target_dir)
@@ -731,13 +838,25 @@ def main_score(dock_dir, pdb_protein_path, evaluate_dir, blastnfilter_dir, chall
             continue
         else:
             os.mkdir("score")
+            # For some reason naming target_name aka target_dir crystal_ID
+            #
             #copy the crystal structure first
             crystal_ID = target_name
             #extract the crystal ligand name from blastnfilter result txt file
+
+            # Look at target_dir.txt from stage.3.blastnfilter directory
+            # and get the value to right of comma from the line starting with ligand,
+            # set that value to "ligand_name" variable below
+            #
             blastnfilter_result_name = crystal_ID + ".txt"
             blastnfilter_txt = os.path.join(blastnfilter_dir, blastnfilter_result_name)
             ligand_name = extract_ligand_name(blastnfilter_txt) 
             LMCSS_ligand_name = extract_LMCSS_ligand_name(blastnfilter_txt)
+
+            # copy target_dir aka target_name aka crystal_ID .ent file from pdb
+            # directory ie /celpp/pdb.extracted/XX/pdbXXXX.ent
+            # and copy to score/crystal.pdb
+            #
             #get crystal structure location
             crystal_file = extract_crystal_file(crystal_ID, pdb_protein_path)
             if crystal_file:
@@ -745,8 +864,17 @@ def main_score(dock_dir, pdb_protein_path, evaluate_dir, blastnfilter_dir, chall
                 commands.getoutput("cp %s score/crystal.pdb"%(crystal_file))
                 try:
                     os.chdir("score")
+
+                    # From score directory call create_crystal_obj which creates a
+                    # crystal object. See crystal class above for more information
+                    # but in summary creates the following:
+                    # target_name/score/crystal.pdb
+                    # target_name/score/crystal_ligand-residueId-chainid_ligand.pdb
+                    # target_name/score/crystal_ligand-residueId-chainid_receptor.pdb
+                    #
                     crystal_obj = create_crystal_obj("crystal.pdb", ligand_name, crystal_ID)
                     logging.info("\tSuccessfully create the crystal object")
+                    # TODO stopped here continue documenting on code below
                     #calculate the distance between the LMCSS ligand and crystal ligand
                     #get the file location
                     LMCSS_ori_file_path = os.path.join(challenge_data_path, crystal_ID)
