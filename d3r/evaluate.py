@@ -187,6 +187,22 @@ def extract_ligand_from_complex (complex_pdb_file, ligand_pdb_file, ligand_info 
     ligand_file.close()
 
 def get_ligand_info_from_ligand_file (ligand_pdb_file):
+    """Given a LMCSS-<target>_<target>-<ligandid>-lig.pdb
+       file which is a fragment of a pdb file with data
+       that looks like this:
+       HETATM 1899  C1  156 A 450      34.748  18.156  88.412  1.00 17.97           C
+       HETATM 1900  C2  156 A 450      35.791  17.534  87.632  1.00 16.35           C
+       HETATM 1901  C3  156 A 450      36.702  18.055  86.759  1.00 15.19           C
+
+       The code then gets ligand id from [17:20] of line
+       and ligand residue id from [22:26] which is 156 and
+       450 respectively from the data above.
+       The for loop logs messages if non matching
+       ligand ids and residues are found, but otherwise
+       continues.
+
+       :returns: string <ligand id>-<ligand residue id>
+    """
     ligand_f = open(ligand_pdb_file, "r")
     ligand_lines = ligand_f.readlines()
     ligand_f.close()
@@ -202,6 +218,9 @@ def get_ligand_info_from_ligand_file (ligand_pdb_file):
             if ligand_info == new_ligand_info:
                 pass
             else:
+                # not sure why this is here, the log
+                # message is not helpful and the first
+                # encountered ligand info is what is kept
                 logging.info("Get multiple ligand info, need to check while will keep the first ligand info...")
                 pass
     return ligand_info
@@ -874,26 +893,53 @@ def main_score(dock_dir, pdb_protein_path, evaluate_dir, blastnfilter_dir, chall
                     #
                     crystal_obj = create_crystal_obj("crystal.pdb", ligand_name, crystal_ID)
                     logging.info("\tSuccessfully create the crystal object")
-                    # TODO stopped here continue documenting on code below
+
                     #calculate the distance between the LMCSS ligand and crystal ligand
                     #get the file location
+
+                    # set LMCSS_ori_file_path to <challenge dir>/<target_name>
                     LMCSS_ori_file_path = os.path.join(challenge_data_path, crystal_ID)
                     LMCSS_complex_only_list = []
                     LMCSS_ligand_only_list = []
+
+                    # get a list of all files with LMCSS*.pdb in <challenge dir>/<target name>
                     all_LMCSS_files = glob.glob("%s/LMCSS*.pdb"%LMCSS_ori_file_path)
+
+                    # iterate through all files and if -lig.pdb not in the filename
+                    # add it to LMCSS_complex_only_list list otherwise
+                    # add it to LMCSS_ligand_only_list
+                    #
                     for LMCSS_file in all_LMCSS_files:
                         if "-lig.pdb" not in os.path.basename(LMCSS_file):
                             LMCSS_complex_only_list.append(LMCSS_file)
                         else:
                             LMCSS_ligand_only_list.append(LMCSS_file)
+
+                    # Looks like there should be 1 item in each list otherwise
+                    # its an error, but all that happens in an error case is a log message is written
+                    # out and code continues
+                    #
                     if len(LMCSS_complex_only_list) == 1 and len(LMCSS_ligand_only_list) == 1:
                         LMCSS_complex = LMCSS_complex_only_list[0]
                         LMCSS_ligand = LMCSS_ligand_only_list[0]
+
+                        # below code parses file and returns a string of <ligand id>-<ligand residue id>
+                        # putting it into ligand_info variable
+                        #
                         ligand_info = get_ligand_info_from_ligand_file(LMCSS_ligand) 
+
                         LMCSS_local = os.path.basename(LMCSS_complex)
+
+                        # Copy over the LMCSS*.pdb file that does NOT have -lig.pdb in its name
+                        # Usually named: LMCSS-<target>_<target>-<ligand id>.pdb
+                        #
                         #copy locally
                         commands.getoutput("cp %s %s"%(LMCSS_complex, LMCSS_local))
                         #create the LMCSS obj
+                        # and pass in LMCSS-<target>_<target>-<ligand id>.pdb as first argument
+                        # <ligand id>-<ligand residue id> as 2nd argument and the crystal() object
+                        # as 3rd argument
+                        #
                         LMCSS_obj = LMCSS(LMCSS_local, ligand_info, crystal_obj)
                         #align the
                         LMCSS_obj.align_LMCSS_onto_crystal(check_point_number = 10)
