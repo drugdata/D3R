@@ -18,12 +18,45 @@ import pickle
 import json
 
 def get_distance (pos1, pos2):
+    """
+    Given two X, Y, Z centers in format from output of get_center() function
+    using standard three dimensional distance formula:
+
+    square root (X^2 + Y^2 + Z^2)
+
+    :param pos1: string of format 'X, Y, Z' Where X, Y, Z are numbers
+    :param pos2: string of format 'X, Y, Z' Where X, Y, Z are numbers
+    :return: distance as a float
+    """
     _dist_0 = float(pos1.split(",")[0])-float(pos2.split(",")[0])
     _dist_1 = float(pos1.split(",")[1])-float(pos2.split(",")[1])
     _dist_2 = float(pos1.split(",")[2])-float(pos2.split(",")[2])
     return (_dist_0**2 + _dist_1**2 + _dist_2**2)**0.5
 
+
 def get_center(ligand_pdb):
+    """
+    Parses a file that has atoms in format of:
+
+    ATOM      1  N   SER A 183      35.409   3.264 119.011  1.00 44.03           N
+    ATOM      2  CA  SER A 183      34.119   3.185 118.315  1.00 32.52           C
+    HETATM 1900  C1  156 A 450      34.748  18.156  88.412  1.00 17.97           C
+    HETATM 1901  C2  156 A 450      35.791  17.534  87.632  1.00 16.35           C
+
+    and for lines starting with HETATM with unique column 2 (C1 colume above)
+    add column 6 (34.748 column above) to x, column 7 (18.156 column above) to y,
+    and column 8 (88.412 column above)
+    to z. These values would then be divided by number of HETATM lines found
+    with unique column 2.
+
+    :param ligand_pdb: path to file with data like above which corresponds to
+                       atoms pertaining to receptor aka target and ligand
+    :return: string of format 'X, Y, Z'
+             where  X is sum of column 6 divided by number of atoms aka rows
+             where  Y is sum of column 7 divided by number of atoms aka rows
+             where  Z is sum of column 8 divided by number of atoms aka rows
+             All numbers are set via format of %8.3f
+    """
     xyz_lines = open(ligand_pdb, "r").readlines()
     multi_ligand = False
     atom_list = []
@@ -33,12 +66,21 @@ def get_center(ligand_pdb):
             #logging.debug("Check the get center of this protein: %s for this ligand: %s"%(protein_file, ligname))                                                                                                               
             atom_name = xyz_line[12:16]
             if atom_name in atom_list:
+                # this variable multi_ligand is never used, not sure of its purpose
                 multi_ligand = True
             else:
                 atom_list.append(atom_name)
                 try:
+                    # Example line:
+                    # HETATM 1900  C1  156 A 450      34.748  18.156  88.412  1.00 17.97
+
+                    # 34.748 would be added to x if using example line above
                     x += float(xyz_line[30:38])
+
+                    # 18.156 would be added to y if using example line above
                     y+= float(xyz_line[38:46])
+
+                    # 88.412 would be added to z if using example line above
                     z+= float(xyz_line[46:54])                                  
                 except:                                                         
                     logging.debug("Fatal error: Cannot find the XYZ coordinate for this ligand:%s"%ligand_pdb)
@@ -142,7 +184,36 @@ def wait_and_check (filename, timestep = 5, how_many_times = 100):              
         return False
 
 def align_protein (template_complex, input_complex, output_complex, timestep = 5, how_many_times = 100):
-    #use schrodinger binding site alignment to get the aligned structure
+    """use schrodinger binding site alignment to get the aligned structure
+
+       specifically $SCHRODINGER/utilities/align_binding_sites
+       which looks to perform pairwise superposition of multiple structures.
+       First argument is reference structure.
+
+       When align_binding_sites.py is run the following files are created, assuming
+       these are first and 2nd arguments passed in:
+       crystal-ligand-residueId-chainid_receptor.pdb
+       LMCSS-<target id>-<candidate id>-<ligand id>.pd
+
+       Created files:
+       crystal_<ligand id>-<residue id>-<chain id>_receptor.csv
+       crystal_<ligand id>-<residue id>-<chain id>_receptor-matrix.csv
+       crystal_<ligand id>-<residue id>-<chain id>_receptor.log
+
+       NOTE: if -LOCAL parameter is passed then these 2 files are also output
+             crystal_<ligand id>-<residue id>-<chain id>_receptor-merged-input.maegz
+             crystal_<ligand id>-<residue id>-<chain id>_receptor-align-initial.mae
+
+       And the output_complex file is created.
+
+       NOTE: It might be good to refactor and add -WAIT flag first to tell command to wait
+             for job completion
+
+
+       :param template_complex: path to file usually named crystal-ligand-residueId-chainid_receptor.pdb
+       :param input_complex: path to file usually named LMCSS-<target id>-<candidate id>-<ligand id>.pdb
+       :param output_complex: path to output file
+    """
     try:
         running_dir = os.getcwd()
         target_dir = os.path.dirname(os.path.abspath(output_complex))
@@ -155,8 +226,25 @@ def align_protein (template_complex, input_complex, output_complex, timestep = 5
     except Exception as ex:
         logging.exception("Could not align the protein %s onto template %s"%(input_complex, template_complex))
 
+
 def whole_protein_align (template_complex, input_complex, output_complex, timestep = 5, how_many_times = 100):
-    #use schrodinger whole protein alignment
+    """use schrodinger whole structure alignment. This function calls structalign
+       with template_complex as first argument and input_complex as second argument.
+       The output always appears to be named:
+
+       rot-<template_complex file name>
+       rot-<input_complex file name>
+
+       The above always seems to be written in the current working directory.
+       This function takes the rot-<input_complex file name> and moves it to `output_complex`
+
+    :param template_complex: path to file usually named crystal-ligand-residueId-chainid_receptor.pdb
+    :param input_complex: path to file usually named LMCSS-<target id>-<candidate id>-<ligand id>.pdb
+    :param output_complex: path to output file
+    :param timestep:
+    :param how_many_times:
+    :return:
+    """
     try:
         running_dir = os.getcwd()
         target_dir = os.path.dirname(os.path.abspath(output_complex))
@@ -172,8 +260,17 @@ def whole_protein_align (template_complex, input_complex, output_complex, timest
     except Exception as ex:
         logging.exception("Could not align the protein %s onto template %s using the whole protein alignment"%(input_complex, template_complex))
 
+
 def extract_ligand_from_complex (complex_pdb_file, ligand_pdb_file, ligand_info = "UNK-900"):
-    #here the default ligand info is from schrodinger structure convert default ligand name. 
+    """
+      Reads pdb file `complex_pdb_file` and writes lines where [17:20] matches <ligand id>
+      from `ligand_info` parameter and [22:26] matches <ligand residue id> from `ligand_info`
+      parameter
+    :param complex_pdb_file: Input pdb file to parse
+    :param ligand_pdb_file:  Output pdb file to write lines matching <ligand id>
+    :param ligand_info: String of format <ligand id>-<ligand residue id>
+    :return:
+    """
     complex_file = open(complex_pdb_file, "r")
     complex_lines = complex_file.readlines()
     complex_file.close()
@@ -185,6 +282,7 @@ def extract_ligand_from_complex (complex_pdb_file, ligand_pdb_file, ligand_info 
     ligand_file = open(ligand_pdb_file, "w")
     ligand_file.writelines(ligand_lines)
     ligand_file.close()
+
 
 def get_ligand_info_from_ligand_file (ligand_pdb_file):
     """Given a LMCSS-<target>_<target>-<ligandid>-lig.pdb
@@ -226,6 +324,37 @@ def get_ligand_info_from_ligand_file (ligand_pdb_file):
     return ligand_info
 
 def merge_two_pdb (receptor, ligand, complex_pdb):
+    """
+    Merges two pdb files. Currently called from create_complex() method
+    from docked() class.
+    Function opens `receptor` file and grabs all lines of text that do NOT
+    start with:
+
+    CONECT
+    ENDMDL
+    END
+
+    and writes them to output file `complex_pdb` in same order and appends this line
+    with 3 spaces and a new line:
+
+    TER
+
+    Function then opens `ligand` file and grabs all lines of text that do NOT
+    start with:
+
+    REMARK
+    MODEL
+    CONECT
+    ENDMDL
+
+    and do NOT have the word END anywhere in the line. These lines are then appended
+    to `complex_pdb` file
+
+    :param receptor: A file path usually named <docked category>-<target id>-<candidate id>_docked.pdb
+    :param ligand: A file path usually named <docked category>-<target id>-<candidate id>_docked_ligand.pdb
+    :param complex_pdb: usually  <docked category>-<target id>-<candidate id>_docked_ligand_complex.pdb
+    :return: True upon success or False if there is an Exception raised
+    """
     try:
         complex_lines = []
         f1 = open(receptor, "r")
@@ -251,12 +380,23 @@ def merge_two_pdb (receptor, ligand, complex_pdb):
 
 
 def convert_ligand_format (input_ligand, output_ligand):
+    """
+    Runs schrodinger structconvert to convert `input_ligand` to `output_ligand`
+    Invocation by docked() class uses this to convert .mol files to .pdb.
+    Unfortunately this code uses commands.getoutput and does not actually check
+    the exit code for failure.
+
+    :param input_ligand: Input .mol file
+    :param output_ligand: Output .pdb file
+    :return: True upon success or False if there is an exception of any kind
+    """
     try:
         commands.getoutput("PYTHONPATH= $SCHRODINGER/utilities/structconvert %s %s"%(input_ligand, output_ligand))
         return True
     except Exception as ex:
         logging.exception("This ligand %s cannot be convertted to %s, need to check the format"%(input_ligand, output_ligand))
         return False
+
 
 #def generate_ligand_and_receptor(complex_filename,ligand_filename, receptor_filename, ligand_info, rest_ligand_info):
 def generate_ligand_and_receptor(complex_filename,ligand_filename, receptor_filename, ligand_info):
@@ -373,6 +513,9 @@ class crystal (object):
     def get_ligand_and_receptor_files(self):
         #get the ligand pdb file and receptor file per ligand 
         self._ligand = []
+
+        # self._receptor is directly read by LMCSS.align_LMCSS_onto_crystal
+        #
         self._receptor = []
         self._valid_ligand_info = []
         if len(self._ligand_residue_info) > 0:
@@ -404,31 +547,71 @@ class crystal (object):
 
 
 class LMCSS (object):
-    #initial LMCSS complex released to the participant, used to check the distance of LMCSS ligand with the crystal ligand
+    """initial LMCSS complex released to the participant, used to check
+     the distance of LMCSS ligand with the crystal ligand
+    """
      
     def __init__(self, LMCSS_complex, ligand_info, crystal_obj):
+        """
+        Constructor.
+        :param LMCSS_complex: Path to LMCSS-<target id>-<candidate id>-<ligand id>.pdb which
+                              contains pdb for both ligand and I think candidate
+        :param ligand_info: Should be a string in format <ligand id>-<ligand residue id>
+        :param crystal_obj: Instance of crystal class loaded with <target id>
+        """
         self._LMCSS = LMCSS_complex 
         self._LMCSS_path = os.path.dirname(self._LMCSS)
         self._LMCSS_name = os.path.basename(self._LMCSS)
+
+        # this variable is LMCSS_complex file name only with .pdb suffix stripped off
         self._LMCSS_basename = os.path.splitext(self._LMCSS_name)[0]
          
         self._ligand = ligand_info
         self._crystal = crystal_obj
+
     def align_LMCSS_onto_crystal(self, time_check_frequence = 5, check_point_number = 100,):
         self._all_aligned_complex = {}
         self._all_aligned_ligand = {}
         if self._LMCSS:
+
+            # self._crystal._receptor contains a list of file paths to files
+            # with name crystal-ligand-residueId-chainid_receptor.pdb
+            # which contain atoms for target and ligand
+            #
             for _crystal_receptor_index, _crystal_receptor in enumerate(self._crystal._receptor):
+
+                # self._crystal._valid_ligand_info is a list filled with
+                # strings of format <residue name>-<residue id>-<chain id>
+                # and is filled by crystal.get_ligand_info() and
+                # by crystal.get_ligand_and_receptor_files()
+                # the enumeration requires the order to be consistent
+                # with self._crystal._receptor
+                #
                 _crystal_ligand_info = self._crystal._valid_ligand_info[_crystal_receptor_index]
                 logging.debug("Try to align the docked ligand onto this crystal receptor:%s"%(_crystal_receptor))
+
+
+                # _aligned_complex_name is set to
+                # LMCSS-<target id>-<candidate id>-<ligand id>_aligned_<residue name>-<residue id>-<chain id>.pdb
+                #
                 self._aligned_complex_name = self._LMCSS_basename + "_aligned" + "_" + _crystal_ligand_info + ".pdb"
+
+                # _aligned_ligand_name is set to
+                # LMCSS-<target id>-<candidate id>-<ligand id>_aligned_ligand_<residue name>-<residue id>-<chain id>.pdb
+                #
                 self._aligned_ligand_name = self._LMCSS_basename + "_aligned_ligand" + "_" + _crystal_ligand_info + ".pdb"
-                #need to name the aligned complex
+
+                #
+                # prepend directory which from code looks to be outdir/<target>/score/
+                #
                 self._aligned_complex = os.path.join(self._LMCSS_path, self._aligned_complex_name)
                 self._aligned_ligand = os.path.join(self._LMCSS_path, self._aligned_ligand_name)
+
                 #do the alignment
                 logging.debug("Try to align the original LMCSS %s onto the crystal receptor %s"%(self._LMCSS, _crystal_receptor))
                 #try the binding site alignment first
+                # below align_binding_sites is tried and then structalign
+                #
                 if not align_protein(_crystal_receptor, self._LMCSS, self._aligned_complex, timestep = time_check_frequence, how_many_times = check_point_number ):
                     #go to whole protein alignment
                     total_relaxing_time = time_check_frequence*check_point_number
@@ -437,23 +620,52 @@ class LMCSS (object):
                         total_relaxing_time = time_check_frequence*check_point_number
                         logging.info("The whole protein alignment from %s onto %s didn't finish in %s second... Need to break"%(self._LMCSS, _crystal_receptor, total_relaxing_time))
                     else:
+                        # _crystal_ligand_info is a string of format
+                        # <residue name>-<residue id>-<chain id>
+                        # and its being used as a key to map to the aligned output
+                        # LMCSS-<target id>-<candidate id>-<ligand id>_aligned_<residue name>-<residue id>-<chain id>.pdb
+                        #
                         self._all_aligned_complex[_crystal_ligand_info] = self._aligned_complex
                 else:
+                    # _crystal_ligand_info is a string of format
+                    # <residue name>-<residue id>-<chain id>
+                    # and its being used as a key to map to the aligned output
+                    # LMCSS-<target id>-<candidate id>-<ligand id>_aligned_<residue name>-<residue id>-<chain id>.pdb
+                    #
                     self._all_aligned_complex[_crystal_ligand_info] = self._aligned_complex
                 logging.debug("Successfully align %s onto %s and get the aligned structure %s"%(self._LMCSS, _crystal_receptor, self._aligned_complex))
                 #extract the ligand from aligned complex
                 try:
+                    # extract ligand from output pdb and save to self._aligned_ligand file name
+                    # LMCSS-<target id>-<candidate id>-<ligand id>_aligned_ligand_<residue name>-<residue id>-<chain id>.pdb
                     extract_ligand_from_complex(self._aligned_complex, self._aligned_ligand, ligand_info = self._ligand)
                     logging.debug("Successfully extract ligand file %s from aligned complex %s"%(self._aligned_ligand, self._aligned_complex))
                     self._all_aligned_ligand[_crystal_ligand_info] = self._aligned_ligand
                 except Exception as ex:
                     logging.exception("Cannot extract ligand file %s from aligned complex %s"%(self._aligned_ligand, self._aligned_complex))
     def calculate_distance(self):
-        #calculate the distance between LMCSS ligand and all possible crystal ligand 
+        #calculate the distance between LMCSS ligand and all possible crystal ligand
+        # contains a dictionary of
+        # <residue name>-<residue id>-<chain id> => <distance between centers>
         self._dis = {}
+
+        # contains smallest distance found in self._dis
+        # and is referenced in main_score() around line 1133
+        #
         self._min_dis = None 
         if self._all_aligned_ligand:
+            # self._crystal._ligand contains a list of file paths to files
+            # with name crystal-ligand-residueId-chainid_receptor.pdb
+            # which contain atoms for target and ligand
+            #
             for _crystal_ligand_index, _crystal_ligand in enumerate(self._crystal._ligand):
+                # self._crystal._valid_ligand_info is a list filled with
+                # strings of format <residue name>-<residue id>-<chain id>
+                # and is filled by crystal.get_ligand_info() and
+                # by crystal.get_ligand_and_receptor_files()
+                # the enumeration requires the order to be consistent
+                # with self._crystal._receptor
+                #
                 _crystal_ligand_info = self._crystal._valid_ligand_info[_crystal_ligand_index]
                 if _crystal_ligand_info in self._all_aligned_ligand:
                     _docked_ligand_aligned = self._all_aligned_ligand[_crystal_ligand_info]
@@ -461,10 +673,16 @@ class LMCSS (object):
                         _crystal_ligand_center = get_center(_crystal_ligand)
                         _docked_ligand_aligned_center = get_center(_docked_ligand_aligned)
                         _distance = get_distance(_crystal_ligand_center, _docked_ligand_aligned_center)
+                        # build a map of <residue name>-<residue id>-<chain id> => <distance between centers>
                         self._dis[_crystal_ligand_info] = _distance
+
                         logging.debug("The distance for %s vs %s is %s"%(_crystal_ligand, _docked_ligand_aligned, _distance))
                     except Exception as ex:
                         logging.exception("The distance calculation for %s vs %s failed"%(_crystal_ligand, _docked_ligand_aligned))
+
+                # not sure why self._min_dis is updated every iteration by finding sorting self._dis
+                # and grabbing 1st aka smallest value
+                # I'm guessin this can be taken out of this for loop and calculated just once
                 if self._dis:
                     self._min_dis = sorted(self._dis.values())[0]
 
@@ -474,35 +692,86 @@ class docked (object):
     #2, align the complex onto the crystal receptor
     #3, calculate the RMSD for each aligned ligand 
     def __init__(self, docked_ligand_filename, docked_receptor_filename, docked_category, crystal_obj):
-        #load the ligand file
+        """
+        Constructor
+        :param docked_ligand_filename: filename of user submission of mol file
+                                       usually in format like so;
+                                       <docked category>-<target id>-<candidate id>_docked.mol
+        :param docked_receptor_filename: filename of user submission in pdb file
+                                       usually in format like so;
+                                       <docked category>-<target id>-<candidate id>_docked.pdb
+        :param docked_category: string usually set to one of following;
+                                LMCSS, SMCSS, hiResApo, hiResHolo
+        :param crystal_obj: instance of crystal class properly loaded with target
+        """
+
+        # sets _docked_type to LMCSS, SMCSS, hiResApo, or hiResHolo
         self._docked_type = docked_category
+
+        # set to <docked category>-<target id>-<candidate id>_docked.mol
         self._docked_ligand_mol = docked_ligand_filename
+
+        # directory where mol file resides, but this will be empty since
+        # code calling this strips off the path before calling this
+        # constructor
         self._docked_ligand_mol_path = os.path.dirname(self._docked_ligand_mol)
+
+        # just name of file, but will be same cause code calling this already
+        # strips off path
         self._docked_ligand_mol_name = os.path.basename(self._docked_ligand_mol)
+
+        # strip off extension and put base name in self._docked_ligand_mol_basename and put
+        # extension in self._docked_ligand_mol_extension
         self._docked_ligand_mol_basename, self._docked_ligand_mol_extension = os.path.splitext(self._docked_ligand_mol_name)
-        #load the receptor file
+
+        # set to <docked category>-<target id>-<candidate id>_docked.pdb
         self._docked_receptor_pdb = docked_receptor_filename
+
+        # set to empty string cause main_score strips off path already
         self._docked_receptor_pdb_path = os.path.dirname(self._docked_receptor_pdb)
+
+        # set to same as self._docked_receptor_pdb
         self._docked_receptor_pdb_name = os.path.basename(self._docked_receptor_pdb)
+
+        # strip of extension and put base name into self._docked_receptor_pdb_basename
+        # and put extension in self._docked_receptor_pdb_extension
         self._docked_receptor_pdb_basename, self._docked_receptor_pdb_extension = os.path.splitext(self._docked_receptor_pdb_name)
         #check 1, if the path of ligand and the path of receptor are the same
         
         self._docked_ligand_pdb = None
+
+        # set to crystal class instance
         self._crystal = crystal_obj
+
+        # code merely logs if extensions are incorrect
+        # with no real checks
         if self._docked_ligand_mol_extension != ".mol":
             logging.debug ("This docked ligand %s is not in mol file format"%self._docked_ligand_mol)
         elif self._docked_receptor_pdb_extension != ".pdb":
             logging.debug ("This docked receptor %s is not in pdb file format"%self._docked_receptor_pdb)
         else:
-            #convert to pdb file
+            #
+            # convert to pdb file using schroding convert_ligand_format
+            # by creating new file name by appending _ligand.pdb to basename of mol
+            # file which is <docked category>-<target id>-<candidate id>_docked
+            #
             self._docked_ligand_pdb_name = self._docked_ligand_mol_basename + "_ligand.pdb"
-            #make sure the pdb format file has the same path with the mol format file
-            self._docked_ligand_pdb = os.path.join(self._docked_ligand_mol_path, self._docked_ligand_pdb_name) 
-            #convert mol to pdb
+
+            # make sure the pdb format file has the same path with the mol format file
+            self._docked_ligand_pdb = os.path.join(self._docked_ligand_mol_path, self._docked_ligand_pdb_name)
+
+            # convert mol to pdb and only set self._docked_ligand_pdb to None if there is a
+            # failure. Nothing like having a problem and not reporting it
+            #
             if not convert_ligand_format(self._docked_ligand_mol, self._docked_ligand_pdb):
                 self._docked_ligand_pdb = None
             
     def create_complex (self):
+        """
+        Merges creates <docked category>-<target id>-<candidate id>_docked_ligand_complex.pdb
+        by merging <docked category>-<target id>-<candidate id>_docked_ligand.pdb with
+        docked category>-<target id>-<candidate id>_docked.pdb
+        """
         self._docked_complex = None
         if self._docked_ligand_pdb:
             #merge the receptor and the ligand together
@@ -510,7 +779,10 @@ class docked (object):
             self._docked_complex = os.path.join(self._docked_ligand_mol_path, self._docked_complex_name)
             if not merge_two_pdb(self._docked_receptor_pdb, self._docked_ligand_pdb, self._docked_complex):
                 self._docked_complex = None
-    def align_complex_onto_crystal (self, time_check_frequence = 5, check_point_number = 100, sc_ligand_default = "UNK-900"):
+
+    def align_complex_onto_crystal(self, time_check_frequence=5,
+                                   check_point_number = 100,
+                                   sc_ligand_default = "UNK-900"):
         self._all_aligned_complex = {} 
         self._all_aligned_ligand = {} 
         if self._docked_complex:
@@ -891,6 +1163,15 @@ def main_score(dock_dir, pdb_protein_path, evaluate_dir, blastnfilter_dir, chall
                     # target_name/score/crystal_ligand-residueId-chainid_ligand.pdb
                     # target_name/score/crystal_ligand-residueId-chainid_receptor.pdb
                     #
+                    # Where
+                    # crystal.pdb is just the target pdb file obtained from
+                    #             pdb database
+                    # crystal..._ligand.pdb contains the atoms for the ligand obtained
+                    #                       by extracting them out of the crystal.pdb
+                    #
+                    # crystal..._receport.pdb contains atoms for target and ligand extracted
+                    #                         from crystal.pdb
+                    #
                     crystal_obj = create_crystal_obj("crystal.pdb", ligand_name, crystal_ID)
                     logging.info("\tSuccessfully create the crystal object")
 
@@ -923,7 +1204,8 @@ def main_score(dock_dir, pdb_protein_path, evaluate_dir, blastnfilter_dir, chall
                         LMCSS_complex = LMCSS_complex_only_list[0]
                         LMCSS_ligand = LMCSS_ligand_only_list[0]
 
-                        # below code parses file and returns a string of <ligand id>-<ligand residue id>
+                        # below code parses contents of file and returns a string of
+                        # <ligand id>-<ligand residue id>
                         # putting it into ligand_info variable
                         #
                         ligand_info = get_ligand_info_from_ligand_file(LMCSS_ligand) 
@@ -945,6 +1227,10 @@ def main_score(dock_dir, pdb_protein_path, evaluate_dir, blastnfilter_dir, chall
                         LMCSS_obj.align_LMCSS_onto_crystal(check_point_number = 10)
                         #calculate the distance
                         LMCSS_obj.calculate_distance()
+
+                        # The distance between the LMCSS and the crystal is set to LMCSS_distance
+                        # variable and registered
+                        #
                         LMCSS_distance = LMCSS_obj._min_dis
                         result_container.register(target_dir, docked_type = "LMCSS_ori", value = LMCSS_distance)
                         logging.info("\tSuccessfully calculate the distance between original LMCSS ligand vs crstal ligand. Distance is %s"%LMCSS_distance)
@@ -957,19 +1243,51 @@ def main_score(dock_dir, pdb_protein_path, evaluate_dir, blastnfilter_dir, chall
                     os.chdir(current_dir)
                     continue
                 #here get the crystal obj and loop all docked structure 
-                for mol_index, potential_mol in enumerate (all_mol_files):              
-                    potential_pdb = all_receptor_files[mol_index]                       
+                for mol_index, potential_mol in enumerate (all_mol_files):
+                    # all_receptor_files contains all *docked.pdb from the target directory
+                    #
+                    potential_pdb = all_receptor_files[mol_index]
+
+                    # copy both the .pdb and .mol file to the score directory
                     commands.getoutput("cp %s score"%potential_mol)                     
-                    commands.getoutput("cp %s score"%potential_pdb)                     
+                    commands.getoutput("cp %s score"%potential_pdb)
+
                     #change path to local score folder
                     os.chdir("score")
                     local_potential_mol = os.path.basename(potential_mol)               
                     local_potential_pdb = os.path.basename(potential_pdb)
-                    parsed_name = re.findall('([a-zA-Z0-9]+)-([a-zA-Z0-9]+)_([a-zA-Z0-9]+)_docked.mol',local_potential_mol)
+
+                    # sets docked_structure_type to value of PREFIX in
+                    # Files with format as follows:
+                    # <PREFIX>-<target id>_<candidate id>_docked.mol
+                    # PREFIX should be one of the following according to these docs:
+                    # LMCSS, SMCSS, hiResHolo, hiResApo
+                    #
+                    # See link below for more info
+                    # https://github.com/drugdata/D3R/wiki/Challenge-docked-results-file-structure
+                    #
+                    parsed_name = re.findall('([a-zA-Z0-9]+)-([a-zA-Z0-9]+)_([a-zA-Z0-9]+)_docked.mol',
+                                             local_potential_mol)
                     docked_structure_type = parsed_name[0][0]
                     try:
-                        docked_obj = docked(local_potential_mol, local_potential_pdb, docked_structure_type, crystal_obj)
-                        docked_obj.create_complex()                       
+                        # copies local_potential_mol and local_potential_pdb to
+                        # score directory and
+                        # creates <PREFIX>-<target id>_<candidate id>_docked_ligand.pdb
+                        # using schroding structalign
+                        docked_obj = docked(local_potential_mol,
+                                            local_potential_pdb,
+                                            docked_structure_type,
+                                            crystal_obj)
+
+                        # creates score/<PREFIX>-<target id>_<candidate id>_docked_ligand_complex.pdb
+                        # by merging <PREFIX>-<target id>_<candidate id>_docked_ligand.pdb
+                        # with local_potential_pdb using merge_two_pdb() function
+                        #
+                        docked_obj.create_complex()
+                        
+                        #
+                        # TODO Continue documenting from this point
+                        #
                         docked_obj.align_complex_onto_crystal(check_point_number = 10)
                         docked_obj.calculate_rmsd_and_distance()
                         (rmsd, dis) = docked_obj._min_rmsd_dis
