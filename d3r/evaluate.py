@@ -761,7 +761,7 @@ class docked (object):
             self._docked_ligand_pdb = os.path.join(self._docked_ligand_mol_path, self._docked_ligand_pdb_name)
 
             # convert mol to pdb and only set self._docked_ligand_pdb to None if there is a
-            # failure. Nothing like having a problem and not reporting it
+            # failure.
             #
             if not convert_ligand_format(self._docked_ligand_mol, self._docked_ligand_pdb):
                 self._docked_ligand_pdb = None
@@ -1284,7 +1284,7 @@ def main_score(dock_dir, pdb_protein_path, evaluate_dir, blastnfilter_dir, chall
                         # with local_potential_pdb using merge_two_pdb() function
                         #
                         docked_obj.create_complex()
-                        
+
                         #
                         # TODO Continue documenting from this point
                         #
