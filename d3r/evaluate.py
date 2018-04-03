@@ -515,6 +515,7 @@ class crystal (object):
         self._ligand = []
 
         # self._receptor is directly read by LMCSS.align_LMCSS_onto_crystal
+        # and by docked.align_complex_onto_crystal
         #
         self._receptor = []
         self._valid_ligand_info = []
@@ -655,8 +656,8 @@ class LMCSS (object):
         self._min_dis = None 
         if self._all_aligned_ligand:
             # self._crystal._ligand contains a list of file paths to files
-            # with name crystal-ligand-residueId-chainid_receptor.pdb
-            # which contain atoms for target and ligand
+            # with name crystal-ligand-residueId-chainid_ligand.pdb
+            # which contain atoms for ligand
             #
             for _crystal_ligand_index, _crystal_ligand in enumerate(self._crystal._ligand):
                 # self._crystal._valid_ligand_info is a list filled with
@@ -680,9 +681,7 @@ class LMCSS (object):
                     except Exception as ex:
                         logging.exception("The distance calculation for %s vs %s failed"%(_crystal_ligand, _docked_ligand_aligned))
 
-                # not sure why self._min_dis is updated every iteration by finding sorting self._dis
-                # and grabbing 1st aka smallest value
-                # I'm guessin this can be taken out of this for loop and calculated just once
+                # I'm guessing this can be taken out of this for loop and calculated just once
                 if self._dis:
                     self._min_dis = sorted(self._dis.values())[0]
 
@@ -786,17 +785,42 @@ class docked (object):
         self._all_aligned_complex = {} 
         self._all_aligned_ligand = {} 
         if self._docked_complex:
+            # self._crystal._receptor contains a list of file paths to files
+            # with name crystal_ligand-residueId-chainid_receptor.pdb
+            # which contain atoms for target and ligand
+            #
             for _crystal_receptor_index, _crystal_receptor in enumerate(self._crystal._receptor):
-                #_crystal_ligand = self._crystal._crystal_ligand[_crystal_receptor_index]
+                # self._crystal._valid_ligand_info is a list filled with
+                # strings of format <residue name>-<residue id>-<chain id>
+                # and is filled by crystal.get_ligand_info() and
+                # by crystal.get_ligand_and_receptor_files()
+                # the enumeration requires the order to be consistent
+                # with self._crystal._receptor and self._crystal._ligand
+                #
                 _crystal_ligand_info = self._crystal._valid_ligand_info[_crystal_receptor_index]
                 logging.debug("Try to align the docked ligand onto this crystal receptor:%s"%(_crystal_receptor))
+
+                # set to <docked category>-<target id>-<candidate id>_docked_complex_aligned_<residue name>-<residue id>-<chain id>.pdb
                 self._aligned_complex_name = self._docked_ligand_mol_basename + "_complex_aligned" + "_" + _crystal_ligand_info + ".pdb"
+
+                # set to <docked category>-<target id>-<candidate id>_docked_complex_aligned_ligand_<residue name>-<residue id>-<chain id>.pdb
                 self._aligned_ligand_name = self._docked_ligand_mol_basename + "_complex_aligned_ligand" + "_" + _crystal_ligand_info + ".pdb"
+
+                # prepend path to self._aligned_complex_name
                 self._aligned_complex = os.path.join(self._docked_ligand_mol_path, self._aligned_complex_name)
+
+                # prepend path to self._aligned_ligand_name
                 self._aligned_ligand = os.path.join(self._docked_ligand_mol_path, self._aligned_ligand_name)
+
                 #do the alignment
                 logging.debug("Try to align the docked complex %s onto the crystal receptor %s"%(self._docked_complex, _crystal_receptor))
-                #try the binding site alignment first
+
+                # try the binding site alignment first with
+                # _crystal_receptor set to crystal_ligand-residueId-chainid_receptor.pdb
+                # self._docked_complex set to <docked category>-<target id>-<candidate id>_docked_ligand_complex.pdb
+                # self._aligned_complex set to <docked category>-<target id>-<candidate id>_docked_complex_aligned_<residue name>-<residue id>-<chain id>.pdb
+                # if align_protein() fails try whole_protein_align()
+                #
                 if not align_protein(_crystal_receptor, self._docked_complex, self._aligned_complex, timestep = time_check_frequence, how_many_times = check_point_number ):
                     #go to whole protein alignment
                     total_relaxing_time = time_check_frequence*check_point_number
@@ -808,9 +832,13 @@ class docked (object):
                         self._all_aligned_complex[_crystal_ligand_info] = self._aligned_complex
                 else:
                     self._all_aligned_complex[_crystal_ligand_info] = self._aligned_complex
+
+
                 logging.debug("Successfully align %s onto %s and get the aligned structure %s"%(self._docked_complex, _crystal_receptor, self._aligned_complex))
                 #extract the ligand from aligned complex
                 try:
+                    # extract ligand from output pdb and save to self._aligned_ligand file name
+                    # <docked category>-<target id>-<candidate id>_docked_complex_aligned_ligand_<residue name>-<residue id>-<chain id>.pdb
                     extract_ligand_from_complex(self._aligned_complex, self._aligned_ligand, ligand_info = sc_ligand_default)
                     logging.debug("Successfully extract ligand file %s from aligned complex %s"%(self._aligned_ligand, self._aligned_complex))
                     self._all_aligned_ligand[_crystal_ligand_info] = self._aligned_ligand
