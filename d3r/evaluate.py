@@ -844,6 +844,7 @@ class docked (object):
                     self._all_aligned_ligand[_crystal_ligand_info] = self._aligned_ligand
                 except Exception as ex:
                     logging.exception("Cannot extract ligand file %s from aligned complex %s"%(self._aligned_ligand, self._aligned_complex))
+
     def calculate_rmsd_and_distance (self):
         # 
         self._rmsd_dis = {}
