@@ -177,11 +177,12 @@ def wait_and_check (filename, timestep = 5, how_many_times = 100):              
     count = 0 
     while (count < how_many_times):
         if not os.path.isfile(filename):
+            logging.debug('Sleeping ' + str(timestep) + ' waiting for file ' + filename + ' to appear')
             time.sleep(timestep)
             count = count + 1
         else:
             return True
-        return False
+    return False
 
 def align_protein (template_complex, input_complex, output_complex, timestep = 5, how_many_times = 100):
     """use schrodinger binding site alignment to get the aligned structure
@@ -220,7 +221,8 @@ def align_protein (template_complex, input_complex, output_complex, timestep = 5
         output_complex_filename = os.path.basename(output_complex)
         #change to the target dir since the align binding site only allow to run locally
         os.chdir(target_dir)
-        commands.getoutput("PYTHONPATH= $SCHRODINGER/utilities/align_binding_sites %s %s -o %s"%(template_complex, input_complex, output_complex_filename))
+        val = commands.getoutput("PYTHONPATH= $SCHRODINGER/utilities/align_binding_sites %s %s -o %s"%(template_complex, input_complex, output_complex_filename))
+        logging.debug("output from align_binding_sites: " + str(val))
         os.chdir(running_dir)
         return wait_and_check(output_complex_filename, timestep = timestep, how_many_times = how_many_times)
     except Exception as ex:
@@ -249,11 +251,12 @@ def whole_protein_align (template_complex, input_complex, output_complex, timest
         running_dir = os.getcwd()
         target_dir = os.path.dirname(os.path.abspath(output_complex))
         output_complex_filename = os.path.basename(output_complex)
-        os.chdir(target_dir) 
-        commands.getoutput("PYTHONPATH= $SCHRODINGER/utilities/structalign %s %s"%(template_complex, input_complex))
+        os.chdir(target_dir)
+        val = commands.getoutput("PYTHONPATH= $SCHRODINGER/utilities/structalign %s %s"%(template_complex, input_complex))
+        logging.debug('output from structalign: ' + str(val))
         rotated_protein = "rot-" + input_complex
         if wait_and_check(rotated_protein, timestep = timestep, how_many_times = how_many_times):
-            commands.getoutput("mv %s %s"%(rotated_protein, output_complex))  
+            commands.getoutput("mv %s %s"%(rotated_protein, output_complex))
             return True
         else:
             return False
@@ -1353,7 +1356,7 @@ def main_score(dock_dir, pdb_protein_path, evaluate_dir, blastnfilter_dir, chall
 if ("__main__" == __name__) :
     import logging
     logger = logging.getLogger()
-    logging.basicConfig( format  = '%(asctime)s: %(message)s', datefmt = '%m/%d/%y %I:%M:%S', filename = 'final.log', filemode = 'w', level   = logging.INFO )
+    logging.basicConfig( format  = '%(asctime)s: %(message)s', datefmt = '%m/%d/%y %I:%M:%S', filename = 'final.log', filemode = 'w', level   = logging.DEBUG )
     from argparse import ArgumentParser
     parser = ArgumentParser()
     parser.add_argument("-d", "--dockdir", metavar="PATH",
