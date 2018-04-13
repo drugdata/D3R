@@ -72,7 +72,7 @@ class BlastNFilterSummary:
         targets_pat = re.compile("^ +Targets found: +")
 
         logger.debug('Parsing file ' + summary_txt)
-
+        found_target_entry = False
         f = open(summary_txt, 'r')
         for line in f:
             if re.match(complexes_pat, line):
@@ -84,7 +84,28 @@ class BlastNFilterSummary:
                 self.set_dockable_monomers(re.sub("^.*: +", "", line.rstrip()))
             elif re.match(targets_pat, line):
                 self.set_targets_found(re.sub("^.*: +", "", line.rstrip()))
+                found_target_entry = True
         f.close()
+
+        # TODO need to test this new logic
+        if found_target_entry is False:
+            self._set_targets_found_by_counting_txt_files()
+
+    def _set_targets_found_by_counting_txt_files(self, excludelist=['summary.txt']):
+        # TODO need to test this new logic
+        """Looks for ####.txt files in path set in constructor
+           returning a count of files found.
+        """
+        counter = 0
+        for entry in os.listdir(self._path):
+            fp = os.path.join(self._path, entry)
+            if not os.path.isfile(fp):
+                continue
+            if entry in excludelist:
+                continue
+            counter += 1
+
+        self._targets_found = counter
 
     def get_complexes(self):
         return self._complexes
