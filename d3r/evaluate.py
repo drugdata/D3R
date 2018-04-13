@@ -221,6 +221,8 @@ def align_protein (template_complex, input_complex, output_complex, timestep = 5
         output_complex_filename = os.path.basename(output_complex)
         #change to the target dir since the align binding site only allow to run locally
         os.chdir(target_dir)
+        logging.debug("Running: PYTHONPATH= $SCHRODINGER/utilities/align_binding_sites " + template_complex +
+                      " " + input_complex + " -o " + output_complex_filename)
         val = commands.getoutput("PYTHONPATH= $SCHRODINGER/utilities/align_binding_sites %s %s -o %s"%(template_complex, input_complex, output_complex_filename))
         logging.debug("output from align_binding_sites: " + str(val))
         os.chdir(running_dir)
