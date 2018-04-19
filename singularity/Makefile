@@ -2,17 +2,17 @@
 
 help:
 	@echo "clean - remove all build and test artifacts"
-	@echo "singularity - Creates singularity 2.2 image"
+	@echo "singularity - Creates singularity 2.3.4 image"
 
 clean:
-	rm -fr build/
+	rm -fr /home/vagrant/build/
 
 
 singularity: clean
-	@echo 'Creating Singularity v22 image'
-	mkdir -p build
-	imgfile='build/d3r.img' ; \
-	sudo singularity create -s 4096 $$imgfile ; \
+	@echo 'Creating Singularity v23 image'
+	mkdir -p /home/vagrant/build
+	imgfile='/home/vagrant/build/d3r.img' ; \
+	sudo singularity create -s 12048 $$imgfile ; \
 	sudo singularity bootstrap $$imgfile d3rcentos.def; \
-	echo 'Singularity image created $imgfile'
-	ls -l build
+	echo 'Singularity image created $$imgfile'
+	ls -l /home/vagrant/build

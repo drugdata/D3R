@@ -20,12 +20,16 @@ Include: yum
     chmod a+rx "$SINGULARITY_ROOTFS/singularity"
     wheelfile=`find . -maxdepth 1 -name "d3r*whl" -type f | head -n 1`
     if [ -f "$wheelfile" ] ; then
-      cp "$wheelfile" "$SINGULARITY_ROOTFS/."
+      cp "$wheelfile" "$SINGULARITY_ROOTFS/tmp/."
+    fi
+    schrodfile=`find . -maxdepth 1 -name "Schrodinger_Suites*.tar" -type f | head -n 1`
+    if [ -f "$schrodfile" ] ; then
+      cp "$schrodfile" "$SINGULARITY_ROOTFS/tmp/."
     fi
    
 %post
     echo "Hello from inside the container"
-    yum -y install vim-minimal make git wget pciutils
+    yum -y install vim-minimal make git wget pciutils python2-pip
     rpm -Uvh https://yum.puppetlabs.com/puppetlabs-release-pc1-el-7.noarch.rpm
     yum -y install puppet-agent
     mkdir -p /oasis /projects /data /state/partition1 /scratch /scratch1 /scratch2 /ccdbprod
@@ -36,15 +40,13 @@ Include: yum
 
     echo "Running puppet apply"
     /opt/puppetlabs/bin/puppet apply /d3r/manifests/open.pp
-    rm /Miniconda2-latest-Linux-x86_64.sh 
-    rm /pymol-v1.8.4.0.tar.bz2
-    wheelfile=`find / -maxdepth 1 -name "d3r*whl" -type f | head -n 1`
+    wheelfile=`find /tmp -maxdepth 1 -name "d3r*whl" -type f | head -n 1`
     if [ -f "$wheelfile" ] ; then
        echo "Found $wheelfile  --  Replacing d3r with this version"
        pip uninstall -y d3r
        pip install "$wheelfile"
+       rm "$wheelfile"
     fi
-    rm "$wheelfile"
 %test
     /singularity --version
 
