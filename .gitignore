@@ -23,4 +23,5 @@ vagrant/centos7/oe_license.txt
 vagrant/centos7/chimera-1.10.2-linux_x86_64.bin
 singularity/d3r*whl
 singularity/oe_license.txt
-
+singularity/.vagrant/
+singularity/Schrodinger_Suites_2016-2_Linux-x86_64.tar
