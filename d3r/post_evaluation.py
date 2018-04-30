@@ -124,7 +124,11 @@ def get_list_of_stats(list_of_dock_scores):
         else:
 
             sorted_list = sorted(list_of_dock_scores)
-            median = sorted_list[int(round(count/2))]
+            if count % 2 == 0:
+                median_index = count / 2
+                median = sum(sorted_list[median_index-1:median_index+1])/2
+            else:
+                median = sorted_list[int(round(count/2))]
         return (count,
                 min(list_of_dock_scores),
                 max(list_of_dock_scores),
