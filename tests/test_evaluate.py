@@ -13,7 +13,6 @@ import tempfile
 import os
 import os.path
 import shutil
-import pickle
 
 from d3r import evaluate
 from d3r.evaluate import data_container
@@ -61,12 +60,28 @@ class TestEvaluate(unittest.TestCase):
         med = form % 5
         self.assertEqual(res, (avg, min, max, med))
 
+        # pass in list with 2 values
+        res = evaluate.calculate_average_min_max_median([3, 5])
+        avg = form % 4
+        min = form % 3
+        max = form % 5
+        med = form % 4
+        self.assertEqual(res, (avg, min, max, med))
+
         # pass in list with 3 values
         res = evaluate.calculate_average_min_max_median([3, 5, 9])
         avg = form % 5.666666
         min = form % 3
         max = form % 9
         med = form % 5
+        self.assertEqual(res, (avg, min, max, med))
+
+        # pass in list with 4 values
+        res = evaluate.calculate_average_min_max_median([8, 3, 5, 9])
+        avg = form % 6.25
+        min = form % 3
+        max = form % 9
+        med = form % 6.5
         self.assertEqual(res, (avg, min, max, med))
 
     def test_data_container_layout_plain_empty(self):
@@ -125,7 +140,6 @@ class TestEvaluate(unittest.TestCase):
             dc.register('3abc', 'SMCSS', 2.0)
             dc.register('4abc', 'SMCSS', 3.0)
 
-
             rmsd = os.path.join(temp_dir, 'rmsd')
             dc.layout_plain(plain_filename=rmsd)
 
@@ -152,15 +166,18 @@ class TestEvaluate(unittest.TestCase):
             self.assertTrue('10.500         , 1.000          , 2.000'
                             '          , 3.000          , 4.000' in lines[7])
             self.assertTrue(lines[8].startswith('Median'))
-            self.assertTrue('20.500         , 2.000          , 2.000'
+            self.assertTrue('15.500         , 2.000          , 2.000'
                             '          , 3.000          , 4.000' in lines[8])
             self.assertTrue(lines[10].startswith('Individual Results'))
-            self.assertTrue('4abc,                              , 3.000' in lines[12])
-            self.assertTrue('3abc,                              , 2.000 ' in lines[13])
+            self.assertTrue('4abc,                              , 3.000' in
+                            lines[12])
+            self.assertTrue('3abc,                              , 2.000 ' in
+                            lines[13])
             self.assertTrue('2abc,               20.500' in lines[14])
             self.assertTrue('1abc,               10.500(1.000 ) , 1.000'
                             '          , 2.000          , 3.000'
-                            '          , 4.000          , 5.000 (6.000 )' in lines[15])
+                            '          , 4.000          , 5.000 (6.000 )' in
+                            lines[15])
             f = open(rmsdtxt, 'r')
             lines = f.readlines()
             f.close()

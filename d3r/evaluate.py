@@ -919,7 +919,11 @@ def calculate_average_min_max_median(full_list_of_value):
             median = "%-15.3f, " % list_of_value[0]
         else:
             sorted_list = sorted(list_of_value)
-            median = "%-15.3f, " % sorted_list[int(round(count/2))]
+            if count % 2 == 0:
+                median_index = count / 2
+                median = "%-15.3f, " % float(float(sum(sorted_list[median_index-1:median_index+1]))/2)
+            else:
+                median = "%-15.3f, " % sorted_list[int(round(count / 2))]
 
         minimum = "%-15.3f, " % min(list_of_value)
         maximum = "%-15.3f, " % max(list_of_value)
