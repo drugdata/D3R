@@ -827,6 +827,58 @@ class TestBlastNFilterTask(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
+    def test_blastnfilter_set_targets_found_by_counting_txt_files(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            # empty dir
+            summary = BlastNFilterSummary(temp_dir)
+            self.assertEqual(summary.get_number_of_targets_found(), 0)
+
+            # foo.txt directory
+            txt_dir = os.path.join(temp_dir, 'foo.txt')
+            os.makedirs(txt_dir, mode=0o755)
+            self.assertTrue(os.path.isdir(txt_dir))
+            summary._set_targets_found_by_counting_txt_files()
+            self.assertEqual(summary.get_number_of_targets_found(), 0)
+
+            # one txt file
+            blah = os.path.join(temp_dir, '1234.txt')
+            with open(blah, 'w') as f:
+                f.write('yo\n')
+            summary._set_targets_found_by_counting_txt_files()
+            self.assertEqual(summary.get_number_of_targets_found(), 1)
+
+            # exclude list includes 1234.txt
+            e_list = ['1234.txt']
+            summary._set_targets_found_by_counting_txt_files(excludelist=e_list)
+            num_t = summary.get_number_of_targets_found()
+            self.assertEqual(num_t, 0)
+
+            # add summary.txt file
+            sfile = os.path.join(temp_dir, BlastNFilterTask.SUMMARY_TXT)
+            with open(sfile, 'w') as f:
+                f.write('yo\n')
+            e_list = ['1234.txt', 'summary.txt']
+            summary._set_targets_found_by_counting_txt_files(excludelist=e_list)
+            num_t = summary.get_number_of_targets_found()
+            self.assertEqual(num_t, 0)
+
+            # txt in middle of file
+            mt = os.path.join(temp_dir,'txt.yo')
+            with open(mt, 'w') as f:
+                f.write('hi\n')
+            e_list = ['1234.txt', 'summary.txt']
+            summary._set_targets_found_by_counting_txt_files(excludelist=e_list)
+            num_t = summary.get_number_of_targets_found()
+            self.assertEqual(num_t, 0)
+
+            # now with default exclude list
+            summary._set_targets_found_by_counting_txt_files()
+            num_t = summary.get_number_of_targets_found()
+            self.assertEqual(num_t, 1)
+        finally:
+            shutil.rmtree(temp_dir)
+
     def test_blastnfilter_summary_parse_summary_file_on_validfile(self):
         temp_dir = tempfile.mkdtemp()
         try:
@@ -860,6 +912,56 @@ class TestBlastNFilterTask(unittest.TestCase):
 
             summary = BlastNFilterSummary(temp_dir)
             self.assertEqual(summary.get_csv(), '0,0,178,95,71,67')
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_blastnfilter_summary_parse_summary_newversion(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            f = open(os.path.join(temp_dir,
+                                  BlastNFilterTask.SUMMARY_TXT), 'w')
+            f.write('INPUT SUMMARY\n')
+            f.write('  entries:                             221\n')
+            f.write('  complexes:                           178\n')
+            f.write('  dockable complexes:                   95\n')
+            f.write('  monomers:                            145\n')
+            f.write('  dockable monomers:                    71\n')
+            f.write('  multimers:                            76\n')
+            f.write('  dockable multimers:                   24\n\n')
+
+            f.write('FILTERING CRITERIA\n')
+            f.write('  No. of query sequences           <=    1\n')
+            f.write('  No. of dockable ligands           =    1\n')
+            f.write('  Percent identity                 >=    0.95\n')
+            f.write('  Percent Coverage                 >=    0.9\n')
+            f.write('  No. of hit sequences             <=    4\n')
+            f.write('  Structure determination method:        '
+                    '  x-ray diffraction\n\n')
+
+            f.write('OUTPUT SUMMARY\n')
+            f.write('  Target: 5fz7|Sequences: 1|Hits: 94|Candidates: 17|'
+                    'Elected:4|PDBids: 5fz7,5fyz,5a3p,5a1f\n')
+
+            f.flush()
+            f.close()
+
+            summary = BlastNFilterSummary(temp_dir)
+            self.assertEqual(summary.get_csv(), '0,0,178,95,71,0')
+
+            # add 1 text file
+            tfile = os.path.join(temp_dir, 'yo.txt')
+            with open(tfile, 'w') as f:
+                f.write('hi\n')
+            summary = BlastNFilterSummary(temp_dir)
+            self.assertEqual(summary.get_csv(), '0,0,178,95,71,1')
+
+            # add 70 text files
+            for x in range(0, 69):
+                tfile = os.path.join(temp_dir, str(x) + '.txt')
+                with open(tfile, 'w') as f:
+                    f.write('hi\n')
+            summary = BlastNFilterSummary(temp_dir)
+            self.assertEqual(summary.get_csv(), '0,0,178,95,71,70')
         finally:
             shutil.rmtree(temp_dir)
 

@@ -18,6 +18,8 @@ logger = logging.getLogger(__name__)
 class BlastNFilterSummary:
     """Represents summary of a BlastNFilterTask invocation
     """
+    TARGET_SUFFIX = '.txt'
+
     def __init__(self, path):
 
         if path is None:
@@ -87,18 +89,26 @@ class BlastNFilterSummary:
                 found_target_entry = True
         f.close()
 
-        # TODO need to test this new logic
         if found_target_entry is False:
             self._set_targets_found_by_counting_txt_files()
 
-    def _set_targets_found_by_counting_txt_files(self, excludelist=['summary.txt']):
-        # TODO need to test this new logic
+    def get_number_of_targets_found(self):
+        """Returns number of targets found. This value is set
+           via constructor
+           :returns number of targets found as int
+        """
+        return self._targets_found
+
+    def _set_targets_found_by_counting_txt_files(self,
+                                                 excludelist=['summary.txt']):
         """Looks for ####.txt files in path set in constructor
            returning a count of files found.
         """
         counter = 0
         for entry in os.listdir(self._path):
             fp = os.path.join(self._path, entry)
+            if not entry.endswith(BlastNFilterSummary.TARGET_SUFFIX):
+                continue
             if not os.path.isfile(fp):
                 continue
             if entry in excludelist:
