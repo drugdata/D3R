@@ -516,6 +516,36 @@ class TestFtpFileTransfer(unittest.TestCase):
                                               'for /foo2 : error')
         mockftp.list.assert_called_with('/foo2', extra=True)
 
+    def test_list_dirs_with_noretry_fail(self):
+        mockftp = MockFtp()
+        mockftp.list = Mock(side_effect=[IOError('error'),
+                                         [{'directory': 'd', 'name': 'foo'}]])
+        mockftp.close = Mock(return_value=None)
+        foo = FtpFileTransfer(None)
+        foo.set_connection(mockftp)
+        foo.connect()
+        dirlist = foo.list_dirs('/foo', retrycount=0, retrysleep=0)
+        self.assertEqual(dirlist, None)
+        foo.disconnect()
+        self.assertEqual(foo.get_error_msg(), 'Unable to get directory list '
+                                              'for /foo : error')
+        mockftp.list.assert_called_with('/foo', extra=True)
+
+    def test_list_dirs_with_withretry_success(self):
+        mockftp = MockFtp()
+        mockftp.list = Mock(side_effect=[IOError('error'),
+                                         [{'directory': 'd', 'name': 'foo'}]])
+        mockftp.close = Mock(return_value=None)
+        foo = FtpFileTransfer(None)
+        foo.set_connection(mockftp)
+        foo.connect()
+        dirlist = foo.list_dirs('/foo', retrycount=1, retrysleep=0)
+        self.assertTrue(len(dirlist) == 1)
+        self.assertEqual(dirlist[0], 'foo')
+        foo.disconnect()
+        self.assertEqual(foo.get_error_msg(), None)
+        mockftp.list.assert_called_with('/foo', extra=True)
+
     def test_list_files_remote_dir_none(self):
         foo = FtpFileTransfer(None)
         self.assertFalse(foo.list_files(None))

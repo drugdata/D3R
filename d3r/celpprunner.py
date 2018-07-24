@@ -429,6 +429,14 @@ def _parse_arguments(desc, args):
                              'tsv files have been updated (default 60, or 10 '
                              'hours with default --importsleep set to 600 '
                              'seconds)')
+    parser.add_argument('--extsleep', default=600, type=int,
+                        help='Number of seconds to wait before trying to get '
+                             'list of external submissions from remote server'
+                             ' (default 600)')
+    parser.add_argument('--extretry', default=10, type=int,
+                        help='Number of times extsubmission should try to '
+                             'get list of external submissions from '
+                             'remote server (default 10)')
     parser.add_argument('--ftpconfig', dest='ftpconfig', help='File containing'
                         ' configuration to connect to ftp server.  If set,'
                         ' data from stages run during this invocation will be'

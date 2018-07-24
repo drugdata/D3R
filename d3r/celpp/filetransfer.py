@@ -225,7 +225,7 @@ class FileTransfer(object):
         self._error_msg = 'download_file not implemented'
         return False
 
-    def list_dirs(self, remote_dir):
+    def list_dirs(self, remote_dir, retrycount=0, retrysleep=0):
         """Dummy
         """
         self._error_msg = 'list_dirs not implemented'
@@ -400,7 +400,7 @@ class FtpFileTransfer(FileTransfer):
             logger.debug('Download operation took ' +
                          str(self._duration) + ' seconds')
 
-    def list_dirs(self, remote_dir):
+    def _list_dirs(self, remote_dir):
         """Gets list of all directories found in `remote_dir`
 
            This method gets a list of directories in `remote_dir`
@@ -410,35 +410,63 @@ class FtpFileTransfer(FileTransfer):
            :param remote_dir: full path to remote directory to examine
            :returns: None for failure and list upon success
         """
+        dirlist = []
+        try:
+            for paths in self._ftp.list(remote_dir, extra=True):
+                if paths['directory'] == 'd':
+                    if paths['name'] == '.':
+                        continue
+                    if paths['name'] == '..':
+                        continue
+                    dirlist.append(paths['name'])
+
+        except Exception as e:
+            logger.exception('Caught exception examining ' +
+                             remote_dir)
+            self._error_msg = ('Unable to get directory list for ' +
+                               remote_dir +
+                               ' : ' + str(e))
+            return None
+
+        return dirlist
+
+    def list_dirs(self, remote_dir, retrycount=0, retrysleep=0):
+        """Gets list of all directories found in `remote_dir`
+
+           This method gets a list of directories in `remote_dir`
+           If there is an error information can be
+           obtained by calling `self.get_error_msg()`  It is assumed
+           `connect()` has been called on this object.
+           :param remote_dir: full path to remote directory to examine
+           :param retrycount: Number of retries to attempt, 0 means no retries
+           :param retrysleep: Number of seconds to sleep between retries
+           :returns: None for failure and list upon success
+        """
         self._error_msg = None
         start_time = int(time.time())
         try:
             if remote_dir is None:
                 self._error_msg = 'remote_dir None'
                 return None
-
+            iteration = 0
             remote_path = os.path.normpath(remote_dir)
             logger.debug('Examining : ' + remote_path)
 
-            dirlist = []
-            try:
-                for paths in self._ftp.list(remote_dir, extra=True):
-                    if paths['directory'] == 'd':
-                        if paths['name'] == '.':
-                            continue
-                        if paths['name'] == '..':
-                            continue
-                        dirlist.append(paths['name'])
+            while iteration <= retrycount:
+                if iteration > 0:
+                    self._error_msg = None
+                    logger.debug('Try ' + str(iteration + 1) + ' of ' +
+                                 str(retrycount) + ' failed to list_dir' +
+                                 'sleeping ' + str(retrysleep) +
+                                 ' seconds before retry')
+                    time.sleep(retrysleep)
 
-            except Exception as e:
-                logger.exception('Caught exception examining ' +
-                                 remote_path)
-                self._error_msg = ('Unable to get directory list for ' +
-                                   remote_path +
-                                   ' : ' + str(e))
-                return None
+                dirlist = self._list_dirs(remote_path)
+                if dirlist is not None:
+                    return dirlist
+                iteration += 1
 
-            return dirlist
+            return None
         finally:
             self._duration = int(time.time()) - start_time
             logger.debug('list directory operation took ' +

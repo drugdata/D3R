@@ -75,7 +75,9 @@ class ExternalDataSubmissionFactory(object):
         :returns: list of directory names without path prefix
         :raises AttributeError: if `get_file_transfer()` is None
         """
-        dlist = self._file_transfer.list_dirs(remote_dir)
+        dlist = self._file_transfer.list_dirs(remote_dir,
+                                              retrycount=self._args.extretry,
+                                              retrysleep=self._args.extsleep)
         if dlist is None:
             logger.debug('No directories returned')
             return []

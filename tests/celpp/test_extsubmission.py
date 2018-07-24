@@ -101,34 +101,54 @@ class TestExternalSubmission(unittest.TestCase):
 
     def test_get_submission_dirs_list_is_none(self):
         params = D3RParameters()
+        params.extsleep = 0
+        params.extretry = 0
         mockft = D3RParameters()
         mockft.list_dirs = Mock(return_value=None)
         fac = ExternalDataSubmissionFactory('/foo', params)
         fac.set_file_transfer(mockft)
         self.assertEqual(len(fac._get_submission_dirs('ha')), 0)
-        mockft.list_dirs.assert_called_with('ha')
+        mockft.list_dirs.assert_called_with('ha', retrycount=0, retrysleep=0)
 
     def test_get_submissions_dirs_empty(self):
         params = D3RParameters()
+        params.extsleep = 0
+        params.extretry = 0
         mockft = D3RParameters()
         mockft.list_dirs = Mock(return_value=[])
         fac = ExternalDataSubmissionFactory('/foo', params)
         fac.set_file_transfer(mockft)
         self.assertEqual(len(fac._get_submission_dirs('ha')), 0)
-        mockft.list_dirs.assert_called_with('ha')
+        mockft.list_dirs.assert_called_with('ha', retrycount=0, retrysleep=0)
 
     def test_get_submission_dirs_one_dir(self):
         params = D3RParameters()
+        params.extsleep = 0
+        params.extretry = 0
         mockft = D3RParameters()
         mockft.list_dirs = Mock(return_value=['somedir'])
         fac = ExternalDataSubmissionFactory('/foo', params)
         fac.set_file_transfer(mockft)
         dlist = fac._get_submission_dirs('ha')
         self.assertEqual(dlist[0], 'somedir')
-        mockft.list_dirs.assert_called_with('ha')
+        mockft.list_dirs.assert_called_with('ha', retrycount=0, retrysleep=0)
+
+    def test_get_submission_dirs_one_dir_altretryandsleep(self):
+        params = D3RParameters()
+        params.extsleep = 20
+        params.extretry = 1
+        mockft = D3RParameters()
+        mockft.list_dirs = Mock(return_value=['somedir'])
+        fac = ExternalDataSubmissionFactory('/foo', params)
+        fac.set_file_transfer(mockft)
+        dlist = fac._get_submission_dirs('ha')
+        self.assertEqual(dlist[0], 'somedir')
+        mockft.list_dirs.assert_called_with('ha', retrycount=1, retrysleep=20)
 
     def test_get_submission_dirs_two_dirs(self):
         params = D3RParameters()
+        params.extsleep = 0
+        params.extretry = 0
         mockft = D3RParameters()
         mockft.list_dirs = Mock(return_value=['somedir', 'blah'])
         fac = ExternalDataSubmissionFactory('/foo', params)
@@ -136,7 +156,7 @@ class TestExternalSubmission(unittest.TestCase):
         dlist = fac._get_submission_dirs('ha')
         self.assertEqual(dlist[0], 'somedir')
         self.assertEqual(dlist[1], 'blah')
-        mockft.list_dirs.assert_called_with('ha')
+        mockft.list_dirs.assert_called_with('ha', retrycount=0, retrysleep=0)
 
     def test_get_challenge_data_package_file_raise_exception(self):
         params = D3RParameters()
@@ -149,6 +169,8 @@ class TestExternalSubmission(unittest.TestCase):
 
     def test_get_challenge_data_package_file_none_for_files(self):
         params = D3RParameters()
+        params.extsleep = 0
+        params.extretry = 0
         mockft = D3RParameters()
         mockft.list_files = Mock(return_value=None)
         fac = ExternalDataSubmissionFactory('/foo', params)
@@ -159,6 +181,8 @@ class TestExternalSubmission(unittest.TestCase):
 
     def test_get_challenge_data_package_file_no_files(self):
         params = D3RParameters()
+        params.extsleep = 0
+        params.extretry = 0
         mockft = D3RParameters()
         mockft.list_files = Mock(return_value=[])
         fac = ExternalDataSubmissionFactory('/foo', params)
@@ -175,6 +199,8 @@ class TestExternalSubmission(unittest.TestCase):
             week = os.path.join(year, 'dataset.week.13')
             os.makedirs(week)
             params = D3RParameters()
+            params.extsleep = 0
+            params.extretry = 0
             mockft = D3RParameters()
             mockft.list_files = Mock(return_value=['hi', 'celpp_week13_2015_' +
                                                    dr + '_dname.tar.gz',
@@ -196,6 +222,8 @@ class TestExternalSubmission(unittest.TestCase):
             week = os.path.join(year, 'dataset.week.13')
             os.makedirs(week)
             params = D3RParameters()
+            params.extsleep = 0
+            params.extretry = 0
             mockft = D3RParameters()
             mockft.list_files = Mock(return_value=['hi', 'celpp_week13_2015' +
                                                    dr + 'dname.tar.gz',
@@ -213,12 +241,16 @@ class TestExternalSubmission(unittest.TestCase):
 
     def test_get_external_data_submissions_raise_exception(self):
         params = D3RParameters()
+        params.extsleep = 0
+        params.extretry = 0
         fac = ExternalDataSubmissionFactory('/foo', params)
         tlist = fac.get_external_data_submissions()
         self.assertEqual(len(tlist), 0)
 
     def test_get_external_data_submissions_none_subdir(self):
         params = D3RParameters()
+        params.extsleep = 0
+        params.extretry = 0
         fac = ExternalDataSubmissionFactory('/foo', params)
         mockft = D3RParameters()
         mockft.list_dirs = Mock(return_value=None)
@@ -228,6 +260,8 @@ class TestExternalSubmission(unittest.TestCase):
 
     def test_get_external_data_submissions_no_dirs(self):
         params = D3RParameters()
+        params.extsleep = 0
+        params.extretry = 0
         fac = ExternalDataSubmissionFactory('/foo', params)
         mockft = D3RParameters()
         mockft.list_dirs = Mock(return_value=[])
@@ -243,6 +277,8 @@ class TestExternalSubmission(unittest.TestCase):
             os.makedirs(week)
             dr = ExternalDataSubmissionFactory.DOCKEDRESULTS
             params = D3RParameters()
+            params.extsleep = 0
+            params.extretry = 0
             fac = ExternalDataSubmissionFactory(week, params)
             mockft = D3RParameters()
             mockft.connect = Mock()
@@ -257,7 +293,8 @@ class TestExternalSubmission(unittest.TestCase):
             fac.set_file_transfer(mockft)
             tlist = fac.get_external_data_submissions()
             self.assertEqual(len(tlist), 0)
-            mockft.list_dirs.assert_called_with('/remote')
+            mockft.list_dirs.assert_called_with('/remote', retrycount=0,
+                                                retrysleep=0)
             mockft.list_files.assert_called_with('/remote/yo')
         finally:
             shutil.rmtree(temp_dir)
@@ -270,6 +307,8 @@ class TestExternalSubmission(unittest.TestCase):
             os.makedirs(week)
             dr = ExternalDataSubmissionFactory.DOCKEDRESULTS
             params = D3RParameters()
+            params.extsleep = 0
+            params.extretry = 0
             fac = ExternalDataSubmissionFactory(week, params)
             mockft = D3RParameters()
             mockft.connect = Mock()
@@ -291,7 +330,8 @@ class TestExternalSubmission(unittest.TestCase):
             self.assertEqual(tlist[0].get_remote_challenge_data_package(),
                              '/remote/yo/celpp_week13_2017' + dr + 'yo.tar.gz')
 
-            mockft.list_dirs.assert_called_with('/remote')
+            mockft.list_dirs.assert_called_with('/remote', retrycount=0,
+                                                retrysleep=0)
             mockft.list_files.assert_called_with('/remote/yo')
             mockft.delete_file.assert_called_with('/chall/latest.txt')
         finally:
@@ -305,6 +345,8 @@ class TestExternalSubmission(unittest.TestCase):
             os.makedirs(week)
             dr = ExternalDataSubmissionFactory.DOCKEDRESULTS
             params = D3RParameters()
+            params.extsleep = 0
+            params.extretry = 0
             fac = ExternalDataSubmissionFactory(week, params)
             mockft = D3RParameters()
             mockft.connect = Mock()
@@ -327,7 +369,8 @@ class TestExternalSubmission(unittest.TestCase):
             self.assertEqual(tlist[1].get_remote_challenge_data_package(),
                              '/remote/yuck/celpp_week13_2017' + dr +
                              'yuck.tar.gz')
-            mockft.list_dirs.assert_called_with('/remote')
+            mockft.list_dirs.assert_called_with('/remote', retrycount=0,
+                                                retrysleep=0)
             mockft.list_files.assert_called_with('/remote/yuck')
             mockft.delete_file.assert_called_with('/chall/latest.txt')
         finally:
