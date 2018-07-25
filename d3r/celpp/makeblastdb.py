@@ -90,7 +90,7 @@ class MakeBlastDBTask(D3RTask):
                     seq_count += 1
             f.close()
             return '# sequence(s): ' + str(seq_count)
-        except:
+        except Exception:
             logger.exception('Caught exception trying to get sequence count')
         return '# sequence(s): Error unable to parse file'
 
@@ -141,7 +141,7 @@ class MakeBlastDBTask(D3RTask):
                          str(int(time.time()) - start_time) +
                          ' seconds.')
             return pdbid_set
-        except:
+        except Exception:
             logger.exception('Caught exception trying to get set of PDBIDs')
             return set()
         return pdbid_set

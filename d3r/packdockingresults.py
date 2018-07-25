@@ -64,7 +64,6 @@ def main_pack_dock_results(challenge_dir, dock_dir, pack_dir, ftp_config):
         contestant_id = 'XXXXX'
     else:
         abs_ftp_config = os.path.abspath(ftp_config)
-        from d3r.celpp import filetransfer
         f_f_t_obj = WebDavFileTransfer(abs_ftp_config)
         contestant_id = f_f_t_obj.get_contestant_id()
 

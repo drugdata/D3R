@@ -217,7 +217,7 @@ class BlastNFilterTask(D3RTask):
                 for entry in f:
                     summary_out = (summary_out + entry)
                 f.close()
-        except:
+        except Exception:
             logger.warning('Error reading ' + summary_txt + ' file')
 
         return '\n# txt files found: ' + str(len(txt_list)) +\

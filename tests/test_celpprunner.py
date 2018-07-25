@@ -626,8 +626,8 @@ class TestCelppRunner(unittest.TestCase):
             theargs.pdbdb = '/pdbdb'
             theargs.celppdir = os.path.join(temp_dir)
 
-            theargs.stage = 'makedb,import,blast,challengedata,proteinligprep,' \
-                            'chimeraprep,glide,vina'
+            theargs.stage = ('makedb,import,blast,challengedata,' +
+                             'proteinligprep,chimeraprep,glide,vina')
 
             d_import_dir = os.path.join(temp_dir, '2015', 'dataset.week.1',
                                         TestCelppRunner.IMPORT_DIR_NAME)

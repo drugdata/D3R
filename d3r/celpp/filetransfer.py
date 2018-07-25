@@ -300,7 +300,7 @@ class FtpFileTransfer(FileTransfer):
                                      self.get_password(),
                                      timeout=self.get_connect_timeout())
                 return True
-            except:
+            except Exception:
                 logger.exception('Unable to connect to ftp host')
                 self._error_msg = 'Unable to connect to ftp host'
                 return False
@@ -319,7 +319,7 @@ class FtpFileTransfer(FileTransfer):
         try:
             logger.debug('Attempting to close ftp connection')
             self._ftp.close()
-        except:
+        except Exception:
             logger.exception('Caught exception attempting to close connection')
 
     def delete_file(self, remote_file):
@@ -643,7 +643,7 @@ class FtpFileTransfer(FileTransfer):
                 logger.debug('Uploading ' + str(len(list_of_files)) + ' files')
                 for file in list_of_files:
                     self._upload_file(file)
-            except:
+            except Exception:
                 logger.exception('Caught exception')
                 self._error_msg = 'Error during upload'
                 return False
@@ -675,7 +675,7 @@ class WebDavFileTransfer(FileTransfer):
                                                password=self.get_password(),
                                                protocol='https')
                 return True
-            except:
+            except Exception:
                 logger.exception('Unable to connect to host')
                 self._error_msg = 'Unable to connect to host'
                 return False

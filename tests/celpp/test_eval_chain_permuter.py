@@ -30,7 +30,7 @@ class TestChainPermuter(unittest.TestCase):
             import openeye.oechem  # noqa: F401
             sys.stdout.write("openeye.oechem importable.\n")
             self.has_oechem = True
-        except:
+        except Exception:
             sys.stdout.write("openeye.oechem not importable.\n")
             self.has_oechem = False
 

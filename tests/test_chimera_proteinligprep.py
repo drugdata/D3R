@@ -73,7 +73,7 @@ class TestChimera_ProteinLigPrep(unittest.TestCase):
             f = open(lig_smile, 'r')
             line = f.readline()
             f.close()
-            unprep = lig_smile.replace('.smi','_unprep_step1.sdf')
+            unprep = lig_smile.replace('.smi', '_unprep_step1.sdf')
             self.assertEqual(line, 'rdkit_smiles_to_3d_sdf.py:' +
                              lig_smile + ':' + unprep)
             out = os.path.join(temp_dir, 'rdkit_smiles_to_3d_sdf_out')

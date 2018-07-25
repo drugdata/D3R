@@ -850,7 +850,8 @@ class TestBlastNFilterTask(unittest.TestCase):
 
             # exclude list includes 1234.txt
             e_list = ['1234.txt']
-            summary._set_targets_found_by_counting_txt_files(excludelist=e_list)
+            summary.\
+                _set_targets_found_by_counting_txt_files(excludelist=e_list)
             num_t = summary.get_number_of_targets_found()
             self.assertEqual(num_t, 0)
 
@@ -859,16 +860,18 @@ class TestBlastNFilterTask(unittest.TestCase):
             with open(sfile, 'w') as f:
                 f.write('yo\n')
             e_list = ['1234.txt', 'summary.txt']
-            summary._set_targets_found_by_counting_txt_files(excludelist=e_list)
+            summary.\
+                _set_targets_found_by_counting_txt_files(excludelist=e_list)
             num_t = summary.get_number_of_targets_found()
             self.assertEqual(num_t, 0)
 
             # txt in middle of file
-            mt = os.path.join(temp_dir,'txt.yo')
+            mt = os.path.join(temp_dir, 'txt.yo')
             with open(mt, 'w') as f:
                 f.write('hi\n')
             e_list = ['1234.txt', 'summary.txt']
-            summary._set_targets_found_by_counting_txt_files(excludelist=e_list)
+            summary.\
+                _set_targets_found_by_counting_txt_files(excludelist=e_list)
             num_t = summary.get_number_of_targets_found()
             self.assertEqual(num_t, 0)
 
@@ -967,6 +970,7 @@ class TestBlastNFilterTask(unittest.TestCase):
 
     def tearDown(self):
         pass
+
 
 if __name__ == '__main__':
     unittest.main()

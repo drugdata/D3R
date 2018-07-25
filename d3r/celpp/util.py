@@ -602,4 +602,5 @@ def setup_logging(theargs):
         .setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.utilities.in_put').setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.utilities.run').setLevel(theargs.numericloglevel)
-    logging.getLogger('d3r.celpp.extsubmission').setLevel(theargs.numericloglevel)
+    logging.getLogger('d3r.celpp.extsubmission')\
+        .setLevel(theargs.numericloglevel)

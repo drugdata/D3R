@@ -1097,5 +1097,6 @@ open(os.path.join(thedir,'lig_63N.smi'),'a').close()
     def tearDown(self):
         pass
 
+
 if __name__ == '__main__':
     unittest.main()

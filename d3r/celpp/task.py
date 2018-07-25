@@ -134,7 +134,7 @@ class D3RTask(object):
         try:
             logger.debug('ftpconfig set to ' + args.ftpconfig)
             self._file_uploader = FtpFileTransfer(args.ftpconfig)
-        except:
+        except Exception:
             logger.debug('FtpFileUploader not set.  This may not be '
                          'an error')
             self._file_uploader = None
@@ -210,7 +210,7 @@ class D3RTask(object):
 
         try:
             out_dir = self.get_dir()
-        except:
+        except Exception:
             logger.exception('Unable to get dir for task')
             return file_list
         try:
@@ -244,7 +244,7 @@ class D3RTask(object):
         program_name = __file__
         try:
             program_name = self.get_args().program
-        except:
+        except Exception:
             logger.debug('args.program  was not set.  '
                          'using __file__')
         return program_name + ' ' + self.get_program_version()
@@ -369,7 +369,7 @@ class D3RTask(object):
             self.get_file_transfer().upload_files(uploadable_files)
             summary = self.get_file_transfer().get_upload_summary()
             self.append_to_email_log('\n' + summary + '\n')
-        except:
+        except Exception:
             logger.exception('Caught exception trying to upload files')
         finally:
             self.get_file_transfer().disconnect()
@@ -435,7 +435,7 @@ class D3RTask(object):
                 f.write(self.get_error() + '\n')
                 f.flush()
                 f.close()
-            except:
+            except Exception:
                 logger.exception('Caught exception')
 
         self._upload_task()
@@ -446,7 +446,7 @@ class D3RTask(object):
                                         D3RTask.ERROR_FILE)
                 if not os.path.isfile(err_file):
                     open(err_file, 'a').close()
-            except:
+            except Exception:
                 logger.exception('Caught Exception')
             self._send_end_email()
             return
@@ -541,7 +541,7 @@ class D3RTask(object):
         path_to_check = self.get_dir()
         try:
             logger.debug('Checking path ' + path_to_check)
-        except:
+        except Exception:
             pass
 
         self.set_status(self._get_status_of_task_in_dir(path_to_check))

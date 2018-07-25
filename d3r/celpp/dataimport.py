@@ -192,7 +192,7 @@ class DataImportTask(D3RTask):
                          str(int(time.time()) - start_time) +
                          ' seconds.')
             return pdbid_set
-        except:
+        except Exception:
             logger.exception('Caught exception trying to get set of PDBIDs')
         return set()
 

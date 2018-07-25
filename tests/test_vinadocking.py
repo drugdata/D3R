@@ -27,5 +27,6 @@ class TestVinaDocking(unittest.TestCase):
         except IndexError as ie:
             self.assertEqual(str(ie), 'list index out of range', str(ie))
 
+
 if __name__ == '__main__':
     unittest.main()

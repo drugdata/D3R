@@ -174,5 +174,6 @@ def main(args):
         logger.exception("Error caught exception")
         return 2
 
+
 if __name__ == '__main__':  # pragma: no cover
     sys.exit(main(sys.argv))
