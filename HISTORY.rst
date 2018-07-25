@@ -3,6 +3,32 @@
 History
 -------
 
+1.10.1 (2018-07-??)
+--------------------
+
+* Fixed bug where median value incorrectly calculated in evaluate.py. Instead
+  of averaging middle two values for case of even number of elements, the old 
+  code just chose the latter value.
+  `Issue #183 <https://github.com/drugdata/D3R/issues/183`
+
+* Fixed bug where median value incorrectly calculated in post_evaluation.py.
+  Instead of averaging middle two values, the old code just chose the latter
+  value.
+  `Issue #184 <https://github.com/drugdata/D3R/issues/184`
+
+* Added retry to external submission download to prevent complete failure of
+  download in event of network hiccup
+  `Issue #181 <https://github.com/drugdata/D3R/issues/181`
+
+* Updated BlastNFilterSummary class (used by celppreports.py) to calculate
+  number of targets found by counting target .txt files if value is not in
+  summary.txt file
+  `Issue #187 <https://github.com/drugdata/D3R/issues/187`
+
+* Fixed minor bug where unit tests for molfilevalidator.py failed when valid
+  openeye license was available.
+  `Issue #177 <https://github.com/drugdata/D3R/issues/177`
+
 1.10.0 (2018-01-09) 
 --------------------
 
