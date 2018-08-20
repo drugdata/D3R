@@ -13,9 +13,10 @@ import tempfile
 import os
 import os.path
 import shutil
+import math
 
 from d3r import evaluate
-from d3r.evaluate import data_container
+from d3r.evaluate import DataContainer
 
 
 class TestEvaluate(unittest.TestCase):
@@ -84,10 +85,33 @@ class TestEvaluate(unittest.TestCase):
         med = form % 6.5
         self.assertEqual(res, (avg, min, max, med))
 
+    def test_data_container_get_all_docked_type(self):
+        dc = DataContainer()
+        self.assertEqual(dc.get_all_docked_type(docked_type='LMCSS'), [])
+
+        dc.register('6abc', 'LMCSS', 1)
+        self.assertEqual(dc.get_all_docked_type(docked_type='LMCSS'), [1])
+
+        dc.register('6abc', 'LMCSS_dis', 2)
+        self.assertEqual(dc.get_all_docked_type(docked_type='LMCSS'), [1])
+
+        # verify multiple
+        dc.register('7def', 'LMCSS', 3)
+        res = dc.get_all_docked_type(docked_type='LMCSS')
+        self.assertEqual(len(res), 2)
+        self.assertTrue(1 in res)
+        self.assertTrue(3 in res)
+
+        # verify insertion of value for already existing docked_type is ignored
+        # why this is setup this way is anybody's guess, but the test
+        # verifies the code is doing this.
+        dc.register('6abc', 'LMCSS_dis', 5)
+        self.assertEqual(dc.get_all_docked_type(docked_type='LMCSS_dis'), [2])
+
     def test_data_container_layout_plain_empty(self):
         temp_dir = tempfile.mkdtemp()
         try:
-            dc = data_container()
+            dc = DataContainer()
             rmsd = os.path.join(temp_dir, 'rmsd')
             dc.layout_plain(plain_filename=rmsd)
 
@@ -126,7 +150,7 @@ class TestEvaluate(unittest.TestCase):
     def test_data_container_layout_plain_with_data(self):
         temp_dir = tempfile.mkdtemp()
         try:
-            dc = data_container()
+            dc = DataContainer()
             dc.register('1abc', 'LMCSS', 10.5)
             dc.register('1abc', 'SMCSS', 1.0)
             dc.register('1abc', 'hiResApo', 2.0)
@@ -194,6 +218,99 @@ class TestEvaluate(unittest.TestCase):
 
         finally:
             shutil.rmtree(temp_dir)
+
+    def test_wait_and_check(self):
+
+        # None check
+        self.assertEqual(evaluate.wait_and_check(None), False)
+
+        temp_dir = tempfile.mkdtemp()
+        try:
+            # Negative and 0 # of retries
+            tfile = os.path.join(temp_dir, 'foo')
+            open(tfile, 'a').close()
+            self.assertEqual(evaluate.wait_and_check(tfile,
+                                                     how_many_times=-1), False)
+            self.assertEqual(evaluate.wait_and_check(tfile,
+                                                     how_many_times=0), False)
+
+            # File exists already
+            self.assertEqual(evaluate.wait_and_check(tfile), True)
+
+            nonexist = os.path.join(temp_dir, 'doesnotexist')
+            # File does not exist
+            self.assertEqual(evaluate.wait_and_check(nonexist, timestep=0),
+                             False)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_distance(self):
+        res = evaluate.get_distance('1, 1, 1', '1, 6, 1')
+        self.assertEqual(res, 5)
+        res = evaluate.get_distance('6, 1, 1', '1, 1, 1')
+        self.assertEqual(res, 5)
+        res = evaluate.get_distance('1, 1, 6', '1, 1, 1')
+        self.assertEqual(res, 5)
+
+        res = evaluate.get_distance('1, 2, 5', '5, 6, 7')
+        self.assertEqual(res, 6)
+
+        res = evaluate.get_distance('1, 2, 5', '5, 6, 6.5')
+        self.assertTrue(math.fabs(5.8523 - res) < 0.001)
+
+    def test_extract_crystal_file(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            onefcz = '1fcz'
+            self.assertEqual(evaluate.extract_crystal_file(onefcz,
+                                                           temp_dir), False)
+
+            fcdir = os.path.join(temp_dir, 'fc')
+            os.makedirs(fcdir, mode=0o755)
+            self.assertEqual(evaluate.extract_crystal_file(onefcz,
+                                                           temp_dir), False)
+
+            onefcfile = os.path.join(fcdir, 'pdb1fcz.ent')
+            open(onefcfile, 'a').close()
+            self.assertEqual(evaluate.extract_crystal_file(onefcz,
+                                                           temp_dir),
+                             onefcfile)
+
+
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+
+    def test_main(self):
+        temp_dir = tempfile.mkdtemp()
+
+
+        current_dir = os.getcwd()
+        try:
+            # test with no args which should fail
+            try:
+                evaluate.main(['evaluate.py'])
+            except SystemExit as se:
+                self.assertEqual(str(se), '2')
+
+            # test on empty directory for all inputs
+            res = evaluate.main(['evaluate.py',
+                                 '--dockdir', temp_dir,
+                                 '--blastnfilterdir', temp_dir,
+                                 '--challengedir', temp_dir,
+                                 '--outdir', temp_dir,
+                                 '--pdbdb', temp_dir])
+
+            self.assertEqual(res, 0)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+            # so main_score in evaluate changes current working directory
+            # and this could mess up other tests that depend on being
+            # in the d3r source tree so this chdir has been added
+            os.chdir(current_dir)
 
     def tearDown(self):
         pass
