@@ -50,6 +50,7 @@ class TestFileTransfer(unittest.TestCase):
             self.assertEqual(foo.get_remote_dir(), '')
             self.assertEqual(foo.get_remote_challenge_dir(), None)
             self.assertEqual(foo.get_remote_submission_dir(), None)
+            self.assertEqual(foo.get_remote_evaluationresult_dir(), None)
 
             # test passing partial config file
             f = open(os.path.join(temp_dir, 'partial'), 'a')
@@ -63,6 +64,7 @@ class TestFileTransfer(unittest.TestCase):
             self.assertEqual(foo.get_remote_dir(), '')
             self.assertEqual(foo.get_remote_challenge_dir(), None)
             self.assertEqual(foo.get_remote_submission_dir(), None)
+            self.assertEqual(foo.get_remote_evaluationresult_dir(), None)
 
             # test passing valid config file
             f = open(os.path.join(temp_dir, 'valid'), 'a')
@@ -76,6 +78,7 @@ class TestFileTransfer(unittest.TestCase):
             self.assertEqual(foo.get_remote_dir(), '/foo')
             self.assertEqual(foo.get_remote_challenge_dir(), None)
             self.assertEqual(foo.get_remote_submission_dir(), None)
+            self.assertEqual(foo.get_remote_evaluationresult_dir(), None)
 
             # test passing valid config file with challengepath
             f = open(os.path.join(temp_dir, 'valid'), 'a')
@@ -90,6 +93,7 @@ class TestFileTransfer(unittest.TestCase):
             self.assertEqual(foo.get_remote_dir(), '/foo')
             self.assertEqual(foo.get_remote_challenge_dir(), '/chall')
             self.assertEqual(foo.get_remote_submission_dir(), None)
+            self.assertEqual(foo.get_remote_evaluationresult_dir(), None)
 
             # test passing valid config file with challengepath and
             # submissionpath
@@ -105,12 +109,31 @@ class TestFileTransfer(unittest.TestCase):
             self.assertEqual(foo.get_remote_dir(), '/foo')
             self.assertEqual(foo.get_remote_challenge_dir(), '/chall')
             self.assertEqual(foo.get_remote_submission_dir(), '/submit')
+            self.assertEqual(foo.get_remote_evaluationresult_dir(), None)
+
+            # test passing valid config file with challengepath and
+            # submissionpath and evaluationresultpath
+            f = open(os.path.join(temp_dir, 'valid'), 'a')
+            f.write('host ftp.box.com\nuser bob@bob.com\npass 222\npath /foo\n'
+                    'challengepath /chall\nsubmissionpath /submit\n'
+                    'evaluationresultpath /evalres\n')
+            f.flush()
+            f.close()
+            foo = FileTransfer(os.path.join(temp_dir, 'valid'))
+            self.assertEqual(foo.get_host(), 'ftp.box.com')
+            self.assertEqual(foo.get_password(), '222')
+            self.assertEqual(foo.get_user(), 'bob@bob.com')
+            self.assertEqual(foo.get_remote_dir(), '/foo')
+            self.assertEqual(foo.get_remote_challenge_dir(), '/chall')
+            self.assertEqual(foo.get_remote_submission_dir(), '/submit')
+            self.assertEqual(foo.get_remote_evaluationresult_dir(), '/evalres')
 
             # test passing valid config file with challengepath,
             # submissionpath, and contestantid
             f = open(os.path.join(temp_dir, 'valid'), 'a')
             f.write('host ftp.box.com\nuser bob@bob.com\npass 222\npath /foo\n'
                     'challengepath /chall\nsubmissionpath /submit\n'
+                    'evaluationresultpath /eval\n'
                     'contestantid 5678\n')
             f.flush()
             f.close()
@@ -121,6 +144,7 @@ class TestFileTransfer(unittest.TestCase):
             self.assertEqual(foo.get_remote_dir(), '/foo')
             self.assertEqual(foo.get_remote_challenge_dir(), '/chall')
             self.assertEqual(foo.get_remote_submission_dir(), '/submit')
+            self.assertEqual(foo.get_remote_evaluationresult_dir(), '/eval')
             self.assertEqual(foo.get_contestant_id(), '5678')
 
         finally:

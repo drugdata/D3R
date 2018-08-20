@@ -26,6 +26,7 @@ class FileTransfer(object):
     CONTESTANTID = 'contestantid'
     CHALLENGEPATH = 'challengepath'
     SUBMISSIONPATH = 'submissionpath'
+    EVALUATIONRESULTPATH = 'evaluationresultpath'
 
     def __init__(self, config):
         """Constructor
@@ -45,6 +46,7 @@ class FileTransfer(object):
         self._contestant_id = None
         self._remote_challenge_dir = None
         self._remote_submission_dir = None
+        self._remote_evaluation_dir = None
 
         if config is not None:
             self._parse_config(config)
@@ -64,6 +66,7 @@ class FileTransfer(object):
            contestantid <CELPP CONTESTANT ID>
            challengepath <BASE PATH ON REMOTE SERVER ie /challenge>
            submissionpath <BASE PATH ON REMOTE SERVER ie /submission>
+           evaluationresultpath <BASE PATH ON REMOTE SERVER ie /evaluationresult>
 
            Example:
 
@@ -74,6 +77,7 @@ class FileTransfer(object):
            contestantid 24680
            challengepath /challenge
            submissionpath /usersubmissions
+           evaluationresultpath /userevaluationresults
 
            The above format matches the standard used
            by NCFTP with the exception of `path` and `contestantid`
@@ -106,6 +110,8 @@ class FileTransfer(object):
                     self.set_remote_challenge_dir(split_line[1].rstrip())
                 elif split_line[0] == FileTransfer.SUBMISSIONPATH:
                     self.set_remote_submission_dir(split_line[1].rstrip())
+                elif split_line[0] == FileTransfer.EVALUATIONRESULTPATH:
+                    self.set_remote_evaluationresult_dir(split_line[1].rstrip())
 
         finally:
             if f is not None:
@@ -156,6 +162,16 @@ class FileTransfer(object):
         """Gets the remote submission directory for ftp download
         """
         return self._remote_submission_dir
+
+    def set_remote_evaluationresult_dir(self, evaluationresult_dir):
+        """Sets the remote evaluation result directory for ftp upload
+        """
+        self._remote_evaluation_dir = evaluationresult_dir
+
+    def get_remote_evaluationresult_dir(self):
+        """Gets the remote evaluation result directory for ftp upload
+        """
+        return self._remote_evaluation_dir
 
     def set_remote_dir(self, remote_dir):
         """Sets the remote directory where ftp files will be uploaded to
