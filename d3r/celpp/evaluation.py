@@ -308,6 +308,7 @@ class EvaluationTask(D3RTask):
     RMSD_TXT = 'RMSD.txt'
     RMSD_JSON = 'RMSD.json'
     RMSD_PICKLE = 'RMSD.pickle'
+    RMSD_CSV = 'RMSD.csv'
 
     EVAL_EXITCODEFILE = 'evaluate.exitcode'
 
@@ -393,6 +394,12 @@ class EvaluationTask(D3RTask):
         """
         return os.path.join(self.get_dir(), EvaluationTask.RMSD_PICKLE)
 
+    def get_rmsd_csv(self):
+        """Returns full path to RMSD.csv file
+        :returns: full path to RMSD.csv file
+        """
+        return os.path.join(self.get_dir(), EvaluationTask.RMSD_CSV)
+
     def get_evaluation_summary(self):
         """Parses RMSD.txt and generates human readable summary
         evaluating docking
@@ -468,6 +475,10 @@ class EvaluationTask(D3RTask):
             rmsdpickle = self.get_rmsd_pickle()
             if os.path.isfile(rmsdpickle):
                 file_list.append(rmsdpickle)
+
+            rmsdcsv = self.get_rmsd_csv()
+            if os.path.isfile(rmsdcsv):
+                file_list.append(rmsdcsv)
 
             for entry in os.listdir(out_dir):
                 full_path = os.path.join(out_dir, entry)

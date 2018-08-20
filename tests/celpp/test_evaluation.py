@@ -77,41 +77,53 @@ class TestEvaluation(unittest.TestCase):
             flist.index(final_log)
             flist.index(rmsdjson)
 
-            # try with evaluate.exitcode
-            evalexit = os.path.join(task.get_dir(),
-                                    EvaluationTask.EVAL_EXITCODEFILE)
-            open(evalexit, 'a').close()
+            # try with RMSD.csv
+            rmsdcsv = os.path.join(task.get_dir(),
+                                   EvaluationTask.RMSD_CSV)
+            open(rmsdcsv, 'a').close()
             flist = task.get_uploadable_files()
             self.assertEqual(len(flist), 4)
             flist.index(rmsd)
             flist.index(final_log)
             flist.index(rmsdjson)
+            flist.index(rmsdcsv)
+
+            # try with evaluate.exitcode
+            evalexit = os.path.join(task.get_dir(),
+                                    EvaluationTask.EVAL_EXITCODEFILE)
+            open(evalexit, 'a').close()
+            flist = task.get_uploadable_files()
+            self.assertEqual(len(flist), 5)
+            flist.index(rmsd)
+            flist.index(final_log)
+            flist.index(rmsdjson)
+            flist.index(rmsdcsv)
             flist.index(evalexit)
 
             # try with empty pbdid dir
             pbdid = os.path.join(task.get_dir(), '8www')
             os.mkdir(pbdid)
             flist = task.get_uploadable_files()
-            self.assertEqual(len(flist), 4)
+            self.assertEqual(len(flist), 5)
             flist.index(rmsd)
 
             # try with score/rot-LMCSS_doc_pv_complex1.pdb
             score = os.path.join(pbdid, 'score')
             os.mkdir(score)
             flist = task.get_uploadable_files()
-            self.assertEqual(len(flist), 4)
+            self.assertEqual(len(flist), 5)
 
             LMCSS = os.path.join(score, 'LMCSS-1fcz_1fcz_docked_complex.pdb')
             open(LMCSS, 'a').close()
             flist = task.get_uploadable_files()
-            self.assertEqual(len(flist), 5)
+            self.assertEqual(len(flist), 6)
             flist.index(LMCSS)
 
             # try with score/rot-SMCSS_doc_pv_complex1.pdb
             SMCSS = os.path.join(score, 'SMCSS-1fcz_2lbd_docked_complex.pdb')
             open(SMCSS, 'a').close()
             flist = task.get_uploadable_files()
-            self.assertEqual(len(flist), 6)
+            self.assertEqual(len(flist), 7)
             flist.index(SMCSS)
 
             # try with score/rot-hiResApo_doc_pv_complex1.pdb
@@ -119,7 +131,7 @@ class TestEvaluation(unittest.TestCase):
                                     'hiResHolo-1fcz_1fcy_docked_complex.pdb')
             open(hiResApo, 'a').close()
             flist = task.get_uploadable_files()
-            self.assertEqual(len(flist), 7)
+            self.assertEqual(len(flist), 8)
             flist.index(hiResApo)
 
             # try with score/rot-hiResHolo_doc_pv_complex1.pdb
@@ -127,14 +139,14 @@ class TestEvaluation(unittest.TestCase):
                                      'hiTanimoto-1fcz_1fcz_docked_complex.pdb')
             open(hiResHolo, 'a').close()
             flist = task.get_uploadable_files()
-            self.assertEqual(len(flist), 8)
+            self.assertEqual(len(flist), 9)
             flist.index(hiResHolo)
 
             # try with score/crystal.pdb
             crystal = os.path.join(score, 'crystal.pdb')
             open(crystal, 'a').close()
             flist = task.get_uploadable_files()
-            self.assertEqual(len(flist), 9)
+            self.assertEqual(len(flist), 10)
             flist.index(crystal)
 
             # try with RMSD.pickle
@@ -142,7 +154,7 @@ class TestEvaluation(unittest.TestCase):
                                       EvaluationTask.RMSD_PICKLE)
             open(rmsdpickle, 'a').close()
             flist = task.get_uploadable_files()
-            self.assertEqual(len(flist), 10)
+            self.assertEqual(len(flist), 11)
             flist.index(rmsdpickle)
 
             # try with stderr/stdout files
@@ -151,7 +163,7 @@ class TestEvaluation(unittest.TestCase):
             outfile = os.path.join(task.get_dir(), 'evaluate.py.stdout')
             open(outfile, 'a').close()
             flist = task.get_uploadable_files()
-            self.assertEqual(len(flist), 12)
+            self.assertEqual(len(flist), 13)
             flist.index(crystal)
             flist.index(hiResHolo)
             flist.index(hiResApo)
@@ -163,6 +175,7 @@ class TestEvaluation(unittest.TestCase):
             flist.index(rmsd)
             flist.index(rmsdpickle)
             flist.index(rmsdjson)
+            flist.index(rmsdcsv)
             flist.index(evalexit)
         finally:
             shutil.rmtree(temp_dir)
@@ -1040,6 +1053,13 @@ class TestEvaluation(unittest.TestCase):
         self.assertEqual(task.get_rmsd_pickle(),
                          os.path.join('/ha', task.get_dir_name(),
                                       EvaluationTask.RMSD_PICKLE))
+
+    def test_get_rmsd_csv(self):
+        params = D3RParameters()
+        task = EvaluationTask('/ha', 'foo', None, params)
+        self.assertEqual(task.get_rmsd_csv(),
+                         os.path.join('/ha', task.get_dir_name(),
+                                      EvaluationTask.RMSD_CSV))
 
     def test_is_external_submission(self):
         params = D3RParameters()
