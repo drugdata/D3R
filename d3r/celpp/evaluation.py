@@ -13,6 +13,7 @@ from d3r.celpp.blastnfilter import BlastNFilterTask
 from d3r.celpp.challengedata import ChallengeDataTask
 from d3r.celpp.participant import ParticipantDatabaseFromCSVFactory
 from d3r.celpp import util
+from d3r.celpp.task import UnsetNameError
 from d3r.celpp.task import Attachment
 
 
@@ -327,6 +328,13 @@ class EvaluationTask(D3RTask):
         self._docktask = docktask
         self._emailer = None
         self._priority = 0
+        try:
+            self._week_num = util.\
+                get_celpp_week_number_from_path(self.get_path())
+            self._year = util.get_celpp_year_from_path(self.get_dir())
+        except UnsetNameError:
+            self._week_num = 0
+            self._year = 0
 
     def set_priority(self, priority):
         """Sets priority of when evaluation task should be run
@@ -559,7 +567,7 @@ class EvaluationTask(D3RTask):
                   celpp_week<week no>_<year>_evalresults_<guid>
         """
         res = ('celpp_week' + str(self._week_num) + '_' + str(self._year) +
-               '_evalresults_')
+               '_evalresults_' + str(self.get_guid_for_task()))
         if nosuffix is False:
             res += '.tar.gz'
         return res
@@ -583,7 +591,8 @@ class EvaluationTask(D3RTask):
 
            :returns: string that is full path to tarfile.
         """
-        evalfile = os.path.join(self.get_dir(), evalresultdirname)
+        evalfile = os.path.join(self.get_dir(), evalresultdirname + '.tar.gz')
+
         tar = tarfile.open(evalfile, 'w:gz')
 
         file_list = [EvaluationTask.FINAL_LOG, EvaluationTask.EVAL_EXITCODEFILE,

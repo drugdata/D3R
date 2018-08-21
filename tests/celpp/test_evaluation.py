@@ -14,6 +14,7 @@ Tests for `evaluation` module.
 """
 import shutil
 import os
+import tarfile
 
 from mock import Mock
 
@@ -1119,13 +1120,81 @@ class TestEvaluation(unittest.TestCase):
                          '123')
 
     def test_create_evaluationresult_tarfile(self):
-        # TODO finish
-        self.assertEqual(1, 2)
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = EvaluationTask(temp_dir, 'blah' +
+                              EvaluationTask.EXT_SUBMISSION_SUFFIX,
+                              None,
+                              params)
+            task.create_dir()
+            # try on empty directory
+            res = task._create_evaluationresult_tarfile('hehe')
+            self.assertEqual(res, os.path.join(task.get_dir(), 'hehe.tar.gz'))
+            with tarfile.open(name=res, mode='r:gz') as tf:
+                self.assertEqual(tf.getmembers(), [])
+            os.unlink(res)
+
+            # try with all files added and an extra file and directory
+            file_list = [EvaluationTask.FINAL_LOG, EvaluationTask.EVAL_EXITCODEFILE,
+                         EvaluationTask.RMSD_CSV, EvaluationTask.RMSD_JSON,
+                         EvaluationTask.RMSD_JSON, EvaluationTask.COMPLETE_FILE,
+                         EvaluationTask.ERROR_FILE, EvaluationTask.START_FILE,
+                         'haha']
+            for entry in file_list:
+                fullpath = os.path.join(task.get_dir(), entry)
+                with open(fullpath, 'w') as f:
+                    f.write(entry + '\n')
+                    f.flush()
+            os.makedirs(os.path.join(task.get_dir(), 'somedir'), mode=0o755)
+            res = task._create_evaluationresult_tarfile('hehe')
+            self.assertEqual(res, os.path.join(task.get_dir(), 'hehe.tar.gz'))
+            with tarfile.open(name=res, mode='r:gz') as tf:
+                members = tf.getmembers()
+                self.assertTrue(len(members), 8)
+                names = []
+                for m in members:
+                    self.assertTrue(m.isfile())
+                    names.append(m.name)
+
+                for entry in file_list:
+                    if entry == 'haha':
+                        continue
+                    self.assertTrue('hehe/' + entry in names)
+
+            os.unlink(res)
+
+        finally:
+            shutil.rmtree(temp_dir)
 
     def test_get_evaluationresult_filename(self):
-        # TODO finish
-        self.assertEqual(1, 2)
-        
+        # test where custom dir so no celpp/week year
+        params = D3RParameters()
+        task = EvaluationTask('/ha', 'foo', None, params)
+
+        self.assertEqual(task.get_evaluationresult_filename(),
+                         'celpp_week0_0_evalresults_None')
+        self.assertEqual(task.get_evaluationresult_filename(nosuffix=False),
+                         'celpp_week0_0_evalresults_None.tar.gz')
+
+        params = D3RParameters()
+        task = EvaluationTask('/ha/2014/dataset.week.10', 'foo', None, params)
+        self.assertEqual(task.get_evaluationresult_filename(),
+                         'celpp_week10_2014_evalresults_None')
+        self.assertEqual(task.get_evaluationresult_filename(nosuffix=False),
+                         'celpp_week10_2014_evalresults_None.tar.gz')
+
+        dtask = D3RTask('/ha/2014/dataset.week.10', params)
+        dtask.set_name('123' + EvaluationTask.EXT_SUBMISSION_SUFFIX)
+        task = EvaluationTask('/ha/2014/dataset.week.10', dtask.get_name(),
+                              dtask,
+                              params)
+
+        self.assertEqual(task.get_evaluationresult_filename(),
+                         'celpp_week10_2014_evalresults_123')
+        self.assertEqual(task.get_evaluationresult_filename(nosuffix=False),
+                         'celpp_week10_2014_evalresults_123.tar.gz')
+
     def test_eval_emailer_append_to_message_log(self):
         emailer = EvaluationEmailer(None, None)
         self.assertEqual(emailer.get_message_log(), None)
