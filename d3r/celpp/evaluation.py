@@ -2,6 +2,7 @@ __author__ = 'churas'
 
 import os
 import logging
+import tarfile
 
 from d3r.celpp.task import SmtpEmailerFactory
 from d3r.celpp.task import D3RTask
@@ -550,6 +551,53 @@ class EvaluationTask(D3RTask):
             return False
         self._can_run = True
         return True
+
+    def get_evaluationresult_filename(self, nosuffix=True):
+        """Gets the evaluationresult filename
+        :param nosuffix: boolean if set to True .tar.gz suffix is omitted
+        :returns: Just filename as string in format
+                  celpp_week<week no>_<year>_evalresults_<guid>
+        """
+        res = ('celpp_week' + str(self._week_num) + '_' + str(self._year) +
+               '_evalresults_')
+        if nosuffix is False:
+            res += '.tar.gz'
+        return res
+
+    def _create_evaluationresult_tarfile(self, evalresultdirname):
+        """Creates a gzipped tarfile of the results of the evaluation
+           that can be uploaded to remote server for download by
+           participant. Tarfile will have name:
+           `evalresultdirname`.tar.gz
+
+           with contents under directory with name of file minus .tar.gz:
+
+           RMSD.csv
+           RMSD.txt
+           RMSD.json
+           start
+           complete
+           error
+           evaluate.exitcode
+           final.log
+
+           :returns: string that is full path to tarfile.
+        """
+        evalfile = os.path.join(self.get_dir(), evalresultdirname)
+        tar = tarfile.open(evalfile, 'w:gz')
+
+        file_list = [EvaluationTask.FINAL_LOG, EvaluationTask.EVAL_EXITCODEFILE,
+                     EvaluationTask.RMSD_CSV, EvaluationTask.RMSD_JSON,
+                     EvaluationTask.RMSD_JSON, EvaluationTask.COMPLETE_FILE,
+                     EvaluationTask.ERROR_FILE, EvaluationTask.START_FILE]
+
+        for entry in file_list:
+            fullpath_entry = os.path.join(self.get_dir(), entry)
+            if os.path.isfile(fullpath_entry):
+                tar.add(fullpath_entry, arcname=evalresultdirname + '/' +
+                        entry)
+        tar.close()
+        return evalfile
 
     def run(self):
         """Runs EvaluationTask after verifying dock was good

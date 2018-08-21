@@ -1118,6 +1118,14 @@ class TestEvaluation(unittest.TestCase):
         self.assertEqual(task.get_guid_for_task(),
                          '123')
 
+    def test_create_evaluationresult_tarfile(self):
+        # TODO finish
+        self.assertEqual(1, 2)
+
+    def test_get_evaluationresult_filename(self):
+        # TODO finish
+        self.assertEqual(1, 2)
+        
     def test_eval_emailer_append_to_message_log(self):
         emailer = EvaluationEmailer(None, None)
         self.assertEqual(emailer.get_message_log(), None)
