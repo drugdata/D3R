@@ -14,6 +14,7 @@ Tests for `evaluation` module.
 """
 import shutil
 import os
+import sys
 import tarfile
 
 from mock import Mock
@@ -1131,8 +1132,16 @@ class TestEvaluation(unittest.TestCase):
             # try on empty directory
             res = task._create_evaluationresult_tarfile('hehe')
             self.assertEqual(res, os.path.join(task.get_dir(), 'hehe.tar.gz'))
-            with tarfile.open(name=res, mode='r:gz') as tf:
-                self.assertEqual(tf.getmembers(), [])
+            try:
+                with tarfile.open(name=res, mode='r:gz') as tf:
+                    self.assertEqual(tf.getmembers(), [])
+            except tarfile.ReadError:
+                # Python 2.6 cannot handle empty tarfile so
+                # check the version of Python if we get this exception
+                # and if its 2.6 or earlier ignore it
+                self.assertTrue(sys.version_info[0] <= 2)
+                self.assertTrue(sys.version_info[1] <= 6)
+
             os.unlink(res)
 
             # try with all files added and an extra file and directory
