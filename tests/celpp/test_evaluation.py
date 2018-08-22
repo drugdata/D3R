@@ -1141,6 +1141,12 @@ class TestEvaluation(unittest.TestCase):
                 # and if its 2.6 or earlier ignore it
                 self.assertTrue(sys.version_info[0] <= 2)
                 self.assertTrue(sys.version_info[1] <= 6)
+            except AttributeError:
+                # Python 2.6 cannot handle empty tarfile so
+                # check the version of Python if we get this exception
+                # and if its 2.6 or earlier ignore it
+                self.assertTrue(sys.version_info[0] <= 2)
+                self.assertTrue(sys.version_info[1] <= 6)
 
             os.unlink(res)
 
