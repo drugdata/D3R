@@ -3,6 +3,7 @@ __author__ = 'churas'
 import os
 import logging
 import tarfile
+import re
 
 from d3r.celpp.task import SmtpEmailerFactory
 from d3r.celpp.task import D3RTask
@@ -437,9 +438,11 @@ class EvaluationTask(D3RTask):
         :returns: guid from task name
         """
         if self._docktask is None:
-            logger.error('Parent DockTask is None, so guid is'
-                         ' NOT extractable')
-            return None
+            logger.debug('Dock task is None going to strip off .* suffix')
+            if self.get_name() is None:
+                logger.error('Task name is none, giving up trying to get guid')
+                return None
+            return re.sub('\..*$', '', self.get_name())
 
         return self._docktask.get_name()\
             .replace(EvaluationTask.EXT_SUBMISSION_SUFFIX, '')
@@ -607,6 +610,64 @@ class EvaluationTask(D3RTask):
                         entry)
         tar.close()
         return evalfile
+
+    def _upload_evaluationresult_file(self, evalresult_file):
+        """Uploads `evalresult_file` to remote server
+        """
+        if evalresult_file is None:
+            logger.error('evalresult_file is None')
+            self.append_to_email_log('Skipping upload of evaluationresult '
+                                     'since its None\n')
+            return
+
+        if not os.path.isfile(evalresult_file):
+            logger.error(evalresult_file + ' file not found')
+            self.append_to_email_log(evalresult_file + ' file not found '
+                                                       'skipping upload\n')
+            return
+
+        uploader = self.get_file_transfer()
+        if uploader is None:
+            logger.warning('No uploader available to upload evaluation result '
+                           'file')
+            self.append_to_email_log('No uploader available to upload '
+                                     'evaluation result file\n')
+            return
+        try:
+            remote_dir = uploader.get_remote_evaluationresult_dir()
+            if remote_dir is None:
+                logger.warning('No remote evaluation result directory set for '
+                               'ftp upload')
+                self.append_to_email_log('No remote evaluation result '
+                                         'directory set ' +
+                                         'for ftp upload\n')
+                return
+
+            guid = self.get_guid_for_task()
+            if guid is None:
+                logger.error('Unable to get guid for task')
+                self.append_to_email_log('Unable to get guid for task '
+                                         'for ftp upload\n')
+                return
+
+            remote_dir = os.path.join(remote_dir, guid)
+            logger.debug('Attempting to upload ' + evalresult_file + ' to '
+                         + remote_dir)
+
+            logger.debug('Connecting to remote server to upload challenge data'
+                         'package')
+            # connect to remote server
+            uploader.connect()
+
+            if uploader.upload_file_direct(evalresult_file, remote_dir,
+                                           os.path.basename(evalresult_file)) \
+                    is False:
+                raise Exception(uploader.get_error_msg())
+
+            self.append_to_email_log('\nEvaluation result tarball uploaded: \n'
+                                     + uploader.get_upload_summary() + '\n')
+        finally:
+            uploader.disconnect()
 
     def run(self):
         """Runs EvaluationTask after verifying dock was good

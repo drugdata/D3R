@@ -33,6 +33,7 @@ from d3r.celpp.participant import ParticipantDatabase
 from d3r.celpp.participant import Participant
 from d3r.celpp.task import SmtpEmailer
 from d3r.celpp.evaluation import EvaluationEmailer
+from d3r.celpp.filetransfer import FtpFileTransfer
 
 
 class TestEvaluation(unittest.TestCase):
@@ -1108,7 +1109,7 @@ class TestEvaluation(unittest.TestCase):
                               None,
                               params)
         self.assertEqual(task.get_guid_for_task(),
-                         None)
+                         'blah')
 
     def test_get_guid_for_task(self):
         params = D3RParameters()
@@ -1182,22 +1183,138 @@ class TestEvaluation(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
+    def test_upload_evaluationresult_file_file_is_none(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = EvaluationTask(temp_dir, 'foo', None, params)
+            task._upload_evaluationresult_file(None)
+            self.assertEqual(task.get_email_log(), 'Skipping upload of '
+                                                   'evaluationresult since '
+                                                   'its None\n')
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_upload_evaluationresult_file_noexist(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = EvaluationTask(temp_dir, 'foo', None, params)
+            noexist = os.path.join(temp_dir, 'noexist')
+            task._upload_evaluationresult_file(noexist)
+            self.assertEqual(task.get_email_log(), noexist +
+                             ' file not found skipping upload\n')
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_upload_evaluationresult_no_uploader(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            evalfile = os.path.join(temp_dir, 'foo')
+            open(evalfile, 'a').close()
+            task = EvaluationTask(temp_dir, 'foo', None, params)
+            task._upload_evaluationresult_file(evalfile)
+            self.assertEqual(task.get_email_log(),
+                             'No uploader available to upload '
+                             'evaluation result file\n')
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_upload_evaluationresult_no_remotedir(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            evalfile = os.path.join(temp_dir, 'foo')
+            open(evalfile, 'a').close()
+            task = EvaluationTask(temp_dir, 'foo', None, params)
+            ftp = FtpFileTransfer(None)
+            task.set_file_transfer(ftp)
+            task._upload_evaluationresult_file(evalfile)
+            self.assertEqual(task.get_email_log(),
+                             'No remote evaluation result '
+                                         'directory set ' +
+                                         'for ftp upload\n')
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_upload_evaluationresult_unable_to_getguid(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            evalfile = os.path.join(temp_dir, 'foo')
+            open(evalfile, 'a').close()
+            task = EvaluationTask(temp_dir, None, None, params)
+            ftp = FtpFileTransfer(None)
+            ftp.set_remote_evaluationresult_dir('/remote')
+            task.set_file_transfer(ftp)
+            task._upload_evaluationresult_file(evalfile)
+            self.assertEqual(task.get_email_log(),
+                             'Unable to get guid for task for ftp upload\n')
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_upload_evaluationresult_upload_fails(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            evalfile = os.path.join(temp_dir, 'foo')
+            open(evalfile, 'a').close()
+            task = EvaluationTask(temp_dir, 'hehe', None, params)
+            mockftp = D3RParameters()
+            mockftp.put = Mock(side_effect=IOError('hi'))
+
+            ftp = FtpFileTransfer(None)
+            ftp.set_connection(mockftp)
+            ftp.set_remote_evaluationresult_dir('/remote')
+            task.set_file_transfer(ftp)
+            try:
+                task._upload_evaluationresult_file(evalfile)
+            except Exception as e:
+                self.assertEqual(str(e),
+                                 'Unable to upload ' + evalfile +
+                                 ' to /remote/hehe/foo : hi')
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_upload_evaluationresult_upload_succeeds(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            evalfile = os.path.join(temp_dir, 'foo')
+            open(evalfile, 'a').close()
+            task = EvaluationTask(temp_dir, 'hehe', None, params)
+            mockftp = D3RParameters()
+            mockftp.put = Mock(side_effect=[3])
+
+            ftp = FtpFileTransfer(None)
+            ftp.set_connection(mockftp)
+            ftp.set_remote_evaluationresult_dir('/remote')
+            task.set_file_transfer(ftp)
+            task._upload_evaluationresult_file(evalfile)
+            self.assertEqual(task.get_email_log(),
+                             '\nEvaluation result tarball uploaded: \n1 '
+                             '(3 bytes) files uploaded in 0 seconds to '
+                             'host Unset:\n')
+        finally:
+            shutil.rmtree(temp_dir)
+
     def test_get_evaluationresult_filename(self):
         # test where custom dir so no celpp/week year
         params = D3RParameters()
         task = EvaluationTask('/ha', 'foo', None, params)
 
         self.assertEqual(task.get_evaluationresult_filename(),
-                         'celpp_week0_0_evalresults_None')
+                         'celpp_week0_0_evalresults_foo')
         self.assertEqual(task.get_evaluationresult_filename(nosuffix=False),
-                         'celpp_week0_0_evalresults_None.tar.gz')
+                         'celpp_week0_0_evalresults_foo.tar.gz')
 
         params = D3RParameters()
         task = EvaluationTask('/ha/2014/dataset.week.10', 'foo', None, params)
         self.assertEqual(task.get_evaluationresult_filename(),
-                         'celpp_week10_2014_evalresults_None')
+                         'celpp_week10_2014_evalresults_foo')
         self.assertEqual(task.get_evaluationresult_filename(nosuffix=False),
-                         'celpp_week10_2014_evalresults_None.tar.gz')
+                         'celpp_week10_2014_evalresults_foo.tar.gz')
 
         dtask = D3RTask('/ha/2014/dataset.week.10', params)
         dtask.set_name('123' + EvaluationTask.EXT_SUBMISSION_SUFFIX)
