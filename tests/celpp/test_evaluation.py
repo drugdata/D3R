@@ -1134,21 +1134,16 @@ class TestEvaluation(unittest.TestCase):
             res = task._create_evaluationresult_tarfile('hehe')
             self.assertEqual(res, os.path.join(task.get_dir(), 'hehe.tar.gz'))
             try:
-                with tarfile.open(name=res, mode='r:gz') as tf:
-                    self.assertEqual(tf.getmembers(), [])
+                tf = tarfile.open(name=res, mode='r:gz')
+                self.assertEqual(tf.getmembers(), [])
+                tf.close()
             except tarfile.ReadError:
                 # Python 2.6 cannot handle empty tarfile so
                 # check the version of Python if we get this exception
                 # and if its 2.6 or earlier ignore it
                 self.assertTrue(sys.version_info[0] <= 2)
                 self.assertTrue(sys.version_info[1] <= 6)
-            except AttributeError:
-                # Python 2.6 cannot handle empty tarfile so
-                # check the version of Python if we get this exception
-                # and if its 2.6 or earlier ignore it
-                self.assertTrue(sys.version_info[0] <= 2)
-                self.assertTrue(sys.version_info[1] <= 6)
-
+            
             os.unlink(res)
 
             # try with all files added and an extra file and directory
@@ -1165,18 +1160,19 @@ class TestEvaluation(unittest.TestCase):
             os.makedirs(os.path.join(task.get_dir(), 'somedir'), mode=0o755)
             res = task._create_evaluationresult_tarfile('hehe')
             self.assertEqual(res, os.path.join(task.get_dir(), 'hehe.tar.gz'))
-            with tarfile.open(name=res, mode='r:gz') as tf:
-                members = tf.getmembers()
-                self.assertTrue(len(members), 8)
-                names = []
-                for m in members:
-                    self.assertTrue(m.isfile())
-                    names.append(m.name)
+            tf = tarfile.open(name=res, mode='r:gz')
+            members = tf.getmembers()
+            self.assertTrue(len(members), 8)
+            names = []
+            for m in members:
+                self.assertTrue(m.isfile())
+                names.append(m.name)
 
-                for entry in file_list:
-                    if entry == 'haha':
-                        continue
-                    self.assertTrue('hehe/' + entry in names)
+            for entry in file_list:
+                if entry == 'haha':
+                    continue
+                self.assertTrue('hehe/' + entry in names)
+            tf.close()
 
             os.unlink(res)
 
