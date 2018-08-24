@@ -31,6 +31,7 @@ from d3r.celpp.task import Attachment
 from d3r.celpp.filetransfer import FtpFileTransfer
 from d3r.celpp.task import SmtpConfig
 from d3r.celpp.task import SmtpEmailerFactory
+from d3r.celpp.task import WebsiteServiceConfig
 
 
 class MockException(Exception):
@@ -784,6 +785,52 @@ class TestD3rTask(unittest.TestCase):
             res.as_string().index('Content-Type: application/octet-stream')
             res.as_string().index('Content-Disposition: attachment; '
                                   'filename="well.gz"')
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_websiteserviceconfig_noconfig(self):
+        webconfig = WebsiteServiceConfig()
+        self.assertEqual(webconfig.get_timeout(), 0.1)
+        self.assertEqual(webconfig.get_rmsd_url(), None)
+        self.assertEqual(webconfig.get_basicauth_password(), None)
+        self.assertEqual(webconfig.get_basicauth_user(), None)
+        self.assertEqual(webconfig.get_apikey(), None)
+        self.assertEqual(webconfig.get_portal_name(), 'notset')
+        self.assertEqual(webconfig.get_source(), 'notset')
+        self.assertEqual(webconfig.get_targets_url(), None)
+
+    def test_websiteserviceconfig_nonexistantconfig(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            nonexist = os.path.join(temp_dir, 'foo')
+            webconfig = WebsiteServiceConfig(configfile=nonexist)
+            self.assertEqual(webconfig.get_timeout(), 0.1)
+            self.assertEqual(webconfig.get_rmsd_url(), None)
+            self.assertEqual(webconfig.get_basicauth_password(), None)
+            self.assertEqual(webconfig.get_basicauth_user(), None)
+            self.assertEqual(webconfig.get_apikey(), None)
+            self.assertEqual(webconfig.get_portal_name(), 'notset')
+            self.assertEqual(webconfig.get_source(), 'notset')
+            self.assertEqual(webconfig.get_targets_url(), None)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_websiteserviceconfig_emptyconfig(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            empty = os.path.join(temp_dir, 'foo')
+            open(empty, 'a').close()
+            webconfig = WebsiteServiceConfig(configfile=empty)
+            self.assertEqual(webconfig.get_timeout(), 0.1)
+            self.assertEqual(webconfig.get_rmsd_url(), None)
+            self.assertEqual(webconfig.get_basicauth_password(), None)
+            self.assertEqual(webconfig.get_basicauth_user(), None)
+            self.assertEqual(webconfig.get_apikey(), None)
+            self.assertEqual(webconfig.get_portal_name(), 'notset')
+            self.assertEqual(webconfig.get_source(), 'notset')
+            self.assertEqual(webconfig.get_targets_url(), None)
+
         finally:
             shutil.rmtree(temp_dir)
 

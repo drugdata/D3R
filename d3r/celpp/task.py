@@ -744,7 +744,187 @@ class Attachment(object):
         return self._desired_name
 
 
-class SmtpConfig(object):
+class BaseConfig(object):
+    """Base class for ConfigParser objects containing functions
+       usable by derived classes
+    """
+    def __init__(self):
+        """Constructor"""
+        pass
+
+    def _get_config(self, configfile):
+        if not os.path.isfile(configfile):
+            logger.warning(configfile + ' is not a file')
+            return None
+
+        config = configparser.ConfigParser()
+        config.read(configfile)
+        return config
+
+    def _get_value(self, config, section, option):
+        """Calls get() on configparser object `config` passed in to
+           get value for corresponding option
+           :param config: ConfigParser object loaded with smtp configuration
+           :param section: Section to look for value
+           :param option: Keyword value or value left of =
+                           (ie foo = X the keyword would be foo)
+           :returns: value as string or whatever ConfigParser().get()
+                     returns or None if not found
+        """
+        if section is None:
+            logger.error('Section cannot be None')
+            return None
+
+        if not config.has_section(section):
+            logger.warning(section +
+                           ' section not found in configuration')
+            return None
+
+        if not config.has_option(section, option):
+            logger.info('In parsing ' + section + ' configuration ' + option +
+                        ' not found')
+            return None
+
+        return config.get(section, option)
+
+
+class WebsiteServiceConfig(BaseConfig):
+    """Parses configfile passed into constructor to
+       obtain parameters to connect to website REST services
+       The configfile should be in configparser format as seen
+       in this example:
+
+       [websiteservice]
+
+       url = https://blah.com/api/1/d3r/celpp
+       apikey = asdlkjas
+       basicauth_user = joe
+       basicauth_password = secret123
+       source = dev
+       portal_name = d3r
+       timeout = 5
+    """
+    DEFAULT = 'websiteservice'
+    WEB_URL = 'url'
+    WEB_APIKEY = 'apikey'
+    WEB_SOURCE = 'source'
+    WEB_PORTAL_NAME = 'portal_name'
+    WEB_BASIC_USER = 'basicauth_user'
+    WEB_BASIC_PASS = 'basicauth_password'
+    WEB_TIMEOUT = 'timeout'
+    RMSD_ENDPOINT = 'rmsd'
+    TARGETS_ENDPOINT = 'week'
+    JSON_KEY = 'json'
+    CONTENT_TYPE_VAL = 'application/json'
+    CONTENT_TYPE_KEY = 'Content-Type'
+    API_KEY_KEY = 'X-API-KEY'
+
+    def __init__(self, configfile=None):
+        """Parses configuration file set in `configfile`
+        """
+        super(BaseConfig, self).__init__()
+        self._url = None
+        self._apikey = None
+        self._source = 'notset'
+        self._portal_name = 'notset'
+        self._basicauth_user = None
+        self._basicauth_pass = None
+        self._timeout = 0.1
+
+        if configfile is not None:
+            try:
+                self._parse_config(configfile)
+            except configparser.Error:
+                logger.exception('Caught Exception trying to parse ' +
+                                 configfile)
+
+    def _parse_config(self, configfile):
+        """Parses configuration file passed in
+           to set internal variables such as user, host, password, etc.
+        """
+        config = self._get_config(configfile)
+        if config is None:
+            return
+
+        self._url = self._get_value(config, WebsiteServiceConfig.DEFAULT,
+                                    WebsiteServiceConfig.WEB_URL)
+        self._apikey = self._get_value(config, WebsiteServiceConfig.DEFAULT,
+                                       WebsiteServiceConfig.WEB_APIKEY)
+        self._source = self._get_value(config, WebsiteServiceConfig.DEFAULT,
+                                       WebsiteServiceConfig.WEB_SOURCE)
+        self._portal_name = self._get_value(config,
+                                            WebsiteServiceConfig.DEFAULT,
+                                            WebsiteServiceConfig.
+                                            WEB_PORTAL_NAME)
+
+        self._basicauth_user = self._get_value(config,
+                                               WebsiteServiceConfig.DEFAULT,
+                                               WebsiteServiceConfig.
+                                               WEB_BASIC_USER)
+        self._basicauth_pass = self._get_value(config,
+                                               WebsiteServiceConfig.DEFAULT,
+                                               WebsiteServiceConfig.
+                                               WEB_BASIC_PASS)
+
+        timeout = self._get_value(config, WebsiteServiceConfig.DEFAULT,
+                                  WebsiteServiceConfig.WEB_TIMEOUT)
+        try:
+            if timeout is not None:
+                self._timeout = float(timeout)
+        except SyntaxError:
+            logger.debug('Unable to convert timeout : ' + str(timeout) +
+                         ' to float')
+
+
+    def get_rmsd_url(self):
+        """Gets website REST service base url with rmsd endpoint
+        """
+        if self._url is None:
+            return None
+        if self._url.endswith('/'):
+            return self._url + WebsiteServiceConfig.RMSD_ENDPOINT
+        return self._url + '/' + WebsiteServiceConfig.RMSD_ENDPOINT
+
+    def get_apikey(self):
+        """Get api key
+        """
+        return self._apikey
+
+    def get_targets_url(self):
+        """Gets website REST service base url with targets aka week endpoint
+        """
+        if self._url is None:
+            return None
+        if self._url.endswith('/'):
+            return self._url + WebsiteServiceConfig.TARGETS_ENDPOINT
+        return self._url + '/' + WebsiteServiceConfig.TARGETS_ENDPOINT
+
+    def get_source(self):
+        """Gets source
+        """
+        return self._source
+
+    def get_portal_name(self):
+        """Gets portal_name
+        """
+        return self._portal_name
+
+    def get_basicauth_user(self):
+        """Gets basic auth username
+        """
+        return self._basicauth_user
+
+    def get_basicauth_password(self):
+        """Gets basic auth password
+        """
+        return self._basicauth_pass
+
+    def get_timeout(self):
+        """Gets web request timeout
+        """
+        return self._timeout
+
+class SmtpConfig(BaseConfig):
     """Parses configfile passed into constructor to
        obtain parameters to connect to smtp server.
        The configfile should be in configparser format
@@ -781,6 +961,7 @@ class SmtpConfig(object):
 
         :return: SmtpConfig object
         """
+        super(BaseConfig, self).__init__()
         self._user = None
         self._host = 'localhost'
         self._port = SmtpConfig.DEFAULT_PORT
@@ -799,12 +980,9 @@ class SmtpConfig(object):
         """Parses configuration file passed in
            to set internal variables such as user, host, password, etc.
         """
-        if not os.path.isfile(configfile):
-            logger.warning(configfile + ' is not a file')
+        config = self._get_config(configfile)
+        if config is None:
             return
-
-        config = configparser.ConfigParser()
-        config.read(configfile)
 
         self._user = self._get_value(config, SmtpConfig.DEFAULT,
                                      SmtpConfig.SMTP_USER)
@@ -833,32 +1011,6 @@ class SmtpConfig(object):
         self._replyto_address = self._get_value(config, SmtpConfig.DEFAULT,
                                                 SmtpConfig.
                                                 SMTP_REPLYTO_ADDRESS)
-
-    def _get_value(self, config, section, option):
-        """Calls get() on configparser object `config` passed in to
-           get value for corresponding option
-           :param config: ConfigParser object loaded with smtp configuration
-           :param section: Section to look for value
-           :param option: Keyword value or value left of =
-                           (ie foo = X the keyword would be foo)
-           :returns: value as string or whatever ConfigParser().get()
-                     returns or None if not found
-        """
-        if section is None:
-            logger.error('Section cannot be None')
-            return None
-
-        if not config.has_section(section):
-            logger.warning(section +
-                           ' section not found in configuration')
-            return None
-
-        if not config.has_option(section, option):
-            logger.info('In parsing smtp configuration ' + option +
-                        ' not found')
-            return None
-
-        return config.get(section, option)
 
     def get_host(self):
         """Gets host"""
