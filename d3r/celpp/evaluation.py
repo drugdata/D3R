@@ -4,9 +4,14 @@ import os
 import logging
 import tarfile
 import re
+import json
+import pickle
+import requests
+from requests.auth import HTTPBasicAuth
 
 from d3r.celpp.task import SmtpEmailerFactory
 from d3r.celpp.task import D3RTask
+from d3r.celpp.task import WebsiteServiceConfig
 from d3r.celpp.task import D3RParameters
 from d3r.celpp.proteinligprep import ProteinLigPrepTask
 from d3r.celpp.dataimport import DataImportTask
@@ -329,6 +334,13 @@ class EvaluationTask(D3RTask):
         self._docktask = docktask
         self._emailer = None
         self._priority = 0
+        self._webserviceconfig = None
+
+        try:
+            config = self.get_args().websiteserviceconfig
+            self._webserviceconfig = WebsiteServiceConfig(configfile=config)
+        except AttributeError:
+            pass
         try:
             self._week_num = util.\
                 get_celpp_week_number_from_path(self.get_path())
@@ -669,6 +681,79 @@ class EvaluationTask(D3RTask):
         finally:
             uploader.disconnect()
 
+    def generate_rmsd_object(self):
+        """Generates a dictionary object parsed from either RMSD.json or as
+           a fallback as RMSD.pickle file that contains scores from this
+           evaluation. Format matches the one defined for REST service here:
+           https://github.com/drugdata/D3R/wiki/D3R-Website-REST-service
+
+           """
+        rmsdobj = {}
+        rmsdjson = self.get_rmsd_json()
+        rmsdpickle = self.get_rmsd_pickle()
+
+        if os.path.isfile(rmsdjson):
+            with open(rmsdjson, 'r') as fp:
+                rmsdobj[WebsiteServiceConfig.JSON_KEY] = json.load(fp)
+        elif os.path.isfile(rmsdpickle):
+            with open(rmsdpickle, 'r') as fp:
+                rmsdobj[WebsiteServiceConfig.JSON_KEY] = pickle.load(fp)
+        else:
+            return None
+
+        version = 'unknown'
+        sfile = os.path.join(self.get_dir(), self.START_FILE)
+        with open(sfile, 'r') as fp:
+            data = fp.read()
+            if len(data) > 0:
+                version = str(data)
+
+        rmsdobj['version'] = version
+        rmsdobj['source'] = self._webserviceconfig.get_source()
+        rmsdobj['week'] = int(self._week_num)
+        rmsdobj['year'] = int(self._year)
+        rmsdobj['portal_name'] = self._webserviceconfig.get_portal_name()
+        rmsdobj['submission_folder'] = self.get_name()
+        return rmsdobj
+
+    def post_rmsd_to_evalservice(self, rmsdobj):
+        """Posts RMSD scores to evaluation service
+        """
+
+        if rmsdobj is None:
+            return
+
+        if self._webserviceconfig is None:
+            logger.warning('No service information available to post '
+                           'evaluation results')
+            self.append_to_email_log('No website service configuration found '
+                                     'to post evaluation results\n')
+            return
+
+        theheader = dict()
+
+        theheader[WebsiteServiceConfig.API_KEY_KEY] = self.\
+            _webserviceconfig.get_apikey()
+        theheader[WebsiteServiceConfig.
+            CONTENT_TYPE_KEY] = WebsiteServiceConfig.CONTENT_TYPE_VAL
+        bauth = None
+        if self._webserviceconfig.get_basicauth_user() is not None:
+            bauth = HTTPBasicAuth(self._webserviceconfig.get_basicauth_user(),
+                                  self._webserviceconfig.
+                                  get_basicauth_password())
+
+        r = requests.post(self._webserviceconfig.get_rmsd_url(),
+                          headers=theheader, json=rmsdobj, auth=bauth,
+                          timeout=self._webserviceconfig.get_timeout())
+
+        if r.status_code != 200:
+            msg = ('website REST service returned code: ' +
+                   str(r.status_code) + ' with text: ' + str(r.text) +
+                   ' and json: ' + str(r.json))
+            logger.error(msg)
+            self.append_to_email_log('\n' + msg + '\n')
+        return
+
     def run(self):
         """Runs EvaluationTask after verifying dock was good
 
@@ -753,5 +838,15 @@ class EvaluationTask(D3RTask):
             self.append_to_email_log('Caught exception trying to send '
                                      'evaluation email ' + str(e) + '\n')
 
+        # attempt to post evaluation results to website REST service
+        try:
+            self.post_rmsd_to_evalservice(self.generate_rmsd_object())
+        except Exception as e:
+            logger.exception('Not a show stopper, but caught exception '
+                             'trying to post results to website rest '
+                             'service')
+            self.append_to_email_log('\nCaught exception trying to post '
+                                     'evaluation results to website rest '
+                                     'service ' + str(e) + '\n')
         # assess the result
         self.end()

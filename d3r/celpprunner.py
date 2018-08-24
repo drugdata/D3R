@@ -44,6 +44,7 @@ CHIMERA_PREP = 'chimeraprep'
 POST_EVAL = 'postevaluation'
 STAGE_FLAG = '--stage'
 SMTPCONFIG_FLAG = '--smtpconfig'
+WEBSITESERVICECONFIG_FLAG = '--websiteserviceconfig'
 
 
 def _get_lock(theargs, stage):
@@ -447,6 +448,11 @@ def _parse_arguments(desc, args):
                         FtpFileTransfer.SUBMISSIONPATH + ') ' +
                         'SEE: description of challengedata '
                         'stage above for example file')
+    parser.add_argument(WEBSITESERVICECONFIG_FLAG,
+                        help='File containing configuration to connect to '
+                             'website REST services. If set evaluation results'
+                             'in evaluation stage will be persisted to REST'
+                             'service')
     parser.add_argument('--version', action='version',
                         version=('%(prog)s ' + d3r.__version__))
     return parser.parse_args(args, namespace=parsed_arguments)

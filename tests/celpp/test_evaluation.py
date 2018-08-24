@@ -1143,7 +1143,7 @@ class TestEvaluation(unittest.TestCase):
                 # and if its 2.6 or earlier ignore it
                 self.assertTrue(sys.version_info[0] <= 2)
                 self.assertTrue(sys.version_info[1] <= 6)
-            
+
             os.unlink(res)
 
             # try with all files added and an extra file and directory
