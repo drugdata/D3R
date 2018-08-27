@@ -236,7 +236,6 @@ class TestChallengeDataTask(unittest.TestCase):
             f = open(readme, 'r')
             found = False
             for line in f:
-                print line
                 if re.match('^hello there.*$', line):
                     found = True
                     break
