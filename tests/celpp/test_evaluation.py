@@ -1450,7 +1450,30 @@ class TestEvaluation(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
-    def test_generate_rmsd_object_with_validsubmit(self):
+    def test_post_rmsd_to_websiteservice_noconfig(self):
+        temp_dir = tempfile.mkdtemp()
+
+        try:
+
+            params = D3RParameters()
+            subdir = os.path.join(temp_dir, '2018', 'dataset.week.4')
+            os.makedirs(subdir, mode=0o755)
+
+            task = EvaluationTask(subdir, 'foo.extsubmission.evaluation',
+                                  None, params)
+            task.create_dir()
+            myrmsd = {}
+            myrmsd['6ar4'] = {}
+            myrmsd['6ar4']['LMCSS_ori'] = 1
+
+            task.post_rmsd_to_websiteservice(myrmsd)
+            self.assertEqual(task.get_email_log(),
+                             'No website service configuration found to '
+                             'post evaluation results\n')
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_post_rmsd_to_websiteservice_with_validsubmit_nobasicauth(self):
         temp_dir = tempfile.mkdtemp()
 
         try:
@@ -1491,7 +1514,58 @@ class TestEvaluation(unittest.TestCase):
             httpretty.disable()
             httpretty.reset()
 
-    def test_generate_rmsd_object_with_failedsubmit(self):
+    def test_post_rmsd_to_websiteservice_with_validsubmit_withbasicauth(self):
+        temp_dir = tempfile.mkdtemp()
+
+        try:
+            httpretty.enable()
+            httpretty.register_uri(httpretty.POST,
+                                   'http://foo.com/rmsd',
+                                   body='hi')
+
+            cfile = os.path.join(temp_dir, 'foo')
+            con = configparser.ConfigParser()
+            con.add_section(WebsiteServiceConfig.DEFAULT)
+            con.set(WebsiteServiceConfig.DEFAULT,
+                    WebsiteServiceConfig.WEB_URL,
+                    'http://foo.com')
+            con.set(WebsiteServiceConfig.DEFAULT,
+                    WebsiteServiceConfig.WEB_APIKEY, 'somekey')
+            con.set(WebsiteServiceConfig.DEFAULT,
+                    WebsiteServiceConfig.WEB_BASIC_USER, 'bob')
+            con.set(WebsiteServiceConfig.DEFAULT,
+                    WebsiteServiceConfig.WEB_BASIC_PASS, '12345')
+            f = open(cfile, 'w')
+            con.write(f)
+            f.flush()
+            f.close()
+
+            params = D3RParameters()
+            params.websiteserviceconfig = cfile
+            subdir = os.path.join(temp_dir, '2018', 'dataset.week.4')
+            os.makedirs(subdir, mode=0o755)
+
+            task = EvaluationTask(subdir, 'foo.extsubmission.evaluation',
+                                  None, params)
+            task.create_dir()
+            myrmsd = {}
+            myrmsd['6ar4'] = {}
+            myrmsd['6ar4']['LMCSS_ori'] = 1
+
+            task.post_rmsd_to_websiteservice(myrmsd)
+            self.assertEqual(task.get_email_log(), None)
+            reqy = httpretty.last_request()
+            # self.assertEqual(str(reqy.headers), 'foo')
+            self.assertEqual(reqy.headers['X-API-KEY'], 'somekey')
+            self.assertEqual(str(reqy.body), '{"6ar4": {"LMCSS_ori": 1}}')
+            self.assertEqual(reqy.headers['Authorization'],
+                             'Basic Ym9iOjEyMzQ1')
+        finally:
+            shutil.rmtree(temp_dir)
+            httpretty.disable()
+            httpretty.reset()
+
+    def test_post_rmsd_to_websiteservice_with_failedsubmit(self):
         temp_dir = tempfile.mkdtemp()
 
         try:
