@@ -872,9 +872,11 @@ class WebsiteServiceConfig(BaseConfig):
             if timeout is not None:
                 self._timeout = float(timeout)
         except SyntaxError:
-            logger.debug('Unable to convert timeout : ' + str(timeout) +
+            logger.error('Unable to convert timeout : ' + str(timeout) +
                          ' to float')
-
+        except ValueError:
+            logger.error('Unable to convert timeout : ' + str(timeout) +
+                         ' to float')
 
     def get_rmsd_url(self):
         """Gets website REST service base url with rmsd endpoint

@@ -827,10 +827,107 @@ class TestD3rTask(unittest.TestCase):
             self.assertEqual(webconfig.get_basicauth_password(), None)
             self.assertEqual(webconfig.get_basicauth_user(), None)
             self.assertEqual(webconfig.get_apikey(), None)
-            self.assertEqual(webconfig.get_portal_name(), 'notset')
-            self.assertEqual(webconfig.get_source(), 'notset')
+            self.assertEqual(webconfig.get_portal_name(), None)
+            self.assertEqual(webconfig.get_source(), None)
             self.assertEqual(webconfig.get_targets_url(), None)
 
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_websiteserviceconfig_validconfig(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+
+            cfile = os.path.join(temp_dir, 'foo')
+            con = configparser.ConfigParser()
+            con.add_section(WebsiteServiceConfig.DEFAULT)
+            con.set(WebsiteServiceConfig.DEFAULT,
+                    WebsiteServiceConfig.WEB_URL,
+                    'http://localhost')
+            con.set(WebsiteServiceConfig.DEFAULT,
+                    WebsiteServiceConfig.WEB_TIMEOUT,
+                    '25.1')
+            con.set(WebsiteServiceConfig.DEFAULT,
+                    WebsiteServiceConfig.WEB_PORTAL_NAME,
+                    'portalname')
+            con.set(WebsiteServiceConfig.DEFAULT,
+                    WebsiteServiceConfig.WEB_SOURCE,
+                    'source')
+            con.set(WebsiteServiceConfig.DEFAULT,
+                    WebsiteServiceConfig.WEB_BASIC_PASS,
+                    'thepass')
+            con.set(WebsiteServiceConfig.DEFAULT,
+                    WebsiteServiceConfig.WEB_BASIC_USER,
+                    'user')
+            con.set(WebsiteServiceConfig.DEFAULT,
+                    WebsiteServiceConfig.WEB_APIKEY,
+                    'key')
+            f = open(cfile, 'w')
+            con.write(f)
+            f.flush()
+            f.close()
+
+            webconfig = WebsiteServiceConfig(configfile=cfile)
+            self.assertEqual(webconfig.get_timeout(), 25.1)
+            self.assertEqual(webconfig.get_rmsd_url(),
+                             'http://localhost/rmsd')
+            self.assertEqual(webconfig.get_basicauth_password(), 'thepass')
+            self.assertEqual(webconfig.get_basicauth_user(), 'user')
+            self.assertEqual(webconfig.get_apikey(), 'key')
+            self.assertEqual(webconfig.get_portal_name(), 'portalname')
+            self.assertEqual(webconfig.get_source(), 'source')
+            self.assertEqual(webconfig.get_targets_url(),
+                             'http://localhost/week')
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_websiteserviceconfig_urlwithslashatendandinvalidtimeout(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+
+            cfile = os.path.join(temp_dir, 'foo')
+            con = configparser.ConfigParser()
+            con.add_section(WebsiteServiceConfig.DEFAULT)
+            con.set(WebsiteServiceConfig.DEFAULT,
+                    WebsiteServiceConfig.WEB_URL,
+                    'http://localhost/')
+            con.set(WebsiteServiceConfig.DEFAULT,
+                    WebsiteServiceConfig.WEB_TIMEOUT,
+                    'hi')
+
+            f = open(cfile, 'w')
+            con.write(f)
+            f.flush()
+            f.close()
+
+            webconfig = WebsiteServiceConfig(configfile=cfile)
+            self.assertEqual(webconfig.get_timeout(), 0.1)
+            self.assertEqual(webconfig.get_rmsd_url(),
+                             'http://localhost/rmsd')
+            self.assertEqual(webconfig.get_targets_url(),
+                             'http://localhost/week')
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_websiteserviceconfig_parse_error(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+
+            cfile = os.path.join(temp_dir, 'foo')
+            con = configparser.ConfigParser()
+            con.add_section(WebsiteServiceConfig.DEFAULT)
+            con.set(WebsiteServiceConfig.DEFAULT,
+                    WebsiteServiceConfig.WEB_URL,
+                    'http://localhost/')
+            con.set(WebsiteServiceConfig.DEFAULT,
+                    WebsiteServiceConfig.WEB_TIMEOUT,
+                    'hi')
+
+            with open(cfile, 'w') as f:
+                f.write('[smtp\nas = xx=12=\n')
+                f.flush()
+            webconfig = WebsiteServiceConfig(configfile=cfile)
+            self.assertEqual(webconfig.get_timeout(), 0.1)
         finally:
             shutil.rmtree(temp_dir)
 
