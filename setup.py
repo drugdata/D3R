@@ -53,7 +53,8 @@ requirements = [
     "ftpretty",
     "python-dateutil",
     "easywebdav",
-    "configparser"
+    "configparser",
+    "requests"
 ]
 
 test_requirements = [
@@ -67,6 +68,8 @@ test_requirements = [
     "mock",
     "easywebdav",
     "configparser",
+    "requests",
+    "httpretty",
     "unittest2"
 ]
 

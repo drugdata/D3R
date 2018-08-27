@@ -16,8 +16,11 @@ import shutil
 import os
 import sys
 import tarfile
-
+import configparser
+import pickle
 from mock import Mock
+import requests
+import httpretty
 
 from d3r.celpp.task import D3RParameters
 from d3r.celpp.task import D3RTask
@@ -34,6 +37,7 @@ from d3r.celpp.participant import Participant
 from d3r.celpp.task import SmtpEmailer
 from d3r.celpp.evaluation import EvaluationEmailer
 from d3r.celpp.filetransfer import FtpFileTransfer
+from d3r.celpp.task import WebsiteServiceConfig
 
 
 class TestEvaluation(unittest.TestCase):
@@ -1322,6 +1326,219 @@ class TestEvaluation(unittest.TestCase):
                          'celpp_week10_2014_evalresults_123')
         self.assertEqual(task.get_evaluationresult_filename(nosuffix=False),
                          'celpp_week10_2014_evalresults_123.tar.gz')
+
+    def test_generate_rmsd_object_with_jsonfile_noconfig_nostart(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = EvaluationTask(temp_dir, 'foo', None, params)
+            task.create_dir()
+            with open(task.get_rmsd_json(), 'w') as f:
+                f.write('{"6ar4": {"LMCSS_ori": 1, '
+                        '"LMCSS_dis": 1.5508062419270827, '
+                        '"LMCSS": 7.032355836182482}}')
+                f.flush()
+            res = task.generate_rmsd_object()
+            self.assertEqual(res['version'], 'unknown')
+            self.assertEqual(res['source'], 'notset')
+            self.assertEqual(res['week'], 0)
+            self.assertEqual(res['year'], 0)
+            self.assertEqual(res['portal_name'], 'notset')
+            self.assertEqual(res['submission_folder'], 'foo')
+            self.assertEqual(res['json']['6ar4']['LMCSS_ori'], 1)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_generate_rmsd_object_with_jsonfile_withconfig(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            cfile = os.path.join(temp_dir, 'foo')
+            con = configparser.ConfigParser()
+            con.add_section(WebsiteServiceConfig.DEFAULT)
+            con.set(WebsiteServiceConfig.DEFAULT,
+                    WebsiteServiceConfig.WEB_PORTAL_NAME,
+                    'portalname')
+            con.set(WebsiteServiceConfig.DEFAULT,
+                    WebsiteServiceConfig.WEB_SOURCE,
+                    'source')
+            f = open(cfile, 'w')
+            con.write(f)
+            f.flush()
+            f.close()
+
+            params = D3RParameters()
+            params.websiteserviceconfig = cfile
+            subdir = os.path.join(temp_dir, '2018', 'dataset.week.4')
+            os.makedirs(subdir, mode=0o755)
+
+            task = EvaluationTask(subdir, 'foo.extsubmission.evaluation',
+                                  None, params)
+            task.create_dir()
+            with open(task.get_rmsd_json(), 'w') as f:
+                f.write('{"6ar4": {"LMCSS_ori": 1, '
+                        '"LMCSS_dis": 2, '
+                        '"LMCSS": 3}}')
+                f.flush()
+
+            sfile = os.path.join(task.get_dir(), task.START_FILE)
+            with open(sfile, 'w') as f:
+                f.write('1.2.3')
+                f.flush()
+
+            res = task.generate_rmsd_object()
+            self.assertEqual(res['version'], '1.2.3')
+            self.assertEqual(res['source'], 'source')
+            self.assertEqual(res['week'], 4)
+            self.assertEqual(res['year'], 2018)
+            self.assertEqual(res['portal_name'], 'portalname')
+            self.assertEqual(res['submission_folder'], 'foo')
+            self.assertEqual(res['json']['6ar4']['LMCSS_ori'], 1)
+            self.assertEqual(res['json']['6ar4']['LMCSS_dis'], 2)
+            self.assertEqual(res['json']['6ar4']['LMCSS'], 3)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_generate_rmsd_object_valid_emptystart(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            cfile = os.path.join(temp_dir, 'foo')
+            con = configparser.ConfigParser()
+            con.add_section(WebsiteServiceConfig.DEFAULT)
+            con.set(WebsiteServiceConfig.DEFAULT,
+                    WebsiteServiceConfig.WEB_PORTAL_NAME,
+                    'portalname')
+            con.set(WebsiteServiceConfig.DEFAULT,
+                    WebsiteServiceConfig.WEB_SOURCE,
+                    'source')
+            f = open(cfile, 'w')
+            con.write(f)
+            f.flush()
+            f.close()
+
+            params = D3RParameters()
+            params.websiteserviceconfig = cfile
+            subdir = os.path.join(temp_dir, '2018', 'dataset.week.4')
+            os.makedirs(subdir, mode=0o755)
+
+            task = EvaluationTask(subdir, 'foo.extsubmission.evaluation',
+                                  None, params)
+            task.create_dir()
+            with open(task.get_rmsd_json(), 'w') as f:
+                f.write('{"6ar4": {"LMCSS_ori": 1, '
+                        '"LMCSS_dis": 2, '
+                        '"LMCSS": 3}}')
+                f.flush()
+
+            sfile = os.path.join(task.get_dir(), task.START_FILE)
+            with open(sfile, 'w') as f:
+                f.write('1.2.3')
+                f.flush()
+
+            res = task.generate_rmsd_object()
+            self.assertEqual(res['version'], '1.2.3')
+            self.assertEqual(res['source'], 'source')
+            self.assertEqual(res['week'], 4)
+            self.assertEqual(res['year'], 2018)
+            self.assertEqual(res['portal_name'], 'portalname')
+            self.assertEqual(res['submission_folder'], 'foo')
+            self.assertEqual(res['json']['6ar4']['LMCSS_ori'], 1)
+            self.assertEqual(res['json']['6ar4']['LMCSS_dis'], 2)
+            self.assertEqual(res['json']['6ar4']['LMCSS'], 3)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_generate_rmsd_object_with_validsubmit(self):
+        temp_dir = tempfile.mkdtemp()
+
+        try:
+            httpretty.enable()
+            httpretty.register_uri(httpretty.POST,
+                                   'http://foo.com/rmsd',
+                                   body='hi')
+
+            cfile = os.path.join(temp_dir, 'foo')
+            con = configparser.ConfigParser()
+            con.add_section(WebsiteServiceConfig.DEFAULT)
+            con.set(WebsiteServiceConfig.DEFAULT,
+                    WebsiteServiceConfig.WEB_URL,
+                    'http://foo.com')
+            con.set(WebsiteServiceConfig.DEFAULT,
+                    WebsiteServiceConfig.WEB_APIKEY, 'somekey')
+            f = open(cfile, 'w')
+            con.write(f)
+            f.flush()
+            f.close()
+
+            params = D3RParameters()
+            params.websiteserviceconfig = cfile
+            subdir = os.path.join(temp_dir, '2018', 'dataset.week.4')
+            os.makedirs(subdir, mode=0o755)
+
+            task = EvaluationTask(subdir, 'foo.extsubmission.evaluation',
+                                  None, params)
+            task.create_dir()
+            myrmsd = {}
+            myrmsd['6ar4'] = {}
+            myrmsd['6ar4']['LMCSS_ori'] = 1
+
+            task.post_rmsd_to_websiteservice(myrmsd)
+            self.assertEqual(task.get_email_log(), None)
+        finally:
+            shutil.rmtree(temp_dir)
+            httpretty.disable()
+            httpretty.reset()
+
+    def test_generate_rmsd_object_with_failedsubmit(self):
+        temp_dir = tempfile.mkdtemp()
+
+        try:
+            httpretty.enable()
+            httpretty.register_uri(httpretty.POST,
+                                   'http://foo.com/rmsd',
+                                   body='hi',
+                                   status=500)
+
+            cfile = os.path.join(temp_dir, 'foo')
+            con = configparser.ConfigParser()
+            con.add_section(WebsiteServiceConfig.DEFAULT)
+            con.set(WebsiteServiceConfig.DEFAULT,
+                    WebsiteServiceConfig.WEB_URL,
+                    'http://foo.com')
+            con.set(WebsiteServiceConfig.DEFAULT,
+                    WebsiteServiceConfig.WEB_APIKEY, 'somekey')
+            f = open(cfile, 'w')
+            con.write(f)
+            f.flush()
+            f.close()
+
+            params = D3RParameters()
+            params.websiteserviceconfig = cfile
+            subdir = os.path.join(temp_dir, '2018', 'dataset.week.4')
+            os.makedirs(subdir, mode=0o755)
+
+            task = EvaluationTask(subdir, 'foo.extsubmission.evaluation',
+                                  None, params)
+            task.create_dir()
+            myrmsd = {}
+            myrmsd['6ar4'] = {}
+            myrmsd['6ar4']['LMCSS_ori'] = 1
+
+            task.post_rmsd_to_websiteservice(myrmsd)
+            self.assertEqual(task.get_email_log(),
+                             '\nwebsite REST service returned code: 500 '
+                             'with text: hi and json: <bound method '
+                             'Response.json of <Response [500]>>\n')
+            reqy = httpretty.last_request()
+            self.assertEqual(reqy.headers['X-API-KEY'], 'somekey')
+            self.assertEqual(str(reqy.body), '{"6ar4": {"LMCSS_ori": 1}}')
+
+        finally:
+            shutil.rmtree(temp_dir)
+            httpretty.disable()
+            httpretty.reset()
 
     def test_eval_emailer_append_to_message_log(self):
         emailer = EvaluationEmailer(None, None)

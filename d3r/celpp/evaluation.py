@@ -681,6 +681,36 @@ class EvaluationTask(D3RTask):
         finally:
             uploader.disconnect()
 
+    def _get_rmsd(self):
+        """Loads RMSD for this task by parsing first the RMSD.json file
+           and falling back to RMSD.pickle
+           :returns output of json.load(RMSD.json) or pickle.load(RMSD.pickle)
+        """
+        rmsdjson = self.get_rmsd_json()
+        rmsdpickle = self.get_rmsd_pickle()
+        if os.path.isfile(rmsdjson):
+            with open(rmsdjson, 'r') as fp:
+                return json.load(fp)
+        elif os.path.isfile(rmsdpickle):
+            with open(rmsdpickle, 'r') as fp:
+                return pickle.load(fp)
+        else:
+            return None
+
+    def _get_version_from_start(self):
+        """Gets version of CELPP/D3R run by parsing start file
+           :returns version from start file or unknown if file is empty or
+                    does not exist
+        """
+        version = 'unknown'
+        sfile = os.path.join(self.get_dir(), self.START_FILE)
+        if os.path.isfile(sfile):
+            with open(sfile, 'r') as fp:
+                data = fp.read()
+                if len(data) > 0:
+                    version = str(data)
+        return version
+
     def generate_rmsd_object(self):
         """Generates a dictionary object parsed from either RMSD.json or as
            a fallback as RMSD.pickle file that contains scores from this
@@ -689,34 +719,30 @@ class EvaluationTask(D3RTask):
 
            """
         rmsdobj = {}
-        rmsdjson = self.get_rmsd_json()
-        rmsdpickle = self.get_rmsd_pickle()
+        rmsd_val = self._get_rmsd()
 
-        if os.path.isfile(rmsdjson):
-            with open(rmsdjson, 'r') as fp:
-                rmsdobj[WebsiteServiceConfig.JSON_KEY] = json.load(fp)
-        elif os.path.isfile(rmsdpickle):
-            with open(rmsdpickle, 'r') as fp:
-                rmsdobj[WebsiteServiceConfig.JSON_KEY] = pickle.load(fp)
-        else:
+        if rmsd_val is None:
             return None
 
-        version = 'unknown'
-        sfile = os.path.join(self.get_dir(), self.START_FILE)
-        with open(sfile, 'r') as fp:
-            data = fp.read()
-            if len(data) > 0:
-                version = str(data)
+        rmsdobj[WebsiteServiceConfig.JSON_KEY] = rmsd_val
+
+        version = self._get_version_from_start()
+
+        wsource = 'notset'
+        pname = 'notset'
+        if self._webserviceconfig is not None:
+            wsource = self._webserviceconfig.get_source()
+            pname = self._webserviceconfig.get_portal_name()
 
         rmsdobj['version'] = version
-        rmsdobj['source'] = self._webserviceconfig.get_source()
+        rmsdobj['source'] = wsource
         rmsdobj['week'] = int(self._week_num)
         rmsdobj['year'] = int(self._year)
-        rmsdobj['portal_name'] = self._webserviceconfig.get_portal_name()
-        rmsdobj['submission_folder'] = self.get_name()
+        rmsdobj['portal_name'] = pname
+        rmsdobj['submission_folder'] = self.get_guid_for_task()
         return rmsdobj
 
-    def post_rmsd_to_evalservice(self, rmsdobj):
+    def post_rmsd_to_websiteservice(self, rmsdobj):
         """Posts RMSD scores to evaluation service
         """
 
@@ -840,7 +866,7 @@ class EvaluationTask(D3RTask):
 
         # attempt to post evaluation results to website REST service
         try:
-            self.post_rmsd_to_evalservice(self.generate_rmsd_object())
+            self.post_rmsd_to_websiteservice(self.generate_rmsd_object())
         except Exception as e:
             logger.exception('Not a show stopper, but caught exception '
                              'trying to post results to website rest '
