@@ -155,6 +155,7 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEqual(result.importsleep, 600)
         self.assertEqual(result.rdkitpython, '')
         self.assertEqual(result.summaryemail, None)
+        self.assertEqual(result.websiteserviceconfig, None)
         self.assertEqual(result.postevaluation, 'post_evaluation.py')
         theargs = ['foo', '--stage', 'dock,glide', '--email', 'b@b.com,h@h',
                    '--log', 'ERROR',
@@ -173,7 +174,8 @@ class TestCelppRunner(unittest.TestCase):
                    '--importsleep', '30',
                    '--rdkitpython', '/usr/bin',
                    '--summaryemail', 'j@j,g@g',
-                   '--postevaluation', '/bin/yo.py']
+                   '--postevaluation', '/bin/yo.py',
+                   '--websiteserviceconfig', 'webbyconfig.txt']
         result = celpprunner._parse_arguments('hi', theargs)
         self.assertEqual(result.stage, 'dock,glide')
         self.assertEqual(result.celppdir, 'foo')
@@ -195,6 +197,9 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEqual(result.importsleep, 30)
         self.assertEqual(result.rdkitpython, '/usr/bin')
         self.assertEqual(result.postevaluation, '/bin/yo.py')
+        self.assertEqual(result.websiteserviceconfig, 'webbyconfig.txt')
+
+
 
     def test_run_tasks_passing_none_and_empty_list(self):
         self.assertEquals(celpprunner.run_tasks(None), 3)

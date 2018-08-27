@@ -22,6 +22,7 @@ util.setup_logging(p)
 
 from d3r.celpp.task import SmtpEmailerFactory
 from d3r.celpp.task import SmtpConfig
+from d3r.celpp.task import WebsiteServiceConfig
 from d3r.celpp.blastnfilter import BlastNFilterTask
 from d3r.celpp.proteinligprep import ProteinLigPrepTask
 from d3r.celpp.dataimport import DataImportTask
@@ -35,6 +36,7 @@ from d3r.celpp.challengedata import ChallengeDataTask
 from d3r.celpp.chimeraprep import ChimeraProteinLigPrepTask
 from d3r.celpp.filetransfer import FtpFileTransfer
 from d3r.celpp.extsubmission import ExternalDataSubmissionFactory
+
 
 from lockfile.pidlockfile import PIDLockFile
 
@@ -698,7 +700,22 @@ def main(args):
               files in them which do not end in name '{webdata}' and runs
               script set via --evaluation parameter storing the result of
               the script into stage.{evalstage}.<algo>.evaluation. --pdbdb flag
-              must also be set when calling this stage.
+              must also be set when calling this stage. If {websiteserviceflag}
+              is set to a config file then the results of the evaluation will
+              be persisted to the website REST service defined in the config
+              file that should have this format:
+              
+              Example {websiteserviceflag} config file:
+              
+              [{web_section}]
+              
+              {web_url} =  https://blah.com/api/1/d3r/celpp
+              {web_apikey} = asdlkjas
+              {web_user} = joe
+              {web_pass} = secret123
+              {web_source} = dev
+              {web_portal_name} = d3r
+              {web_timeout} = 5
 
               If {stageflag} '{postevaluation}'
 
@@ -708,7 +725,11 @@ def main(args):
               {postevalstage} into a file named summary.txt and a set
               of files with name Overall_RMSD_<candidate_type>.csv.
               In addition, results will be emailed to people in
-              --summaryemail and --email lists.
+              --summaryemail and --email lists. If {websiteserviceflag}
+              is set to a config file then completion of evaluation will be
+              posted to the website REST service defined in the config file
+               described in see 'evaluation' section above.
+               
 
               """.format(makeblastdb_dirname=makedb.get_dir_name(),
                          dataimport_dirname=dataimport.get_dir_name(),
@@ -747,7 +768,16 @@ def main(args):
                          smtp_user=SmtpConfig.SMTP_USER,
                          smtp_pass=SmtpConfig.SMTP_PASS,
                          smtp_from_address=SmtpConfig.SMTP_FROM_ADDRESS,
-                         smtp_replyto_address=SmtpConfig.SMTP_REPLYTO_ADDRESS)
+                         smtp_replyto_address=SmtpConfig.SMTP_REPLYTO_ADDRESS,
+                         websiteserviceflag=WEBSITESERVICECONFIG_FLAG,
+                         web_section=WebsiteServiceConfig.DEFAULT,
+                         web_url=WebsiteServiceConfig.WEB_URL,
+                         web_apikey=WebsiteServiceConfig.WEB_APIKEY,
+                         web_user=WebsiteServiceConfig.WEB_BASIC_USER,
+                         web_pass=WebsiteServiceConfig.WEB_BASIC_PASS,
+                         web_source=WebsiteServiceConfig.WEB_SOURCE,
+                         web_portal_name=WebsiteServiceConfig.WEB_PORTAL_NAME,
+                         web_timeout=WebsiteServiceConfig.WEB_TIMEOUT)
 
     theargs = _parse_arguments(desc, args[1:])
     theargs.program = args[0]
