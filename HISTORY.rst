@@ -3,49 +3,49 @@
 History
 -------
 
-1.11.1 (2018-07-??)
+1.11.0 (2018-08-??)
 --------------------
 
 * Fixed minor bug where unit tests for molfilevalidator.py failed when valid
   openeye license was available.
-  `Issue #177 <https://github.com/drugdata/D3R/issues/177`
+  `Issue #177 <https://github.com/drugdata/D3R/issues/177>`_
 
 * Added retry to external submission download to prevent complete failure of
   download in event of network hiccup
-  `Issue #181 <https://github.com/drugdata/D3R/issues/181`
+  `Issue #181 <https://github.com/drugdata/D3R/issues/181>`_
 
 * Fixed bug where median value incorrectly calculated in evaluate.py. Instead
   of averaging middle two values for case of even number of elements, the old
   code just chose the latter value.
-  `Issue #183 <https://github.com/drugdata/D3R/issues/183`
+  `Issue #183 <https://github.com/drugdata/D3R/issues/183>`_
 
 * Fixed bug where median value incorrectly calculated in post_evaluation.py.
   Instead of averaging middle two values, the old code just chose the latter
   value.
-  `Issue #184 <https://github.com/drugdata/D3R/issues/184`
+  `Issue #184 <https://github.com/drugdata/D3R/issues/184>`_
 
 * Updated BlastNFilterSummary class (used by celppreports.py) to calculate
   number of targets found by counting target .txt files if value is not in
   summary.txt file
-  `Issue #187 <https://github.com/drugdata/D3R/issues/187`
+  `Issue #187 <https://github.com/drugdata/D3R/issues/187>`_
 
 * Added call to website REST service in EvaluationTask and PostEvaluationTask
   to persist evaluation results to website. This change added a new flag
   --websiteserviceconfig that requires a configuration file.
-  `Issue #188 <https://github.com/drugdata/D3R/issues/188`
+  `Issue #188 <https://github.com/drugdata/D3R/issues/188>`_
 
 * Fixed bug in evaluate.py wait_and_check() function which caused it to 
   prematurely give up on an alignment.
-  `Issue #189 <https://github.com/drugdata/D3R/issues/189`
+  `Issue #189 <https://github.com/drugdata/D3R/issues/189>`_
 
 * Changed evaluate.py so it now writes final.log directly to output directory.
-  `Issue #190 <https://github.com/drugdata/D3R/issues/190`
+  `Issue #190 <https://github.com/drugdata/D3R/issues/190>`_
 
 * Moved code under if __main__ into main() function to facilitate testing.
-  `Issue #191 <https://github.com/drugdata/D3R/issues/191`
+  `Issue #191 <https://github.com/drugdata/D3R/issues/191>`_
 
 * Changed logging in evaluate.py to use module logger instead of root logger
-  `Issue #194 <https://github.com/drugdata/D3R/issues/194`
+  `Issue #194 <https://github.com/drugdata/D3R/issues/194>`_
 
 1.10.0 (2018-01-09) 
 --------------------
