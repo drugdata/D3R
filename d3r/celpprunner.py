@@ -8,9 +8,8 @@ import logging
 from datetime import date
 from lockfile.pidlockfile import PIDLockFile
 import d3r
-from d3r.celpp import util
 from d3r.celpp.task import D3RParameters
-
+from d3r.celpp import util
 from d3r.celpp.task import SmtpEmailerFactory
 from d3r.celpp.task import SmtpConfig
 from d3r.celpp.task import WebsiteServiceConfig
@@ -18,15 +17,12 @@ from d3r.celpp.blastnfilter import BlastNFilterTask
 from d3r.celpp.proteinligprep import ProteinLigPrepTask
 from d3r.celpp.dataimport import DataImportTask
 from d3r.celpp.glide import GlideTask
-from d3r.celpp.evaluation import EvaluationTaskFactory
+from d3r.celpp.filetransfer import FtpFileTransfer
 from d3r.celpp.makeblastdb import MakeBlastDBTask
 from d3r.celpp.vina import AutoDockVinaTask
-from d3r.celpp.postevaluation import PostEvaluationEmailer
-from d3r.celpp.postevaluation import PostEvaluationTask
-from d3r.celpp.challengedata import ChallengeDataTask
 from d3r.celpp.chimeraprep import ChimeraProteinLigPrepTask
-from d3r.celpp.filetransfer import FtpFileTransfer
-from d3r.celpp.extsubmission import ExternalDataSubmissionFactory
+
+from d3r.celpp.challengedata import ChallengeDataTask
 
 
 # create logger
@@ -35,6 +31,11 @@ DEFAULT_LOG_LEVEL = 'ERROR'
 p = D3RParameters()
 p.loglevel = DEFAULT_LOG_LEVEL
 util.setup_logging(p)
+
+from d3r.celpp.postevaluation import PostEvaluationEmailer  # noqa: E402
+from d3r.celpp.postevaluation import PostEvaluationTask  # noqa: E402
+from d3r.celpp.extsubmission import ExternalDataSubmissionFactory  # noqa: E402
+from d3r.celpp.evaluation import EvaluationTaskFactory  # noqa: E402
 
 
 CREATE_CHALLENGE = 'createchallenge'
