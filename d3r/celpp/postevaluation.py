@@ -2,12 +2,17 @@ __author__ = 'churas'
 
 import os
 import logging
+import requests
+from requests.auth import HTTPBasicAuth
 from d3r.celpp.task import Attachment
 from d3r.celpp import util
 from d3r.celpp.task import D3RTask
+from d3r.celpp.task import WebsiteServiceConfig
 from d3r.celpp.evaluation import EvaluationTask
 from d3r.celpp.evaluation import EvaluationTaskFactory
 from d3r.celpp.challengedata import ChallengeDataTask
+from d3r.celpp.blastnfilter import BlastNFilterTask
+from d3r.celpp.task import UnsetNameError
 
 logger = logging.getLogger(__name__)
 
@@ -124,6 +129,20 @@ class PostEvaluationTask(D3RTask):
         self.set_stage(et.get_stage() + 1)
         self._emailer = None
         self.set_status(D3RTask.UNKNOWN_STATUS)
+        self._webserviceconfig = None
+
+        try:
+            config = self.get_args().websiteserviceconfig
+            self._webserviceconfig = WebsiteServiceConfig(configfile=config)
+        except AttributeError:
+            pass
+        try:
+            self._week_num = util.\
+                get_celpp_week_number_from_path(self.get_path())
+            self._year = util.get_celpp_year_from_path(self.get_dir())
+        except Exception:
+            self._week_num = 0
+            self._year = 0
 
     def set_evaluation_emailer(self, emailer):
         self._emailer = emailer
@@ -262,6 +281,67 @@ class PostEvaluationTask(D3RTask):
         self._can_run = True
         return True
 
+    def generate_target_object(self):
+        blast = BlastNFilterTask(self.get_args().latest_weekly,
+                                 self.get_args())
+
+        summary = blast.get_blastnfilter_summary()
+
+        numtargets = summary.get_targets_found()
+        targetobj = {}
+        version = self.get_version_from_start_file()
+
+        wsource = 'notset'
+        pname = 'notset'
+        if self._webserviceconfig is not None:
+            wsource = self._webserviceconfig.get_source()
+            pname = self._webserviceconfig.get_portal_name()
+
+        targetobj['version'] = version
+        targetobj['source'] = wsource
+        targetobj['week'] = int(self._week_num)
+        targetobj['year'] = int(self._year)
+        targetobj['portal_name'] = pname
+        targetobj['targets'] = numtargets
+        return targetobj
+
+    def post_target_stats_to_websiteservice(self, targetobj):
+        """Posts target statistices to website REST service
+        """
+        if targetobj is None:
+            return
+
+        if self._webserviceconfig is None:
+            logger.warning('No service information available to post '
+                           'evaluation results')
+            self.append_to_email_log('No website service configuration found '
+                                     'to post evaluation results\n')
+            return
+
+        theheader = dict()
+
+        theheader[WebsiteServiceConfig.API_KEY_KEY] = self.\
+            _webserviceconfig.get_apikey()
+        theheader[WebsiteServiceConfig.
+            CONTENT_TYPE_KEY] = WebsiteServiceConfig.CONTENT_TYPE_VAL
+        bauth = None
+        if self._webserviceconfig.get_basicauth_user() is not None:
+            bauth = HTTPBasicAuth(self._webserviceconfig.get_basicauth_user(),
+                                  self._webserviceconfig.
+                                  get_basicauth_password())
+
+        r = requests.post(self._webserviceconfig.get_targets_url(),
+                          headers=theheader, json=targetobj, auth=bauth,
+                          timeout=self._webserviceconfig.get_timeout())
+
+        if r.status_code != 200:
+            msg = ('website REST service returned code: ' +
+                   str(r.status_code) + ' with text: ' + str(r.text) +
+                   ' and json: ' + str(r.json))
+            logger.error(msg)
+            self.append_to_email_log('\n' + msg + '\n')
+        return
+
     def run(self):
         """Runs PostEvaluationTask
 
@@ -324,5 +404,15 @@ class PostEvaluationTask(D3RTask):
             self.append_to_email_log('Caught exception trying to send '
                                      'evaluation email ' + str(e) + '\n')
 
+        # attempt to post evaluation results to website REST service
+        try:
+            self.post_rmsd_to_websiteservice(self.generate_target_object())
+        except Exception as e:
+            logger.exception('Not a show stopper, but caught exception '
+                             'trying to post results to website rest '
+                             'service')
+            self.append_to_email_log('\nCaught exception trying to post '
+                                     'evaluation results to website rest '
+                                     'service ' + str(e) + '\n')
         # assess the result
         self.end()

@@ -4,7 +4,7 @@ import unittest
 import tempfile
 import os.path
 import stat
-
+import configparser
 """
 test_postevaluation
 --------------------------------
@@ -24,7 +24,8 @@ from d3r.celpp.postevaluation import PostEvaluationTask
 from d3r.celpp.challengedata import ChallengeDataTask
 from d3r.celpp.task import SmtpEmailer
 from d3r.celpp.postevaluation import PostEvaluationEmailer
-
+from d3r.celpp.blastnfilter import BlastNFilterTask
+from d3r.celpp.task import WebsiteServiceConfig
 
 class TestPostEvaluation(unittest.TestCase):
     def setUp(self):
@@ -89,6 +90,20 @@ class TestPostEvaluation(unittest.TestCase):
         self.assertEquals(task.get_name(), PostEvaluationTask.TASK_NAME)
         self.assertEquals(task.get_stage(), 8)
         self.assertEqual(task.get_status(), D3RTask.UNKNOWN_STATUS)
+        self.assertEqual(task._week_num, '0')
+        self.assertEqual(task._year, '0')
+
+        task = PostEvaluationTask('/blah/1985/dataset.week.3', params)
+        self.assertEqual(task._week_num, '3')
+        self.assertEqual(task._year, '1985')
+
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params.websiteserviceconfig=os.path.join(temp_dir, 'noexist')
+            task = PostEvaluationTask('/blah/1985/dataset.week.3', params)
+            self.assertTrue(task._webserviceconfig is not None)
+        finally:
+            shutil.rmtree(temp_dir)
 
     def test_can_run(self):
         temp_dir = tempfile.mkdtemp()
@@ -301,6 +316,66 @@ class TestPostEvaluation(unittest.TestCase):
                             ' ' + etask2.get_dir() in res)
             self.assertTrue(' ' + PostEvaluationTask.EVALUATIONDIR_ARG +
                             ' ' + etask3.get_dir() in res)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_generate_target_object_no_blastnfilterdir(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            basedir = os.path.join(temp_dir, '2000', 'dataset.week.1')
+            os.makedirs(basedir, mode=0o755)
+            params = D3RParameters()
+            params.latest_weekly = basedir
+            task = PostEvaluationTask(basedir, params)
+            task.create_dir()
+            res = task.generate_target_object()
+            self.assertEqual(res['week'], 1)
+            self.assertEqual(res['year'], 2000)
+            self.assertEqual(res['portal_name'], 'notset')
+            self.assertEqual(res['source'], 'notset')
+            self.assertEqual(res['version'], 'unknown')
+            self.assertEqual(res['targets'], 0)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_generate_target_object_allset(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            basedir = os.path.join(temp_dir, 'dataset.week')
+            os.makedirs(basedir, mode=0o755)
+            params = D3RParameters()
+            params.latest_weekly = basedir
+
+            btask = BlastNFilterTask(basedir, params)
+            btask.create_dir()
+            open(os.path.join(btask.get_dir(), '1fcy.txt'), 'a').close()
+            open(os.path.join(btask.get_dir(), 'summary.txt'), 'a').close()
+
+            cfile = os.path.join(temp_dir, 'foo.config')
+            con = configparser.ConfigParser()
+            con.add_section(WebsiteServiceConfig.DEFAULT)
+            con.set(WebsiteServiceConfig.DEFAULT,
+                    WebsiteServiceConfig.WEB_PORTAL_NAME,
+                    'portal')
+            con.set(WebsiteServiceConfig.DEFAULT,
+                    WebsiteServiceConfig.WEB_SOURCE, 'prod')
+            f = open(cfile, 'w')
+            con.write(f)
+            f.flush()
+            f.close()
+            params.websiteserviceconfig = cfile
+            task = PostEvaluationTask(basedir, params)
+            task.create_dir()
+            with open(os.path.join(task.get_dir(), task.START_FILE), 'w') as f:
+                f.write('4.3.2')
+                f.flush()
+            res = task.generate_target_object()
+            self.assertEqual(res['week'], 0)
+            self.assertEqual(res['year'], 0)
+            self.assertEqual(res['portal_name'], 'portal')
+            self.assertEqual(res['source'], 'prod')
+            self.assertEqual(res['version'], '4.3.2')
+            self.assertEqual(res['targets'], 1)
         finally:
             shutil.rmtree(temp_dir)
 
