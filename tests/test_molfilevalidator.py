@@ -555,8 +555,9 @@ M  END
             mols = list(molfilevalidator._molfile_from_tarfile_generator(myf))
             self.assertEqual(len(mols), 0)
 
-            mols = list(molfilevalidator._molfile_from_tarfile_generator(myf,
-                                                                         direxclude='blah'))
+            mols = list(molfilevalidator.
+                        _molfile_from_tarfile_generator(myf,
+                                                        direxclude='blah'))
             self.assertEqual(len(mols), 0)
 
         finally:
@@ -587,13 +588,15 @@ M  END
             self.assertTrue(mols[0].endswith('hi.mol'))
 
             # try with exclude enabled not match
-            mols = list(molfilevalidator._molfile_from_tarfile_generator(myf,
-                                                                         direxclude='Supp,yo'))
+            mols = list(molfilevalidator.
+                        _molfile_from_tarfile_generator(myf,
+                                                        direxclude='Supp,yo'))
             self.assertEqual(len(mols), 1)
 
             # try with exclude enabled
-            mols = list(molfilevalidator._molfile_from_tarfile_generator(myf,
-                                                                         direxclude='SuppInfo'))
+            mols = list(molfilevalidator.
+                        _molfile_from_tarfile_generator(myf,
+                                                        direxclude='SuppInfo'))
             self.assertEqual(len(mols), 0)
         finally:
             shutil.rmtree(temp_dir)

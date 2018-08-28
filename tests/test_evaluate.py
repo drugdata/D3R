@@ -275,17 +275,11 @@ class TestEvaluate(unittest.TestCase):
             self.assertEqual(evaluate.extract_crystal_file(onefcz,
                                                            temp_dir),
                              onefcfile)
-
-
-
         finally:
             shutil.rmtree(temp_dir)
 
-
     def test_main(self):
         temp_dir = tempfile.mkdtemp()
-
-
         current_dir = os.getcwd()
         try:
             # test with no args which should fail

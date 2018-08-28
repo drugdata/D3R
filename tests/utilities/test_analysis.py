@@ -4,7 +4,6 @@ import unittest
 import tempfile
 import os.path
 
-from d3r.blast.query import Query
 from d3r.filter.filter import QueryFilter
 """
 test_in_put
@@ -26,7 +25,7 @@ class TestAnalysis(unittest.TestCase):
         try:
             oa = OutputAnalysis()
             oa.print_filter_criteria(temp_dir)
-            f = open(os.path.join(temp_dir,'summary.txt'), 'r')
+            f = open(os.path.join(temp_dir, 'summary.txt'), 'r')
             lines = f.readlines()
             f.close()
             self.assertTrue('FILTERING CRITERIA' in lines[0])
@@ -42,6 +41,7 @@ class TestAnalysis(unittest.TestCase):
 
     def tearDown(self):
         pass
+
 
 if __name__ == '__main__':
     unittest.main()
