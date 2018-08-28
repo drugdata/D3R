@@ -8,17 +8,16 @@ test_molfilevalidator
 Tests for `molfilevalidator` module.
 """
 import sys
-
-if sys.version_info < (2, 7):
-    import unittest2 as unittest
-else:
-    import unittest
-
 import tempfile
 import os
 import os.path
 import shutil
 import tarfile
+
+if sys.version_info < (2, 7):
+    import unittest2 as unittest
+else:
+    import unittest
 
 try:
     OPENEYE_MOD_LOADED = False
@@ -36,14 +35,16 @@ try:
 except ImportError as e:
     pass
 
-from d3r.celpp.task import D3RParameters
-from d3r import molfilevalidator
-from d3r.molfilevalidator import D3RAtom
-from d3r.molfilevalidator import D3RMolecule
-from d3r.molfilevalidator import D3RMoleculeFromSmileViaOpeneyeFactory
-from d3r.molfilevalidator import D3RMoleculeFromMolFileViaOpeneyeFactory
-from d3r.molfilevalidator import ValidationReport
-from d3r.molfilevalidator import CompareMolecules
+from d3r.celpp.task import D3RParameters  # noqa: E402
+from d3r import molfilevalidator  # noqa: E402
+from d3r.molfilevalidator import D3RAtom  # noqa: E402
+from d3r.molfilevalidator import D3RMolecule  # noqa: E402
+from d3r.molfilevalidator import D3RMoleculeFromSmileViaOpeneyeFactory \
+    # noqa: E402
+from d3r.molfilevalidator import D3RMoleculeFromMolFileViaOpeneyeFactory \
+    # noqa: E402
+from d3r.molfilevalidator import ValidationReport  # noqa: E402
+from d3r.molfilevalidator import CompareMolecules  # noqa: E402
 
 
 class TestMolFileValidator(unittest.TestCase):

@@ -202,7 +202,7 @@ class TestPostEvaluation(unittest.TestCase):
             subdir = os.path.join(temp_dir, 'foo')
             os.makedirs(subdir, mode=0o775)
             p_list, no_list = post_evaluation._get_pickle_paths([temp_dir,
-                                                               subdir])
+                                                                 subdir])
             self.assertEqual(len(p_list), 1)
             self.assertTrue(pfile in p_list)
             foo_miss_pickle = os.path.join(subdir, post_evaluation.RMSD_PICKLE)
@@ -213,7 +213,7 @@ class TestPostEvaluation(unittest.TestCase):
             open(p2file, 'a').close()
 
             p_list, no_list = post_evaluation._get_pickle_paths([subdir,
-                                                               temp_dir])
+                                                                 temp_dir])
             self.assertEqual(len(p_list), 2)
             self.assertTrue(pfile in p_list)
             self.assertTrue(p2file in p_list)
@@ -234,17 +234,19 @@ class TestPostEvaluation(unittest.TestCase):
         self.assertEqual(name, 'foo_dock')
 
         # try truncation to 2 which is too small
-        name = post_evaluation._get_submission_name_from_pickle_path(somepath,
-                                                                     prefix,
-                                                                     suffix,
-                                                                     max_submission_name_width=2)
+        name = post_evaluation.\
+            _get_submission_name_from_pickle_path(somepath,
+                                                  prefix,
+                                                  suffix,
+                                                  max_submission_name_width=2)
         self.assertEqual(name, 'foo_dock')
 
         # try truncation to 5
-        name = post_evaluation._get_submission_name_from_pickle_path(somepath,
-                                                                     prefix,
-                                                                     suffix,
-                                                                     max_submission_name_width=5)
+        name = post_evaluation.\
+            _get_submission_name_from_pickle_path(somepath,
+                                                  prefix,
+                                                  suffix,
+                                                  max_submission_name_width=5)
         self.assertEqual(name, 'foo..')
 
     def test_generate_overall_csv_valid_single_evaldataset(self):
@@ -260,18 +262,26 @@ class TestPostEvaluation(unittest.TestCase):
             finalfile = os.path.join(chall_dir,
                                      post_evaluation.CHALL_FINAL_LOG)
             f = open(finalfile, 'w')
-            f.write("""03/04/17 03:32:54: ============Start to work in this query protein: 5uub============
-03/04/17 03:32:55: Warning: Found multiple ligand for this protein:LMCSS-5uub_5un3-XYP.pdb
+            f.write("""03/04/17 03:32:54: ============Start to work in this qu\
+            ery protein: 5uub============
+03/04/17 03:32:55: Warning: Found multiple ligand for this protein:LMCSS-5uub_\
+5un3-XYP.pdb
 03/04/17 03:32:55: Succsessfully generate this protein:LMCSS-5uub_5un3-XYP.pdb
-03/04/17 03:32:55: Ligand center for this case:LMCSS-5uub_5un3-XYP-lig.pdb is   38.448,   73.584,   58.680
+03/04/17 03:32:55: Ligand center for this case:LMCSS-5uub_5un3-XYP-lig.pdb is \
+  38.448,   73.584,   58.680
 03/04/17 03:33:00: Succsessfully generate this protein:SMCSS-5uub_5fsj-OXY.pdb
-03/04/17 03:33:12: ============Start to work in this query protein: 5ur3============
+03/04/17 03:33:12: ============Start to work in this query protein: 5ur3======\
+======
 03/04/17 03:33:12: Succsessfully generate this protein:LMCSS-5ur3_3njq-NJQ.pdb
-03/04/17 03:33:12: Ligand center for this case:LMCSS-5ur3_3njq-NJQ-lig.pdb is  -27.326,  -19.578,  -43.347
-03/04/17 03:33:19: Succsessfully generate this protein:hiResHolo-5ur3_4p3h-25G.pdb
+03/04/17 03:33:12: Ligand center for this case:LMCSS-5ur3_3njq-NJQ-lig.pdb is \
+ -27.326,  -19.578,  -43.347
+03/04/17 03:33:19: Succsessfully generate this protein:hiResHolo-5ur3_4p3h-25G\
+.pdb
 03/04/17 03:33:25: Succsessfully generate this protein:LMCSS-5uud_1qf2-TI3.pdb
-03/04/17 03:33:25: Ligand center for this case:LMCSS-5uud_1qf2-TI3-lig.pdb is   38.308,   38.885,   -3.382
-03/04/17 03:33:40: Succsessfully generate this protein:hiTanimoto-5uud_1gxw-VAL.pdb""")
+03/04/17 03:33:25: Ligand center for this case:LMCSS-5uud_1qf2-TI3-lig.pdb is \
+  38.308,   38.885,   -3.382
+03/04/17 03:33:40: Succsessfully generate this protein:hiTanimoto-5uud_1gxw-VA\
+L.pdb""")
             f.flush()
             f.close()
 
@@ -374,17 +384,28 @@ class TestPostEvaluation(unittest.TestCase):
             finalfile = os.path.join(chall_dir,
                                      post_evaluation.CHALL_FINAL_LOG)
             f = open(finalfile, 'w')
-            f.write("""03/04/17 03:32:54: ============Start to work in this query protein: 5uub============
-            03/04/17 03:32:55: Warning: Found multiple ligand for this protein:LMCSS-5uub_5un3-XYP.pdb
-            03/04/17 03:32:55: Successfully generate this protein:LMCSS-5uub_5un3-XYP.pdb
-            03/04/17 03:32:55: Ligand center for this case:LMCSS-5uub_5un3-XYP-lig.pdb is   38.448,   73.584,   58.680
-            03/04/17 03:33:00: Successfully generate this protein:SMCSS-5uub_5fsj-OXY.pdb
-            03/04/17 03:33:12: ============Start to work in this query protein: 5ur3============
-            03/04/17 03:33:12: Successfully generate this protein:LMCSS-5ur3_3njq-NJQ.pdb
-            03/04/17 03:33:12: Ligand center for this case:LMCSS-5ur3_3njq-NJQ-lig.pdb is  -27.326,  -19.578,  -43.347
-            03/04/17 03:33:19: Successfully generate this protein:hiResHolo-5ur3_4p3h-25G.pdb
-            03/04/17 03:33:25: Ligand center for this case:LMCSS-5uud_1qf2-TI3-lig.pdb is   38.308,   38.885,   -3.382
-            03/04/17 03:33:40: Successfully generate this protein:hiTanimoto-5uud_1gxw-VAL.pdb""")
+            f.write("""03/04/17 03:32:54: ============Start to work in this qu\
+            ery protein: 5uub============
+            03/04/17 03:32:55: Warning: Found multiple ligand for this protein\
+            :LMCSS-5uub_5un3-XYP.pdb
+            03/04/17 03:32:55: Successfully generate this protein:LMCSS-5uub_5\
+            un3-XYP.pdb
+            03/04/17 03:32:55: Ligand center for this case:LMCSS-5uub_5un3-XYP\
+            -lig.pdb is   38.448,   73.584,   58.680
+            03/04/17 03:33:00: Successfully generate this protein:SMCSS-5uub_5\
+            fsj-OXY.pdb
+            03/04/17 03:33:12: ============Start to work in this query protein\
+            : 5ur3============
+            03/04/17 03:33:12: Successfully generate this protein:LMCSS-5ur3_3\
+            njq-NJQ.pdb
+            03/04/17 03:33:12: Ligand center for this case:LMCSS-5ur3_3njq-NJQ\
+            -lig.pdb is  -27.326,  -19.578,  -43.347
+            03/04/17 03:33:19: Successfully generate this protein:hiResHolo-5u\
+            r3_4p3h-25G.pdb
+            03/04/17 03:33:25: Ligand center for this case:LMCSS-5uud_1qf2-TI3\
+            -lig.pdb is   38.308,   38.885,   -3.382
+            03/04/17 03:33:40: Successfully generate this protein:hiTanimoto-5\
+            uud_1gxw-VAL.pdb""")
             f.flush()
             f.close()
 

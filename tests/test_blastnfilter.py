@@ -20,7 +20,7 @@ class TestBlastnfilter(unittest.TestCase):
         try:
             blastnfilter._parse_arguments('hi', theargs)
             self.fail('expected exception')
-        except:
+        except SystemExit:
             pass
 
         theargs = ['--outdir', 'myoutdir',
@@ -56,7 +56,7 @@ class TestBlastnfilter(unittest.TestCase):
         try:
             blastnfilter.main(theargs)
             self.fail('expected exception')
-        except:
+        except SystemExit:
             pass
 
     def tearDown(self):

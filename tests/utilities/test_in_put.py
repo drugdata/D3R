@@ -1,13 +1,16 @@
 __author__ = 'churas'
 
 import sys
+import tempfile
+import os.path
+import shutil
+from d3r.utilities import in_put
+from d3r.blast.query import Query
 
 if sys.version_info < (2, 7):
     import unittest2 as unittest
 else:
     import unittest
-import tempfile
-import os.path
 
 try:
     OPENEYE_MOD_LOADED = False
@@ -24,17 +27,6 @@ try:
                          str(ae))
 except ImportError as e:
     pass
-
-from d3r.blast.query import Query
-"""
-test_in_put
---------------------------------
-
-Tests for `in_put` module.
-"""
-
-import shutil
-from d3r.utilities import in_put
 
 
 class TestInPut(unittest.TestCase):
