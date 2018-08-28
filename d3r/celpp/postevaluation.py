@@ -308,6 +308,7 @@ class PostEvaluationTask(D3RTask):
         """Posts target statistices to website REST service
         """
         if targetobj is None:
+            logger.debug('targetobj is None. Skipping post to service')
             return
 
         if self._webserviceconfig is None:
@@ -328,7 +329,8 @@ class PostEvaluationTask(D3RTask):
             bauth = HTTPBasicAuth(self._webserviceconfig.get_basicauth_user(),
                                   self._webserviceconfig.
                                   get_basicauth_password())
-
+        logger.debug('Posting targetobj to ' +
+                     str(self._webserviceconfig.get_targets_url()))
         r = requests.post(self._webserviceconfig.get_targets_url(),
                           headers=theheader, json=targetobj, auth=bauth,
                           timeout=self._webserviceconfig.get_timeout())
@@ -339,6 +341,8 @@ class PostEvaluationTask(D3RTask):
                    ' and json: ' + str(r.json))
             logger.error(msg)
             self.append_to_email_log('\n' + msg + '\n')
+        else:
+            logger.debug('Post returned code 200. Success')
         return
 
     def run(self):
@@ -405,7 +409,8 @@ class PostEvaluationTask(D3RTask):
 
         # attempt to post evaluation results to website REST service
         try:
-            self.post_rmsd_to_websiteservice(self.generate_target_object())
+            self.post_target_stats_to_websiteservice(self.
+                                                     generate_target_object())
         except Exception as e:
             logger.exception('Not a show stopper, but caught exception '
                              'trying to post results to website rest '
