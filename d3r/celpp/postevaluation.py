@@ -314,7 +314,7 @@ class PostEvaluationTask(D3RTask):
         if self._webserviceconfig is None:
             logger.warning('No service information available to post '
                            'evaluation results')
-            self.append_to_email_log('No website service configuration found '
+            self.append_to_email_log('\nNo website service configuration found '
                                      'to post evaluation results\n')
             return
 

@@ -5,6 +5,8 @@ import tempfile
 import os.path
 import stat
 import configparser
+import httpretty
+
 """
 test_postevaluation
 --------------------------------
@@ -26,6 +28,7 @@ from d3r.celpp.task import SmtpEmailer
 from d3r.celpp.postevaluation import PostEvaluationEmailer
 from d3r.celpp.blastnfilter import BlastNFilterTask
 from d3r.celpp.task import WebsiteServiceConfig
+
 
 class TestPostEvaluation(unittest.TestCase):
     def setUp(self):
@@ -96,6 +99,10 @@ class TestPostEvaluation(unittest.TestCase):
         task = PostEvaluationTask('/blah/1985/dataset.week.3', params)
         self.assertEqual(task._week_num, '3')
         self.assertEqual(task._year, '1985')
+
+        task = PostEvaluationTask(None, params)
+        self.assertEqual(task._week_num, 0)
+        self.assertEqual(task._year, 0)
 
         temp_dir = tempfile.mkdtemp()
         try:
@@ -378,6 +385,101 @@ class TestPostEvaluation(unittest.TestCase):
             self.assertEqual(res['targets'], 1)
         finally:
             shutil.rmtree(temp_dir)
+
+    def test_post_target_stats_to_websiteservice_targetobj_is_none(self):
+        params = D3RParameters()
+        task = PostEvaluationTask('/foo', params)
+        task.post_target_stats_to_websiteservice(None)
+        self.assertEqual(task.get_email_log(), None)
+
+    def test_post_target_stats_to_websiteservice_config_is_none(self):
+        targetobj = dict()
+        targetobj['targets'] = 23
+        params = D3RParameters()
+        task = PostEvaluationTask('/foo', params)
+        task.post_target_stats_to_websiteservice(targetobj)
+        self.assertEqual(task.get_email_log(), '\nNo website service '
+                                               'configuration found to '
+                                               'post evaluation results\n')
+
+    def test_post_target_stats_to_websiteservice_success_no_auth(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            httpretty.enable()
+            httpretty.register_uri(httpretty.POST,
+                                   'http://foo.com/week',
+                                   body='hi')
+            targetobj = dict()
+            targetobj['targets'] = 23
+            params = D3RParameters()
+            con = configparser.ConfigParser()
+            con.add_section(WebsiteServiceConfig.DEFAULT)
+            con.set(WebsiteServiceConfig.DEFAULT,
+                    WebsiteServiceConfig.WEB_APIKEY, 'somekey')
+            con.set(WebsiteServiceConfig.DEFAULT,
+                    WebsiteServiceConfig.WEB_URL, 'http://foo.com/')
+            cfile = os.path.join(temp_dir, 'web.conf')
+            with open(cfile, 'w') as f:
+                con.write(f)
+                f.flush()
+            params.websiteserviceconfig = cfile
+            task = PostEvaluationTask(temp_dir, params)
+
+            task.post_target_stats_to_websiteservice(targetobj)
+
+            self.assertEqual(task.get_email_log(), None)
+            reqy = httpretty.last_request()
+
+            self.assertEqual(reqy.headers['X-API-KEY'], 'somekey')
+            self.assertEqual(reqy.body, '{"targets": 23}')
+        finally:
+            shutil.rmtree(temp_dir)
+            httpretty.disable()
+            httpretty.reset()
+
+    def test_post_target_stats_to_websiteservice_fail_with_auth(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            httpretty.enable()
+            httpretty.register_uri(httpretty.POST,
+                                   'http://foo.com/week',
+                                   status=404,
+                                   body='hi')
+            targetobj = dict()
+            targetobj['targets'] = 23
+            params = D3RParameters()
+            con = configparser.ConfigParser()
+            con.add_section(WebsiteServiceConfig.DEFAULT)
+            con.set(WebsiteServiceConfig.DEFAULT,
+                    WebsiteServiceConfig.WEB_APIKEY, 'somekey')
+            con.set(WebsiteServiceConfig.DEFAULT,
+                    WebsiteServiceConfig.WEB_URL, 'http://foo.com/')
+            con.set(WebsiteServiceConfig.DEFAULT,
+                    WebsiteServiceConfig.WEB_BASIC_USER, 'bob')
+            con.set(WebsiteServiceConfig.DEFAULT,
+                    WebsiteServiceConfig.WEB_BASIC_PASS, 'pw')
+
+            cfile = os.path.join(temp_dir, 'web.conf')
+            with open(cfile, 'w') as f:
+                con.write(f)
+                f.flush()
+            params.websiteserviceconfig = cfile
+            task = PostEvaluationTask(temp_dir, params)
+
+            task.post_target_stats_to_websiteservice(targetobj)
+
+            self.assertEqual(task.get_email_log(),
+                             '\nwebsite REST service returned code: 404 with '
+                             'text: hi and json: <bound method Response.json '
+                             'of <Response [404]>>\n')
+            reqy = httpretty.last_request()
+
+            self.assertEqual(reqy.headers['X-API-KEY'], 'somekey')
+            self.assertEqual(reqy.headers['Authorization'], 'Basic Ym9iOnB3')
+        finally:
+            shutil.rmtree(temp_dir)
+            httpretty.disable()
+            httpretty.reset()
 
     def test_run_fails_cause_can_run_is_false(self):
         temp_dir = tempfile.mkdtemp()
