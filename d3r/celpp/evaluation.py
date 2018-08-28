@@ -345,7 +345,7 @@ class EvaluationTask(D3RTask):
             self._week_num = util.\
                 get_celpp_week_number_from_path(self.get_path())
             self._year = util.get_celpp_year_from_path(self.get_dir())
-        except UnsetNameError:
+        except Exception:
             self._week_num = 0
             self._year = 0
 
@@ -697,20 +697,6 @@ class EvaluationTask(D3RTask):
         else:
             return None
 
-    def _get_version_from_start(self):
-        """Gets version of CELPP/D3R run by parsing start file
-           :returns version from start file or unknown if file is empty or
-                    does not exist
-        """
-        version = 'unknown'
-        sfile = os.path.join(self.get_dir(), self.START_FILE)
-        if os.path.isfile(sfile):
-            with open(sfile, 'r') as fp:
-                data = fp.read()
-                if len(data) > 0:
-                    version = str(data)
-        return version
-
     def generate_rmsd_object(self):
         """Generates a dictionary object parsed from either RMSD.json or as
            a fallback as RMSD.pickle file that contains scores from this
@@ -726,7 +712,7 @@ class EvaluationTask(D3RTask):
 
         rmsdobj[WebsiteServiceConfig.JSON_KEY] = rmsd_val
 
-        version = self._get_version_from_start()
+        version = self.get_version_from_start_file()
 
         wsource = 'notset'
         pname = 'notset'

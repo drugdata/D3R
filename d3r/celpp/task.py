@@ -197,6 +197,20 @@ class D3RTask(object):
         """
         self._file_uploader = file_uploader
 
+    def get_version_from_start_file(self):
+        """Gets version of CELPP/D3R run by parsing start file
+           :returns version from start file or unknown if file is empty or
+                    does not exist
+        """
+        version = 'unknown'
+        sfile = os.path.join(self.get_dir(), self.START_FILE)
+        if os.path.isfile(sfile):
+            with open(sfile, 'r') as fp:
+                data = fp.read()
+                if len(data) > 0:
+                    version = str(data)
+        return version
+
     def get_uploadable_files(self):
         """Returns a list of files that can be uploaded to remote server
 
