@@ -450,8 +450,8 @@ def _parse_arguments(desc, args):
     parser.add_argument(WEBSITESERVICECONFIG_FLAG,
                         help='File containing configuration to connect to '
                              'website REST services. If set evaluation results'
-                             'in evaluation stage will be persisted to REST'
-                             'service')
+                             ' in evaluation stage will be persisted to REST'
+                             ' service')
     parser.add_argument('--version', action='version',
                         version=('%(prog)s ' + d3r.__version__))
     return parser.parse_args(args, namespace=parsed_arguments)
@@ -697,10 +697,11 @@ def main(args):
               files in them which do not end in name '{webdata}' and runs
               script set via --evaluation parameter storing the result of
               the script into stage.{evalstage}.<algo>.evaluation. --pdbdb flag
-              must also be set when calling this stage. If {websiteserviceflag}
-              is set to a config file then the results of the evaluation will
-              be persisted to the website REST service defined in the config
-              file that should have this format:
+              must also be set when calling this stage. If
+               {websiteserviceflag} is set to a config file then the
+               results of the evaluation will be persisted to the website
+               REST service defined in the config file that should
+               have this format:
 
               Example {websiteserviceflag} config file:
 
@@ -713,6 +714,11 @@ def main(args):
               {web_source} = dev
               {web_portal_name} = d3r
               {web_timeout} = 5
+
+              NOTE: {web_user} and {web_pass} are optional and
+                    only needed if HTTP Basic Authentication is required.
+                    Also if {web_timeout} is omitted the default
+                    is 0.001 seconds
 
               If {stageflag} '{postevaluation}'
 
