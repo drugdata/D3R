@@ -6,19 +6,10 @@ import argparse
 import psutil
 import logging
 from datetime import date
-
+from lockfile.pidlockfile import PIDLockFile
 import d3r
 from d3r.celpp import util
 from d3r.celpp.task import D3RParameters
-
-
-# create logger
-logger = logging.getLogger('d3r.celpprunner')
-DEFAULT_LOG_LEVEL = 'ERROR'
-p = D3RParameters()
-p.loglevel = DEFAULT_LOG_LEVEL
-util.setup_logging(p)
-
 
 from d3r.celpp.task import SmtpEmailerFactory
 from d3r.celpp.task import SmtpConfig
@@ -38,7 +29,12 @@ from d3r.celpp.filetransfer import FtpFileTransfer
 from d3r.celpp.extsubmission import ExternalDataSubmissionFactory
 
 
-from lockfile.pidlockfile import PIDLockFile
+# create logger
+logger = logging.getLogger('d3r.celpprunner')
+DEFAULT_LOG_LEVEL = 'ERROR'
+p = D3RParameters()
+p.loglevel = DEFAULT_LOG_LEVEL
+util.setup_logging(p)
 
 
 CREATE_CHALLENGE = 'createchallenge'
@@ -704,11 +700,11 @@ def main(args):
               is set to a config file then the results of the evaluation will
               be persisted to the website REST service defined in the config
               file that should have this format:
-              
+
               Example {websiteserviceflag} config file:
-              
+
               [{web_section}]
-              
+
               {web_url} =  https://blah.com/api/1/d3r/celpp
               {web_apikey} = asdlkjas
               {web_user} = joe
@@ -729,7 +725,7 @@ def main(args):
               is set to a config file then completion of evaluation will be
               posted to the website REST service defined in the config file
                described in see 'evaluation' section above.
-               
+
 
               """.format(makeblastdb_dirname=makedb.get_dir_name(),
                          dataimport_dirname=dataimport.get_dir_name(),
