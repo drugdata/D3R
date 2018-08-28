@@ -708,6 +708,7 @@ class EvaluationTask(D3RTask):
         rmsd_val = self._get_rmsd()
 
         if rmsd_val is None:
+            logger.debug('RMSD object is None returning')
             return None
 
         rmsdobj[WebsiteServiceConfig.JSON_KEY] = rmsd_val
@@ -726,6 +727,7 @@ class EvaluationTask(D3RTask):
         rmsdobj['year'] = int(self._year)
         rmsdobj['portal_name'] = pname
         rmsdobj['submission_folder'] = self.get_guid_for_task()
+        logger.debug('Successfully generated RMSD object for website service')
         return rmsdobj
 
     def post_rmsd_to_websiteservice(self, rmsdobj):
@@ -733,6 +735,7 @@ class EvaluationTask(D3RTask):
         """
 
         if rmsdobj is None:
+            logger.debug('RMSD object is None skipping post to websiteservice')
             return
 
         if self._webserviceconfig is None:
@@ -753,7 +756,8 @@ class EvaluationTask(D3RTask):
             bauth = HTTPBasicAuth(self._webserviceconfig.get_basicauth_user(),
                                   self._webserviceconfig.
                                   get_basicauth_password())
-
+        logger.debug('Posting RMSD object to ' +
+                     str(self._webserviceconfig.get_rmsd_url()))
         r = requests.post(self._webserviceconfig.get_rmsd_url(),
                           headers=theheader, json=rmsdobj, auth=bauth,
                           timeout=self._webserviceconfig.get_timeout())
@@ -764,6 +768,8 @@ class EvaluationTask(D3RTask):
                    ' and json: ' + str(r.json))
             logger.error(msg)
             self.append_to_email_log('\n' + msg + '\n')
+        else:
+            logger.debug('Post returned code 200. Success')
         return
 
     def run(self):
