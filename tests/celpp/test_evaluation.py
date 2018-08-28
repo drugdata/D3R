@@ -1350,6 +1350,30 @@ class TestEvaluation(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
+    def test_generate_rmsd_object_with_pickle_noconfig_nostart(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            params = D3RParameters()
+            task = EvaluationTask(temp_dir, 'foo', None, params)
+            task.create_dir()
+            with open(task.get_rmsd_pickle(), 'w') as f:
+                rmsdobj = {}
+                rmsdobj['6ar4'] = {}
+                rmsdobj['6ar4']['LMCSS_ori'] = 1
+                pickle.dump(rmsdobj, f)
+
+            res = task.generate_rmsd_object()
+            self.assertEqual(res['version'], 'unknown')
+            self.assertEqual(res['source'], 'notset')
+            self.assertEqual(res['week'], 0)
+            self.assertEqual(res['year'], 0)
+            self.assertEqual(res['portal_name'], 'notset')
+            self.assertEqual(res['submission_folder'], 'foo')
+            self.assertEqual(res['json']['6ar4']['LMCSS_ori'], 1)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
     def test_generate_rmsd_object_with_jsonfile_withconfig(self):
         temp_dir = tempfile.mkdtemp()
         try:
