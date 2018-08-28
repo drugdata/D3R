@@ -199,8 +199,6 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEqual(result.postevaluation, '/bin/yo.py')
         self.assertEqual(result.websiteserviceconfig, 'webbyconfig.txt')
 
-
-
     def test_run_tasks_passing_none_and_empty_list(self):
         self.assertEquals(celpprunner.run_tasks(None), 3)
         task_list = []

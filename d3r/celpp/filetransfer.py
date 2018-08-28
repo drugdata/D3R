@@ -66,7 +66,7 @@ class FileTransfer(object):
            contestantid <CELPP CONTESTANT ID>
            challengepath <BASE PATH ON REMOTE SERVER ie /challenge>
            submissionpath <BASE PATH ON REMOTE SERVER ie /submission>
-           evaluationresultpath <BASE PATH ON REMOTE SERVER ie /evaluationresult>
+           evaluationresultpath <BASE PATH ON REMOTE SERVER ie /evalresult>
 
            Example:
 
@@ -111,8 +111,8 @@ class FileTransfer(object):
                 elif split_line[0] == FileTransfer.SUBMISSIONPATH:
                     self.set_remote_submission_dir(split_line[1].rstrip())
                 elif split_line[0] == FileTransfer.EVALUATIONRESULTPATH:
-                    self.set_remote_evaluationresult_dir(split_line[1].rstrip())
-
+                    self.set_remote_evaluationresult_dir(split_line[1].
+                                                         rstrip())
         finally:
             if f is not None:
                 f.close()

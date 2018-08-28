@@ -19,7 +19,6 @@ from d3r.celpp.blastnfilter import BlastNFilterTask
 from d3r.celpp.challengedata import ChallengeDataTask
 from d3r.celpp.participant import ParticipantDatabaseFromCSVFactory
 from d3r.celpp import util
-from d3r.celpp.task import UnsetNameError
 from d3r.celpp.task import Attachment
 
 
@@ -610,7 +609,8 @@ class EvaluationTask(D3RTask):
 
         tar = tarfile.open(evalfile, 'w:gz')
 
-        file_list = [EvaluationTask.FINAL_LOG, EvaluationTask.EVAL_EXITCODEFILE,
+        file_list = [EvaluationTask.FINAL_LOG,
+                     EvaluationTask.EVAL_EXITCODEFILE,
                      EvaluationTask.RMSD_CSV, EvaluationTask.RMSD_JSON,
                      EvaluationTask.RMSD_JSON, EvaluationTask.COMPLETE_FILE,
                      EvaluationTask.ERROR_FILE, EvaluationTask.START_FILE]
@@ -747,7 +747,7 @@ class EvaluationTask(D3RTask):
         theheader[WebsiteServiceConfig.API_KEY_KEY] = self.\
             _webserviceconfig.get_apikey()
         theheader[WebsiteServiceConfig.
-            CONTENT_TYPE_KEY] = WebsiteServiceConfig.CONTENT_TYPE_VAL
+                  CONTENT_TYPE_KEY] = WebsiteServiceConfig.CONTENT_TYPE_VAL
         bauth = None
         if self._webserviceconfig.get_basicauth_user() is not None:
             bauth = HTTPBasicAuth(self._webserviceconfig.get_basicauth_user(),

@@ -106,7 +106,7 @@ class TestPostEvaluation(unittest.TestCase):
 
         temp_dir = tempfile.mkdtemp()
         try:
-            params.websiteserviceconfig=os.path.join(temp_dir, 'noexist')
+            params.websiteserviceconfig = os.path.join(temp_dir, 'noexist')
             task = PostEvaluationTask('/blah/1985/dataset.week.3', params)
             self.assertTrue(task._webserviceconfig is not None)
         finally:

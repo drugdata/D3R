@@ -19,7 +19,6 @@ import tarfile
 import configparser
 import pickle
 from mock import Mock
-import requests
 import httpretty
 
 from d3r.celpp.task import D3RParameters
@@ -1130,9 +1129,8 @@ class TestEvaluation(unittest.TestCase):
         try:
             params = D3RParameters()
             task = EvaluationTask(temp_dir, 'blah' +
-                              EvaluationTask.EXT_SUBMISSION_SUFFIX,
-                              None,
-                              params)
+                                  EvaluationTask.EXT_SUBMISSION_SUFFIX,
+                                  None, params)
             task.create_dir()
             # try on empty directory
             res = task._create_evaluationresult_tarfile('hehe')
@@ -1151,9 +1149,11 @@ class TestEvaluation(unittest.TestCase):
             os.unlink(res)
 
             # try with all files added and an extra file and directory
-            file_list = [EvaluationTask.FINAL_LOG, EvaluationTask.EVAL_EXITCODEFILE,
+            file_list = [EvaluationTask.FINAL_LOG,
+                         EvaluationTask.EVAL_EXITCODEFILE,
                          EvaluationTask.RMSD_CSV, EvaluationTask.RMSD_JSON,
-                         EvaluationTask.RMSD_JSON, EvaluationTask.COMPLETE_FILE,
+                         EvaluationTask.RMSD_JSON,
+                         EvaluationTask.COMPLETE_FILE,
                          EvaluationTask.ERROR_FILE, EvaluationTask.START_FILE,
                          'haha']
             for entry in file_list:
@@ -1233,8 +1233,8 @@ class TestEvaluation(unittest.TestCase):
             task._upload_evaluationresult_file(evalfile)
             self.assertEqual(task.get_email_log(),
                              'No remote evaluation result '
-                                         'directory set ' +
-                                         'for ftp upload\n')
+                             'directory set ' +
+                             'for ftp upload\n')
         finally:
             shutil.rmtree(temp_dir)
 

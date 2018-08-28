@@ -940,6 +940,7 @@ class WebsiteServiceConfig(BaseConfig):
         """
         return self._timeout
 
+
 class SmtpConfig(BaseConfig):
     """Parses configfile passed into constructor to
        obtain parameters to connect to smtp server.

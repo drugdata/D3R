@@ -12,7 +12,6 @@ from d3r.celpp.evaluation import EvaluationTask
 from d3r.celpp.evaluation import EvaluationTaskFactory
 from d3r.celpp.challengedata import ChallengeDataTask
 from d3r.celpp.blastnfilter import BlastNFilterTask
-from d3r.celpp.task import UnsetNameError
 
 logger = logging.getLogger(__name__)
 
@@ -314,8 +313,8 @@ class PostEvaluationTask(D3RTask):
         if self._webserviceconfig is None:
             logger.warning('No service information available to post '
                            'evaluation results')
-            self.append_to_email_log('\nNo website service configuration found '
-                                     'to post evaluation results\n')
+            self.append_to_email_log('\nNo website service configuration '
+                                     'found to post evaluation results\n')
             return
 
         theheader = dict()
@@ -323,7 +322,7 @@ class PostEvaluationTask(D3RTask):
         theheader[WebsiteServiceConfig.API_KEY_KEY] = self.\
             _webserviceconfig.get_apikey()
         theheader[WebsiteServiceConfig.
-            CONTENT_TYPE_KEY] = WebsiteServiceConfig.CONTENT_TYPE_VAL
+                  CONTENT_TYPE_KEY] = WebsiteServiceConfig.CONTENT_TYPE_VAL
         bauth = None
         if self._webserviceconfig.get_basicauth_user() is not None:
             bauth = HTTPBasicAuth(self._webserviceconfig.get_basicauth_user(),
