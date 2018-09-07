@@ -3,7 +3,7 @@
 History
 -------
 
-1.11.0 (2018-08-??)
+1.11.0 (2018-09-07)
 --------------------
 
 * Fixed minor bug where unit tests for molfilevalidator.py failed when valid
@@ -43,6 +43,9 @@ History
 
 * Moved code under if __main__ into main() function to facilitate testing.
   `Issue #191 <https://github.com/drugdata/D3R/issues/191>`_
+
+* Add RMSD.csv to files uploaded in EvaluationTask get_uploadable_files().
+  `Issue #192 <https://github.com/drugdata/D3R/issues/192>`_
 
 * Changed logging in evaluate.py to use module logger instead of root logger
   `Issue #194 <https://github.com/drugdata/D3R/issues/194>`_
