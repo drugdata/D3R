@@ -1,0 +1,61 @@
+#!/bin/bash
+
+#PBS -q home
+#PBS -N genchallenge
+#PBS -l nodes=1:ppn=3
+#PBS -l walltime=96:00:00
+#PBS -j oe
+#PBS -o /oasis/tscc/scratch/@@USER@@/celpp/joblogs/genchall.$PBS_JOBID.out
+#PBS -w /oasis/tscc/scratch/@@USER@@/
+#PBS -V
+#PBS -M @@EMAIL@@
+#PBS -m abe
+#PBS -A @@ACCOUNT@@
+
+module load python/1
+module load singularity
+
+export SCHRODINGER=/opt/schrodinger
+export SCHROD_LICENSE_FILE=@@SCHROD_LICENSE_FILE@@
+
+echo "Current time is `date` ... createchallenge job"
+
+echo "Copying pdb from /oasis/tscc/scratch/@@USER@@/celpp/pdb/latest_pdb to $TMPDIR"
+cd $TMPDIR
+
+pdb_dir=""
+for Y in `seq 1 10` ; do
+  /usr/bin/time -p tar -xf /oasis/tscc/scratch/@@USER@@/celpp/pdb/latest_pdb 
+  ecode=$?
+  if [ $ecode == 0 ] ; then
+    pdb_dir=`find $TMPDIR -maxdepth 1 -name "pdb*" -type d`
+    break
+  fi
+  echo "`date` : Untar of pdb failed. Sleeping 60 seconds and trying again"
+  sleep 60
+done
+
+if [ "$pdb_dir" == "" ] ; then
+  echo "Error unable to uncompress /oasis/tscc/scratch/@@USER@@/celpp/pdb/latest_pdb to $TMPDIR"
+  exit 1
+fi
+echo "PDB dir: $pdb_dir"
+cd $pdb_dir
+if [ $? != 0 ] ; then
+  echo "Error unable to cd to $pdb_dir"
+  exit 2
+fi
+echo "Uncompressing pdb files"
+
+/usr/bin/time -p find . -name *.gz -exec gunzip {} \;
+
+export MGL_ROOT=/usr/local/mgltools/
+export PATH=$PATH:/opt/UCSF/Chimera64-1.10.2/bin
+
+singularity run --bind /oasis --bind /proc --bind /state @@D3R_IMAGE@@ --importsleep 1200 --importretry 144 --blastnfiltertimeout 72000 --stage createchallenge --pdbdb $pdb_dir --compinchi http://ligand-expo.rcsb.org/dictionaries --ftpconfig @@BOX_CONFIG@@ --rdkitpython /opt/miniconda2 --log DEBUG --createweekdir --email @@EMAIL_LIST@@ --smtpconfig @@SMTP_CONFIG@@ /oasis/tscc/scratch/@@USER@@/celpp/data
+ecode=$?
+
+echo "Done time is `date` and exit code is: $ecode"
+
+exit $ecode
+

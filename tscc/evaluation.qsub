@@ -1,0 +1,75 @@
+#!/bin/bash
+
+#PBS -q home
+#PBS -N evaluation
+#PBS -l nodes=1:ppn=8
+#PBS -l walltime=96:00:00
+#PBS -j oe
+#PBS -o /oasis/tscc/scratch/@@USER@@/celpp/joblogs/evaluation.$PBS_JOBID.out
+#PBS -w /oasis/tscc/scratch/@@USER@@/celpp
+#PBS -V
+#PBS -M @@EMAIL@@
+#PBS -m abe
+#PBS -A @@ACCOUNT@@
+
+module load python/1
+module load singularity
+
+export SCHRODINGER=/opt/schrodinger
+export SCHROD_LICENSE_FILE=@@SCHROD_LICENSE_FILE@@
+
+echo "Current time is `date` ... evaluation job"
+
+c_epoch=`date +%s`
+link_age=`stat -c %Z /oasis/tscc/scratch/@@USER@@/celpp/pdb/latest_pdb`
+age_of_symlink=`echo "$c_epoch - $link_age" | bc -l`
+
+while [ $age_of_symlink -gt 259200 ] ; do
+  echo "Sleeping 600 seconds"
+  sleep 600
+
+  c_epoch=`date +%s`
+  link_age=`stat -c %Z /oasis/tscc/scratch/@@USER@@/celpp/pdb/latest_pdb`
+  age_of_symlink=`echo "$c_epoch - $link_age" | bc -l`
+done
+
+
+echo "Copying pdb from /oasis/tscc/scratch/@@USER@@/celpp/pdb/latest_pdb to $TMPDIR"
+cd $TMPDIR
+
+pdb_dir=""
+for Y in `seq 1 10` ; do
+  /usr/bin/time -p tar -xf /oasis/tscc/scratch/@@USER@@/celpp/pdb/latest_pdb 
+  ecode=$?
+  if [ $ecode == 0 ] ; then
+    pdb_dir=`find $TMPDIR -maxdepth 1 -name "pdb*" -type d`
+    break
+  fi
+  echo "`date` : Untar of pdb failed. Sleeping 60 seconds and trying again"
+  sleep 60
+done
+
+if [ "$pdb_dir" == "" ] ; then
+  echo "Error unable to uncompress /oasis/tscc/scratch/@@USER@@/celpp/pdb/latest_pdb to $TMPDIR"
+  exit 1
+fi
+echo "PDB dir: $pdb_dir"
+cd $pdb_dir
+if [ $? != 0 ] ; then
+  echo "Error unable to cd to $pdb_dir"
+  exit 2
+fi
+echo "Uncompressing pdb files"
+
+/usr/bin/time -p find . -name *.gz -exec gunzip {} \;
+
+export MGL_ROOT=/usr/local/mgltools/
+export PATH=$PATH:/opt/UCSF/Chimera64-1.10.2/bin
+
+singularity run --bind /oasis --bind /proc --bind /state @@D3R_IMAGE@@ --stage evaluation,postevaluation --pdbdb $pdb_dir --evaluation evaluate.py --ftpconfig @@BOX_CONFIG@@ --rdkitpython /opt/miniconda2 --log DEBUG --createweekdir --email @@EMAIL_LIST@@ --smtpconfig @@SMTP_CONFIG@@ --websiteserviceconfig @@REST_CONFIG@@ /oasis/tscc/scratch/@@USER@@/celpp/data
+ecode=$?
+
+echo "Done time is `date` and exit code is: $ecode"
+
+exit $ecode
+

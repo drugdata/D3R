@@ -1,0 +1,15 @@
+#!/bin/bash
+
+#PBS -q condo
+#PBS -N pdbdownload
+#PBS -l nodes=1:ppn=1
+#PBS -l walltime=4:00:00
+#PBS -j oe
+#PBS -o /oasis/tscc/scratch/@@USER@@/celpp/joblogs/pdbdownload.$PBS_JOBID.out
+#PBS -w /oasis/tscc/scratch/@@USER@@/celpp
+#PBS -V
+#PBS -M @@EMAIL@@
+#PBS -m abe
+#PBS -A @@ACCOUNT@@
+
+/usr/bin/time -v /home/@@USER@@/bin/pdb-data-updater.sh /state/partition1/$USER/$PBS_JOBID /oasis/tscc/scratch/@@USER@@/celpp
