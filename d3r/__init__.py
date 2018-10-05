@@ -2,4 +2,4 @@
 
 __author__ = 'Christopher Churas'
 __email__ = 'churas@ncmir.ucsd.edu'
-__version__ = '1.11.0rc3'
+__version__ = '1.11.0'
