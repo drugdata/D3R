@@ -1,0 +1,24 @@
+MAILTO=@@EMAIL@@
+###################
+#
+# Submit job for pdb downloader at 8:00pm on Tuesday evening
+# and run external submission
+#
+###################
+0 20 * * 2 /opt/torque/bin/qsub /home/@@USER@@/bin/pdb-data-updater.qsub
+
+###################
+#
+# Run evaluation
+#
+#
+###################
+0 1 * * 3 /opt/torque/bin/qsub /home/@@USER@@/bin/evaluation.qsub
+
+##################
+#
+# Generate challenge data package 9:01pm on Friday night
+#
+##################
+1 21 * * 5 . /home/@@USER@@/.bash_profile;/opt/torque/bin/qsub /home/@@USER@@/bin/genchallenge.qsub 
+
