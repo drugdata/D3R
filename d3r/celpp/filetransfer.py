@@ -93,7 +93,9 @@ class FileTransfer(object):
         try:
             f = open(config, 'r')
             for line in f:
-                split_line = line.split(' ')
+                # NOTE: perform only 1 split since passwords
+                # may contain spaces.
+                split_line = line.split(' ', 1)
                 if not len(split_line) == 2:
                     continue
                 if split_line[0] == FileTransfer.HOST:
