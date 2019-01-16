@@ -3,15 +3,21 @@
 
 import logging
 import os
-import tarfile
+import re
 import shutil
+import sys
+import tarfile
 import time
 
-from d3r.celpp.task import D3RTask
+from d3r.celpp import util
 from d3r.celpp.challengedata import ChallengeDataTask
-from d3r.celpp.evaluation import EvaluationTaskFactory
+from d3r.celpp.dataimport import DataImportTask
 from d3r.celpp.evaluation import EvaluationTask
+from d3r.celpp.evaluation import EvaluationTaskFactory
 from d3r.celpp.filetransfer import FtpFileTransfer
+from d3r.celpp.participant import ParticipantDatabaseFromCSVFactory
+from d3r.celpp.task import D3RTask
+from d3r.celpp.task import SmtpEmailerFactory
 
 logger = logging.getLogger(__name__)
 
@@ -179,6 +185,12 @@ class ExternalDataSubmissionTask(D3RTask):
         self._maxretries = 3
         self._retrysleep = 30
 
+        # load the participant database and create an email in
+        # case we need to notify participants of bad submissions.
+        self._participant_db = self.get_participant_database(path, args)
+        email_factory = SmtpEmailerFactory(args)
+        self._emailer = email_factory.get_smtp_emailer()
+
     def set_download_max_retry_count(self, numretries):
         """Sets number of retries to perform before giving up on
            download
@@ -221,6 +233,15 @@ class ExternalDataSubmissionTask(D3RTask):
             return False
         self._can_run = True
         return True
+
+    def get_participant_database(self, path, args):
+        """Creates `ParticipantDatabase`
+        :returns: ParticipantDatabase
+        """
+        dimport = DataImportTask(path, args)
+        csvfile = dimport.get_participant_list_csv()
+        pfac = ParticipantDatabaseFromCSVFactory(csvfile)
+        return pfac.get_participant_database()
 
     def _is_tarmembername_safe(self, tname, chall_name):
         if tname.startswith(os.sep):
@@ -278,12 +299,35 @@ class ExternalDataSubmissionTask(D3RTask):
         """Moves the contents of uncompressed challenge data package into
            `get_dir()` of task
            :raises ChallengePackageFormatError: if expected challenge package
-                                                directory is missing
+                                                directory is missing or empty.
            :raises OSError: If there is an error examining challenge package
                             directory
         """
         package_dir = os.path.join(self.get_dir(), chall_name)
         if not os.path.isdir(package_dir):
+            task_name = self.get_name()
+            guid = re.sub(r'(\d+).*', r'\1', task_name)
+            if guid is not None:
+                p = self._participant_db.get_participant_by_guid(guid)
+                if p is not None:
+                    email = p.get_email()
+                    if email is not None:
+                        #logger.debug('EMAIL ' + email)
+                        weekno = util.get_celpp_week_number_from_path(self._path)
+
+                        subject = (D3RTask.SUBJECT_LINE_PREFIX +
+                            ' Week ' + str(weekno) +
+                            ' submission file error for ' + guid)
+
+                        msg = ('Dear CELPP Participant,\n\nThe directory ' + 
+                            package_dir + 
+                            ' was either not found or empty in the submitted challenge data pacakge.')
+                
+                        try:
+                            self._emailer.send_email([email], subject, msg)
+                        except Exception, e:
+                            logger.debug('Error sending email about bad submission file: ' + str(e))
+
             raise ChallengePackageFormatError('Directory: ' +
                                               str(package_dir) +
                                               ' not found, but should have ' +
