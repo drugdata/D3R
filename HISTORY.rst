@@ -3,6 +3,20 @@
 History
 -------
 
+1.11.2 (2019-01-16)
+--------------------
+* Fix for failed test in 1.11.1
+
+1.11.1 (2019-01-16)
+--------------------
+
+* Email participant when submission is empty.
+  `Issue #197 <https://github.com/drugdata/D3R/issues/197>`_
+
+* Allow spaces in passwords in ftp config file.
+  `Issue #198 <https://github.com/drugdata/D3R/issues/198>`_
+
+
 1.11.0 (2018-09-07)
 --------------------
 
