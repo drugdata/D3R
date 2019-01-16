@@ -307,7 +307,7 @@ class ExternalDataSubmissionTask(D3RTask):
         if not os.path.isdir(package_dir):
             task_name = self.get_name()
             guid = re.sub(r'(\d+).*', r'\1', task_name)
-            if guid is not None:
+            if guid is not None and self._participant_db is not None:
                 p = self._participant_db.get_participant_by_guid(guid)
                 if p is not None:
                     email = p.get_email()
