@@ -3,6 +3,11 @@
 History
 -------
 
+1.11.3 (2019-02-26)
+--------------------
+* Additional fix for ftp connection refused
+`Issue #181 <https://github.com/drugdata/D3R/issues/181>`_
+
 1.11.2 (2019-01-16)
 --------------------
 * Fix for failed test in 1.11.1
