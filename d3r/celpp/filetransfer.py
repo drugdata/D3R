@@ -249,7 +249,7 @@ class FileTransfer(object):
         self._error_msg = 'list_dirs not implemented'
         return None
 
-    def list_files(self, remote_dir):
+    def list_files(self, remote_dir, retrycount=0, retrysleep=0):
         """Dummy
         """
         self._error_msg = 'list_files not implemented'
@@ -490,7 +490,7 @@ class FtpFileTransfer(FileTransfer):
             logger.debug('list directory operation took ' +
                          str(self._duration) + ' seconds')
 
-    def list_files(self, remote_dir):
+    def _list_files(self, remote_dir):
         """Gets list of all files found in `remote_dir`
 
            This method gets a list of files in `remote_dir`
@@ -528,6 +528,48 @@ class FtpFileTransfer(FileTransfer):
         finally:
             self._duration = int(time.time()) - start_time
             logger.debug('list file operation took ' +
+                         str(self._duration) + ' seconds')
+
+    def list_files(self, remote_dir, retrycount=0, retrysleep=0):
+        """Gets list of all files found in `remote_dir`
+
+           This method gets a list of files in `remote_dir`
+           If there is an error information can be
+           obtained by calling `self.get_error_msg()`  It is assumed
+           `connect()` has been called on this object.
+           :param remote_dir: full path to remote directory to examine
+           :param retrycount: Number of retries to attempt, 0 means no retries
+           :param retrysleep: Number of seconds to sleep between retries
+           :returns: None for failure and list upon success
+        """
+        self._error_msg = None
+        start_time = int(time.time())
+        try:
+            if remote_dir is None:
+                self._error_msg = 'remote_dir None'
+                return None
+            iteration = 0
+            remote_path = os.path.normpath(remote_dir)
+            logger.debug('Examining : ' + remote_path)
+
+            while iteration <= retrycount:
+                if iteration > 0:
+                    self._error_msg = None
+                    logger.debug('Try ' + str(iteration + 1) + ' of ' +
+                                 str(retrycount) + ' failed to list_files' +
+                                 'sleeping ' + str(retrysleep) +
+                                 ' seconds before retry')
+                    time.sleep(retrysleep)
+
+                filelist = self._list_files(remote_path)
+                if filelist is not None:
+                    return filelist
+                iteration += 1
+
+            return None
+        finally:
+            self._duration = int(time.time()) - start_time
+            logger.debug('list files operation took ' +
                          str(self._duration) + ' seconds')
 
     def upload_file_direct(self, file, remote_dir, remote_file_name):
