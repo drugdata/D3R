@@ -177,7 +177,7 @@ class TestExternalSubmission(unittest.TestCase):
         fac.set_file_transfer(mockft)
         dlist = fac._get_challenge_data_package_file('/remote', 'dname')
         self.assertEqual(dlist, None)
-        mockft.list_files.assert_called_with('/remote/dname')
+        mockft.list_files.assert_called_with('/remote/dname', retrycount=0, retrysleep=0)
 
     def test_get_challenge_data_package_file_no_files(self):
         params = D3RParameters()
@@ -189,7 +189,7 @@ class TestExternalSubmission(unittest.TestCase):
         fac.set_file_transfer(mockft)
         dlist = fac._get_challenge_data_package_file('/remote', 'dname')
         self.assertEqual(dlist, None)
-        mockft.list_files.assert_called_with('/remote/dname')
+        mockft.list_files.assert_called_with('/remote/dname', retrycount=0, retrysleep=0)
 
     def test_get_challenge_data_package_file_no_match(self):
         temp_dir = tempfile.mkdtemp()
@@ -210,7 +210,7 @@ class TestExternalSubmission(unittest.TestCase):
             fac.set_file_transfer(mockft)
             dlist = fac._get_challenge_data_package_file('/remote', 'dname')
             self.assertEqual(dlist, None)
-            mockft.list_files.assert_called_with('/remote/dname')
+            mockft.list_files.assert_called_with('/remote/dname', retrycount=0, retrysleep=0)
         finally:
             shutil.rmtree(temp_dir)
 
@@ -235,7 +235,7 @@ class TestExternalSubmission(unittest.TestCase):
             self.assertEqual(dlist,
                              '/remote/yuck/celpp_week13_2016' + dr +
                              'yuck.tar.gz')
-            mockft.list_files.assert_called_with('/remote/yuck')
+            mockft.list_files.assert_called_with('/remote/yuck', retrycount=0, retrysleep=0)
         finally:
             shutil.rmtree(temp_dir)
 
@@ -295,7 +295,7 @@ class TestExternalSubmission(unittest.TestCase):
             self.assertEqual(len(tlist), 0)
             mockft.list_dirs.assert_called_with('/remote', retrycount=0,
                                                 retrysleep=0)
-            mockft.list_files.assert_called_with('/remote/yo')
+            mockft.list_files.assert_called_with('/remote/yo', retrycount=0, retrysleep=0)
         finally:
             shutil.rmtree(temp_dir)
 
@@ -332,7 +332,7 @@ class TestExternalSubmission(unittest.TestCase):
 
             mockft.list_dirs.assert_called_with('/remote', retrycount=0,
                                                 retrysleep=0)
-            mockft.list_files.assert_called_with('/remote/yo')
+            mockft.list_files.assert_called_with('/remote/yo', retrycount=0, retrysleep=0)
             mockft.delete_file.assert_called_with('/chall/latest.txt')
         finally:
             shutil.rmtree(temp_dir)
@@ -371,7 +371,7 @@ class TestExternalSubmission(unittest.TestCase):
                              'yuck.tar.gz')
             mockft.list_dirs.assert_called_with('/remote', retrycount=0,
                                                 retrysleep=0)
-            mockft.list_files.assert_called_with('/remote/yuck')
+            mockft.list_files.assert_called_with('/remote/yuck', retrycount=0, retrysleep=0)
             mockft.delete_file.assert_called_with('/chall/latest.txt')
         finally:
             shutil.rmtree(temp_dir)
