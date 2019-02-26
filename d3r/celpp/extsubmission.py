@@ -100,7 +100,9 @@ class ExternalDataSubmissionFactory(object):
         """
         ft = self.get_file_transfer()
         flist = ft.list_files(os.path.normpath(os.path.join(remote_dir,
-                                                            dir_name)))
+                                                            dir_name)),
+                                               retrycount=self._args.extretry,
+                                               retrysleep=self._args.extsleep)
         if flist is None:
             logger.info('No files found in ' + dir_name)
             return None
