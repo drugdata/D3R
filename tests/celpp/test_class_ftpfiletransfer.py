@@ -588,6 +588,42 @@ class TestFtpFileTransfer(unittest.TestCase):
                                               'for /foo2 : error')
         mockftp.list.assert_called_with('/foo2', extra=True)
 
+    def test_list_files_with_noretry_fail(self):
+        mockftp = MockFtp()
+        mockftp.list = Mock(side_effect=[IOError('error'),
+                                        [{'directory': 'd', 'name': '.'},
+                                        {'directory': 'd', 'name': '..'},
+                                        {'directory': 'd', 'name': 'foo'},
+                                        {'directory': '-', 'name': 'file'}]])
+        mockftp.close = Mock(return_value=None)
+        foo = FtpFileTransfer(None)
+        foo.set_connection(mockftp)
+        foo.connect()
+        filelist = foo.list_files('/foo', retrycount=0, retrysleep=0)
+        self.assertTrue(filelist is None)
+        foo.disconnect()
+        self.assertEqual(foo.get_error_msg(), 'Unable to get file list '
+                                              'for /foo : error')
+        mockftp.list.assert_called_with('/foo', extra=True)
+
+    def test_list_files_with_retry_success(self):
+        mockftp = MockFtp()
+        mockftp.list = Mock(side_effect=[IOError('error'),
+                                        [{'directory': 'd', 'name': '.'},
+                                        {'directory': 'd', 'name': '..'},
+                                        {'directory': 'd', 'name': 'foo'},
+                                        {'directory': '-', 'name': 'file'}]])
+        mockftp.close = Mock(return_value=None)
+        foo = FtpFileTransfer(None)
+        foo.set_connection(mockftp)
+        foo.connect()
+        filelist = foo.list_files('/foo', retrycount=1, retrysleep=0)
+        self.assertTrue(len(filelist) == 1)
+        self.assertEqual(filelist[0], 'file')
+        foo.disconnect()
+        self.assertEqual(foo.get_error_msg(), None)
+        mockftp.list.assert_called_with('/foo', extra=True)
+
     def tearDown(self):
         pass
 
