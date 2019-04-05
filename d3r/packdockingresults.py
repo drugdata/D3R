@@ -7,6 +7,7 @@ import glob
 import tarfile
 from d3r.celpp.filetransfer import WebDavFileTransfer
 from d3r.utilities.challenge_data import ChallengeData
+import sys
 
 __author__ = 'j5wagner'
     
@@ -66,6 +67,14 @@ def main_pack_dock_results(challenge_dir, dock_dir, pack_dir, ftp_config):
         abs_ftp_config = os.path.abspath(ftp_config)
         f_f_t_obj = WebDavFileTransfer(abs_ftp_config)
         contestant_id = f_f_t_obj.get_contestant_id()
+
+    if f_f_t_obj.get_host() is None:
+        print 'ERROR host field missing from ftp_config file.'
+        sys.exit(1)
+
+    if contestant_id is None:
+        print 'ERROR: contestantid field missing from ftp_config file.'
+        sys.exit(1)
 
     ## Get this week's name
     chal_data_obj = ChallengeData(abs_challenge_dir)
