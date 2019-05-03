@@ -475,7 +475,7 @@ def run_external_command_with_timeout(cmd_to_run, tmp_dir,
         if timeout is not None and int(time.time() - start_time) > timeout:
             if terminate_invoked is False:
                 logger.info('Timeout of ' + str(timeout) +
-                            'exceeded invoking terminate')
+                            ' exceeded invoking terminate')
                 p.terminate()
 
                 # pushing start time into future
@@ -486,7 +486,7 @@ def run_external_command_with_timeout(cmd_to_run, tmp_dir,
                 terminate_invoked = True
             else:
                 logger.info('Timeout of ' + str(timeout + kill_delay) +
-                            'exceeded invoking kill')
+                            ' exceeded invoking kill')
                 p.kill()
         time.sleep(polling_sleep_time)
         p.poll()
