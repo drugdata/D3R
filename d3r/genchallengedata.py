@@ -9,7 +9,7 @@ from rdkit import Chem
 from rdkit.Chem import AllChem as allChem
 import commands
 from Bio import PDB
-from celpp import util
+from d3r.celpp import util
 
 def split_chain(pdb_filename, out_path, pdb_id, chain_letters):
     parser = PDB.PDBParser()

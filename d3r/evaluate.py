@@ -12,7 +12,7 @@ import re
 import pickle
 import json
 from argparse import ArgumentParser
-from celpp import util
+from d3r.celpp import util
 
 logger = logging.getLogger('d3r.evaluate')
 
