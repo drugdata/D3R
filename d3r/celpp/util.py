@@ -606,3 +606,28 @@ def setup_logging(theargs):
         .setLevel(theargs.numericloglevel)
     logging.getLogger('d3r.evaluate')\
         .setLevel(theargs.numericloglevel)
+
+def is_schrodinger_valid():
+    """Checks that SCHRODINGER environment variable is set and refers to
+    a valid directory.
+    :returns: True if $SCHRODINGER refers to a valid directory, False otherwise.
+    """
+    if "SCHRODINGER" not in os.environ:
+        logger.error("$SCHRODINGER not set.")
+        return False
+    elif not os.path.isdir(os.environ['SCHRODINGER']):
+        logger.error("$SCHRODINGER does not refer to valid directory: {}".format(os.environ['SCHRODINGER']))
+        return False
+
+    return True
+
+def get_schrodinger_version():
+    """Get the version of Schrodinger
+    :returns: The version of Schrodinger if found, otherwise 'unknown'.
+    """
+    with open(os.environ['SCHRODINGER'] + "/version.txt") as f:
+        version_line = f.read()
+        m = re.search('Schrodinger Suite (.*)', version_line)
+        if m:
+            return m.group(1)
+    return 'unknown'
