@@ -9,6 +9,7 @@ from rdkit import Chem
 from rdkit.Chem import AllChem as allChem
 import commands
 from Bio import PDB
+from celpp import util
 
 def split_chain(pdb_filename, out_path, pdb_id, chain_letters):
     parser = PDB.PDBParser()
@@ -359,6 +360,11 @@ if ("__main__") == (__name__):
     stage_3_result = opt.candidatedir
     stage_4_result = opt.outdir
     running_dir = os.getcwd()
+
+    # check for valid $SCHRODINGER
+    if not util.is_schrodinger_valid():
+        sys.exit(1)
+
     main_gendata(stage_3_result, pdb_location, stage_4_result)
     log_file_path = os.path.join(running_dir, 'final.log')
     commands.getoutput("mv %s %s"%(log_file_path,stage_4_result))

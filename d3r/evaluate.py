@@ -12,6 +12,7 @@ import re
 import pickle
 import json
 from argparse import ArgumentParser
+from celpp import util
 
 logger = logging.getLogger('d3r.evaluate')
 
@@ -1429,6 +1430,10 @@ def main(args):
                         datefmt='%m/%d/%y %I:%M:%S',
                         filename=os.path.join(opt.outdir, FINAL_LOG),
                         filemode='w', level=logging.DEBUG)
+
+    # check for valid $SCHRODINGER
+    if not util.is_schrodinger_valid():
+        sys.exit(1)
 
     logger.debug('Calling main_score function')
     main_score(opt.dockdir, opt.pdbdb, opt.outdir,
