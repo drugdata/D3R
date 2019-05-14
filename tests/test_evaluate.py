@@ -301,7 +301,7 @@ class TestEvaluate(unittest.TestCase):
 
             # create schrodinger directory, version file, and add to env var.
             schrodinger_dir = tempfile.mkdtemp()
-            with f as open(schrodinger_dir + '/version.txt'):
+            with open(schrodinger_dir + '/version.txt', 'w') as f:
                 f.write('Schrodinger Suite 2016-2, Build 11')
             os.environ['SCHRODINGER'] = schrodinger_dir
             
