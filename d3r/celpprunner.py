@@ -6,6 +6,7 @@ import argparse
 import psutil
 import logging
 from datetime import date
+from multiprocessing.dummy import Pool as ThreadPool
 from lockfile.pidlockfile import PIDLockFile
 import d3r
 from d3r.celpp.task import D3RParameters
@@ -102,7 +103,11 @@ def set_andor_create_latest_weekly_parameter(theargs):
 
 
     """
+    # convert to absolute path
+    theargs.celppdir = os.path.abspath(theargs.celppdir)
+
     try:
+        
         if theargs.createweekdir:
             celp_week = util.get_celpp_week_of_year_from_date(date.today())
             logger.debug('Request to create new directory ' +
@@ -142,15 +147,18 @@ def run_stages(theargs):
         logger.info("No weekly dataset found in path " +
                     updatedtheargs.celppdir)
         return 0
+    elif updatedtheargs.maxParallelTasks < 1:
+        logger.info("Max parallel tasks must be at least 1.")
+        return 0
     for stage_name in updatedtheargs.stage.split(','):
         logger.info("Starting " + stage_name + " stage")
         try:
             lock = _get_lock(updatedtheargs, stage_name)
 
             task_list = get_task_list_for_stage(updatedtheargs, stage_name)
-
+    
             # run the stage
-            exit_code = run_tasks(task_list)
+            exit_code = run_tasks(task_list, updatedtheargs.maxParallelTasks)
             if exit_code is not 0:
                 logger.error('Non zero exit code from task ' + stage_name +
                              'exiting')
@@ -163,7 +171,7 @@ def run_stages(theargs):
     return 0
 
 
-def run_tasks(task_list):
+def run_tasks(task_list, max_parallel_tasks=1):
     """Runs a specific stage
 
        Runs the tasks in task_list
@@ -177,25 +185,31 @@ def run_tasks(task_list):
         logger.error('Task list is empty')
         return 2
 
-    returnval = 0
+    pool = ThreadPool(max_parallel_tasks)
+    results = pool.map(run_task, task_list)
+    pool.close()
+    pool.join()
 
-    for task in task_list:
-        logger.info("Running task " + task.get_name())
-        try:
-            task.run()
-        except Exception as e:
-            logger.exception("Error caught exception")
-            if task.get_error() is None:
-                task.set_error('Caught Exception running task: ' + e.message)
+    return max(results)
 
-        logger.debug("Task " + task.get_name() + " has finished running " +
-                     " with status " + task.get_status())
-        if task.get_error() is not None:
-            logger.error('Error running task ' + task.get_name() +
-                         ' ' + task.get_error())
-            returnval = 1
 
-    return returnval
+def run_task(task):
+    logger.info("Running task " + task.get_name())
+    try:
+        task.run()
+    except Exception as e:
+        logger.exception("Error caught exception")
+        if task.get_error() is None:
+            task.set_error('Caught Exception running task: ' + e.message)
+
+    logger.debug("Task " + task.get_name() + " has finished running " +
+                 " with status " + task.get_status())
+    if task.get_error() is not None:
+        logger.error('Error running task ' + task.get_name() +
+                     ' ' + task.get_error())
+        return 1
+
+    return 0
 
 
 def _get_set_of_email_address_from_email_flags(theargs):
@@ -454,6 +468,9 @@ def _parse_arguments(desc, args):
                              ' service')
     parser.add_argument('--version', action='version',
                         version=('%(prog)s ' + d3r.__version__))
+    parser.add_argument('--maxParallelTasks', default=1, type=int,
+                        help='Maximum number of tasks to execute in parallel for '
+                             'stage.')
     return parser.parse_args(args, namespace=parsed_arguments)
 
 
