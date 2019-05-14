@@ -176,7 +176,7 @@ class TestCelppRunner(unittest.TestCase):
                    '--summaryemail', 'j@j,g@g',
                    '--postevaluation', '/bin/yo.py',
                    '--websiteserviceconfig', 'webbyconfig.txt',
-                   '--maxParallelTasks', 1]
+                   '--maxParallelTasks', '1']
         result = celpprunner._parse_arguments('hi', theargs)
         self.assertEqual(result.stage, 'dock,glide')
         self.assertEqual(result.celppdir, 'foo')
