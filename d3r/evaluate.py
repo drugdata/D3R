@@ -1433,7 +1433,7 @@ def main(args):
 
     # check for valid $SCHRODINGER
     if not util.is_schrodinger_valid():
-        sys.exit(1)
+        return 1
 
     logger.debug('Calling main_score function')
     main_score(opt.dockdir, opt.pdbdb, opt.outdir,

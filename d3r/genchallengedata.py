@@ -363,7 +363,7 @@ if ("__main__") == (__name__):
 
     # check for valid $SCHRODINGER
     if not util.is_schrodinger_valid():
-        sys.exit(1)
+        return 1
 
     main_gendata(stage_3_result, pdb_location, stage_4_result)
     log_file_path = os.path.join(running_dir, 'final.log')
