@@ -625,9 +625,10 @@ def get_schrodinger_version():
     """Get the version of Schrodinger
     :returns: The version of Schrodinger if found, otherwise 'unknown'.
     """
-    with open(os.environ['SCHRODINGER'] + "/version.txt") as f:
-        version_line = f.read()
-        m = re.search('Schrodinger Suite (.*)', version_line)
-        if m:
-            return m.group(1)
+    if is_schrodinger_valid():
+        with open(os.environ['SCHRODINGER'] + "/version.txt") as f:
+            version_line = f.read()
+            m = re.search('Schrodinger Suite (.*)', version_line)
+            if m:
+                return m.group(1)
     return 'unknown'
