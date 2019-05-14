@@ -296,7 +296,25 @@ class TestEvaluate(unittest.TestCase):
                                  '--outdir', temp_dir,
                                  '--pdbdb', temp_dir])
 
+            # should fail due to missing schrodinger
+            self.assertEqual(res, 1)
+
+            # create schrodinger directory, version file, and add to env var.
+            schrodinger_dir = tempfile.mkdtemp()
+            with f as open(schrodinger_dir + '/version.txt'):
+                f.write('Schrodinger Suite 2016-2, Build 11')
+            os.environ['SCHRODINGER'] = schrodinger_dir
+            
+            res = evaluate.main(['evaluate.py',
+                                 '--dockdir', temp_dir,
+                                 '--blastnfilterdir', temp_dir,
+                                 '--challengedir', temp_dir,
+                                 '--outdir', temp_dir,
+                                 '--pdbdb', temp_dir])
+            
             self.assertEqual(res, 0)
+            
+            os.environ.pop('SCHRODINGER', None)
 
         finally:
             shutil.rmtree(temp_dir)
