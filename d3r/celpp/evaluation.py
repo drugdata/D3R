@@ -702,6 +702,11 @@ class EvaluationTask(D3RTask):
            the number of target evaluated due to errors).
            :returns the number of targets sumbmitted.
         """
+       
+        # make sure there is a docking task
+        if self._docktask is None:
+            return 0
+
         dir = self._docktask.get_dir()
         count = 0
         for d in os.listdir(dir):
