@@ -697,6 +697,23 @@ class EvaluationTask(D3RTask):
         else:
             return None
 
+    def _get_num_submitted_targets(self):
+        """Get the number of targets submitted (which may be different than
+           the number of target evaluated due to errors).
+           :returns the number of targets sumbmitted.
+        """
+        dir = self._docktask.get_dir()
+        count = 0
+        for d in os.listdir(dir):
+          full_subdir_path = os.path.join(dir, d)
+          if os.path.isdir(full_subdir_path):
+            for f in os.listdir(full_subdir_path):
+                if f.endswith('docked.mol'):
+                    count += 1
+                    break;
+        logger.debug('number of submitted targets {}'.format(count))
+        return count
+
     def generate_rmsd_object(self):
         """Generates a dictionary object parsed from either RMSD.json or as
            a fallback as RMSD.pickle file that contains scores from this
@@ -721,6 +738,8 @@ class EvaluationTask(D3RTask):
             wsource = self._webserviceconfig.get_source()
             pname = self._webserviceconfig.get_portal_name()
 
+        rmdsobj['targets_user'] = self._get_num_submitted_targets()
+        rmdsobj['schrodinger_version'] = util.get_schrodinger_version()
         rmsdobj['version'] = version
         rmsdobj['source'] = wsource
         rmsdobj['week'] = int(self._week_num)
@@ -733,7 +752,7 @@ class EvaluationTask(D3RTask):
     def post_rmsd_to_websiteservice(self, rmsdobj):
         """Posts RMSD scores to evaluation service
         """
-
+        
         if rmsdobj is None:
             logger.debug('RMSD object is None skipping post to websiteservice')
             return
