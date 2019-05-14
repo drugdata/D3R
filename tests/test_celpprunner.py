@@ -175,7 +175,8 @@ class TestCelppRunner(unittest.TestCase):
                    '--rdkitpython', '/usr/bin',
                    '--summaryemail', 'j@j,g@g',
                    '--postevaluation', '/bin/yo.py',
-                   '--websiteserviceconfig', 'webbyconfig.txt']
+                   '--websiteserviceconfig', 'webbyconfig.txt',
+                   '--maxParallelTasks', 1]
         result = celpprunner._parse_arguments('hi', theargs)
         self.assertEqual(result.stage, 'dock,glide')
         self.assertEqual(result.celppdir, 'foo')
@@ -198,6 +199,7 @@ class TestCelppRunner(unittest.TestCase):
         self.assertEqual(result.rdkitpython, '/usr/bin')
         self.assertEqual(result.postevaluation, '/bin/yo.py')
         self.assertEqual(result.websiteserviceconfig, 'webbyconfig.txt')
+        self.assertEqual(result.maxParallelTasks, 1)
 
     def test_run_tasks_passing_none_and_empty_list(self):
         self.assertEquals(celpprunner.run_tasks(None), 3)
