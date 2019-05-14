@@ -743,8 +743,8 @@ class EvaluationTask(D3RTask):
             wsource = self._webserviceconfig.get_source()
             pname = self._webserviceconfig.get_portal_name()
 
-        rmdsobj['targets_user'] = self._get_num_submitted_targets()
-        rmdsobj['schrodinger_version'] = util.get_schrodinger_version()
+        rmsdobj['targets_user'] = self._get_num_submitted_targets()
+        rmsdobj['schrodinger_version'] = util.get_schrodinger_version()
         rmsdobj['version'] = version
         rmsdobj['source'] = wsource
         rmsdobj['week'] = int(self._week_num)
