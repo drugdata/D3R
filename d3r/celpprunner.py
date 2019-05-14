@@ -147,9 +147,14 @@ def run_stages(theargs):
         logger.info("No weekly dataset found in path " +
                     updatedtheargs.celppdir)
         return 0
-    elif updatedtheargs.maxParallelTasks < 1:
-        logger.info("Max parallel tasks must be at least 1.")
-        return 0
+   
+    try:
+        if updatedtheargs.maxParallelTasks < 1:
+            logger.info("Max parallel tasks must be at least 1.")
+            return 0
+    except AttributeError:
+        updatedtheargs.maxParallelTasks = 1
+
     for stage_name in updatedtheargs.stage.split(','):
         logger.info("Starting " + stage_name + " stage")
         try:
