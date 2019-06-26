@@ -361,9 +361,12 @@ if ("__main__") == (__name__):
     stage_4_result = opt.outdir
     running_dir = os.getcwd()
 
+    # FIXME this is returnig false even though env variable 
+    # appears to be set and valid
+    
     # check for valid $SCHRODINGER
-    if not util.is_schrodinger_valid():
-        return 1
+    #if not util.is_schrodinger_valid():
+        #return 1
 
     main_gendata(stage_3_result, pdb_location, stage_4_result)
     log_file_path = os.path.join(running_dir, 'final.log')
