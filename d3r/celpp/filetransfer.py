@@ -316,8 +316,9 @@ class FtpFileTransfer(FileTransfer):
                 self._ftp = ftpretty(self.get_host(),
                                      self.get_user(),
                                      self.get_password(),
-                                     timeout=self.get_connect_timeout(),
-                                     secure=True)
+                                     timeout=self.get_connect_timeout())
+                                     # NOTE: does not work with box since requires TLS 1.2
+                                     #secure=False)
                 return True
             except Exception:
                 logger.exception('Unable to connect to ftp host')
