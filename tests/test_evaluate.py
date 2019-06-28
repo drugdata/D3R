@@ -234,13 +234,21 @@ class TestEvaluate(unittest.TestCase):
             self.assertEqual(evaluate.wait_and_check(tfile,
                                                      how_many_times=0), False)
 
-            # File exists already
-            self.assertEqual(evaluate.wait_and_check(tfile), True)
+            # File exists already, should be false since empty
+            self.assertEqual(evaluate.wait_and_check(tfile), False)
 
             nonexist = os.path.join(temp_dir, 'doesnotexist')
             # File does not exist
             self.assertEqual(evaluate.wait_and_check(nonexist, timestep=0),
                              False)
+            
+            f = open(tfile, 'a')
+            # write something to the file so it is not zero length
+            f.write('test')
+            f.close()
+            # File exists already and is not empty
+            self.assertEqual(evaluate.wait_and_check(tfile), True)
+
         finally:
             shutil.rmtree(temp_dir)
 
