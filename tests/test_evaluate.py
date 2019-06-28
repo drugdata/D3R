@@ -235,7 +235,7 @@ class TestEvaluate(unittest.TestCase):
                                                      how_many_times=0), False)
 
             # File exists already, should be false since empty
-            self.assertEqual(evaluate.wait_and_check(tfile), False)
+            self.assertEqual(evaluate.wait_and_check(tfile, timestep=1), False)
 
             nonexist = os.path.join(temp_dir, 'doesnotexist')
             # File does not exist
