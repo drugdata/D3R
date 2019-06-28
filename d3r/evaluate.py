@@ -66,6 +66,9 @@ def get_center(ligand_pdb):
              where  Z is sum of column 8 divided by number of atoms aka rows
              All numbers are set via format of %8.3f
     """
+    
+    #logger.debug('READING ligand_pdb %s' % ligand_pdb)
+
     xyz_lines = open(ligand_pdb, "r").readlines()
     multi_ligand = False
     atom_list = []
@@ -94,6 +97,11 @@ def get_center(ligand_pdb):
                 except:                                                         
                     logger.debug("Fatal error: Cannot find the XYZ coordinate for this ligand:%s"%ligand_pdb)
                     return False                                                
+  
+    if len(atom_list) == 0:
+        logger.debug('No atoms found in {}'.format(ligand_pdb))
+        return None
+
     lig_center = "%8.3f, %8.3f, %8.3f"%(x/len(atom_list), y/len(atom_list), z/len(atom_list))
     logger.debug("Ligand center for this case:%s is %s"%(ligand_pdb, lig_center))        
     return lig_center                                                       
@@ -189,8 +197,8 @@ def rmsd_mcss(ref_struc, fit_struc):
 
 def wait_and_check (filename, timestep = 5, how_many_times = 100):
     """Using a while loop and sleep this function waits `how_many_times`
-       for the file set by `filename` to appear on the file system
-       sleeping for `timestep` seconds between retries.
+       for the file set by `filename` to appear on the file system and
+       be non-zero length, sleeping for `timestep` seconds between retries.
        :param filename: This is the file the loop checks for existence
                         If set to None method will always return False
        :param timestep: Sleep in seconds between retries
@@ -203,7 +211,8 @@ def wait_and_check (filename, timestep = 5, how_many_times = 100):
 
     count = 0
     while count < how_many_times:
-        if not os.path.isfile(filename):
+        # check if file exists and in non-zero.
+        if not os.path.isfile(filename) or os.stat(filename).st_size == 0:
             logger.debug('Sleeping ' + str(timestep) + ' waiting for file ' + filename + ' to appear')
             time.sleep(timestep)
             count = count + 1
@@ -705,12 +714,17 @@ class LMCSS (object):
                     _docked_ligand_aligned = self._all_aligned_ligand[_crystal_ligand_info]
                     try:
                         _crystal_ligand_center = get_center(_crystal_ligand)
-                        _docked_ligand_aligned_center = get_center(_docked_ligand_aligned)
-                        _distance = get_distance(_crystal_ligand_center, _docked_ligand_aligned_center)
-                        # build a map of <residue name>-<residue id>-<chain id> => <distance between centers>
-                        self._dis[_crystal_ligand_info] = _distance
+                        if _crystal_ligand_center is not None:
 
-                        logger.debug("The distance for %s vs %s is %s"%(_crystal_ligand, _docked_ligand_aligned, _distance))
+                            _docked_ligand_aligned_center = get_center(_docked_ligand_aligned)
+                            if _docked_ligand_aligned_center is not None:
+
+                                _distance = get_distance(_crystal_ligand_center, _docked_ligand_aligned_center)
+                                # build a map of <residue name>-<residue id>-<chain id> => <distance between centers>
+                                self._dis[_crystal_ligand_info] = _distance
+
+                                logger.debug("The distance for %s vs %s is %s"%(_crystal_ligand, _docked_ligand_aligned, _distance))
+
                     except Exception as ex:
                         logger.exception("The distance calculation for %s vs %s failed"%(_crystal_ligand, _docked_ligand_aligned))
 
@@ -892,13 +906,18 @@ class docked (object):
                         #_rmsd, _distance = rmsd_mcss (_crystal_ligand, _docked_ligand_aligned)
                         _rmsd = rmsd_mcss (_crystal_ligand, _docked_ligand_aligned)
                         _crystal_ligand_center = get_center(_crystal_ligand)
-                        _docked_ligand_aligned_center = get_center(_docked_ligand_aligned) 
-                        _distance = get_distance(_crystal_ligand_center, _docked_ligand_aligned_center)
-                        _all_mapping_files = glob.glob("match*.pdb")
-                        for _mapping_file in _all_mapping_files:
-                            os.remove(_mapping_file)
-                        self._rmsd_dis[_crystal_ligand_info] = (_rmsd, _distance)
-                        logger.debug("The rmsd and distance for %s vs %s is %s"%(_crystal_ligand, _docked_ligand_aligned, _rmsd))
+                        if _crystal_ligand_center is not None:
+
+                            _docked_ligand_aligned_center = get_center(_docked_ligand_aligned) 
+                            if _docked_ligand_aligned_center is not None:
+
+                                _distance = get_distance(_crystal_ligand_center, _docked_ligand_aligned_center)
+                                _all_mapping_files = glob.glob("match*.pdb")
+                                for _mapping_file in _all_mapping_files:
+                                    os.remove(_mapping_file)
+                                self._rmsd_dis[_crystal_ligand_info] = (_rmsd, _distance)
+                                logger.debug("The rmsd and distance for %s vs %s is %s"%(_crystal_ligand, _docked_ligand_aligned, _rmsd))
+
                     except Exception as ex:
                         logger.exception("The rmsd calculation for %s vs %s failed"%(_crystal_ligand, _docked_ligand_aligned))
             #get the lowest RMSD and the corresponding distance
@@ -1367,17 +1386,20 @@ def main_score(dock_dir, pdb_protein_path, evaluate_dir, blastnfilter_dir, chall
                         #
                         docked_obj.align_complex_onto_crystal(check_point_number = 10)
                         docked_obj.calculate_rmsd_and_distance()
-                        (rmsd, dis) = docked_obj._min_rmsd_dis
-                        docked_structure_type_dis = docked_structure_type + "_dis"
-                        #rmsd = docked_obj._min_rmsd_dis[0]
-                        valid_target = True
-                        result_container.register(target_dir, docked_type = docked_structure_type, value = rmsd) 
-                        result_container.register(target_dir, docked_type = docked_structure_type_dis, value = dis) 
-                        logger.info("\tSuccessfully calculate the rmsd for this category %s, the rmsd is %s"%(docked_structure_type, rmsd))
-                        #update the pickle and txt csv file if there is valid case found 
-                        result_container.layout_pickle (pickle_filename = pickle_full_path)
-                        result_container.layout_json (json_filename = json_full_path)
-                        result_container.layout_plain (plain_filename = plain_full_path)
+
+                        if docked_obj._min_rmsd_dis is not None:
+                            (rmsd, dis) = docked_obj._min_rmsd_dis
+                            docked_structure_type_dis = docked_structure_type + "_dis"
+                            #rmsd = docked_obj._min_rmsd_dis[0]
+                            valid_target = True
+                            result_container.register(target_dir, docked_type = docked_structure_type, value = rmsd) 
+                            result_container.register(target_dir, docked_type = docked_structure_type_dis, value = dis) 
+                            logger.info("\tSuccessfully calculate the rmsd for this category %s, the rmsd is %s"%(docked_structure_type, rmsd))
+                            #update the pickle and txt csv file if there is valid case found 
+                            result_container.layout_pickle (pickle_filename = pickle_full_path)
+                            result_container.layout_json (json_filename = json_full_path)
+                            result_container.layout_plain (plain_filename = plain_full_path)
+
                         os.chdir(pdbid_local_path)
                     except Exception as ex:
                         result_container.register(target_dir, docked_type = docked_structure_type, value = None) 
