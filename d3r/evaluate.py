@@ -323,6 +323,8 @@ def extract_ligand_from_complex (complex_pdb_file, ligand_pdb_file, ligand_info 
             ligand_lines.append(complex_line)
     ligand_file = open(ligand_pdb_file, "w")
     ligand_file.writelines(ligand_lines)
+    if len(ligand_lines) == 0:
+        logger.warn('WARNING: could not find {} in complex file {}'.format(ligand_info, complex_pdb_file))
     ligand_file.close()
 
 
@@ -376,6 +378,7 @@ def merge_two_pdb (receptor, ligand, complex_pdb):
     CONECT
     ENDMDL
     END
+    MASTER
 
     and writes them to output file `complex_pdb` in same order and appends this line
     with 3 spaces and a new line:
@@ -398,13 +401,15 @@ def merge_two_pdb (receptor, ligand, complex_pdb):
     :param complex_pdb: usually  <docked category>-<target id>-<candidate id>_docked_ligand_complex.pdb
     :return: True upon success or False if there is an Exception raised
     """
+
+    #logger.info('merging ' + receptor + '  ' + ligand)
     try:
         complex_lines = []
         f1 = open(receptor, "r")
         protein_lines = f1.readlines()
         f1.close()
         for p_line in protein_lines:
-            if p_line [:6] not in ["CONECT", "ENDMDL" ] and p_line [:3] not in ["END"]:
+            if p_line [:6] not in ["CONECT", "ENDMDL", "MASTER"] and p_line [:3] not in ["END"]:
                 complex_lines.append(p_line)
         complex_lines.append("TER   \n")
         f2 = open(ligand, "r")
@@ -468,7 +473,7 @@ def generate_ligand_and_receptor(complex_filename,ligand_filename, receptor_file
             ligand_name = line[17:20].strip()
             ligand_chain = line[20:22].strip()
             ligand_resnum = line[22:26].strip()
-            logger.debug("The ligand info for the atom in the complex is %s-%s-%s"%(ligand_name, ligand_resnum, ligand_chain))
+            #logger.debug("The ligand info for the atom in the complex is %s-%s-%s"%(ligand_name, ligand_resnum, ligand_chain))
             if "%s-%s-%s"%(ligand_name, ligand_resnum, ligand_chain)  == ligand_info:
                 logger.debug("find a ligand which fits the ligand info")
                 ligand_lines.append(line)
