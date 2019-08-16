@@ -3,6 +3,21 @@
 History
 -------
 
+1.12.0 (2019-08-15)
+-------------------
+* Execute tasks in stage in parallel
+  `Issue #202 <https://github.com/drugdata/D3R/issues/202>`
+* Use absolute path for custom celpp weeks
+  `Issue #204 <https://github.com/drugdata/D3R/issues/204>`
+* Check that Schrodinger env variable is set before using
+  `Issue #205 <https://github.com/drugdata/D3R/issues/205>`
+* Capture Schrodinger version in weekly outputs
+  `Issue #206 <https://github.com/drugdata/D3R/issues/206>`
+* Save number of submitted targets for each participant to REST API 
+  `Issue #207 <https://github.com/drugdata/D3R/issues/207>`
+* Handle and prevent empty pdb files created by Schrodinger
+  `Issue #208 <https://github.com/drugdata/D3R/issues/208>`
+
 1.11.3 (2019-02-26)
 --------------------
 * Additional fix for ftp connection refused
