@@ -22,6 +22,9 @@ from d3r.celpp import util
 
 logger = logging.getLogger(__name__)
 
+def rmtree_error(func, path, execinfo):
+    logger.info('{} {} {}'.format(func, path, execinfo))
+    print('{} {} {}'.format(func, path, execinfo))
 
 class D3RParameters(object):
     """Holds parameters common to Tasks
@@ -686,7 +689,8 @@ class D3RTask(object):
             return 1
         finally:
             if cmd_tmp_dir is not None:
-                shutil.rmtree(cmd_tmp_dir)
+                time.sleep(30)
+                shutil.rmtree(cmd_tmp_dir, rmtree_error)
 
         self.write_to_file(err, command_name + D3RTask.STDERR_SUFFIX)
         self.write_to_file(out, command_name + D3RTask.STDOUT_SUFFIX)
