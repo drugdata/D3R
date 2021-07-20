@@ -21,7 +21,7 @@ def upload(f):
             time.sleep(5)
             tries += 1
 
-files = os.listdir('.')
+files = sorted(os.listdir('.'))
 weeks = [x for x in files if re.match(r'pdb.\d+', x)]
 for i in range(len(weeks)):
     if i < len(weeks) - 1:
